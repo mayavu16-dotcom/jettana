@@ -47,7 +47,7 @@ body {
 }
 
 .app-shell {
-  display: flex;
+  display: none;
   min-height: 100vh;
 }
 
@@ -3725,7 +3725,7 @@ function hideAuthModal() {
   var overlay = document.getElementById('auth-overlay');
   if (overlay) overlay.style.display = 'none';
   var app = document.querySelector('.app-shell');
-  if (app) app.style.display = '';
+  if (app) app.style.display = 'flex';
 }
 
 function showAuthTab(tab) {
