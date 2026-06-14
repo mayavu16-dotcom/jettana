@@ -5311,7 +5311,7 @@ function initTapReveal() {
     const hdr = e.target.closest('.sec-hdr');
     if (!hdr) {
       // If tapped completely outside a row and outside an input, blur active input
-      if (!e.target.closest('.erow') && !e.target.closest('input, textarea, .color-toolbar, #ft-color-picker, .ctx-menu, .intention-field, .autocomplete-dropdown')) {
+      if (!e.target.closest('.erow') && !e.target.closest('input, textarea, .color-toolbar, #ft-color-picker, .ctx-menu, .intention-field, .autocomplete-dropdown, .bulk-bar, .toast')) {
         if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
           document.activeElement.blur();
         }
