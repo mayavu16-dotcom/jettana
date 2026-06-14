@@ -1276,12 +1276,6 @@ body {
     margin-right: 0;
     order: 9;
   }
-  .paid-checkbox {
-    width: 20px;
-    height: 20px;
-    font-size: 10px;
-    opacity: 1;
-  }
 }
 
 /* ── Dark Mode ───────────────────────────────────────────────── */
@@ -5315,7 +5309,15 @@ function initTapReveal() {
   // Section header tap on touchend to avoid double-tap conflict with click
   document.addEventListener('touchend', function(e) {
     const hdr = e.target.closest('.sec-hdr');
-    if (!hdr) return;
+    if (!hdr) {
+      // If tapped completely outside a row and outside an input, blur active input
+      if (!e.target.closest('.erow') && !e.target.closest('input, textarea, .color-toolbar, #ft-color-picker, .ctx-menu, .intention-field, .autocomplete-dropdown')) {
+        if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+          document.activeElement.blur();
+        }
+      }
+      return;
+    }
     // Don't interfere with buttons
     if (e.target.closest('.sec-clear-btn, .sec-collapse-btn, .sec-drag-handle')) return;
     document.querySelectorAll('.sec-hdr.hdr-active').forEach(h => { if (h !== hdr) h.classList.remove('hdr-active'); });
