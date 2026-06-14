@@ -1248,21 +1248,29 @@ body {
   .erow-label-input:focus { cursor: text; }
 }
 @media (pointer: coarse) {
-  .erow-label-wrap { align-self: stretch; }
-  .erow-label-input {
+  .erow-label-wrap {
     align-self: stretch;
-    padding: 0;
+    position: relative;
+  }
+  .erow-label-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0 80px 0 0;
     cursor: text;
     -webkit-user-select: text;
     user-select: text;
     -webkit-touch-callout: default;
+    z-index: 1;
   }
-  .erow input[type="text"] { padding: 0; min-height: 44px; }
+  .erow input[type="text"] { min-height: 44px; }
   /* Ensure erow doesn't block input interactions */
   .erow { -webkit-user-select: text; user-select: text; }
   /* Move drag handle to right side on mobile with gap from paid checkbox */
   .drag-handle {
-    position: static;
+    position: relative;
+    z-index: 2;
     transform: none;
     order: 10;
     margin-left: 12px;
@@ -1270,11 +1278,18 @@ body {
     left: auto;
     top: auto;
   }
-  /* Push paid checkbox away from drag handle, make bigger */
+  /* Push paid checkbox away from drag handle */
   .paid-color-wrap {
+    position: relative;
+    z-index: 2;
     margin-left: auto;
     margin-right: 0;
     order: 9;
+  }
+  /* del btn above input */
+  .del-btn {
+    position: relative;
+    z-index: 2;
   }
 }
 
@@ -4324,18 +4339,6 @@ function renderRowEl(section, row, animate = false) {
   }
   div.addEventListener('contextmenu', function(e) { showCtxMenu(e, section, row.id); });
 
-  // Mobile: touchend on row background directly focuses input (more reliable than click)
-  if ('ontouchstart' in window) {
-    div.addEventListener('touchend', function(e) {
-      // In bulk mode — selection handled by global touchend handler
-      if (_bulkSection === section) return;
-      if (e.target.closest('input, button, .paid-checkbox, .drag-handle, .del-btn, .note-indicator, .recurring-dot')) return;
-      e.preventDefault();
-      var labelInput = div.querySelector('.erow-label-input');
-      if (labelInput) labelInput.focus();
-    }, { passive: false });
-  }
-
   div.addEventListener('click', function(e) {
     // Shift+click — bulk select
     if (e.shiftKey) { e.preventDefault(); toggleBulkRow(section, row.id); return; }
@@ -6827,23 +6830,14 @@ function loadFontSize() {
 
 
 function addRowMobile(e, section) {
-  // Create a temporary off-screen input and focus it immediately within the gesture
-  // This establishes keyboard before addRow runs
-  var tmp = document.createElement('input');
-  tmp.style.cssText = 'position:fixed;top:-100px;left:-100px;width:1px;height:1px;opacity:0;';
-  document.body.appendChild(tmp);
-  tmp.focus();
-  // Now add the row - the real input focus will transfer keyboard to it
   addRow(section);
-  // Find the newly created input and focus it
+  // Focus the last input in the section - it now covers the full label area
   var container = document.getElementById('rows-' + section);
   if (container) {
-    var rows = container.querySelectorAll('.erow-label-input');
-    var lastInput = rows[rows.length - 1];
-    if (lastInput) lastInput.focus();
+    var inputs = container.querySelectorAll('.erow-label-input');
+    var last = inputs[inputs.length - 1];
+    if (last) last.focus();
   }
-  // Clean up temp input
-  setTimeout(function() { tmp.remove(); }, 300);
 }
 var _defaultNumColor  = '';
 
