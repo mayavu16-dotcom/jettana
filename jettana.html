@@ -2161,7 +2161,8 @@ body.font-large.text-bold .erow-label-input {
     opacity: 0.6;
     position: static;
     transform: none;
-    margin-right: 8px;
+    margin-left: 8px;
+    margin-right: 0;
     font-size: 16px;
   }
 }
@@ -3052,7 +3053,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
         <!-- INCOME -->
         <div class="sec-card" data-section-id="income">
           <div class="sec-hdr bg-sage">
-            <div class="sec-hdr-left"><span class="sec-drag-handle" title="Drag to reorder section">⠿</span><h3>Income</h3></div>
+            <div class="sec-hdr-left"><h3>Income</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
             <div class="sec-hdr-right"><button class="sec-clear-btn" onclick="clearSection('income')" title="Clear all rows in this section">🗑</button><button class="sec-collapse-btn" onclick="toggleSection('income')" title="Collapse section">▾</button></div></div>
           <div class="sec-body">
           <div class="col-lbl-row"><span>Source</span><span>Planned</span><span>Received</span></div>
@@ -3069,7 +3070,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
         <!-- SAVINGS -->
         <div class="sec-card" data-section-id="savings">
           <div class="sec-hdr bg-gold">
-            <div class="sec-hdr-left"><span class="sec-drag-handle" title="Drag to reorder section">⠿</span><h3>Savings &amp; Investments</h3></div>
+            <div class="sec-hdr-left"><h3>Savings &amp; Investments</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
             <div class="sec-hdr-right"><span class="sec-total" id="hdr-savings">$0</span><button class="sec-clear-btn" onclick="clearSection('savings')" title="Clear all rows in this section">🗑</button><button class="sec-collapse-btn" onclick="toggleSection('savings')" title="Collapse section">▾</button></div></div>
           <div class="sec-body">
           <div class="col-lbl-row"><span>Account / Fund</span><span>Actual</span><span>Growth</span></div>
@@ -3086,7 +3087,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
         <!-- HOUSING -->
         <div class="sec-card" data-section-id="housing">
           <div class="sec-hdr bg-blush">
-            <div class="sec-hdr-left"><span class="sec-drag-handle" title="Drag to reorder section">⠿</span><h3>Housing &amp; Utilities</h3></div>
+            <div class="sec-hdr-left"><h3>Housing &amp; Utilities</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
             <div class="sec-hdr-right"><span class="sec-total" id="hdr-housing">$0</span><span class="hdr-pct-label" id="hdr-pct-housing"></span><button class="sec-clear-btn" onclick="clearSection('housing')" title="Clear all rows in this section">🗑</button><button class="sec-collapse-btn" onclick="toggleSection('housing')" title="Collapse section">▾</button></div></div>
           <div class="sec-body">
           <div class="col-lbl-row"><span>Item</span><span>Budget</span><span>Actual</span></div>
@@ -3103,7 +3104,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
         <!-- CHECKING -->
         <div class="sec-card" data-section-id="checking">
           <div class="sec-hdr bg-teal">
-            <div class="sec-hdr-left"><span class="sec-drag-handle" title="Drag to reorder section">⠿</span><h3>Checking Accounts</h3></div>
+            <div class="sec-hdr-left"><h3>Checking Accounts</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
             <div class="sec-hdr-right"><span class="sec-total" id="hdr-checking">$0</span><button class="sec-clear-btn" onclick="clearSection('checking')" title="Clear all rows in this section">🗑</button><button class="sec-collapse-btn" onclick="toggleSection('checking')" title="Collapse section">▾</button></div></div>
           <div class="sec-body">
           <div class="col-lbl-row"><span>Account</span><span>Beginning</span><span>Ending</span></div>
@@ -3120,7 +3121,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
         <!-- TRANSPORT -->
         <div class="sec-card" data-section-id="transport">
           <div class="sec-hdr bg-blush">
-            <div class="sec-hdr-left"><span class="sec-drag-handle" title="Drag to reorder section">⠿</span><h3>Transportation / Travel</h3></div>
+            <div class="sec-hdr-left"><h3>Transportation / Travel</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
             <div class="sec-hdr-right"><span class="sec-total" id="hdr-transport">$0</span><span class="hdr-pct-label" id="hdr-pct-transport"></span><button class="sec-clear-btn" onclick="clearSection('transport')" title="Clear all rows in this section">🗑</button><button class="sec-collapse-btn" onclick="toggleSection('transport')" title="Collapse section">▾</button></div></div>
           <div class="sec-body">
           <div class="col-lbl-row"><span>Item</span><span>Budget</span><span>Actual</span></div>
@@ -3137,7 +3138,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
         <!-- DEBT -->
         <div class="sec-card" data-section-id="debt">
           <div class="sec-hdr bg-debt">
-            <div class="sec-hdr-left"><span class="sec-drag-handle" title="Drag to reorder section">⠿</span><h3>Debt — Credit Cards / Loans</h3></div>
+            <div class="sec-hdr-left"><h3>Debt — Credit Cards / Loans</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
             <div class="sec-hdr-right"><span class="sec-total" id="hdr-debt">$0</span><button class="sec-clear-btn" onclick="clearSection('debt')" title="Clear all rows in this section">🗑</button><button class="sec-collapse-btn" onclick="toggleSection('debt')" title="Collapse section">▾</button></div></div>
           <div class="sec-body">
           <div class="col-lbl-row"><span>Account</span><span>Current</span><span>Remaining</span></div>
@@ -3154,7 +3155,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
         <!-- FOOD -->
         <div class="sec-card" data-section-id="food">
           <div class="sec-hdr bg-blush">
-            <div class="sec-hdr-left"><span class="sec-drag-handle" title="Drag to reorder section">⠿</span><h3>Food &amp; Dining</h3></div>
+            <div class="sec-hdr-left"><h3>Food &amp; Dining</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
             <div class="sec-hdr-right"><span class="sec-total" id="hdr-food">$0</span><span class="hdr-pct-label" id="hdr-pct-food"></span><button class="sec-clear-btn" onclick="clearSection('food')" title="Clear all rows in this section">🗑</button><button class="sec-collapse-btn" onclick="toggleSection('food')" title="Collapse section">▾</button></div></div>
           <div class="sec-body">
           <div class="col-lbl-row"><span>Where / What</span><span>Budget</span><span>Actual</span></div>
@@ -3171,7 +3172,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
         <!-- HEALTH -->
         <div class="sec-card" data-section-id="health">
           <div class="sec-hdr bg-lav">
-            <div class="sec-hdr-left"><span class="sec-drag-handle" title="Drag to reorder section">⠿</span><h3>Health &amp; Wellness</h3></div>
+            <div class="sec-hdr-left"><h3>Health &amp; Wellness</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
             <div class="sec-hdr-right"><span class="sec-total" id="hdr-health">$0</span><span class="hdr-pct-label" id="hdr-pct-health"></span><button class="sec-clear-btn" onclick="clearSection('health')" title="Clear all rows in this section">🗑</button><button class="sec-collapse-btn" onclick="toggleSection('health')" title="Collapse section">▾</button></div></div>
           <div class="sec-body">
           <div class="col-lbl-row"><span>Item</span><span>Budget</span><span>Actual</span></div>
@@ -3188,7 +3189,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
         <!-- GIFTS -->
         <div class="sec-card" data-section-id="gifts">
           <div class="sec-hdr bg-gifts">
-            <div class="sec-hdr-left"><span class="sec-drag-handle" title="Drag to reorder section">⠿</span><h3>Gifts &amp; Donations</h3></div>
+            <div class="sec-hdr-left"><h3>Gifts &amp; Donations</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
             <div class="sec-hdr-right"><span class="sec-total" id="hdr-gifts">$0</span><span class="hdr-pct-label" id="hdr-pct-gifts"></span><button class="sec-clear-btn" onclick="clearSection('gifts')" title="Clear all rows in this section">🗑</button><button class="sec-collapse-btn" onclick="toggleSection('gifts')" title="Collapse section">▾</button></div></div>
           <div class="sec-body">
           <div class="col-lbl-row"><span>Recipient / Cause</span><span>Budget</span><span>Actual</span></div>
@@ -3205,7 +3206,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
         <!-- MISC -->
         <div class="sec-card" data-section-id="misc">
           <div class="sec-hdr bg-steel">
-            <div class="sec-hdr-left"><span class="sec-drag-handle" title="Drag to reorder section">⠿</span><h3>Miscellaneous</h3></div>
+            <div class="sec-hdr-left"><h3>Miscellaneous</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
             <div class="sec-hdr-right"><span class="sec-total" id="hdr-misc">$0</span><span class="hdr-pct-label" id="hdr-pct-misc"></span><button class="sec-clear-btn" onclick="clearSection('misc')" title="Clear all rows in this section">🗑</button><button class="sec-collapse-btn" onclick="toggleSection('misc')" title="Collapse section">▾</button></div></div>
           <div class="sec-body">
           <div class="col-lbl-row"><span>Item</span><span>Budget</span><span>Actual</span></div>
