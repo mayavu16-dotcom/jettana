@@ -3060,7 +3060,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <div class="sec-body">
           <div class="col-lbl-row"><span>Source</span><span>Planned</span><span>Received</span></div>
           <div class="bulk-bar" id="bulk-bar-income"><span class="bulk-bar-count" id="bulk-count-income">0 selected</span><button class="bulk-bar-btn" onclick="selectAllBulk('income')" ontouchend="event.preventDefault();selectAllBulk('income')">Select all</button><button class="bulk-bar-btn danger" onclick="deleteSelectedBulk('income')" ontouchend="event.preventDefault();deleteSelectedBulk('income')">Delete selected</button><button class="bulk-bar-btn" onclick="cancelBulk('income')" ontouchend="event.preventDefault();cancelBulk('income')">Cancel</button></div><div class="entry-list" id="rows-income"></div>
-          <button class="add-row-btn" onclick="addRow('income')" ontouchend="event.preventDefault();addRow('income')"><span class="plus">+</span> Add income source</button>
+          <button class="add-row-btn" onclick="addRow('income')" ontouchend="event.preventDefault();addRowMobile(event,'income')"><span class="plus">+</span> Add income source</button>
           <div class="sec-footer sec-footer-income">
             <span>Total Income</span>
             <input type="text" id="ft-income-0" class="footer-budget-input" placeholder="auto" data-section="income" value="" onfocus="footerBudgetFocus(this)" onblur="footerBudgetBlur(this)" oninput="footerBudgetInput(this)" title="Click to set a budget override. Leave blank to auto-calculate.">
@@ -3077,7 +3077,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <div class="sec-body">
           <div class="col-lbl-row"><span>Account / Fund</span><span>Actual</span><span>Growth</span></div>
           <div class="bulk-bar" id="bulk-bar-savings"><span class="bulk-bar-count" id="bulk-count-savings">0 selected</span><button class="bulk-bar-btn" onclick="selectAllBulk('savings')" ontouchend="event.preventDefault();selectAllBulk('savings')">Select all</button><button class="bulk-bar-btn danger" onclick="deleteSelectedBulk('savings')" ontouchend="event.preventDefault();deleteSelectedBulk('savings')">Delete selected</button><button class="bulk-bar-btn" onclick="cancelBulk('savings')" ontouchend="event.preventDefault();cancelBulk('savings')">Cancel</button></div><div class="entry-list" id="rows-savings"></div>
-          <button class="add-row-btn" onclick="addRow('savings')" ontouchend="event.preventDefault();addRow('savings')"><span class="plus">+</span> Add account</button>
+          <button class="add-row-btn" onclick="addRow('savings')" ontouchend="event.preventDefault();addRowMobile(event,'savings')"><span class="plus">+</span> Add account</button>
           <div class="sec-footer sec-footer-savings">
             <span>Total Savings</span>
             <span id="ft-savings-0" class="ft-actual-cell" data-section="savings" onclick="showFtColorPicker(event,'savings')" oncontextmenu="showFtColorPicker(event,'savings')" title="Click to highlight">$0</span>
@@ -3094,7 +3094,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <div class="sec-body">
           <div class="col-lbl-row"><span>Item</span><span>Budget</span><span>Actual</span></div>
           <div class="bulk-bar" id="bulk-bar-housing"><span class="bulk-bar-count" id="bulk-count-housing">0 selected</span><button class="bulk-bar-btn" onclick="selectAllBulk('housing')" ontouchend="event.preventDefault();selectAllBulk('housing')">Select all</button><button class="bulk-bar-btn danger" onclick="deleteSelectedBulk('housing')" ontouchend="event.preventDefault();deleteSelectedBulk('housing')">Delete selected</button><button class="bulk-bar-btn" onclick="cancelBulk('housing')" ontouchend="event.preventDefault();cancelBulk('housing')">Cancel</button></div><div class="entry-list" id="rows-housing"></div>
-          <button class="add-row-btn" onclick="addRow('housing')" ontouchend="event.preventDefault();addRow('housing')"><span class="plus">+</span> Add item</button>
+          <button class="add-row-btn" onclick="addRow('housing')" ontouchend="event.preventDefault();addRowMobile(event,'housing')"><span class="plus">+</span> Add item</button>
           <div class="sec-footer">
             <span>Total Cost</span>
             <input type="text" id="ft-housing-0" class="footer-budget-input" placeholder="auto" data-section="housing" value="" onfocus="footerBudgetFocus(this)" onblur="footerBudgetBlur(this)" oninput="footerBudgetInput(this)" title="Click to set a budget override. Leave blank to auto-calculate.">
@@ -3111,7 +3111,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <div class="sec-body">
           <div class="col-lbl-row"><span>Account</span><span>Beginning</span><span>Ending</span></div>
           <div class="bulk-bar" id="bulk-bar-checking"><span class="bulk-bar-count" id="bulk-count-checking">0 selected</span><button class="bulk-bar-btn" onclick="selectAllBulk('checking')" ontouchend="event.preventDefault();selectAllBulk('checking')">Select all</button><button class="bulk-bar-btn danger" onclick="deleteSelectedBulk('checking')" ontouchend="event.preventDefault();deleteSelectedBulk('checking')">Delete selected</button><button class="bulk-bar-btn" onclick="cancelBulk('checking')" ontouchend="event.preventDefault();cancelBulk('checking')">Cancel</button></div><div class="entry-list" id="rows-checking"></div>
-          <button class="add-row-btn" onclick="addRow('checking')" ontouchend="event.preventDefault();addRow('checking')"><span class="plus">+</span> Add account</button>
+          <button class="add-row-btn" onclick="addRow('checking')" ontouchend="event.preventDefault();addRowMobile(event,'checking')"><span class="plus">+</span> Add account</button>
           <div class="sec-footer sec-footer-checking">
             <span>Total Balance</span>
             <span id="ft-checking-0">$0</span>
@@ -3128,7 +3128,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <div class="sec-body">
           <div class="col-lbl-row"><span>Item</span><span>Budget</span><span>Actual</span></div>
           <div class="bulk-bar" id="bulk-bar-transport"><span class="bulk-bar-count" id="bulk-count-transport">0 selected</span><button class="bulk-bar-btn" onclick="selectAllBulk('transport')" ontouchend="event.preventDefault();selectAllBulk('transport')">Select all</button><button class="bulk-bar-btn danger" onclick="deleteSelectedBulk('transport')" ontouchend="event.preventDefault();deleteSelectedBulk('transport')">Delete selected</button><button class="bulk-bar-btn" onclick="cancelBulk('transport')" ontouchend="event.preventDefault();cancelBulk('transport')">Cancel</button></div><div class="entry-list" id="rows-transport"></div>
-          <button class="add-row-btn" onclick="addRow('transport')" ontouchend="event.preventDefault();addRow('transport')"><span class="plus">+</span> Add item</button>
+          <button class="add-row-btn" onclick="addRow('transport')" ontouchend="event.preventDefault();addRowMobile(event,'transport')"><span class="plus">+</span> Add item</button>
           <div class="sec-footer">
             <span>Total Cost</span>
             <input type="text" id="ft-transport-0" class="footer-budget-input" placeholder="auto" data-section="transport" value="" onfocus="footerBudgetFocus(this)" onblur="footerBudgetBlur(this)" oninput="footerBudgetInput(this)" title="Click to set a budget override. Leave blank to auto-calculate.">
@@ -3145,7 +3145,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <div class="sec-body">
           <div class="col-lbl-row"><span>Account</span><span>Current</span><span>Remaining</span></div>
           <div class="bulk-bar" id="bulk-bar-debt"><span class="bulk-bar-count" id="bulk-count-debt">0 selected</span><button class="bulk-bar-btn" onclick="selectAllBulk('debt')" ontouchend="event.preventDefault();selectAllBulk('debt')">Select all</button><button class="bulk-bar-btn danger" onclick="deleteSelectedBulk('debt')" ontouchend="event.preventDefault();deleteSelectedBulk('debt')">Delete selected</button><button class="bulk-bar-btn" onclick="cancelBulk('debt')" ontouchend="event.preventDefault();cancelBulk('debt')">Cancel</button></div><div class="entry-list" id="rows-debt"></div>
-          <button class="add-row-btn" onclick="addRow('debt')" ontouchend="event.preventDefault();addRow('debt')"><span class="plus">+</span> Add account</button>
+          <button class="add-row-btn" onclick="addRow('debt')" ontouchend="event.preventDefault();addRowMobile(event,'debt')"><span class="plus">+</span> Add account</button>
           <div class="sec-footer sec-footer-debt">
             <span>Outstanding Debt</span>
             <span id="ft-debt-0">$0</span>
@@ -3162,7 +3162,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <div class="sec-body">
           <div class="col-lbl-row"><span>Where / What</span><span>Budget</span><span>Actual</span></div>
           <div class="bulk-bar" id="bulk-bar-food"><span class="bulk-bar-count" id="bulk-count-food">0 selected</span><button class="bulk-bar-btn" onclick="selectAllBulk('food')" ontouchend="event.preventDefault();selectAllBulk('food')">Select all</button><button class="bulk-bar-btn danger" onclick="deleteSelectedBulk('food')" ontouchend="event.preventDefault();deleteSelectedBulk('food')">Delete selected</button><button class="bulk-bar-btn" onclick="cancelBulk('food')" ontouchend="event.preventDefault();cancelBulk('food')">Cancel</button></div><div class="entry-list" id="rows-food"></div>
-          <button class="add-row-btn" onclick="addRow('food')" ontouchend="event.preventDefault();addRow('food')"><span class="plus">+</span> Add item</button>
+          <button class="add-row-btn" onclick="addRow('food')" ontouchend="event.preventDefault();addRowMobile(event,'food')"><span class="plus">+</span> Add item</button>
           <div class="sec-footer">
             <span>Total Cost</span>
             <input type="text" id="ft-food-0" class="footer-budget-input" placeholder="auto" data-section="food" value="" onfocus="footerBudgetFocus(this)" onblur="footerBudgetBlur(this)" oninput="footerBudgetInput(this)" title="Click to set a budget override. Leave blank to auto-calculate.">
@@ -3179,7 +3179,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <div class="sec-body">
           <div class="col-lbl-row"><span>Item</span><span>Budget</span><span>Actual</span></div>
           <div class="bulk-bar" id="bulk-bar-health"><span class="bulk-bar-count" id="bulk-count-health">0 selected</span><button class="bulk-bar-btn" onclick="selectAllBulk('health')" ontouchend="event.preventDefault();selectAllBulk('health')">Select all</button><button class="bulk-bar-btn danger" onclick="deleteSelectedBulk('health')" ontouchend="event.preventDefault();deleteSelectedBulk('health')">Delete selected</button><button class="bulk-bar-btn" onclick="cancelBulk('health')" ontouchend="event.preventDefault();cancelBulk('health')">Cancel</button></div><div class="entry-list" id="rows-health"></div>
-          <button class="add-row-btn" onclick="addRow('health')" ontouchend="event.preventDefault();addRow('health')"><span class="plus">+</span> Add item</button>
+          <button class="add-row-btn" onclick="addRow('health')" ontouchend="event.preventDefault();addRowMobile(event,'health')"><span class="plus">+</span> Add item</button>
           <div class="sec-footer">
             <span>Total Cost</span>
             <input type="text" id="ft-health-0" class="footer-budget-input" placeholder="auto" data-section="health" value="" onfocus="footerBudgetFocus(this)" onblur="footerBudgetBlur(this)" oninput="footerBudgetInput(this)" title="Click to set a budget override. Leave blank to auto-calculate.">
@@ -3196,7 +3196,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <div class="sec-body">
           <div class="col-lbl-row"><span>Recipient / Cause</span><span>Budget</span><span>Actual</span></div>
           <div class="bulk-bar" id="bulk-bar-gifts"><span class="bulk-bar-count" id="bulk-count-gifts">0 selected</span><button class="bulk-bar-btn" onclick="selectAllBulk('gifts')" ontouchend="event.preventDefault();selectAllBulk('gifts')">Select all</button><button class="bulk-bar-btn danger" onclick="deleteSelectedBulk('gifts')" ontouchend="event.preventDefault();deleteSelectedBulk('gifts')">Delete selected</button><button class="bulk-bar-btn" onclick="cancelBulk('gifts')" ontouchend="event.preventDefault();cancelBulk('gifts')">Cancel</button></div><div class="entry-list" id="rows-gifts"></div>
-          <button class="add-row-btn" onclick="addRow('gifts')" ontouchend="event.preventDefault();addRow('gifts')"><span class="plus">+</span> Add item</button>
+          <button class="add-row-btn" onclick="addRow('gifts')" ontouchend="event.preventDefault();addRowMobile(event,'gifts')"><span class="plus">+</span> Add item</button>
           <div class="sec-footer">
             <span>Total Cost</span>
             <input type="text" id="ft-gifts-0" class="footer-budget-input" placeholder="auto" data-section="gifts" value="" onfocus="footerBudgetFocus(this)" onblur="footerBudgetBlur(this)" oninput="footerBudgetInput(this)" title="Click to set a budget override. Leave blank to auto-calculate.">
@@ -3213,7 +3213,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <div class="sec-body">
           <div class="col-lbl-row"><span>Item</span><span>Budget</span><span>Actual</span></div>
           <div class="bulk-bar" id="bulk-bar-misc"><span class="bulk-bar-count" id="bulk-count-misc">0 selected</span><button class="bulk-bar-btn" onclick="selectAllBulk('misc')" ontouchend="event.preventDefault();selectAllBulk('misc')">Select all</button><button class="bulk-bar-btn danger" onclick="deleteSelectedBulk('misc')" ontouchend="event.preventDefault();deleteSelectedBulk('misc')">Delete selected</button><button class="bulk-bar-btn" onclick="cancelBulk('misc')" ontouchend="event.preventDefault();cancelBulk('misc')">Cancel</button></div><div class="entry-list" id="rows-misc"></div>
-          <button class="add-row-btn" onclick="addRow('misc')" ontouchend="event.preventDefault();addRow('misc')"><span class="plus">+</span> Add item</button>
+          <button class="add-row-btn" onclick="addRow('misc')" ontouchend="event.preventDefault();addRowMobile(event,'misc')"><span class="plus">+</span> Add item</button>
           <div class="sec-footer">
             <span>Total Cost</span>
             <input type="text" id="ft-misc-0" class="footer-budget-input" placeholder="auto" data-section="misc" value="" onfocus="footerBudgetFocus(this)" onblur="footerBudgetBlur(this)" oninput="footerBudgetInput(this)" title="Click to set a budget override. Leave blank to auto-calculate.">
@@ -4425,14 +4425,7 @@ function renderRowEl(section, row, animate = false) {
   // Auto-focus the label input when adding a new row
   if (animate) {
     const labelInput = div.querySelector('.erow-label-input');
-    if (labelInput) {
-      if ('ontouchstart' in window) {
-        // On mobile, requestAnimationFrame keeps focus within gesture context
-        requestAnimationFrame(function() { labelInput.focus(); });
-      } else {
-        labelInput.focus();
-      }
-    }
+    if (labelInput) labelInput.focus();
   }
 }
 
@@ -6833,7 +6826,25 @@ function loadFontSize() {
 }
 
 
-var _defaultTextColor = '';
+function addRowMobile(e, section) {
+  // Create a temporary off-screen input and focus it immediately within the gesture
+  // This establishes keyboard before addRow runs
+  var tmp = document.createElement('input');
+  tmp.style.cssText = 'position:fixed;top:-100px;left:-100px;width:1px;height:1px;opacity:0;';
+  document.body.appendChild(tmp);
+  tmp.focus();
+  // Now add the row - the real input focus will transfer keyboard to it
+  addRow(section);
+  // Find the newly created input and focus it
+  var container = document.getElementById('rows-' + section);
+  if (container) {
+    var rows = container.querySelectorAll('.erow-label-input');
+    var lastInput = rows[rows.length - 1];
+    if (lastInput) lastInput.focus();
+  }
+  // Clean up temp input
+  setTimeout(function() { tmp.remove(); }, 300);
+}
 var _defaultNumColor  = '';
 
 function loadDefaultColors() {
@@ -8204,10 +8215,10 @@ function loadLegend() {
   var collapsed = localStorage.getItem('intentra_legend_collapsed');
   _legendCollapsed = collapsed === 'true';
   renderLegend();
-  // Only show panel if user explicitly had it open
-  var wasOpen = localStorage.getItem('intentra_legend_open') === 'true';
+  // Always start closed — user opens manually
   var panel = document.getElementById('legend-panel');
-  if (panel) panel.style.display = (wasOpen && _legendCards.length) ? 'block' : 'none';
+  if (panel) panel.style.display = 'none';
+  localStorage.setItem('intentra_legend_open', 'false');
 }
 
 function saveLegend() {
