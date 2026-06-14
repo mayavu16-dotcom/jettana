@@ -4425,7 +4425,14 @@ function renderRowEl(section, row, animate = false) {
   // Auto-focus the label input when adding a new row
   if (animate) {
     const labelInput = div.querySelector('.erow-label-input');
-    if (labelInput) labelInput.focus();
+    if (labelInput) {
+      if ('ontouchstart' in window) {
+        // On mobile, requestAnimationFrame keeps focus within gesture context
+        requestAnimationFrame(function() { labelInput.focus(); });
+      } else {
+        labelInput.focus();
+      }
+    }
   }
 }
 
