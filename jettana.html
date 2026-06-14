@@ -1265,9 +1265,8 @@ body {
     z-index: 1;
   }
   .erow input[type="text"] { min-height: 44px; }
-  /* Ensure erow doesn't block input interactions */
   .erow { -webkit-user-select: text; user-select: text; }
-  /* Move drag handle to right side on mobile with gap from paid checkbox */
+  /* Keep drag handle on right side */
   .drag-handle {
     position: relative;
     z-index: 2;
@@ -1278,7 +1277,6 @@ body {
     left: auto;
     top: auto;
   }
-  /* Push paid checkbox away from drag handle */
   .paid-color-wrap {
     position: relative;
     z-index: 2;
@@ -1286,7 +1284,6 @@ body {
     margin-right: 0;
     order: 9;
   }
-  /* del btn above input */
   .del-btn {
     position: relative;
     z-index: 2;
