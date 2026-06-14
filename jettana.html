@@ -4327,7 +4327,8 @@ function renderRowEl(section, row, animate = false) {
   // Mobile: touchend on row background directly focuses input (more reliable than click)
   if ('ontouchstart' in window) {
     div.addEventListener('touchend', function(e) {
-      if (_bulkSection === section) { e.preventDefault(); toggleBulkRow(section, row.id); return; }
+      // In bulk mode — selection handled by global touchend handler
+      if (_bulkSection === section) return;
       if (e.target.closest('input, button, .paid-checkbox, .drag-handle, .del-btn, .note-indicator, .recurring-dot')) return;
       e.preventDefault();
       var labelInput = div.querySelector('.erow-label-input');
