@@ -47,7 +47,7 @@ body {
 }
 
 .app-shell {
-  display: none;
+  display: flex;
   min-height: 100vh;
 }
 
@@ -3820,11 +3820,11 @@ async function signOut() {
 
 // Auth state listener
 _sb.auth.onAuthStateChange(async function(event, session) {
-  if (session && session.user) {
+  if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
     _currentUser = session.user;
     hideAuthModal();
     await syncFromSupabase();
-  } else {
+  } else if (event === 'SIGNED_OUT') {
     _currentUser = null;
     showAuthModal();
   }
@@ -3870,9 +3870,15 @@ function saveAll(data) {
   syncToSupabase(data);
 }
 
-// Check initial auth state
-_sb.auth.getSession().then(function({ data: { session } }) {
-  if (!session) showAuthModal();
+// Check initial auth state on load
+_sb.auth.getSession().then(async function({ data: { session } }) {
+  if (session && session.user) {
+    _currentUser = session.user;
+    hideAuthModal();
+    await syncFromSupabase();
+  } else {
+    showAuthModal();
+  }
 });
 
 const SECTIONS = ['income','savings','housing','checking','transport','debt','food','health','gifts','misc'];
@@ -5309,8 +5315,7 @@ function migrateZeros() {
 }
 
 migrateZeros();
-// init() is called by syncFromSupabase() after auth — don't call it here
-// For users already logged in, onAuthStateChange fires immediately and calls syncFromSupabase
+init();
 loadDefaultColors();
 loadBoldText();
 loadFontSize();
