@@ -3339,7 +3339,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
   <div class="welcome-modal">
     <div class="welcome-header">
       <h2>Welcome to your budget tracker 👋</h2>
-      <p>A beautiful, private, all-in-one monthly budget tracker — no account needed, your data stays on your device.</p>
+      <p>A beautiful, private, all-in-one monthly budget tracker — your data syncs securely across all your devices.</p>
     </div>
     <div class="welcome-body">
       <div class="welcome-steps">
@@ -5309,7 +5309,8 @@ function migrateZeros() {
 }
 
 migrateZeros();
-init();
+// init() is called by syncFromSupabase() after auth — don't call it here
+// For users already logged in, onAuthStateChange fires immediately and calls syncFromSupabase
 loadDefaultColors();
 loadBoldText();
 loadFontSize();
