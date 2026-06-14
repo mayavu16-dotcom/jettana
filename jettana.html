@@ -1256,15 +1256,8 @@ body {
     -webkit-user-select: text;
     user-select: text;
     -webkit-touch-callout: default;
-    touch-action: manipulation;
-    font-size: 16px !important;
   }
-  .erow input[type="text"] {
-    padding: 0;
-    min-height: 44px;
-    touch-action: manipulation;
-    font-size: 16px !important;
-  }
+  .erow input[type="text"] { padding: 0; min-height: 44px; }
   .erow { -webkit-user-select: text; user-select: text; }
   .drag-handle {
     position: static;
@@ -4329,16 +4322,14 @@ function renderRowEl(section, row, animate = false) {
   div.addEventListener('contextmenu', function(e) { showCtxMenu(e, section, row.id); });
 
   div.addEventListener('click', function(e) {
-    // Shift+click — bulk select
     if (e.shiftKey) { e.preventDefault(); toggleBulkRow(section, row.id); return; }
-    // Bulk mode — clicking row toggles selection
     if (_bulkSection === section) { e.preventDefault(); toggleBulkRow(section, row.id); return; }
-    // Ignore clicks on buttons
     if (e.target.closest('button, .paid-checkbox, .del-btn, .note-indicator, .recurring-dot')) return;
-    // Input tapped — let browser handle focus/keyboard natively
     if (e.target.closest('input')) return;
-    // Desktop only — show color toolbar
-    if (!('ontouchstart' in window)) {
+    if ('ontouchstart' in window) {
+      var labelInput = div.querySelector('.erow-label-input');
+      if (labelInput) labelInput.focus();
+    } else {
       document.querySelectorAll('.erow.row-active').forEach(function(r) { r.classList.remove('row-active'); });
       div.classList.add('row-active');
       showColorToolbar(section, row.id, div);
@@ -5290,30 +5281,18 @@ document.addEventListener('touchend', e => {
 function initTapReveal() {
   if (!('ontouchstart' in window)) return;
   document.addEventListener('touchstart', function(e) {
-    // Don't interfere when tapping inputs
-    if (e.target.closest('input, textarea')) return;
     const erow = e.target.closest('.erow');
     document.querySelectorAll('.erow.tapped').forEach(r => { if (r !== erow) r.classList.remove('tapped'); });
     if (erow) erow.classList.toggle('tapped');
     if (!erow) {
       document.querySelectorAll('.erow.row-active').forEach(r => r.classList.remove('row-active'));
     }
-  }, { passive: true });
-
-  document.addEventListener('touchend', function(e) {
-    // Don't interfere when tapping inputs
-    if (e.target.closest('input, textarea')) return;
-    // Blur active input when tapping outside rows
-    if (!e.target.closest('.erow') && !e.target.closest('input, textarea, .color-toolbar, #ft-color-picker, .ctx-menu, .intention-field, .autocomplete-dropdown, .bulk-bar, .toast')) {
-      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-        document.activeElement.blur();
-      }
-    }
+    // Section header tap: toggle hdr-active to reveal trash icon
     const hdr = e.target.closest('.sec-hdr');
-    if (!hdr) return;
-    if (e.target.closest('.sec-clear-btn, .sec-collapse-btn, .sec-drag-handle')) return;
     document.querySelectorAll('.sec-hdr.hdr-active').forEach(h => { if (h !== hdr) h.classList.remove('hdr-active'); });
-    hdr.classList.toggle('hdr-active');
+    if (hdr && !e.target.closest('.sec-clear-btn, .sec-collapse-btn, .sec-drag-handle')) {
+      hdr.classList.toggle('hdr-active');
+    }
   }, { passive: true });
 }
 
