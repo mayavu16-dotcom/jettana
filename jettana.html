@@ -1265,7 +1265,7 @@ body {
     touch-action: manipulation;
     font-size: 16px !important;
   }
-  .erow { -webkit-user-select: text; user-select: text; touch-action: manipulation; }
+  .erow { -webkit-user-select: text; user-select: text; }
   .drag-handle {
     position: static;
     transform: none;
@@ -2099,17 +2099,17 @@ body.font-small .footer-budget-input { font-size: 11px !important; }
 body.font-small .erow              { min-height: 38px !important; }
 
 /* Large (L) — scale up ~115% from base */
-body.font-large .erow-label-input  { font-size: 15.5px !important; }
-body.font-large .erow-num-input    { font-size: 15.5px !important; }
-body.font-large .sec-footer span   { font-size: 15px !important; }
-body.font-large .add-row-btn       { font-size: 13px !important; }
+body.font-large .erow-label-input  { font-size: 16px !important; }
+body.font-large .erow-num-input    { font-size: 16px !important; }
+body.font-large .sec-footer span   { font-size: 16px !important; }
+body.font-large .add-row-btn       { font-size: 14px !important; }
 body.font-large .col-lbl-row,
 body.font-large .col-lbl-row span  { font-size: 12px !important; }
-body.font-large .sec-hdr h3        { font-size: 13px !important; }
+body.font-large .sec-hdr h3        { font-size: 15px !important; }
 body.font-large .bs-data-row span,
 body.font-large .bs-total-row span { font-size: 15.5px !important; }
-body.font-large .bs-hdr            { font-size: 13px !important; }
-body.font-large .footer-budget-input { font-size: 15px !important; }
+body.font-large .bs-hdr            { font-size: 14px !important; }
+body.font-large .footer-budget-input { font-size: 16px !important; }
 body.font-large .erow              { min-height: 54px !important; }
 
 body.font-large .erow,
@@ -5290,28 +5290,27 @@ document.addEventListener('touchend', e => {
 function initTapReveal() {
   if (!('ontouchstart' in window)) return;
   document.addEventListener('touchstart', function(e) {
+    // Don't interfere when tapping inputs
+    if (e.target.closest('input, textarea')) return;
     const erow = e.target.closest('.erow');
     document.querySelectorAll('.erow.tapped').forEach(r => { if (r !== erow) r.classList.remove('tapped'); });
     if (erow) erow.classList.toggle('tapped');
-    // Clear row-active when tapping outside rows
     if (!erow) {
       document.querySelectorAll('.erow.row-active').forEach(r => r.classList.remove('row-active'));
     }
   }, { passive: true });
 
-  // Section header tap on touchend to avoid double-tap conflict with click
   document.addEventListener('touchend', function(e) {
-    const hdr = e.target.closest('.sec-hdr');
-    if (!hdr) {
-      // If tapped completely outside a row and outside an input, blur active input
-      if (!e.target.closest('.erow') && !e.target.closest('input, textarea, .color-toolbar, #ft-color-picker, .ctx-menu, .intention-field, .autocomplete-dropdown, .bulk-bar, .toast')) {
-        if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-          document.activeElement.blur();
-        }
+    // Don't interfere when tapping inputs
+    if (e.target.closest('input, textarea')) return;
+    // Blur active input when tapping outside rows
+    if (!e.target.closest('.erow') && !e.target.closest('input, textarea, .color-toolbar, #ft-color-picker, .ctx-menu, .intention-field, .autocomplete-dropdown, .bulk-bar, .toast')) {
+      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+        document.activeElement.blur();
       }
-      return;
     }
-    // Don't interfere with buttons
+    const hdr = e.target.closest('.sec-hdr');
+    if (!hdr) return;
     if (e.target.closest('.sec-clear-btn, .sec-collapse-btn, .sec-drag-handle')) return;
     document.querySelectorAll('.sec-hdr.hdr-active').forEach(h => { if (h !== hdr) h.classList.remove('hdr-active'); });
     hdr.classList.toggle('hdr-active');
