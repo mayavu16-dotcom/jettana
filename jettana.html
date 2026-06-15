@@ -3844,13 +3844,23 @@ async function signOut() {
   showAuthModal();
 }
 
-// Auth state listener - handles sign in/out AFTER initial load
+// Auth state listener - handles ALL auth events
+// INITIAL_SESSION fires on every page load/refresh with the persisted session
 var _authTimeout = null;
 if (_sb) {
   _sb.auth.onAuthStateChange(async function(event, session) {
-    if (event === 'SIGNED_IN') {
-      _currentUser = session.user;
+    if (event === 'INITIAL_SESSION') {
       clearTimeout(_authTimeout);
+      if (session && session.user) {
+        _currentUser = session.user;
+        hideAuthModal();
+        await syncFromSupabase();
+      } else {
+        showAuthModal();
+      }
+    } else if (event === 'SIGNED_IN') {
+      clearTimeout(_authTimeout);
+      _currentUser = session.user;
       hideAuthModal();
       await syncFromSupabase();
     } else if (event === 'SIGNED_OUT') {
@@ -3858,7 +3868,14 @@ if (_sb) {
       showAuthModal();
     }
   });
+} else {
+  showAuthModal();
 }
+
+// Fallback: if onAuthStateChange never fires within 5s, show login
+document.addEventListener('DOMContentLoaded', function() {
+  _authTimeout = setTimeout(function() { showAuthModal(); }, 5000);
+});
 
 // Sync data from Supabase → localStorage on login/refresh
 async function syncFromSupabase() {
@@ -3866,12 +3883,9 @@ async function syncFromSupabase() {
   try {
     var { data: row } = await _sb.from('user_data').select('data').eq('user_id', _currentUser.id).single();
     if (row && row.data && Object.keys(row.data).length > 0) {
-      // Always use Supabase data — it's the source of truth across devices
       localStorage.setItem(STORAGE_KEY, JSON.stringify(row.data));
     }
-  } catch(e) {
-    // If Supabase fails, use localStorage as fallback
-  }
+  } catch(e) {}
   migrateZeros();
   init();
   loadSectionOrder();
@@ -3883,7 +3897,7 @@ async function syncFromSupabase() {
 
 // Push data to Supabase in background
 async function syncToSupabase(data) {
-  if (!_currentUser) return;
+  if (!_currentUser || !_sb) return;
   try {
     await _sb.from('user_data').upsert({
       user_id: _currentUser.id,
@@ -3902,26 +3916,6 @@ function saveAll(data) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   syncToSupabase(data);
 }
-
-// On load: check session via getSession (most reliable for page refresh)
-document.addEventListener('DOMContentLoaded', function() {
-  _authTimeout = setTimeout(function() { showAuthModal(); }, 5000);
-  if (!_sb) { clearTimeout(_authTimeout); showAuthModal(); return; }
-  _sb.auth.getSession().then(async function(result) {
-    var session = result && result.data && result.data.session;
-    clearTimeout(_authTimeout);
-    if (session && session.user) {
-      _currentUser = session.user;
-      hideAuthModal();
-      await syncFromSupabase();
-    } else {
-      showAuthModal();
-    }
-  }).catch(function() {
-    clearTimeout(_authTimeout);
-    showAuthModal();
-  });
-});
 
 const SECTIONS = ['income','savings','housing','checking','transport','debt','food','health','gifts','misc'];
 
