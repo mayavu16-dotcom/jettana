@@ -3837,30 +3837,34 @@ async function signOut() {
   showAuthModal();
 }
 
-// Auth state listener - only handles changes AFTER initial load
+// Auth state listener - handles sign in/out AFTER initial load
+var _authTimeout = null;
 if (_sb) {
   _sb.auth.onAuthStateChange(async function(event, session) {
     if (event === 'SIGNED_IN') {
       _currentUser = session.user;
+      clearTimeout(_authTimeout);
       hideAuthModal();
       await syncFromSupabase();
     } else if (event === 'SIGNED_OUT') {
       _currentUser = null;
       showAuthModal();
     }
-    // INITIAL_SESSION is handled by getSession() below — ignore it here
   });
 }
 
-// Sync data from Supabase → localStorage on login
+// Sync data from Supabase → localStorage on login/refresh
 async function syncFromSupabase() {
-  if (!_currentUser) return;
+  if (!_currentUser || !_sb) return;
   try {
     var { data: row } = await _sb.from('user_data').select('data').eq('user_id', _currentUser.id).single();
     if (row && row.data && Object.keys(row.data).length > 0) {
+      // Always use Supabase data — it's the source of truth across devices
       localStorage.setItem(STORAGE_KEY, JSON.stringify(row.data));
     }
-  } catch(e) {}
+  } catch(e) {
+    // If Supabase fails, use localStorage as fallback
+  }
   migrateZeros();
   init();
   loadSectionOrder();
@@ -3892,29 +3896,24 @@ function saveAll(data) {
   syncToSupabase(data);
 }
 
-// Check initial auth state — wait for DOM to be ready
-var _authTimeout;
+// On load: check session via getSession (most reliable for page refresh)
 document.addEventListener('DOMContentLoaded', function() {
-  _authTimeout = setTimeout(function() { showAuthModal(); }, 3000);
-
-  if (_sb) {
-    _sb.auth.getSession().then(async function({ data: { session } }) {
-      clearTimeout(_authTimeout);
-      if (session && session.user) {
-        _currentUser = session.user;
-        hideAuthModal();
-        await syncFromSupabase();
-      } else {
-        showAuthModal();
-      }
-    }).catch(function() {
-      clearTimeout(_authTimeout);
+  _authTimeout = setTimeout(function() { showAuthModal(); }, 5000);
+  if (!_sb) { clearTimeout(_authTimeout); showAuthModal(); return; }
+  _sb.auth.getSession().then(async function(result) {
+    var session = result && result.data && result.data.session;
+    clearTimeout(_authTimeout);
+    if (session && session.user) {
+      _currentUser = session.user;
+      hideAuthModal();
+      await syncFromSupabase();
+    } else {
       showAuthModal();
-    });
-  } else {
+    }
+  }).catch(function() {
     clearTimeout(_authTimeout);
     showAuthModal();
-  }
+  });
 });
 
 const SECTIONS = ['income','savings','housing','checking','transport','debt','food','health','gifts','misc'];
