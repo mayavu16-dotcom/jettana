@@ -47,7 +47,7 @@ body {
 }
 
 .app-shell {
-  display: none;
+  display: flex;
   min-height: 100vh;
 }
 
@@ -3736,11 +3736,7 @@ try {
 // Hide app, show auth modal
 function showAuthModal() {
   var overlay = document.getElementById('auth-overlay');
-  if (overlay) { overlay.style.display = 'flex'; overlay.style.background = 'rgba(0,0,0,0.5)'; }
-  var loading = document.getElementById('auth-loading-screen');
-  if (loading) loading.style.display = 'none';
-  var form = document.getElementById('auth-form-screen');
-  if (form) form.style.display = 'block';
+  if (overlay) overlay.style.display = 'flex';
   var app = document.querySelector('.app-shell');
   if (app) app.style.display = 'none';
 }
@@ -8519,13 +8515,8 @@ window.addEventListener('load', function() {
 
 </script>
 <!-- Auth Modal -->
-<div id="auth-overlay" style="display:flex;position:fixed;inset:0;background:#F7F5F0;z-index:99999;align-items:center;justify-content:center;">
-  <div id="auth-loading-screen" style="text-align:center;font-family:'Outfit',sans-serif;">
-    <div style="font-family:'Playfair Display',serif;font-size:32px;color:#1A2332;margin-bottom:4px;">Jet<span style="color:#6B9E70;font-style:italic;">tana</span></div>
-    <div style="font-size:11px;color:#8A9AB5;letter-spacing:2px;margin-bottom:24px;">BUDGET · TRACK · GROW</div>
-    <div style="width:32px;height:32px;border:3px solid #E8EDF2;border-top-color:#6B9E70;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto;"></div>
-  </div>
-  <div id="auth-form-screen" style="display:none;background:white;border-radius:16px;padding:36px;width:100%;max-width:400px;margin:16px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+<div id="auth-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;align-items:center;justify-content:center;">
+  <div style="background:white;border-radius:16px;padding:36px;width:100%;max-width:400px;margin:16px;font-family:'Outfit',sans-serif;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
     <div style="text-align:center;margin-bottom:28px;">
       <div style="font-family:'Playfair Display',serif;font-size:28px;color:#1A2332;margin-bottom:4px;">Jet<span style="color:#6B9E70;font-style:italic;">tana</span></div>
       <div style="font-size:12px;color:#8A9AB5;letter-spacing:1.5px;">BUDGET · TRACK · GROW</div>
@@ -8544,12 +8535,9 @@ window.addEventListener('load', function() {
     </div>
     <div id="auth-loading" style="display:none;text-align:center;margin-top:12px;color:#8A9AB5;font-size:13px;">Loading...</div>
   </div>
-  </div><!-- /auth-form-screen -->
-</div><!-- /auth-overlay -->
+</div>
 
-<style>
-@keyframes spin { to { transform: rotate(360deg); } }
-</style>
+
 
 </body>
 </html>
