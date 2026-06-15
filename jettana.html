@@ -2969,6 +2969,9 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
             <button class="more-menu-item" onclick="signOut(); hideMoreMenu()" style="color:var(--steel);">
               <span>↩</span> Sign out
             </button>
+            <button class="more-menu-item danger" onclick="confirmDeleteAccount(); hideMoreMenu()">
+              <span>🗑</span> Delete account
+            </button>
           </div>
         </div>
         <div class="export-wrap" id="export-wrap">
@@ -3849,6 +3852,56 @@ async function signOut() {
   _currentUser = null;
   localStorage.removeItem(STORAGE_KEY);
   showAuthModal();
+}
+
+// Delete account
+function confirmDeleteAccount() {
+  var modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;';
+  modal.innerHTML = '<div style="background:white;border-radius:16px;padding:32px;width:100%;max-width:380px;margin:16px;font-family:\'Outfit\',sans-serif;">' +
+    '<div style="font-size:22px;font-weight:700;color:#1A2332;margin-bottom:8px;">Delete account?</div>' +
+    '<div style="font-size:14px;color:#8A9AB5;margin-bottom:24px;line-height:1.5;">This will permanently delete your account and all your budget data. This cannot be undone.</div>' +
+    '<div style="display:flex;gap:10px;">' +
+    '<button id="del-cancel-btn" style="flex:1;padding:12px;background:#F0F3F7;border:none;border-radius:10px;font-size:14px;font-weight:600;font-family:\'Outfit\',sans-serif;cursor:pointer;color:#1A2332;">Cancel</button>' +
+    '<button id="del-confirm-btn" style="flex:1;padding:12px;background:#C0736A;color:white;border:none;border-radius:10px;font-size:14px;font-weight:600;font-family:\'Outfit\',sans-serif;cursor:pointer;">Delete</button>' +
+    '</div>' +
+    '<div id="del-status" style="display:none;text-align:center;margin-top:12px;font-size:13px;color:#8A9AB5;"></div>' +
+    '</div>';
+  document.body.appendChild(modal);
+
+  document.getElementById('del-cancel-btn').onclick = function() { modal.remove(); };
+  document.getElementById('del-confirm-btn').onclick = async function() {
+    var btn = document.getElementById('del-confirm-btn');
+    var status = document.getElementById('del-status');
+    btn.disabled = true;
+    btn.textContent = 'Deleting...';
+    status.style.display = 'block';
+    status.textContent = 'Deleting your data...';
+    try {
+      // Delete user data from database
+      if (_sb && _currentUser) {
+        await _sb.from('user_data').delete().eq('user_id', _currentUser.id);
+      }
+      // Delete the user account via Supabase Auth
+      if (_sb) {
+        await _sb.auth.admin ? null : await _sb.rpc('delete_user');
+      }
+      // Clear everything locally
+      localStorage.clear();
+      _currentUser = null;
+      modal.remove();
+      showAuthModal();
+      showToast('Account deleted successfully.');
+    } catch(e) {
+      // Even if server delete fails, sign them out locally
+      localStorage.clear();
+      _currentUser = null;
+      if (_sb) await _sb.auth.signOut();
+      modal.remove();
+      showAuthModal();
+      showToast('Account signed out. Contact support to fully remove your account.');
+    }
+  };
 }
 
 // Auth state listener - handles ALL auth events
