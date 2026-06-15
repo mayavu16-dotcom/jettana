@@ -3842,36 +3842,43 @@ async function signOut() {
 
 // Auth state listener - handles ALL auth events
 // INITIAL_SESSION fires on every page load/refresh with the persisted session
-var _authTimeout = null;
-if (_sb) {
-  _sb.auth.onAuthStateChange(async function(event, session) {
-    if (event === 'INITIAL_SESSION') {
-      clearTimeout(_authTimeout);
-      if (session && session.user) {
-        _currentUser = session.user;
-        hideAuthModal();
-        await syncFromSupabase();
-      } else {
-        showAuthModal();
-      }
-    } else if (event === 'SIGNED_IN') {
-      clearTimeout(_authTimeout);
+// Fallback: if onAuthStateChange never fires within 5s, show login
+var _authTimeout = setTimeout(function() { showAuthModal(); }, 5000);
+var _pendingAuth = null; // store auth result until DOM is ready
+
+function _handleAuthReady() {
+  if (!_pendingAuth) return;
+  var event = _pendingAuth.event, session = _pendingAuth.session;
+  _pendingAuth = null;
+  if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+    clearTimeout(_authTimeout);
+    if (session && session.user) {
       _currentUser = session.user;
       hideAuthModal();
-      await syncFromSupabase();
-    } else if (event === 'SIGNED_OUT') {
-      _currentUser = null;
+      syncFromSupabase();
+    } else {
       showAuthModal();
+    }
+  } else if (event === 'SIGNED_OUT') {
+    _currentUser = null;
+    showAuthModal();
+  }
+}
+
+if (_sb) {
+  _sb.auth.onAuthStateChange(function(event, session) {
+    _pendingAuth = { event: event, session: session };
+    // If DOM is ready, handle immediately; otherwise wait for it
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      _handleAuthReady();
+    } else {
+      document.addEventListener('DOMContentLoaded', _handleAuthReady, { once: true });
     }
   });
 } else {
+  clearTimeout(_authTimeout);
   showAuthModal();
 }
-
-// Fallback: if onAuthStateChange never fires within 5s, show login
-document.addEventListener('DOMContentLoaded', function() {
-  _authTimeout = setTimeout(function() { showAuthModal(); }, 5000);
-});
 
 // Sync data from Supabase → localStorage on login/refresh
 async function syncFromSupabase() {
