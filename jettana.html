@@ -2915,6 +2915,14 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
                 <button onclick="setFontSize('large')" id="fs-large" class="fs-btn" title="Large">L</button>
               </div>
             </div>
+            <div class="more-menu-item" style="gap:8px;cursor:default;padding-top:0;">
+              <span style="font-size:10px;color:var(--steel);flex-shrink:0;">A</span>
+              <input type="range" id="font-size-range" min="10" max="17" value="13.5" step="0.5"
+                style="flex:1;accent-color:var(--sage);cursor:pointer;"
+                oninput="setFontSizeExact(parseFloat(this.value))"
+                ontouchend="setFontSizeExact(parseFloat(this.value))">
+              <span style="font-size:14px;color:var(--steel);flex-shrink:0;">A</span>
+            </div>
             <div class="more-menu-section">
               <div class="theme-picker-title" style="padding:4px 12px 6px;">Color theme</div>
               <button class="theme-opt active" data-theme="" onclick="setTheme(this,'')">
@@ -6819,16 +6827,67 @@ function setFontSize(size) {
   document.body.classList.remove('font-small', 'font-large');
   if (size !== 'medium') document.body.classList.add('font-' + size);
   localStorage.setItem('intentra_fontsize', size);
+  localStorage.removeItem('intentra_fontsize_exact');
+  // Clear exact style override
+  var style = document.getElementById('font-size-exact-style');
+  if (style) style.textContent = '';
   // Update active button
   ['small','medium','large'].forEach(function(s) {
     var btn = document.getElementById('fs-' + s);
     if (btn) btn.classList.toggle('fs-active', s === size);
   });
+  // Sync slider position
+  var presetMap = { small: 11.5, medium: 13.5, large: 16 };
+  var range = document.getElementById('font-size-range');
+  if (range) range.value = presetMap[size] || 13.5;
+}
+
+function setFontSizeExact(size) {
+  size = parseFloat(size);
+  // Inject a style that scales all font sizes proportionally via a multiplier
+  var style = document.getElementById('font-size-exact-style');
+  if (!style) {
+    style = document.createElement('style');
+    style.id = 'font-size-exact-style';
+    document.head.appendChild(style);
+  }
+  // Base medium is 13.5px. Scale everything proportionally
+  var scale = size / 13.5;
+  style.textContent = [
+    '.erow-label-input { font-size: ' + size + 'px !important; }',
+    '.erow-num-input { font-size: ' + size + 'px !important; }',
+    '.sec-footer span { font-size: ' + Math.round(size * 0.96) + 'px !important; }',
+    '.sec-hdr h3 { font-size: ' + Math.round(size * 0.85) + 'px !important; }',
+    '.col-lbl-row span { font-size: ' + Math.round(size * 0.81) + 'px !important; }',
+    '.add-row-btn { font-size: ' + Math.round(size * 0.89) + 'px !important; }',
+    '.footer-budget-input { font-size: ' + size + 'px !important; }'
+  ].join('\n');
+  localStorage.setItem('intentra_fontsize_exact', size);
+  var range = document.getElementById('font-size-range');
+  if (range) range.value = size;
+  // Clear S/M/L active state
+  ['small','medium','large'].forEach(function(s) {
+    var btn = document.getElementById('fs-' + s);
+    if (btn) btn.classList.remove('fs-active');
+  });
+  // Clear body font class since we're overriding directly
+  document.body.classList.remove('font-small', 'font-large');
+}
+
+function loadFontSizeExact() {
+  var saved = localStorage.getItem('intentra_fontsize_exact');
+  if (saved) setFontSizeExact(parseFloat(saved));
 }
 
 function loadFontSize() {
-  var saved = localStorage.getItem('intentra_fontsize') || 'medium';
-  setFontSize(saved);
+  var exact = localStorage.getItem('intentra_fontsize_exact');
+  if (exact) {
+    // Exact size takes priority over S/M/L
+    setFontSizeExact(parseFloat(exact));
+  } else {
+    var saved = localStorage.getItem('intentra_fontsize') || 'medium';
+    setFontSize(saved);
+  }
 }
 
 
