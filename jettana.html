@@ -3847,6 +3847,7 @@ document.addEventListener('keydown', function(e) {
 async function signOut() {
   if (_sb) await _sb.auth.signOut();
   _currentUser = null;
+  localStorage.removeItem(STORAGE_KEY);
   showAuthModal();
 }
 
@@ -3893,12 +3894,16 @@ if (_sb) {
 // Sync data from Supabase → localStorage on login/refresh
 async function syncFromSupabase() {
   if (!_currentUser || !_sb) return;
+  // ALWAYS clear localStorage first — never show another user's data
+  localStorage.removeItem(STORAGE_KEY);
   try {
     var { data: row } = await _sb.from('user_data').select('data').eq('user_id', _currentUser.id).single();
     if (row && row.data && Object.keys(row.data).length > 0) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(row.data));
     }
-  } catch(e) {}
+  } catch(e) {
+    // No data found for this user (new account) — start fresh
+  }
   migrateZeros();
   init();
   loadSectionOrder();
