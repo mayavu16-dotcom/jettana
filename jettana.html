@@ -7413,23 +7413,38 @@ function parseCSV(csv) {
 function cleanDesc(desc) {
   var s = desc;
   // Remove common bank transaction noise patterns
-  // Trailing reference/auth codes: sequences of 5+ digits or hex at the end
-  s = s.replace(/\s+\d{5,}$/g, '');
-  // City/state at end: e.g. "WHOLEFDS SAN FRANCISCO CA" or "TARGET AUSTIN TX 78701"
-  s = s.replace(/\s+[A-Z]{2,}[\s,]+[A-Z]{2}\s*\d{0,5}\s*$/g, '');
-  // Store number patterns: #1234, *1234, 00123
-  s = s.replace(/\s*[#*]\d+/g, '');
-  s = s.replace(/\s+0{2,}\d+/g, '');
-  // Date stamps embedded: 01/15, 01-15-24
-  s = s.replace(/\s+\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?/g, '');
-  // Trailing transaction IDs like "REF123456" or "TXN98765"
-  s = s.replace(/\s+(REF|TXN|ACH|POS|CHK|PMT|SQ\*|TST\*)\S*/gi, '');
-  // Card type prefixes banks add: "POS PURCHASE", "ACH DEBIT", "VISA PURCHASE", "DEBIT PURCHASE"
-  s = s.replace(/^(POS\s+|ACH\s+|VISA\s+|DEBIT\s+|CREDIT\s+|PURCHASE\s+|CHECKCARD\s+|RECURRING\s+|ONLINE\s+PAYMENT\s+)/gi, '');
+
+  // Card type prefixes banks add
+  s = s.replace(/^(POS\s+PURCHASE\s*|POS\s+|ACH\s+DEBIT\s*|ACH\s+|VISA\s+PURCHASE\s*|VISA\s+|DEBIT\s+PURCHASE\s*|DEBIT\s+|CREDIT\s+PURCHASE\s*|CREDIT\s+|PURCHASE\s+|CHECKCARD\s+|RECURRING\s+|ONLINE\s+PAYMENT\s+|PREAUTHORIZED\s+)/gi, '');
   // SQ* or TST* prefixes (Square/Toast)
   s = s.replace(/^(SQ\s*\*|TST\s*\*)/gi, '');
+
+  // City + state + optional zip at end: "WHOLEFDS #123 SAN FRANCISCO CA 94110"
+  s = s.replace(/\s+[A-Za-z\s]{2,20}\s+[A-Z]{2}\s*\d{0,5}\s*$/g, '');
+  // Just state + optional zip at end: "CA 94110" or "TX"
+  s = s.replace(/\s+[A-Z]{2}\s*\d{0,5}\s*$/g, '');
+  // US city patterns like "NEW YORK" or "LOS ANGELES" at end
+  s = s.replace(/\s+(NEW YORK|LOS ANGELES|SAN FRANCISCO|SAN JOSE|LAS VEGAS|NEW ORLEANS|SAN DIEGO|SAN ANTONIO|EL PASO|FORT WORTH|FORT LAUDERDALE)\s*$/gi, '');
+
+  // Store/location numbers: #1234, *1234, 00123, store 1234
+  s = s.replace(/\s*[#*]\d+/g, '');
+  s = s.replace(/\s+0{2,}\d+/g, '');
+  s = s.replace(/\s+store\s+\d+/gi, '');
+
+  // Trailing reference/auth codes: 5+ digit numbers
+  s = s.replace(/\s+\d{5,}$/g, '');
+  // Short trailing numbers (3-4 digits that look like codes not part of name)
+  s = s.replace(/\s+\d{3,4}$/g, '');
+
+  // Date stamps embedded: 01/15, 01-15-24
+  s = s.replace(/\s+\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?/g, '');
+
+  // Trailing transaction IDs
+  s = s.replace(/\s+(REF|TXN|ACH|POS|CHK|PMT|AUTH|AUTHCD|TRACE|SEQ|ID|NO)\s*[#:]?\s*\S*/gi, '');
+
   // Collapse multiple spaces
   s = s.replace(/\s{2,}/g, ' ').trim();
+
   // Title case if all caps
   if (s === s.toUpperCase() && s.length > 2) {
     s = s.toLowerCase().replace(/\b\w/g, function(c) { return c.toUpperCase(); });
@@ -7455,7 +7470,7 @@ async function categorizeWithClaude(transactions) {
     return (i+1) + '. ' + t.desc + ' ($' + t.amount.toFixed(2) + ')';
   }).join('\n');
 
-  var prompt = 'Categorize each transaction into one of these categories: income, savings, housing, transport, food, health, gifts, misc, debt, skip (for transfers, payments, or unclear).\n\nTransactions:\n' + txList + '\n\nRespond with ONLY a JSON array of objects with exactly these fields for each transaction (same order as input):\n[{"category": "food", "label": "Trader Joes"}, ...]\n\nRules:\n- label should be a clean short name (e.g. "Whole Foods" not "WHOLEFDS #1234 123 MAIN ST")\n- income: salary, deposits, refunds\n- savings: investment platforms, HYSA transfers\n- housing: rent, mortgage, utilities, insurance\n- transport: gas, uber, lyft, car payment, parking\n- food: restaurants, groceries, food delivery\n- health: pharmacy, gym, doctor, insurance\n- gifts: gifts, donations, charities\n- debt: credit card payments, loan payments\n- misc: everything else\n- skip: transfers between accounts, unclear transactions';
+  var prompt = 'Categorize each transaction into one of these categories: income, savings, housing, transport, food, health, gifts, misc, debt, skip (for transfers, payments, or unclear).\n\nTransactions:\n' + txList + '\n\nRespond with ONLY a JSON array of objects with exactly these fields for each transaction (same order as input):\n[{"category": "food", "label": "Trader Joes"}, ...]\n\nRules:\n- label must be ONLY the merchant/payee name — strip everything else: no city, no state, no zip code, no store numbers (#123), no reference codes, no dates, no random digits\n- Good label examples: "Whole Foods", "Netflix", "Shell Gas", "Amazon", "Chase Credit Card"\n- Bad label examples: "WHOLEFDS #1234 SAN FRANCISCO CA 94110", "NETFLIX.COM 123456789", "SHELL OIL 1234567 AUSTIN TX"\n- income: salary, deposits, refunds\n- savings: investment platforms, HYSA transfers\n- housing: rent, mortgage, utilities, insurance\n- transport: gas, uber, lyft, car payment, parking\n- food: restaurants, groceries, food delivery\n- health: pharmacy, gym, doctor, insurance\n- gifts: gifts, donations, charities\n- debt: credit card payments, loan payments\n- misc: everything else\n- skip: transfers between accounts, unclear transactions';
 
   try {
     var response = await fetch('https://api.anthropic.com/v1/messages', {
