@@ -3895,6 +3895,7 @@ async function syncFromSupabase() {
   loadDefaultColors();
   loadBoldText();
   loadFontSize();
+  loadLegend();
 }
 
 // Push data to Supabase in background
@@ -8207,10 +8208,18 @@ var _legendPickerTarget = null;
 var _legendCollapsed = false;
 
 function loadLegend() {
-  var saved = localStorage.getItem('intentra_legend_cards');
-  _legendCards = saved ? JSON.parse(saved) : [];
-  var collapsed = localStorage.getItem('intentra_legend_collapsed');
-  _legendCollapsed = collapsed === 'true';
+  // Try main data object first (synced from Supabase)
+  var all = loadAll();
+  if (all._legendCards) {
+    _legendCards = all._legendCards;
+    _legendCollapsed = all._legendCollapsed || false;
+  } else {
+    // Fall back to legacy localStorage keys
+    var saved = localStorage.getItem('intentra_legend_cards');
+    _legendCards = saved ? JSON.parse(saved) : [];
+    var collapsed = localStorage.getItem('intentra_legend_collapsed');
+    _legendCollapsed = collapsed === 'true';
+  }
   renderLegend();
   // Always start closed — user opens manually
   var panel = document.getElementById('legend-panel');
@@ -8220,6 +8229,11 @@ function loadLegend() {
 
 function saveLegend() {
   localStorage.setItem('intentra_legend_cards', JSON.stringify(_legendCards));
+  // Also save into main data object so it syncs to Supabase
+  var all = loadAll();
+  all._legendCards = _legendCards;
+  all._legendCollapsed = _legendCollapsed;
+  saveAll(all);
 }
 
 function renderLegend() {
