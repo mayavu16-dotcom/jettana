@@ -8052,6 +8052,8 @@ function hideColorToolbar() {
   var toolbar = document.getElementById('color-toolbar');
   if (toolbar) toolbar.classList.remove('visible');
   document.querySelectorAll('.erow.row-active').forEach(function(r) { r.classList.remove('row-active'); });
+  _tbId = null;
+  _tbSection = null;
 }
 
 function setToolbarType(type) {
