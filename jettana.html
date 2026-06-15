@@ -3837,20 +3837,31 @@ async function signOut() {
   showAuthModal();
 }
 
-// Auth state listener - handles sign in/out AFTER initial load
-var _authTimeout = null;
+// Auth is handled entirely by onAuthStateChange (including INITIAL_SESSION on page load)
+// Fallback: if onAuthStateChange never fires, show login after 4 seconds
+var _authTimeout = setTimeout(function() { showAuthModal(); }, 4000);
+
+// Auth state listener - handles ALL auth events including page refresh
 if (_sb) {
   _sb.auth.onAuthStateChange(async function(event, session) {
-    if (event === 'SIGNED_IN') {
-      _currentUser = session.user;
-      clearTimeout(_authTimeout);
-      hideAuthModal();
-      await syncFromSupabase();
+    if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+      if (session && session.user) {
+        _currentUser = session.user;
+        clearTimeout(_authTimeout);
+        hideAuthModal();
+        await syncFromSupabase();
+      } else {
+        clearTimeout(_authTimeout);
+        showAuthModal();
+      }
     } else if (event === 'SIGNED_OUT') {
       _currentUser = null;
       showAuthModal();
     }
   });
+} else {
+  clearTimeout(_authTimeout);
+  showAuthModal();
 }
 
 // Sync data from Supabase → localStorage on login/refresh
@@ -3896,25 +3907,7 @@ function saveAll(data) {
   syncToSupabase(data);
 }
 
-// On load: check session via getSession (most reliable for page refresh)
-document.addEventListener('DOMContentLoaded', function() {
-  _authTimeout = setTimeout(function() { showAuthModal(); }, 5000);
-  if (!_sb) { clearTimeout(_authTimeout); showAuthModal(); return; }
-  _sb.auth.getSession().then(async function(result) {
-    var session = result && result.data && result.data.session;
-    clearTimeout(_authTimeout);
-    if (session && session.user) {
-      _currentUser = session.user;
-      hideAuthModal();
-      await syncFromSupabase();
-    } else {
-      showAuthModal();
-    }
-  }).catch(function() {
-    clearTimeout(_authTimeout);
-    showAuthModal();
-  });
-});
+// Auth is handled entirely by onAuthStateChange above
 
 const SECTIONS = ['income','savings','housing','checking','transport','debt','food','health','gifts','misc'];
 
