@@ -1434,7 +1434,7 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
 }
 
 .mom-grid > div:nth-child(3n) { border-right: none; }
-.mom-grid > div:nth-last-child(-n+3) { border-bottom: none; }
+/* Border-bottom for last row handled dynamically in renderMoM() */
 .mom-cat {
   font-size: 10px;
   font-weight: 700;
@@ -1478,12 +1478,11 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
 
 @media (max-width: 900px) {
   .mom-grid { grid-template-columns: repeat(2, 1fr); }
-  /* Reset desktop rules */
+  /* Reset desktop right-border rule */
   .mom-grid > div:nth-child(3n) { border-right: 1px solid var(--mist); }
-  .mom-grid > div:nth-last-child(-n+3) { border-bottom: 1px solid var(--mist); }
-  /* Mobile 2-col */
+  /* Mobile 2-col right border */
   .mom-grid > div:nth-child(2n) { border-right: none; }
-  .mom-grid > div:nth-last-child(-n+2) { border-bottom: none; }
+  /* Last row handled dynamically in renderMoM() */
 }
 /* ── Monthly Intention Banner ───────────────────────────────── */
 .intention-wrap {
@@ -5582,7 +5581,8 @@ function renderMoM() {
   }
 
   var html = '<div class="mom-grid">';
-  categories.forEach(function(c) {
+  var total = categories.length;
+  categories.forEach(function(c, i) {
     var diff = c.cur - c.prev;
     var pct  = c.prev > 0 ? Math.round(Math.abs(diff) / c.prev * 100) : null;
     var deltaClass, arrow, deltaText;
@@ -5590,20 +5590,20 @@ function renderMoM() {
     if (Math.abs(diff) < 0.01) {
       deltaClass = 'flat'; arrow = '→'; deltaText = 'No change';
     } else if (diff > 0) {
-      // amount went up — good for income/savings, bad for expenses
       var isGood = (c.good === 'up');
       deltaClass = isGood ? 'good' : 'bad';
       arrow = '↑';
       deltaText = '+' + fmt(Math.abs(diff)) + (pct !== null ? ' (' + pct + '%)' : '');
     } else {
-      // amount went down — good for expenses, bad for income/savings
       var isGood = (c.good === 'down');
       deltaClass = isGood ? 'good' : 'bad';
       arrow = '↓';
       deltaText = '−' + fmt(Math.abs(diff)) + (pct !== null ? ' (' + pct + '%)' : '');
     }
 
-    html += '<div>' +
+    // Calculate borders for both 3-col (desktop) and 2-col (mobile)
+    // We add data attributes and handle with a post-render function
+    html += '<div data-mom-idx="' + i + '" data-mom-total="' + total + '">' +
       '<div class="mom-cat">' + c.label + '</div>' +
       '<div class="mom-amount">' + fmt(c.cur) + '</div>' +
       '<div class="mom-delta ' + deltaClass + '"><span class="arrow">' + arrow + '</span>' + deltaText + '</div>' +
@@ -5611,10 +5611,30 @@ function renderMoM() {
   });
   html += '</div>';
   body.innerHTML = html;
+  fixMomBorders(body);
 }
 
 
-// ── Monthly Intention ─────────────────────────────────────────
+function fixMomBorders(body) {
+  var grid = body && body.querySelector('.mom-grid');
+  if (!grid) return;
+  var items = Array.from(grid.querySelectorAll('[data-mom-idx]'));
+  if (!items.length) return;
+  var total = items.length;
+  // Detect columns from computed grid style
+  var cols = window.innerWidth <= 900 ? 2 : 3;
+  var lastRowStart = total - ((total % cols) || cols);
+  items.forEach(function(el, i) {
+    el.style.borderBottom = i >= lastRowStart ? 'none' : '1px solid var(--mist)';
+    el.style.borderRight  = (i + 1) % cols === 0 || i === total - 1 ? 'none' : '1px solid var(--mist)';
+  });
+}
+
+// Re-fix borders on resize
+window.addEventListener('resize', function() {
+  var body = document.getElementById('mom-body');
+  if (body) fixMomBorders(body);
+});
 function loadIntention() {
   var all = loadAll();
   var val = (all[currentMonthKey] && all[currentMonthKey]._intention) || '';
@@ -6991,15 +7011,18 @@ function initSectionDrag() {
         return;
       }
 
-      // Handle SECTION reorder drop
+      // Handle SECTION reorder drop — true swap
       if (dragSrcCard && card !== dragSrcCard) {
-        var cards2 = Array.from(grid.querySelectorAll('.sec-card'));
-        var srcIdx = cards2.indexOf(dragSrcCard);
-        var tgtIdx = cards2.indexOf(card);
-        if (srcIdx < tgtIdx) {
-          grid.insertBefore(dragSrcCard, card.nextSibling);
+        var grid2 = document.querySelector('.tracker-grid');
+        // Get a reference to the sibling after dragSrcCard before we move anything
+        var srcNext = dragSrcCard.nextSibling;
+        // If srcNext is the card we're swapping with, use dragSrcCard's position
+        if (srcNext === card) {
+          grid2.insertBefore(card, dragSrcCard);
         } else {
-          grid.insertBefore(dragSrcCard, card);
+          // Swap: put srcCard where card is, put card where srcCard was
+          grid2.insertBefore(dragSrcCard, card);
+          grid2.insertBefore(card, srcNext);
         }
         dragSrcCard = null;
         saveSectionOrder();
@@ -7411,42 +7434,29 @@ function parseCSV(csv) {
 }
 
 function cleanDesc(desc) {
-  var s = desc;
-  // Remove common bank transaction noise patterns
-
-  // Card type prefixes banks add
-  s = s.replace(/^(POS\s+PURCHASE\s*|POS\s+|ACH\s+DEBIT\s*|ACH\s+|VISA\s+PURCHASE\s*|VISA\s+|DEBIT\s+PURCHASE\s*|DEBIT\s+|CREDIT\s+PURCHASE\s*|CREDIT\s+|PURCHASE\s+|CHECKCARD\s+|RECURRING\s+|ONLINE\s+PAYMENT\s+|PREAUTHORIZED\s+)/gi, '');
-  // SQ* or TST* prefixes (Square/Toast)
-  s = s.replace(/^(SQ\s*\*|TST\s*\*)/gi, '');
-
-  // City + state + optional zip at end: "WHOLEFDS #123 SAN FRANCISCO CA 94110"
-  s = s.replace(/\s+[A-Za-z\s]{2,20}\s+[A-Z]{2}\s*\d{0,5}\s*$/g, '');
-  // Just state + optional zip at end: "CA 94110" or "TX"
-  s = s.replace(/\s+[A-Z]{2}\s*\d{0,5}\s*$/g, '');
-  // US city patterns like "NEW YORK" or "LOS ANGELES" at end
-  s = s.replace(/\s+(NEW YORK|LOS ANGELES|SAN FRANCISCO|SAN JOSE|LAS VEGAS|NEW ORLEANS|SAN DIEGO|SAN ANTONIO|EL PASO|FORT WORTH|FORT LAUDERDALE)\s*$/gi, '');
-
-  // Store/location numbers: #1234, *1234, 00123, store 1234
-  s = s.replace(/\s*[#*]\d+/g, '');
+  var s = desc.trim();
+  s = s.replace(/^(CHECKCARD\s+\d*\s*|DEBIT CARD PURCHASE\s*|DEBIT PURCHASE\s*|POS PURCHASE\s*|POS DEBIT\s*|POS\s+|ACH DEBIT\s*|ACH CREDIT\s*|ACH\s+|VISA PURCHASE\s*|VISA DEBIT\s*|VISA\s+|RECURRING PURCHASE\s*|RECURRING\s+|PREAUTHORIZED\s+|ONLINE PAYMENT\s+)/gi, '');
+  s = s.replace(/^SQ\s*\*/gi, '');
+  s = s.replace(/^TST\s*\*/gi, '');
+  s = s.replace(/^\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?\s+/g, '');
+  s = s.replace(/^\d{3,5}\s+/g, '');
+  s = s.replace(/\*[A-Z]*\d[A-Z0-9]+\b/gi, '');
+  s = s.replace(/\*\s*(TRIP|EATS|NOW|RIDE|PAYMENT|ONLINE|DIGITAL|STORE|APP)\b/gi, '');
+  s = s.replace(/\*/g, ' ');
+  s = s.replace(/\s+\d{3}[-.\s]\d{3}[-.\s]\d{4}/g, '');
+  s = s.replace(/\s+\d{10,11}\b/g, '');
+  s = s.replace(/\s*#\d+/g, '');
   s = s.replace(/\s+0{2,}\d+/g, '');
-  s = s.replace(/\s+store\s+\d+/gi, '');
-
-  // Trailing reference/auth codes: 5+ digit numbers
-  s = s.replace(/\s+\d{5,}$/g, '');
-  // Short trailing numbers (3-4 digits that look like codes not part of name)
-  s = s.replace(/\s+\d{3,4}$/g, '');
-
-  // Date stamps embedded: 01/15, 01-15-24
-  s = s.replace(/\s+\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?/g, '');
-
-  // Trailing transaction IDs
-  s = s.replace(/\s+(REF|TXN|ACH|POS|CHK|PMT|AUTH|AUTHCD|TRACE|SEQ|ID|NO)\s*[#:]?\s*\S*/gi, '');
-
-  // Collapse multiple spaces
+  s = s.replace(/\s+\d{5}(-\d{4})?\s*$/g, '');
+  s = s.replace(/\s+[A-Z]{2}\s*$/g, '');
+  s = s.replace(/\s+\d{5,}/g, '');
+  s = s.replace(/\s*AMZN\.COM\/BILL/gi, '');
+  s = s.replace(/\.COM(\/[^\s]*)?\b/gi, '');
+  s = s.replace(/\.NET(\/[^\s]*)?\b/gi, '');
+  s = s.replace(/\.ORG(\/[^\s]*)?\b/gi, '');
+  s = s.replace(/\s+(USA|INC|LLC|CORP|LTD)\.?\s*$/gi, '');
   s = s.replace(/\s{2,}/g, ' ').trim();
-
-  // Title case if all caps
-  if (s === s.toUpperCase() && s.length > 2) {
+  if (s.length > 1 && s === s.toUpperCase()) {
     s = s.toLowerCase().replace(/\b\w/g, function(c) { return c.toUpperCase(); });
   }
   return s || desc;
