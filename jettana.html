@@ -3707,12 +3707,24 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
 <script>
 // ── Supabase ──────────────────────────────────────────────────
-const _sb = supabase.createClient(
-  'https://mekgupfxzfzqantjouhn.supabase.co',
-  'sb_publishable_AwEduMlIeYU8o9HVRof2Rw_MuyMKiOc'
-);
+var _sb = null;
 var _currentUser = null;
 var _authTab = 'login';
+
+try {
+  _sb = supabase.createClient(
+    'https://mekgupfxzfzqantjouhn.supabase.co',
+    'sb_publishable_AwEduMlIeYU8o9HVRof2Rw_MuyMKiOc'
+  );
+} catch(e) {
+  // Supabase failed to load — skip auth, show app directly
+  document.addEventListener('DOMContentLoaded', function() {
+    var overlay = document.getElementById('auth-overlay');
+    if (overlay) overlay.style.display = 'none';
+    var app = document.querySelector('.app-shell');
+    if (app) app.style.display = 'flex';
+  });
+}
 
 // Hide app, show auth modal
 function showAuthModal() {
@@ -3776,6 +3788,7 @@ function showAuthSuccess(msg) {
 }
 
 async function handleAuth() {
+  if (!_sb) { showAuthError('Connection error. Please refresh.'); return; }
   var email = document.getElementById('auth-email').value.trim();
   var password = document.getElementById('auth-password').value;
   var loading = document.getElementById('auth-loading');
@@ -3801,6 +3814,7 @@ async function handleAuth() {
 }
 
 async function handleReset() {
+  if (!_sb) return;
   var email = document.getElementById('auth-email').value.trim();
   if (!email) { showAuthError('Enter your email address first.'); return; }
   var { error } = await _sb.auth.resetPasswordForEmail(email, {
@@ -3818,22 +3832,25 @@ document.addEventListener('keydown', function(e) {
 
 // Sign out
 async function signOut() {
-  await _sb.auth.signOut();
+  if (_sb) await _sb.auth.signOut();
   _currentUser = null;
   showAuthModal();
 }
 
-// Auth state listener
-_sb.auth.onAuthStateChange(async function(event, session) {
-  if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-    _currentUser = session.user;
-    hideAuthModal();
-    await syncFromSupabase();
-  } else if (event === 'SIGNED_OUT') {
-    _currentUser = null;
-    showAuthModal();
-  }
-});
+// Auth state listener - only handles changes AFTER initial load
+if (_sb) {
+  _sb.auth.onAuthStateChange(async function(event, session) {
+    if (event === 'SIGNED_IN') {
+      _currentUser = session.user;
+      hideAuthModal();
+      await syncFromSupabase();
+    } else if (event === 'SIGNED_OUT') {
+      _currentUser = null;
+      showAuthModal();
+    }
+    // INITIAL_SESSION is handled by getSession() below — ignore it here
+  });
+}
 
 // Sync data from Supabase → localStorage on login
 async function syncFromSupabase() {
@@ -3875,13 +3892,27 @@ function saveAll(data) {
   syncToSupabase(data);
 }
 
-// Check initial auth state on load
-_sb.auth.getSession().then(async function({ data: { session } }) {
-  if (session && session.user) {
-    _currentUser = session.user;
-    hideAuthModal();
-    await syncFromSupabase();
+// Check initial auth state — wait for DOM to be ready
+var _authTimeout;
+document.addEventListener('DOMContentLoaded', function() {
+  _authTimeout = setTimeout(function() { showAuthModal(); }, 3000);
+
+  if (_sb) {
+    _sb.auth.getSession().then(async function({ data: { session } }) {
+      clearTimeout(_authTimeout);
+      if (session && session.user) {
+        _currentUser = session.user;
+        hideAuthModal();
+        await syncFromSupabase();
+      } else {
+        showAuthModal();
+      }
+    }).catch(function() {
+      clearTimeout(_authTimeout);
+      showAuthModal();
+    });
   } else {
+    clearTimeout(_authTimeout);
     showAuthModal();
   }
 });
