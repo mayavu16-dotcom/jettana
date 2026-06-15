@@ -6574,9 +6574,10 @@ function numKeyDown(e, el) {
 }
 
 function labelKeyDown(e, el) {
-  // C — open color toolbar (desktop only)
+  // C — open color toolbar (desktop only, only when input is empty)
   if (!('ontouchstart' in window) && (e.key === 'c' || e.key === 'C')) {
     if (e.ctrlKey || e.metaKey) return; // allow Ctrl+C copy
+    if (el.value.length > 0) return; // allow typing c normally when input has content
     var row = el.closest('.erow');
     if (!row) return;
     e.preventDefault();
