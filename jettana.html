@@ -47,7 +47,7 @@ body {
 }
 
 .app-shell {
-  display: flex;
+  display: none;
   min-height: 100vh;
 }
 
@@ -3717,7 +3717,7 @@ var _authTab = 'login';
 // Hide app, show auth modal
 function showAuthModal() {
   var overlay = document.getElementById('auth-overlay');
-  if (overlay) { overlay.style.display = 'flex'; }
+  if (overlay) overlay.style.display = 'flex';
   var app = document.querySelector('.app-shell');
   if (app) app.style.display = 'none';
 }
@@ -8484,7 +8484,7 @@ window.addEventListener('load', function() {
 
 </script>
 <!-- Auth Modal -->
-<div id="auth-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;align-items:center;justify-content:center;">
+<div id="auth-overlay" style="display:flex;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;align-items:center;justify-content:center;">
   <div style="background:white;border-radius:16px;padding:36px;width:100%;max-width:400px;margin:16px;font-family:'Outfit',sans-serif;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
     <div style="text-align:center;margin-bottom:28px;">
       <div style="font-family:'Playfair Display',serif;font-size:28px;color:#1A2332;margin-bottom:4px;">Jet<span style="color:#6B9E70;font-style:italic;">tana</span></div>
