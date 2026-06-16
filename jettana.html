@@ -5233,6 +5233,7 @@ function init() {
     all._seeded = true;
     saveAll(all);
     switchMonth(key);
+    setTimeout(showWelcome, 600);
     const seed = [
       ['income',    { label: 'Salary',         planned: 4500, received: 4500 }],
       ['income',    { label: 'Side income',     planned: 400,  received: 280  }],
@@ -6217,9 +6218,10 @@ window.addEventListener('load', function() {
   // Show welcome if never seen
   if (!localStorage.getItem('intentra_welcomed') && !localStorage.getItem('intentra_v1')) {
     localStorage.setItem('intentra_welcomed', '1');
+    setTimeout(showWelcome, 600);
     setTimeout(function() {
-      showToast('Welcome to Jettana! Tap ⋯ → About Jettana to learn the story behind this app.', true, 6000);
-    }, 1000);
+      showToast('Tap ⋯ → About Jettana to learn the story behind this app.', true, 6000);
+    }, 4000);
   }
   var s = document.getElementById('s-input');
   if (s) {
