@@ -1870,6 +1870,11 @@ body.theme-custom .mom-hdr      { background: var(--custom-accent-dark, #2A4A7A)
   line-height: 1;
 }
 .shortcuts-group { margin-bottom: 16px; }
+.shortcuts-group + .shortcuts-group {
+  border-top: 1px solid var(--mist);
+  padding-top: 16px;
+  margin-top: 4px;
+}
 .shortcuts-group-title {
   font-size: 10px;
   font-weight: 700;
@@ -2953,17 +2958,20 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
             </div>
             <div class="more-divider"></div>
             <div class="more-menu-title">Actions</div>
-            <button class="more-menu-item" onclick="showImportModal(); hideMoreMenu()">
-              <span>⬆</span> Import bank statement
-            </button>
-            <button class="more-menu-item" onclick="toggleLegendPanel(); hideMoreMenu()">
-              <span>🎨</span> My Cards legend
+            <button class="more-menu-item" onclick="showAbout(); hideMoreMenu()">
+              <span>💚</span> About Jettana
             </button>
             <button class="more-menu-item" onclick="showWelcome(); hideMoreMenu()">
               <span>👋</span> Getting started
             </button>
             <button class="more-menu-item" onclick="showFeatures(); hideMoreMenu()">
               <span>✦</span> Features
+            </button>
+            <button class="more-menu-item" onclick="showImportModal(); hideMoreMenu()">
+              <span>⬆</span> Import bank statement
+            </button>
+            <button class="more-menu-item" onclick="toggleLegendPanel(); hideMoreMenu()">
+              <span>🎨</span> My Cards legend
             </button>
             <button class="more-menu-item" onclick="showShortcuts(); hideMoreMenu()">
               <span>⌨</span> Keyboard shortcuts
@@ -3370,6 +3378,43 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
     <div class="import-footer">
       <button class="import-btn-secondary" onclick="hideImportModal()">Cancel</button>
       <button class="import-btn-primary" id="import-confirm-btn" disabled onclick="confirmImport()">Add to tracker</button>
+    </div>
+  </div>
+</div>
+
+<!-- About Jettana Modal -->
+<div class="welcome-overlay" id="about-overlay" style="display:none;" onclick="hideAbout()">
+  <div class="welcome-modal" onclick="event.stopPropagation()" style="max-width:520px;max-height:85vh;overflow-y:auto;">
+    <div class="welcome-header" style="text-align:center;padding-bottom:8px;">
+      <div style="font-family:'Playfair Display',serif;font-size:13px;color:rgba(255,255,255,0.7);letter-spacing:2px;margin-bottom:6px;">เจตนา</div>
+      <h2 style="font-size:26px;margin-bottom:6px;">About Jettana</h2>
+      <p style="font-size:13px;opacity:0.85;font-style:italic;">intention · purpose · will</p>
+    </div>
+    <div class="welcome-body" style="padding:24px 28px 28px;">
+      <button onclick="hideAbout()" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:white;opacity:0.7;line-height:1;">×</button>
+
+      <p style="font-size:14.5px;line-height:1.75;color:var(--ink);margin-bottom:16px;">
+        <em style="font-family:'Playfair Display',serif;font-size:16px;">เจตนา (jettana)</em> is a Thai word meaning intention — the quiet resolve behind every action, even when the path ahead isn't clear.
+      </p>
+      <p style="font-size:14.5px;line-height:1.75;color:var(--ink);margin-bottom:16px;">
+        It's also the word that reminds me of my mom.
+      </p>
+      <p style="font-size:14.5px;line-height:1.75;color:var(--ink);margin-bottom:16px;">
+        She was warm, selfless, and sacrificial in the way only a mother can be — always putting everyone else first, always making a way even when there wasn't much to work with. She taught me to be intentional about everything I do, to be a good person first, and to trust that the rest would follow. She never had a lot, but she was always grateful. She taught me that contentment and ambition aren't opposites — it's okay to want more for yourself, as long as you build it with purpose.
+      </p>
+      <p style="font-size:14.5px;line-height:1.75;color:var(--ink);margin-bottom:16px;">
+        Growing up, I saw firsthand how quietly money stress can affect a family. So in college, I made a decision: I wasn't going to let that be my story. I started taking my finances seriously — not because I had someone to teach me, but because I had to figure it out on my own.
+      </p>
+      <p style="font-size:14.5px;line-height:1.75;color:var(--ink);margin-bottom:16px;">
+        Budgeting is what made it possible. It's what helped me save for my first trip abroad — an internship in Thailand, a country my family always dreamed of visiting together. Going there felt like carrying a piece of her with me.
+      </p>
+      <p style="font-size:14.5px;line-height:1.75;color:var(--ink);margin-bottom:24px;">
+        I built Jettana for anyone who feels the way I did — overwhelmed, unsure where to start, and never really taught how any of this works. You don't need a finance degree. You don't need to be perfect. You just need a place to begin.
+      </p>
+      <p style="font-size:14.5px;line-height:1.75;color:var(--ink);margin-bottom:8px;">
+        This is that place.
+      </p>
+      <p style="font-size:14px;color:var(--steel);font-style:italic;margin-top:20px;border-top:1px solid var(--mist);padding-top:16px;">— Maya</p>
     </div>
   </div>
 </div>
@@ -6801,6 +6846,15 @@ function labelKeyDown(e, el) {
 
 
 // ── Features Modal ────────────────────────────────────────────
+function showAbout() {
+  var el = document.getElementById('about-overlay');
+  if (el) el.style.display = 'flex';
+}
+function hideAbout() {
+  var el = document.getElementById('about-overlay');
+  if (el) el.style.display = 'none';
+}
+
 function showFeatures() {
   var el = document.getElementById('features-overlay');
   if (el) el.style.display = 'flex';
