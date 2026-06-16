@@ -5096,14 +5096,14 @@ function scheduleSave() {
 }
 
 let toastTimer;
-function showToast(msg, hideUndo = true) {
+function showToast(msg, hideUndo = true, duration = 2500) {
   const t   = document.getElementById('toast');
   const btn = document.getElementById('toast-undo');
   document.getElementById('toast-msg').textContent = msg;
   if (btn && hideUndo) btn.classList.remove('visible');
   t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+  toastTimer = setTimeout(() => t.classList.remove('show'), duration);
 }
 
 function togglePaid(section, id) {
@@ -5233,7 +5233,6 @@ function init() {
     all._seeded = true;
     saveAll(all);
     switchMonth(key);
-    setTimeout(showWelcome, 600);
     const seed = [
       ['income',    { label: 'Salary',         planned: 4500, received: 4500 }],
       ['income',    { label: 'Side income',     planned: 400,  received: 280  }],
@@ -6217,7 +6216,10 @@ window.addEventListener('load', function() {
   loadFtHighlights();
   // Show welcome if never seen
   if (!localStorage.getItem('intentra_welcomed') && !localStorage.getItem('intentra_v1')) {
-    setTimeout(showWelcome, 600);
+    localStorage.setItem('intentra_welcomed', '1');
+    setTimeout(function() {
+      showToast('Welcome to Jettana! Tap ⋯ → About Jettana to learn the story behind this app.', true, 6000);
+    }, 1000);
   }
   var s = document.getElementById('s-input');
   if (s) {
