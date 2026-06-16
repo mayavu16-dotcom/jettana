@@ -3881,23 +3881,24 @@ function confirmDeleteAccount() {
       if (_sb && _currentUser) {
         // Delete user's budget data
         await _sb.from('user_data').delete().eq('user_id', _currentUser.id);
-        // Delete the auth user account via RPC function
+        // Delete auth user via RPC
         await _sb.rpc('delete_user');
+        // Sign out immediately after deletion
+        await _sb.auth.signOut();
       }
-      // Clear everything locally
       localStorage.clear();
       _currentUser = null;
       modal.remove();
       showAuthModal();
       showToast('Your account has been permanently deleted.');
     } catch(e) {
-      // Sign out even if delete fails
-      if (_sb) await _sb.auth.signOut();
+      // Even if RPC fails, sign out and clear data
+      try { if (_sb) await _sb.auth.signOut(); } catch(e2) {}
       localStorage.clear();
       _currentUser = null;
       modal.remove();
       showAuthModal();
-      showToast('Signed out. Contact support to fully remove your account.');
+      showToast('Data cleared. If issues persist, contact support.');
     }
   };
 }
