@@ -7122,7 +7122,8 @@ function setFontSizeExact(size) {
     '.bs-data-row { font-size: ' + size + 'px !important; }',
     '.bs-data-row span { font-size: ' + size + 'px !important; }',
     '.bs-total-row span { font-size: ' + size + 'px !important; }',
-    '.bs-hdr { font-size: 10.5px !important; }',
+    '.bs-hdr { font-size: ' + Math.round(size * 0.85) + 'px !important; }',
+    '@media (pointer: coarse) { .bs-hdr { font-size: 10.5px !important; } }',
     '.bs-col-row { font-size: ' + Math.round(size * 0.78) + 'px !important; }',
     '#notes-textarea { font-size: ' + size + 'px !important; }'
   ].join('\n');
