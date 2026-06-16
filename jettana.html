@@ -905,7 +905,7 @@ body {
   grid-template-columns: 1fr 100px 100px;
   padding: 0 0 0 16px;
   height: 52px;
-  font-size: 15px;
+  font-size: 13px;
   font-family: 'Outfit', sans-serif;
   font-weight: 700;
   align-items: stretch;
@@ -1089,10 +1089,17 @@ body {
   .erow.tapped .paid-checkbox { opacity: 1; }
   .btn { padding: 8px 12px; font-size: 11px; }
   .topbar-right { gap: 6px; }
-  .bs-hdr { font-size: 11px !important; letter-spacing: 0.6px; }
-  .bs-data-row { font-size: 13px !important; }
-  .bs-total-row span { font-size: 13px !important; }
-  .bs-col-row { font-size: 10px !important; }
+  .bs-hdr { font-size: 11px !important; letter-spacing: 0.6px; padding: 10px 12px; }
+  .bs-data-row { font-size: 12px !important; grid-template-columns: 1fr 80px 80px; }
+  .bs-total-row { font-size: 13px !important; grid-template-columns: 1fr 80px 80px; }
+  .bs-col-row { font-size: 9px !important; grid-template-columns: 1fr 80px 80px; }
+}
+
+@media (pointer: coarse) {
+  .bs-hdr { font-size: 11px !important; letter-spacing: 0.6px; padding: 10px 12px; }
+  .bs-data-row { font-size: 12px !important; }
+  .bs-total-row { font-size: 13px !important; }
+  .bs-col-row { font-size: 9px !important; }
 }
 
 .erow-num-input.empty-zero { color: transparent; }
