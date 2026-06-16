@@ -3878,28 +3878,26 @@ function confirmDeleteAccount() {
     status.style.display = 'block';
     status.textContent = 'Deleting your data...';
     try {
-      // Delete user data from database
       if (_sb && _currentUser) {
+        // Delete user's budget data
         await _sb.from('user_data').delete().eq('user_id', _currentUser.id);
-      }
-      // Delete the user account via Supabase Auth
-      if (_sb) {
-        await _sb.auth.admin ? null : await _sb.rpc('delete_user');
+        // Delete the auth user account via RPC function
+        await _sb.rpc('delete_user');
       }
       // Clear everything locally
       localStorage.clear();
       _currentUser = null;
       modal.remove();
       showAuthModal();
-      showToast('Account deleted successfully.');
+      showToast('Your account has been permanently deleted.');
     } catch(e) {
-      // Even if server delete fails, sign them out locally
+      // Sign out even if delete fails
+      if (_sb) await _sb.auth.signOut();
       localStorage.clear();
       _currentUser = null;
-      if (_sb) await _sb.auth.signOut();
       modal.remove();
       showAuthModal();
-      showToast('Account signed out. Contact support to fully remove your account.');
+      showToast('Signed out. Contact support to fully remove your account.');
     }
   };
 }
