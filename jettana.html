@@ -690,7 +690,8 @@ body {
 [data-section="food"] .del-btn,
 [data-section="health"] .del-btn,
 [data-section="gifts"] .del-btn,
-[data-section="misc"] .del-btn { right: 26px; }
+[data-section="misc"] .del-btn,
+[data-section="subscriptions"] .del-btn { right: 26px; }
 .erow:hover .del-btn { opacity: 1; }
 .erow:hover .drag-handle { opacity: 1; }
 @media (pointer: coarse) {
@@ -1333,7 +1334,8 @@ body {
 .dark .sec-footer span      { color: var(--ink); }
 
 /* Bottom summary */
-.dark .bs-col-row           { background: var(--mist-light); border-bottom-color: var(--mist); }
+.dark .sec-card-notes textarea { color: var(--ink); }
+.dark .sec-card-notes button { color: var(--ink); border-color: var(--mist); }
 .dark .bs-data-row          { border-bottom-color: var(--mist-light); }
 .dark .bs-data-row span:first-child { color: var(--slate); }
 .dark .balance-row          { background: #3A7A8A; color: white; }
@@ -2080,6 +2082,7 @@ body.text-bold .bs-col-row span {
 body.font-small .erow-label-input  { font-size: 11.5px !important; }
 body.font-small .erow-num-input    { font-size: 12px !important; }
 body.font-small .sec-footer span   { font-size: 11px !important; }
+body.font-small #notes-textarea    { font-size: 11.5px !important; }
 body.font-small .add-row-btn       { font-size: 10px !important; }
 body.font-small .col-lbl-row,
 body.font-small .col-lbl-row span  { font-size: 9px !important; }
@@ -2087,6 +2090,7 @@ body.font-small .sec-hdr h3        { font-size: 10px !important; }
 body.font-small .bs-data-row span,
 body.font-small .bs-total-row span { font-size: 11.5px !important; }
 body.font-small .bs-hdr            { font-size: 10px !important; }
+body.font-small .bs-col-row        { font-size: 9px !important; }
 body.font-small .footer-budget-input { font-size: 11px !important; }
 body.font-small .erow              { min-height: 38px !important; }
 
@@ -2094,13 +2098,15 @@ body.font-small .erow              { min-height: 38px !important; }
 body.font-large .erow-label-input  { font-size: 16px !important; }
 body.font-large .erow-num-input    { font-size: 16px !important; }
 body.font-large .sec-footer span   { font-size: 16px !important; }
+body.font-large #notes-textarea    { font-size: 16px !important; }
 body.font-large .add-row-btn       { font-size: 14px !important; }
 body.font-large .col-lbl-row,
 body.font-large .col-lbl-row span  { font-size: 12px !important; }
 body.font-large .sec-hdr h3        { font-size: 15px !important; }
 body.font-large .bs-data-row span,
-body.font-large .bs-total-row span { font-size: 15.5px !important; }
+body.font-large .bs-total-row span { font-size: 16px !important; }
 body.font-large .bs-hdr            { font-size: 14px !important; }
+body.font-large .bs-col-row        { font-size: 12px !important; }
 body.font-large .footer-budget-input { font-size: 16px !important; }
 body.font-large .erow              { min-height: 54px !important; }
 
@@ -3063,7 +3069,6 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
       <div class="tracker-grid">
 
-        <!-- INCOME -->
         <div class="sec-card" data-section-id="income">
           <div class="sec-hdr bg-sage">
             <div class="sec-hdr-left"><h3>Income</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
@@ -3080,7 +3085,6 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           </div>
         </div>
 
-        <!-- SAVINGS -->
         <div class="sec-card" data-section-id="savings">
           <div class="sec-hdr bg-gold">
             <div class="sec-hdr-left"><h3>Savings &amp; Investments</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
@@ -3097,7 +3101,6 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           </div>
         </div>
 
-        <!-- HOUSING -->
         <div class="sec-card" data-section-id="housing">
           <div class="sec-hdr bg-blush">
             <div class="sec-hdr-left"><h3>Housing &amp; Utilities</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
@@ -3114,7 +3117,6 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           </div>
         </div>
 
-        <!-- CHECKING -->
         <div class="sec-card" data-section-id="checking">
           <div class="sec-hdr bg-teal">
             <div class="sec-hdr-left"><h3>Checking Accounts</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
@@ -3131,7 +3133,6 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           </div>
         </div>
 
-        <!-- TRANSPORT -->
         <div class="sec-card" data-section-id="transport">
           <div class="sec-hdr bg-blush">
             <div class="sec-hdr-left"><h3>Transportation / Travel</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
@@ -3148,10 +3149,9 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           </div>
         </div>
 
-        <!-- DEBT -->
         <div class="sec-card" data-section-id="debt">
           <div class="sec-hdr bg-debt">
-            <div class="sec-hdr-left"><h3>Debt — Credit Cards / Loans</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
+            <div class="sec-hdr-left"><h3>Debt</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
             <div class="sec-hdr-right"><button class="sec-clear-btn" onclick="clearSection('debt')" title="Clear all rows in this section">🗑</button><span class="sec-total" id="hdr-debt">$0</span><button class="sec-collapse-btn" onclick="toggleSection('debt')" title="Collapse section">▾</button></div></div>
           <div class="sec-body">
           <div class="col-lbl-row"><span>Account</span><span>Current</span><span>Remaining</span></div>
@@ -3165,7 +3165,6 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           </div>
         </div>
 
-        <!-- FOOD -->
         <div class="sec-card" data-section-id="food">
           <div class="sec-hdr bg-blush">
             <div class="sec-hdr-left"><h3>Food &amp; Dining</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
@@ -3182,7 +3181,6 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           </div>
         </div>
 
-        <!-- HEALTH -->
         <div class="sec-card" data-section-id="health">
           <div class="sec-hdr bg-lav">
             <div class="sec-hdr-left"><h3>Health &amp; Wellness</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
@@ -3199,7 +3197,22 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           </div>
         </div>
 
-        <!-- GIFTS -->
+        <div class="sec-card" data-section-id="subscriptions">
+          <div class="sec-hdr bg-teal">
+            <div class="sec-hdr-left"><h3>Subscriptions</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
+            <div class="sec-hdr-right"><button class="sec-clear-btn" onclick="clearSection('subscriptions')" title="Clear all rows in this section">🗑</button><span class="sec-total" id="hdr-subscriptions">$0</span><span class="hdr-pct-label" id="hdr-pct-subscriptions"></span><button class="sec-collapse-btn" onclick="toggleSection('subscriptions')" title="Collapse section">▾</button></div></div>
+          <div class="sec-body">
+          <div class="col-lbl-row"><span>Service</span><span>Budget</span><span>Actual</span></div>
+          <div class="bulk-bar" id="bulk-bar-subscriptions"><span class="bulk-bar-count" id="bulk-count-subscriptions">0 selected</span><button class="bulk-bar-btn" onclick="selectAllBulk('subscriptions')">Select all</button><button class="bulk-bar-btn danger" onclick="deleteSelectedBulk('subscriptions')">Delete selected</button><button class="bulk-bar-btn" onclick="cancelBulk('subscriptions')">Cancel</button></div><div class="entry-list" id="rows-subscriptions"></div>
+          <button class="add-row-btn" onclick="addRow('subscriptions')"><span class="plus">+</span> Add subscription</button>
+          <div class="sec-footer">
+            <span>Total Cost</span>
+            <input type="text" id="ft-subscriptions-0" class="footer-budget-input" placeholder="auto" data-section="subscriptions" value="" onfocus="footerBudgetFocus(this)" onblur="footerBudgetBlur(this)" oninput="footerBudgetInput(this)" title="Click to set a budget override. Leave blank to auto-calculate.">
+            <span id="ft-subscriptions-1" class="ft-actual-cell" data-section="subscriptions" onclick="showFtColorPicker(event,'subscriptions')" oncontextmenu="showFtColorPicker(event,'subscriptions')" title="Click to highlight">$0</span>
+          </div>
+          </div>
+        </div>
+
         <div class="sec-card" data-section-id="gifts">
           <div class="sec-hdr bg-gifts">
             <div class="sec-hdr-left"><h3>Gifts &amp; Donations</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
@@ -3216,7 +3229,6 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           </div>
         </div>
 
-        <!-- MISC -->
         <div class="sec-card" data-section-id="misc">
           <div class="sec-hdr bg-steel">
             <div class="sec-hdr-left"><h3>Miscellaneous</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
@@ -3230,6 +3242,20 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
             <input type="text" id="ft-misc-0" class="footer-budget-input" placeholder="auto" data-section="misc" value="" onfocus="footerBudgetFocus(this)" onblur="footerBudgetBlur(this)" oninput="footerBudgetInput(this)" title="Click to set a budget override. Leave blank to auto-calculate.">
             <span id="ft-misc-1" class="ft-actual-cell" data-section="misc" onclick="showFtColorPicker(event,'misc')" oncontextmenu="showFtColorPicker(event,'misc')" title="Click to highlight">$0</span>
           </div>
+          </div>
+        </div>
+
+        <div class="sec-card sec-card-notes" data-section-id="notes" style="grid-column: span 1;">
+          <div class="sec-hdr bg-gold">
+            <div class="sec-hdr-left"><h3>Notes</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
+            <div class="sec-hdr-right"><button class="sec-clear-btn" onclick="clearNotes()" title="Clear notes">🗑</button><button class="sec-collapse-btn" onclick="toggleSection('notes')" title="Collapse section">▾</button></div>
+          </div>
+          <div class="sec-body" id="notes-body">
+            <div style="display:flex;gap:4px;padding:8px 12px 0;border-bottom:1px solid var(--mist);">
+              <button onclick="insertNotesText('• ')" title="Bullet point" style="background:none;border:1px solid var(--mist);border-radius:4px;padding:3px 8px;font-size:12px;cursor:pointer;color:var(--ink);">• Bullet</button>
+              <button onclick="insertNotesText('☐ ')" title="Add checkbox" style="background:none;border:1px solid var(--mist);border-radius:4px;padding:3px 8px;font-size:12px;cursor:pointer;color:var(--ink);">☐ Todo</button>
+            </div>
+            <textarea id="notes-textarea" placeholder="Jot down financial reminders, goals, or anything on your mind this month…" oninput="saveNotes()" onclick="handleNoteClick(event)" style="width:100%;height:140px;border:none;outline:none;resize:none;font-family:'Outfit',sans-serif;font-size:13.5px;line-height:1.6;color:var(--ink);background:transparent;padding:12px 16px;box-sizing:border-box;"></textarea>
           </div>
         </div>
 
@@ -3988,19 +4014,20 @@ function saveAll(data) {
   syncToSupabase(data);
 }
 
-const SECTIONS = ['income','savings','housing','checking','transport','debt','food','health','gifts','misc'];
+const SECTIONS = ['income','savings','housing','checking','transport','debt','food','health','subscriptions','gifts','misc'];
 
 const CONFIGS = {
-  income:    { ph: 'e.g. Salary, Side income…',   k1: 'planned',   k2: 'received',  mainKey: 'received' },
-  savings:   { ph: 'e.g. HYSA, 401k, ETFs…',      k1: 'actual',    k2: 'gains',     mainKey: 'actual'   },
-  housing:   { ph: 'e.g. Rent, Electric…',         k1: 'budget',    k2: 'actual',    mainKey: 'actual'   },
-  checking:  { ph: 'e.g. Chase Checking…',         k1: 'beginning', k2: 'ending',    mainKey: 'ending'   },
-  transport: { ph: 'e.g. Car payment, Gas…',       k1: 'budget',    k2: 'actual',    mainKey: 'actual'   },
-  debt:      { ph: 'e.g. Visa, Student loan…',     k1: 'current',   k2: 'remaining', mainKey: 'current'  },
-  food:      { ph: "e.g. Trader Joe's, Chipotle…", k1: 'budget',    k2: 'actual',    mainKey: 'actual'   },
-  health:    { ph: 'e.g. Gym, Insurance…',         k1: 'budget',    k2: 'actual',    mainKey: 'actual'   },
-  gifts:     { ph: 'e.g. Birthday, Charity…',      k1: 'budget',    k2: 'actual',    mainKey: 'actual'   },
-  misc:      { ph: 'e.g. Amazon, Subscriptions…',  k1: 'budget',    k2: 'actual',    mainKey: 'actual'   },
+  income:        { ph: 'e.g. Salary, Side income…',   k1: 'planned',   k2: 'received',  mainKey: 'received' },
+  savings:       { ph: 'e.g. HYSA, 401k, ETFs…',      k1: 'actual',    k2: 'gains',     mainKey: 'actual'   },
+  housing:       { ph: 'e.g. Rent, Electric…',         k1: 'budget',    k2: 'actual',    mainKey: 'actual'   },
+  checking:      { ph: 'e.g. Chase Checking…',         k1: 'beginning', k2: 'ending',    mainKey: 'ending'   },
+  transport:     { ph: 'e.g. Car payment, Gas…',       k1: 'budget',    k2: 'actual',    mainKey: 'actual'   },
+  debt:          { ph: 'e.g. Visa, Student loan…',     k1: 'current',   k2: 'remaining', mainKey: 'current'  },
+  food:          { ph: "e.g. Trader Joe's, Chipotle…", k1: 'budget',    k2: 'actual',    mainKey: 'actual'   },
+  health:        { ph: 'e.g. Gym, Insurance…',         k1: 'budget',    k2: 'actual',    mainKey: 'actual'   },
+  gifts:         { ph: 'e.g. Birthday, Charity…',      k1: 'budget',    k2: 'actual',    mainKey: 'actual'   },
+  misc:          { ph: 'e.g. Amazon, One-off items…',  k1: 'budget',    k2: 'actual',    mainKey: 'actual'   },
+  subscriptions: { ph: 'e.g. Netflix, Spotify…',       k1: 'budget',    k2: 'actual',    mainKey: 'actual'   },
 };
 
 let currentMonthKey = null;
@@ -4281,6 +4308,7 @@ function switchMonth(key) {
   // Reset search when switching months
   clearSearch();
   loadIntention();
+  loadNotes();
 }
 
 function renderSidebar() {
@@ -4392,9 +4420,9 @@ function renderRowEl(section, row, animate = false) {
     return n < 0 ? '-' + str : str;
   }
 
-  const PAID_SECTIONS = ['housing','transport','debt','food','health','gifts','misc'];
+  const PAID_SECTIONS = ['housing','transport','debt','food','health','gifts','misc','subscriptions'];
   const allowPaid = PAID_SECTIONS.includes(section);
-  const DATE_SECTIONS = ['housing','transport','debt','food','health','gifts','misc','income','savings','checking'];
+  const DATE_SECTIONS = ['housing','transport','debt','food','health','gifts','misc','subscriptions','income','savings','checking'];
   const allowDate = DATE_SECTIONS.includes(section);
   const isPaid = allowPaid && !!row.paid;
   if (isPaid) div.classList.add('paid');
@@ -4820,10 +4848,11 @@ function recalc() {
   const fooB = sum(d.food,      'budget');  const fooA = sum(d.food,      'actual');
   const hlhB = sum(d.health,    'budget');  const hlhA = sum(d.health,    'actual');
   const gftB = sum(d.gifts,     'budget');  const gftA = sum(d.gifts,     'actual');
-  const mscB = sum(d.misc,      'budget');  const mscA = sum(d.misc,      'actual');
+  const mscB = sum(d.misc,          'budget');  const mscA = sum(d.misc,          'actual');
+  const subB = sum(d.subscriptions, 'budget');  const subA = sum(d.subscriptions, 'actual');
 
-  const totalExpA = houA + traA + fooA + hlhA + gftA + mscA;
-  const totalExpB = houB + traB + fooB + hlhB + gftB + mscB;
+  const totalExpA = houA + traA + fooA + hlhA + gftA + mscA + subA;
+  const totalExpB = houB + traB + fooB + hlhB + gftB + mscB + subB;
   const balance   = incA - totalExpA;
   const assets    = chkE + savA;
   const liab      = dbtR;
@@ -4911,6 +4940,16 @@ function recalc() {
       inp.classList.toggle('overridden', overrideVal !== undefined);
     }
   })();  set('ft-misc-1',     fmt(mscA));
+
+  set('hdr-subscriptions', fmt(subA));  (function() {
+    var inp = document.getElementById('ft-subscriptions-0');
+    if (inp && document.activeElement !== inp) {
+      var overrideVal = _footerBudgetOverrides['subscriptions'];
+      var displayVal = overrideVal !== undefined ? overrideVal : subB;
+      inp.value = fmt(displayVal);
+      inp.classList.toggle('overridden', overrideVal !== undefined);
+    }
+  })();  set('ft-subscriptions-1', fmt(subA));
 
   set('sum-income',   fmt(incA));
   set('sum-expenses', fmt(totalExpA));
@@ -5630,7 +5669,8 @@ function renderMoM() {
     { label: 'Housing',      cur: s(cur.housing,   'actual'),   prev: s(prev.housing,   'actual'),   good: 'down' },
     { label: 'Food',         cur: s(cur.food,      'actual'),   prev: s(prev.food,      'actual'),   good: 'down' },
     { label: 'Transport',    cur: s(cur.transport, 'actual'),   prev: s(prev.transport, 'actual'),   good: 'down' },
-    { label: 'Misc',         cur: s(cur.misc,      'actual'),   prev: s(prev.misc,      'actual'),   good: 'down' },
+    { label: 'Misc',          cur: s(cur.misc,          'actual'),   prev: s(prev.misc,          'actual'),   good: 'down' },
+    { label: 'Subscriptions', cur: s(cur.subscriptions, 'actual'),   prev: s(prev.subscriptions, 'actual'),   good: 'down' },
   ];
 
   // Only show categories where at least one month has data
@@ -5696,6 +5736,70 @@ window.addEventListener('resize', function() {
   var body = document.getElementById('mom-body');
   if (body) fixMomBorders(body);
 });
+// ── Notes ─────────────────────────────────────────────────────
+function insertNotesText(prefix) {
+  var ta = document.getElementById('notes-textarea');
+  if (!ta) return;
+  ta.focus();
+  var start = ta.selectionStart;
+  var text = ta.value;
+  var lineStart = text.lastIndexOf('\n', start - 1) + 1;
+  var newText = text.substring(0, lineStart) + prefix + text.substring(lineStart);
+  ta.value = newText;
+  ta.selectionStart = ta.selectionEnd = lineStart + prefix.length + (start - lineStart);
+  saveNotes();
+}
+
+function handleNoteClick(event) {
+  var ta = document.getElementById('notes-textarea');
+  if (!ta) return;
+  // Small delay to let cursor position update after click
+  setTimeout(function() {
+    var pos = ta.selectionStart;
+    var text = ta.value;
+    var lineStart = text.lastIndexOf('\n', pos - 1) + 1;
+    var lineEnd = text.indexOf('\n', pos);
+    if (lineEnd === -1) lineEnd = text.length;
+    var line = text.substring(lineStart, lineEnd);
+    // Only toggle if click was near the checkbox character (first 2 chars of line)
+    var posInLine = pos - lineStart;
+    if (posInLine > 2) return;
+    if (line.startsWith('☐ ')) {
+      ta.value = text.substring(0, lineStart) + '☑ ' + line.substring(2) + text.substring(lineEnd);
+      ta.selectionStart = ta.selectionEnd = pos;
+      saveNotes();
+    } else if (line.startsWith('☑ ')) {
+      ta.value = text.substring(0, lineStart) + '☐ ' + line.substring(2) + text.substring(lineEnd);
+      ta.selectionStart = ta.selectionEnd = pos;
+      saveNotes();
+    }
+  }, 10);
+}
+
+function saveNotes() {
+  var ta = document.getElementById('notes-textarea');
+  if (!ta) return;
+  var all = loadAll();
+  if (!all[currentMonthKey]) all[currentMonthKey] = {};
+  all[currentMonthKey]._notes = ta.value;
+  saveAll(all);
+}
+
+function loadNotes() {
+  var ta = document.getElementById('notes-textarea');
+  if (!ta) return;
+  var all = loadAll();
+  ta.value = (all[currentMonthKey] && all[currentMonthKey]._notes) || '';
+}
+
+function clearNotes() {
+  if (!confirm('Clear all notes for this month?')) return;
+  var ta = document.getElementById('notes-textarea');
+  if (ta) ta.value = '';
+  var all = loadAll();
+  if (all[currentMonthKey]) { all[currentMonthKey]._notes = ''; saveAll(all); }
+}
+
 function loadIntention() {
   var all = loadAll();
   var val = (all[currentMonthKey] && all[currentMonthKey]._intention) || '';
@@ -6428,7 +6532,7 @@ function exportCSV() {
     housing:   'Housing & Utilities',
     checking:  'Checking Accounts',
     transport: 'Transportation / Travel',
-    debt:      'Debt — Credit Cards / Loans',
+    debt:      'Debt',
     food:      'Food & Dining',
     health:    'Health & Wellness',
     gifts:     'Gifts & Donations',
@@ -6941,7 +7045,13 @@ function setFontSizeExact(size) {
     '.sec-hdr h3 { font-size: ' + Math.round(size * 0.85) + 'px !important; }',
     '.col-lbl-row span { font-size: ' + Math.round(size * 0.81) + 'px !important; }',
     '.add-row-btn { font-size: ' + Math.round(size * 0.89) + 'px !important; }',
-    '.footer-budget-input { font-size: ' + size + 'px !important; }'
+    '.footer-budget-input { font-size: ' + size + 'px !important; }',
+    '.bs-data-row { font-size: ' + size + 'px !important; }',
+    '.bs-data-row span { font-size: ' + size + 'px !important; }',
+    '.bs-total-row span { font-size: ' + size + 'px !important; }',
+    '.bs-hdr { font-size: ' + Math.round(size * 0.85) + 'px !important; }',
+    '.bs-col-row { font-size: ' + Math.round(size * 0.78) + 'px !important; }',
+    '#notes-textarea { font-size: ' + size + 'px !important; }'
   ].join('\n');
   localStorage.setItem('intentra_fontsize_exact', size);
   var range = document.getElementById('font-size-range');
@@ -7166,17 +7276,25 @@ function saveSectionOrder() {
 }
 
 function loadSectionOrder() {
+  var grid = document.querySelector('.tracker-grid');
+  if (!grid) return;
   var saved = localStorage.getItem('intentra_section_order');
-  if (!saved) return;
-  try {
-    var order = JSON.parse(saved);
-    var grid = document.querySelector('.tracker-grid');
-    if (!grid) return;
-    order.forEach(function(secId) {
-      var card = grid.querySelector('[data-section-id="' + secId + '"]');
-      if (card) grid.appendChild(card);
-    });
-  } catch(e) {}
+  if (saved) {
+    try {
+      var order = JSON.parse(saved);
+      // First move saved sections into saved order
+      order.forEach(function(secId) {
+        var card = grid.querySelector('[data-section-id="' + secId + '"]');
+        if (card) grid.appendChild(card);
+      });
+      // Then append any new sections not in saved order (subscriptions, notes etc)
+      var allCards = Array.from(grid.querySelectorAll('[data-section-id]'));
+      allCards.forEach(function(card) {
+        var secId = card.dataset.sectionId;
+        if (order.indexOf(secId) === -1) grid.appendChild(card);
+      });
+    } catch(e) {}
+  }
 }
 
 
