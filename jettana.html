@@ -6889,7 +6889,16 @@ document.addEventListener('keydown', function(e) {
 });
 
 
-// ── Note close ────────────────────────────────────────────────
+// Fix bs-hdr font size on mobile to match section headers
+if ('ontouchstart' in window) {
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.bs-hdr').forEach(function(el) {
+      el.style.fontSize = '10.5px';
+      el.style.padding = '10px 12px';
+      el.style.letterSpacing = '0.6px';
+    });
+  });
+}
 function closeNote(id) {
   var wrap = document.getElementById('note-wrap-' + id);
   if (wrap) wrap.classList.remove('open');
