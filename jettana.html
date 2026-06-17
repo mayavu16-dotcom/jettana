@@ -4524,9 +4524,9 @@ function renderRowEl(section, row, animate = false) {
       // Auto-calculate growth from previous month if field is empty
       if (!growthInput.dataset.raw || growthInput.dataset.raw === '0' || growthInput.dataset.raw === '') {
         var all = loadAll();
-        var prevKeys = allMonthKeys().filter(function(k) { return k !== currentMonthKey; }).sort();
+        var prevKeys = allMonthKeys().filter(function(k) { return k < currentMonthKey; });
         if (prevKeys.length) {
-          var prevKey = prevKeys[prevKeys.length - 1];
+          var prevKey = prevKeys[0]; // allMonthKeys() returns newest first, so [0] is most recent previous
           var prevRows = (all[prevKey] && all[prevKey].savings) || [];
           var prevRow = prevRows.find(function(r) {
             return r.label && row.label && r.label.trim().toLowerCase() === row.label.trim().toLowerCase();
