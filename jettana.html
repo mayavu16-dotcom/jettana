@@ -2929,6 +2929,13 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
         <div class="more-wrap" id="more-wrap">
           <button class="btn btn-ghost" onclick="toggleMoreMenu(event)" title="More options" style="font-size:18px;width:34px;padding:0;letter-spacing:1px;">⋯</button>
           <div class="more-menu" id="more-menu" style="display:none;">
+
+            <!-- Upgrade CTA -->
+            <button class="more-menu-item" onclick="window.open('https://buy.stripe.com/6oU28q6j084G2sI2ExfQI00','_blank'); hideMoreMenu()" style="background:linear-gradient(135deg,#6B9E70,#4d7a52);color:white;border-radius:8px;margin:4px 0 8px;">
+              <span>✦</span> Support Jettana — $6/mo
+            </button>
+
+            <!-- Appearance -->
             <div class="more-menu-title">Appearance</div>
             <button class="more-menu-item" id="bold-toggle-btn" onclick="toggleBoldText()">
               <span>𝐁</span> <span id="bold-toggle-label">Bold text: Off</span>
@@ -2944,7 +2951,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
             </div>
             <div class="more-menu-item" style="gap:8px;cursor:default;padding-top:0;">
               <span style="font-size:10px;color:var(--steel);flex-shrink:0;">A</span>
-              <input type="range" id="font-size-range" min="10" max="17" value="13.5" step="0.5"
+              <input type="range" id="font-size-range" min="10" max="16" value="13.5" step="0.5"
                 style="flex:1;accent-color:var(--sage);cursor:pointer;"
                 oninput="setFontSizeExact(parseFloat(this.value))"
                 ontouchend="setFontSizeExact(parseFloat(this.value))">
@@ -2964,17 +2971,25 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
                 <span class="theme-swatch-row"><span style="background:#2C3E50"></span><span style="background:#2C3E50"></span><span style="background:#2C3E50"></span><span style="background:#2C3E50"></span></span>
                 Monochrome
               </button>
-              <button class="theme-opt" data-theme="warm" onclick="setTheme(this,'warm')">
-                <span class="theme-swatch-row"><span style="background:#B87333"></span><span style="background:#C07060"></span><span style="background:#A0724A"></span><span style="background:#8B6914"></span></span>
-                Warm
-              </button>
               <div class="theme-custom-row">
                 <span>Custom color</span>
                 <input type="color" id="custom-color" value="#4A6FA5" oninput="setCustomTheme(this.value)">
               </div>
             </div>
+
+            <!-- Actions -->
             <div class="more-divider"></div>
             <div class="more-menu-title">Actions</div>
+            <button class="more-menu-item" onclick="showImportModal(); hideMoreMenu()">
+              <span>⬆</span> Import bank statement
+            </button>
+            <button class="more-menu-item" onclick="toggleLegendPanel(); hideMoreMenu()">
+              <span>🎨</span> My Cards legend
+            </button>
+
+            <!-- Learn -->
+            <div class="more-divider"></div>
+            <div class="more-menu-title">Learn</div>
             <button class="more-menu-item" onclick="showAbout(); hideMoreMenu()">
               <span>💚</span> About Jettana
             </button>
@@ -2984,25 +2999,19 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
             <button class="more-menu-item" onclick="showFeatures(); hideMoreMenu()">
               <span>✦</span> Features
             </button>
-            <button class="more-menu-item" onclick="showImportModal(); hideMoreMenu()">
-              <span>⬆</span> Import bank statement
-            </button>
-            <button class="more-menu-item" onclick="toggleLegendPanel(); hideMoreMenu()">
-              <span>🎨</span> My Cards legend
-            </button>
-            <button class="more-menu-item" onclick="showShortcuts(); hideMoreMenu()">
+            <button class="more-menu-item" onclick="showShortcuts(); hideMoreMenu()" id="shortcuts-menu-item">
               <span>⌨</span> Keyboard shortcuts
             </button>
+
+            <!-- Account -->
+            <div class="more-divider"></div>
             <button class="more-menu-item danger" onclick="clearMonth(); hideMoreMenu()">
               <span>✕</span> Clear month
             </button>
-            <div style="border-top:1px solid var(--mist);margin:4px 0;"></div>
-            <button class="more-menu-item" onclick="signOut(); hideMoreMenu()" style="color:var(--steel);">
-              <span>↩</span> Sign out
+            <button class="more-menu-item" onclick="showManageAccount(); hideMoreMenu()" style="color:var(--steel);">
+              <span>⚙</span> Manage account
             </button>
-            <button class="more-menu-item danger" onclick="confirmDeleteAccount(); hideMoreMenu()">
-              <span>🗑</span> Delete account
-            </button>
+
           </div>
         </div>
         <div class="export-wrap" id="export-wrap">
@@ -3645,6 +3654,8 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
     <span style="text-decoration:line-through;font-size:11px;color:var(--steel);" id="ct-strike-preview">A</span>Strike
   </button>
   <div class="ct-sep"></div>
+  <div id="ct-legend-swatches" style="display:flex;align-items:center;gap:4px;"></div>
+  <div id="ct-legend-sep" class="ct-sep" style="display:none;"></div>
   <div class="ct-swatches" id="ct-swatches">
     <div class="ct-swatch" style="background:#4A85A0" data-color="#4A85A0" onclick="applyToolbarColor('#4A85A0')"></div>
     <div class="ct-swatch" style="background:#6B9E70" data-color="#6B9E70" onclick="applyToolbarColor('#6B9E70')"></div>
@@ -4508,7 +4519,40 @@ function renderRowEl(section, row, animate = false) {
   if (section === 'savings') {
     setTimeout(function() {
       var growthInput = div.querySelector('[data-col="2"]');
-      if (growthInput && growthInput.dataset.raw) {
+      if (!growthInput) return;
+
+      // Auto-calculate growth from previous month if field is empty
+      if (!growthInput.dataset.raw || growthInput.dataset.raw === '0' || growthInput.dataset.raw === '') {
+        var all = loadAll();
+        var prevKeys = allMonthKeys().filter(function(k) { return k !== currentMonthKey; }).sort();
+        if (prevKeys.length) {
+          var prevKey = prevKeys[prevKeys.length - 1];
+          var prevRows = (all[prevKey] && all[prevKey].savings) || [];
+          var prevRow = prevRows.find(function(r) {
+            return r.label && row.label && r.label.trim().toLowerCase() === row.label.trim().toLowerCase();
+          });
+          if (prevRow && prevRow.actual && row.actual) {
+            var prevActual = parseFloat(prevRow.actual) || 0;
+            var curActual = parseFloat(row.actual) || 0;
+            if (prevActual !== 0 && curActual !== 0) {
+              var autoGrowth = curActual - prevActual;
+              // Only auto-fill if growth field is truly empty
+              if (!row.gains || row.gains === 0) {
+                growthInput.dataset.raw = autoGrowth;
+                var abs = Math.abs(autoGrowth);
+                var sign = autoGrowth >= 0 ? '+' : '-';
+                growthInput.value = sign + '$' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                growthInput.classList.remove('growth-positive', 'growth-negative');
+                growthInput.classList.add(autoGrowth >= 0 ? 'growth-positive' : 'growth-negative');
+                growthInput.title = 'Auto-calculated from last month';
+              }
+            }
+          }
+        }
+      }
+
+      // Apply growth coloring for manually entered values
+      if (growthInput.dataset.raw) {
         var val = parseFloat(growthInput.dataset.raw);
         if (!isNaN(val) && val !== 0) {
           growthInput.classList.remove('growth-positive','growth-negative');
@@ -5801,6 +5845,12 @@ window.addEventListener('resize', function() {
   var body = document.getElementById('mom-body');
   if (body) fixMomBorders(body);
 });
+// Hide keyboard shortcuts on mobile
+if ('ontouchstart' in window) {
+  var shortcutsBtn = document.getElementById('shortcuts-menu-item');
+  if (shortcutsBtn) shortcutsBtn.style.display = 'none';
+}
+
 // ── Notes ─────────────────────────────────────────────────────
 function insertNotesText(prefix) {
   var ta = document.getElementById('notes-textarea');
@@ -6867,6 +6917,29 @@ function labelKeyDown(e, el) {
 
 
 // ── Features Modal ────────────────────────────────────────────
+function showManageAccount() {
+  var email = _currentUser ? _currentUser.email : '';
+  var modal = document.createElement('div');
+  modal.id = 'manage-account-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;';
+  modal.innerHTML = `
+    <div style="background:white;border-radius:16px;padding:32px;width:100%;max-width:380px;margin:16px;font-family:'Outfit',sans-serif;">
+      <div style="font-size:20px;font-weight:700;color:#1A2332;margin-bottom:4px;">Manage account</div>
+      <div style="font-size:13px;color:#8A9AB5;margin-bottom:24px;">${email}</div>
+      <button onclick="signOut();document.getElementById('manage-account-modal').remove();" style="width:100%;padding:12px;background:#F0F3F7;border:none;border-radius:10px;font-size:14px;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;color:#1A2332;margin-bottom:10px;text-align:left;">
+        ↩ &nbsp;Sign out
+      </button>
+      <button onclick="document.getElementById('manage-account-modal').remove();confirmDeleteAccount();" style="width:100%;padding:12px;background:#FEF2F2;border:none;border-radius:10px;font-size:14px;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;color:#C0736A;text-align:left;">
+        🗑 &nbsp;Delete account
+      </button>
+      <button onclick="document.getElementById('manage-account-modal').remove();" style="width:100%;padding:12px;background:none;border:none;font-size:13px;font-family:'Outfit',sans-serif;cursor:pointer;color:#8A9AB5;margin-top:8px;">
+        Cancel
+      </button>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
+}
+
 function showAbout() {
   var el = document.getElementById('about-overlay');
   if (el) el.style.display = 'flex';
@@ -8373,6 +8446,32 @@ function applyIntentionFont(fontKey) {
   if (select) select.value = fontKey;
 }
 
+function updateLegendSwatches() {
+  var container = document.getElementById('ct-legend-swatches');
+  var sep = document.getElementById('ct-legend-sep');
+  if (!container) return;
+  container.innerHTML = '';
+  var cards = _legendCards.filter(function(c) { return c.color; }).slice(-4);
+  if (!cards.length) {
+    if (sep) sep.style.display = 'none';
+    return;
+  }
+  if (sep) sep.style.display = '';
+  var lbl = document.createElement('span');
+  lbl.style.cssText = 'font-size:10px;color:var(--steel);font-weight:600;letter-spacing:0.3px;white-space:nowrap;';
+  lbl.textContent = 'Cards';
+  container.appendChild(lbl);
+  cards.forEach(function(card) {
+    var dot = document.createElement('div');
+    dot.style.cssText = 'width:16px;height:16px;border-radius:50%;background:' + card.color + ';cursor:pointer;border:2px solid transparent;transition:border 0.15s;flex-shrink:0;';
+    dot.title = card.label || card.color;
+    dot.onclick = function() { applyToolbarColor(card.color); };
+    dot.onmouseenter = function() { dot.style.borderColor = 'var(--ink)'; };
+    dot.onmouseleave = function() { dot.style.borderColor = 'transparent'; };
+    container.appendChild(dot);
+  });
+}
+
 function showColorToolbar(section, id, anchorEl) {
   _tbSection = section;
   _tbId = id;
@@ -8399,6 +8498,8 @@ function showColorToolbar(section, id, anchorEl) {
   // Update dots to reflect current colors
   updateToolbarDots();
   setToolbarType(_tbType);
+  // Populate legend card swatches
+  updateLegendSwatches();
 }
 
 function hideColorToolbar() {
