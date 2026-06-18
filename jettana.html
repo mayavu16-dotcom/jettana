@@ -8013,6 +8013,15 @@ function updateImportCount() {
 function confirmImport() {
   var all = loadAll();
   var toAdd = importedTransactions.filter(function(t) { return !t._skip && t.category !== 'skip'; });
+
+  // Sort oldest → newest so most recent transaction ends up at bottom
+  toAdd.sort(function(a, b) {
+    var da = convertImportDate(a.date) || '';
+    var db = convertImportDate(b.date) || '';
+    if (da < db) return -1;
+    if (da > db) return 1;
+    return 0;
+  });
   
   toAdd.forEach(function(t) {
     var section = t.category;
