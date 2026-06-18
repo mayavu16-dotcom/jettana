@@ -5779,16 +5779,22 @@ function toggleNote(section, id) {
   var opening = !wrap.classList.contains('open');
   wrap.classList.toggle('open', opening);
   if (opening) {
-    if (section === 'savings') {
+    if (section === 'savings' || section === 'income') {
       var noteInner = wrap.querySelector('.note-inner');
       if (noteInner && !noteInner.querySelector('.savings-template')) {
         var all = loadAll();
-        var rows = (all[currentMonthKey] && all[currentMonthKey].savings) || [];
+        var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
         var row = rows.find(function(r) { return r.id === id; });
         var savedTemplate = (row && row._template) || 'general';
 
-        var templates = ['general','transfer','contribution','investment','interest'];
-        var templateLabels = { general: 'General', transfer: 'Transfer', contribution: 'Contribution', investment: 'Investment', interest: 'Interest' };
+        var templates, templateLabels;
+        if (section === 'income') {
+          templates = ['general', 'paycheck'];
+          templateLabels = { general: 'General', paycheck: 'Paycheck' };
+        } else {
+          templates = ['general','transfer','contribution','investment','interest'];
+          templateLabels = { general: 'General', transfer: 'Transfer', contribution: 'Contribution', investment: 'Investment', interest: 'Interest' };
+        }
 
         // Build pill selector
         var pillHtml = '<div class="savings-template" style="display:flex;gap:4px;padding:8px 10px 6px;flex-wrap:wrap;border-bottom:1px solid var(--mist);">';
@@ -5870,9 +5876,7 @@ function renderAllEntries(section, id, template, entries) {
     var entryDiv = document.createElement('div');
     entryDiv.className = 'st-entry';
     entryDiv.style.cssText = 'border:1px solid var(--mist);border-radius:8px;padding:10px;margin-bottom:8px;position:relative;';
-    if (entries.length > 1) {
-      entryDiv.innerHTML += '<button onclick="removeEntry(\'' + section + '\',\'' + id + '\',' + idx + ')" style="position:absolute;top:6px;right:6px;background:none;border:none;cursor:pointer;font-size:12px;color:var(--steel);" title="Remove">×</button>';
-    }
+    entryDiv.innerHTML += '<button onclick="removeEntry(\'' + section + '\',\'' + id + '\',' + idx + ')" style="position:absolute;top:6px;right:6px;background:none;border:none;cursor:pointer;font-size:14px;color:var(--steel);line-height:1;padding:2px 4px;border-radius:4px;" title="Remove entry" onmousedown="event.stopPropagation()">×</button>';
     entryDiv.innerHTML += renderEntryFields(section, id, template, entry, idx);
     container.appendChild(entryDiv);
   });
@@ -5893,6 +5897,23 @@ function renderEntryFields(section, id, template, entry, idx) {
   var labelStyle = 'font-size:10px;color:var(--steel);display:block;margin-bottom:2px;';
   var fieldStyle = 'flex:1;min-width:90px;';
   var cb = 'saveEntry(\'' + section + '\',\'' + id + '\',' + idx + ')';
+
+  if (template === 'paycheck') {
+    return '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Pay date</label>' +
+      '<input type="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Hours worked</label>' +
+      '<input type="text" value="' + (entry.hours || '') + '" placeholder="e.g. 80" style="' + inputStyle + '" oninput="this.dataset.key=\'hours\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Hourly rate</label>' +
+      '<input type="text" value="' + (entry.rate || '') + '" placeholder="$0.00" style="' + inputStyle + '" oninput="this.dataset.key=\'rate\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Gross pay</label>' +
+      '<input type="text" value="' + (entry.gross || '') + '" placeholder="$0.00" style="' + inputStyle + '" oninput="this.dataset.key=\'gross\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Taxes</label>' +
+      '<input type="text" value="' + (entry.taxes || '') + '" placeholder="$0.00" style="' + inputStyle + '" oninput="this.dataset.key=\'taxes\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Deductions</label>' +
+      '<input type="text" value="' + (entry.deductions || '') + '" placeholder="$0.00" style="' + inputStyle + '" oninput="this.dataset.key=\'deductions\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '</div>';
+  }
 
   if (template === 'transfer') {
     return '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
@@ -6002,8 +6023,14 @@ function updateEntryTotal(section, id, template) {
     if (template === 'transfer') {
       var amt = parseAmt(e.amt);
       if (e.dir === 'withdrawal') total -= amt;
-      else if (e.dir === 'transfer') total += amt; // neutral — just record the amount
-      else total += amt; // deposit
+      else if (e.dir === 'transfer') total += amt;
+      else total += amt;
+    } else if (template === 'paycheck') {
+      var gross = parseAmt(e.gross);
+      if (!gross && e.hours && e.rate) gross = parseAmt(e.hours) * parseAmt(e.rate);
+      var taxes = parseAmt(e.taxes);
+      var deductions = parseAmt(e.deductions);
+      total += gross - taxes - deductions;
     } else if (template === 'contribution') {
       total += parseAmt(e.myc) + parseAmt(e.emp);
     } else if (template === 'investment') {
