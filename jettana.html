@@ -567,11 +567,13 @@ body {
   justify-content: center;
   width: 100%;
   border-left: 0.5px solid var(--mist);
-  padding: 0 8px;
+  padding: 0 4px;
+  overflow: hidden;
 }
 .num-col-wrap .erow-num-input {
   width: 100%;
   text-align: center;
+  min-width: 0;
 }
 /* Mute col 1 for budget/planned sections + checking (beginning) + debt (current) */
 [data-section="income"] .erow-num-input[data-col="1"],
@@ -4498,6 +4500,15 @@ function renderRowEl(section, row, animate = false) {
     return n < 0 ? '-' + str : str;
   }
 
+  function applyNumFontSize(input) {
+    if (!input || !input.value) return;
+    var len = input.value.replace(/[^0-9]/g, '').length;
+    if (len >= 8) input.style.fontSize = '10px';
+    else if (len >= 7) input.style.fontSize = '11px';
+    else if (len >= 6) input.style.fontSize = '12px';
+    else input.style.fontSize = '';
+  }
+
   const PAID_SECTIONS = ['housing','transport','debt','food','health','gifts','misc','subscriptions'];
   const allowPaid = PAID_SECTIONS.includes(section);
   const DATE_SECTIONS = ['housing','transport','debt','food','health','gifts','misc','subscriptions','income','savings','checking'];
@@ -4627,6 +4638,8 @@ function renderRowEl(section, row, animate = false) {
     </div>
   `;
   container.appendChild(div);
+  // Shrink font for large numbers
+  div.querySelectorAll('.erow-num-input').forEach(applyNumFontSize);
 
   // Note row — sibling div, lives outside the grid
   var noteDiv = document.createElement('div');
@@ -4689,6 +4702,12 @@ function numBlur(el) {
     const formatted = '$' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     el.value = raw < 0 ? '-' + formatted : formatted;
     updateRow(el.dataset.section, el.dataset.id, el.dataset.key, raw);
+    // Shrink font for large numbers
+    var len = el.value.replace(/[^0-9]/g, '').length;
+    if (len >= 8) el.style.fontSize = '10px';
+    else if (len >= 7) el.style.fontSize = '11px';
+    else if (len >= 6) el.style.fontSize = '12px';
+    else el.style.fontSize = '';
   }
 }
 
@@ -4929,6 +4948,16 @@ function cancelBulk(section) {
 function sum(rows, key) {
   return (rows || []).reduce((t, r) => t + (parseFloat(r[key]) || 0), 0);
 }
+function setNumInputValue(input, formattedStr) {
+  input.value = formattedStr;
+  // Shrink font for long numbers to prevent overflow
+  var len = formattedStr.replace(/[^0-9.,]/g, '').length;
+  if (len >= 8) input.style.fontSize = '10px';
+  else if (len >= 7) input.style.fontSize = '11px';
+  else if (len >= 6) input.style.fontSize = '12px';
+  else input.style.fontSize = '';
+}
+
 function fmt(n) {
   const num = parseFloat(n) || 0;
   const abs = Math.abs(num);
