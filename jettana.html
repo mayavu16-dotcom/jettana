@@ -5845,187 +5845,168 @@ function renderSavingsTemplateFields(section, id, template, row) {
   if (!container) return;
   row = row || {};
 
-  var inputStyle = 'border:none;border-bottom:1px solid var(--mist);outline:none;font-size:12px;font-family:Outfit,sans-serif;background:transparent;color:var(--ink);padding:2px 4px;width:100%;box-sizing:border-box;';
-  var labelStyle = 'font-size:10px;color:var(--steel);display:block;margin-bottom:2px;';
-  var fieldStyle = 'flex:1;min-width:100px;';
-
   if (template === 'general') {
     container.innerHTML = '';
     return;
   }
 
-  if (template === 'transfer') {
-    container.innerHTML =
-      '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;">' +
-        '<div style="' + fieldStyle + '">' +
-          '<label style="' + labelStyle + '">Date</label>' +
-          '<input type="date" id="st-date-' + id + '" value="' + (row._tDate || '') + '" style="' + inputStyle + '" oninput="saveSavingsField(\'' + section + '\',\'' + id + '\',\'_tDate\',this.value)" onclick="event.stopPropagation()">' +
-        '</div>' +
-        '<div style="' + fieldStyle + '">' +
-          '<label style="' + labelStyle + '">Amount</label>' +
-          '<input type="text" id="st-amt-' + id + '" value="' + (row._tAmt || '') + '" placeholder="$0.00" style="' + inputStyle + '" oninput="saveSavingsField(\'' + section + '\',\'' + id + '\',\'_tAmt\',this.value);calcTransfer(\'' + id + '\')" onclick="event.stopPropagation()">' +
-        '</div>' +
-        '<div style="' + fieldStyle + '">' +
-          '<label style="' + labelStyle + '">Type</label>' +
-          '<select id="st-dir-' + id + '" style="' + inputStyle + 'appearance:none;" oninput="saveSavingsField(\'' + section + '\',\'' + id + '\',\'_tDir\',this.value);calcTransfer(\'' + id + '\')" onclick="event.stopPropagation()">' +
-            '<option value="deposit"' + (row._tDir === 'deposit' ? ' selected' : '') + '>Deposit</option>' +
-            '<option value="withdrawal"' + (row._tDir === 'withdrawal' ? ' selected' : '') + '>Withdrawal</option>' +
-          '</select>' +
-        '</div>' +
-      '</div>' +
-      '<div id="st-result-' + id + '" style="font-size:11px;font-weight:600;margin-bottom:8px;"></div>';
-    calcTransfer(id);
+  // Initialize entries array if not exists
+  var all = loadAll();
+  var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
+  var rowData = rows.find(function(r) { return r.id === id; }) || {};
+  var entries = rowData._entries || [];
+  if (!entries.length) entries = [{}]; // start with one empty entry
 
-  } else if (template === 'contribution') {
-    container.innerHTML =
-      '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;">' +
-        '<div style="' + fieldStyle + '">' +
-          '<label style="' + labelStyle + '">My contribution</label>' +
-          '<input type="text" id="st-myc-' + id + '" value="' + (row._myContrib || '') + '" placeholder="$0.00" style="' + inputStyle + '" oninput="saveSavingsField(\'' + section + '\',\'' + id + '\',\'_myContrib\',this.value);calcContrib(\'' + section + '\',\'' + id + '\')" onclick="event.stopPropagation()">' +
-        '</div>' +
-        '<div style="' + fieldStyle + '">' +
-          '<label style="' + labelStyle + '">Employer match</label>' +
-          '<input type="text" id="st-emp-' + id + '" value="' + (row._empMatch || '') + '" placeholder="$0.00" style="' + inputStyle + '" oninput="saveSavingsField(\'' + section + '\',\'' + id + '\',\'_empMatch\',this.value);calcContrib(\'' + section + '\',\'' + id + '\')" onclick="event.stopPropagation()">' +
-        '</div>' +
-      '</div>' +
-      '<div id="st-result-' + id + '" style="font-size:11px;font-weight:600;margin-bottom:8px;"></div>';
-    calcContrib(section, id);
-
-  } else if (template === 'investment') {
-    container.innerHTML =
-      '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;">' +
-        '<div style="' + fieldStyle + '">' +
-          '<label style="' + labelStyle + '">Fund / Ticker</label>' +
-          '<input type="text" id="st-fund-' + id + '" value="' + (row._fund || '') + '" placeholder="e.g. VOO, FXAIX" style="' + inputStyle + '" oninput="saveSavingsField(\'' + section + '\',\'' + id + '\',\'_fund\',this.value)" onclick="event.stopPropagation()">' +
-        '</div>' +
-        '<div style="' + fieldStyle + '">' +
-          '<label style="' + labelStyle + '">Shares</label>' +
-          '<input type="text" id="st-shares-' + id + '" value="' + (row._shares || '') + '" placeholder="0.00" style="' + inputStyle + '" oninput="saveSavingsField(\'' + section + '\',\'' + id + '\',\'_shares\',this.value);calcInvestment(\'' + id + '\')" onclick="event.stopPropagation()">' +
-        '</div>' +
-        '<div style="' + fieldStyle + '">' +
-          '<label style="' + labelStyle + '">Price per share</label>' +
-          '<input type="text" id="st-price-' + id + '" value="' + (row._price || '') + '" placeholder="$0.00" style="' + inputStyle + '" oninput="saveSavingsField(\'' + section + '\',\'' + id + '\',\'_price\',this.value);calcInvestment(\'' + id + '\')" onclick="event.stopPropagation()">' +
-        '</div>' +
-        '<div style="' + fieldStyle + '">' +
-          '<label style="' + labelStyle + '">Date</label>' +
-          '<input type="date" id="st-idate-' + id + '" value="' + (row._iDate || '') + '" style="' + inputStyle + '" oninput="saveSavingsField(\'' + section + '\',\'' + id + '\',\'_iDate\',this.value)" onclick="event.stopPropagation()">' +
-        '</div>' +
-      '</div>' +
-      '<div id="st-result-' + id + '" style="font-size:11px;font-weight:600;margin-bottom:8px;"></div>';
-    calcInvestment(id);
-
-  } else if (template === 'interest') {
-    container.innerHTML =
-      '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;">' +
-        '<div style="' + fieldStyle + '">' +
-          '<label style="' + labelStyle + '">Interest earned</label>' +
-          '<input type="text" id="st-int-' + id + '" value="' + (row._interest || '') + '" placeholder="$0.00" style="' + inputStyle + '" oninput="saveSavingsField(\'' + section + '\',\'' + id + '\',\'_interest\',this.value);calcInterest(\'' + section + '\',\'' + id + '\')" onclick="event.stopPropagation()">' +
-        '</div>' +
-        '<div style="' + fieldStyle + '">' +
-          '<label style="' + labelStyle + '">APY %</label>' +
-          '<input type="text" id="st-apy-' + id + '" value="' + (row._apy || '') + '" placeholder="e.g. 4.5" style="' + inputStyle + '" oninput="saveSavingsField(\'' + section + '\',\'' + id + '\',\'_apy\',this.value)" onclick="event.stopPropagation()">' +
-        '</div>' +
-        '<div style="' + fieldStyle + '">' +
-          '<label style="' + labelStyle + '">Date</label>' +
-          '<input type="date" id="st-intdate-' + id + '" value="' + (row._intDate || '') + '" style="' + inputStyle + '" oninput="saveSavingsField(\'' + section + '\',\'' + id + '\',\'_intDate\',this.value)" onclick="event.stopPropagation()">' +
-        '</div>' +
-      '</div>' +
-      '<div id="st-result-' + id + '" style="font-size:11px;font-weight:600;margin-bottom:8px;"></div>';
-    calcInterest(section, id);
-  }
+  container.innerHTML = '';
+  renderAllEntries(section, id, template, entries);
 }
 
-function saveSavingsField(section, id, key, val) {
+function renderAllEntries(section, id, template, entries) {
+  var container = document.getElementById('st-fields-' + id);
+  if (!container) return;
+  container.innerHTML = '';
+
+  entries.forEach(function(entry, idx) {
+    var entryDiv = document.createElement('div');
+    entryDiv.className = 'st-entry';
+    entryDiv.style.cssText = 'border:1px solid var(--mist);border-radius:8px;padding:10px;margin-bottom:8px;position:relative;';
+    if (entries.length > 1) {
+      entryDiv.innerHTML += '<button onclick="removeEntry(\'' + section + '\',\'' + id + '\',' + idx + ')" style="position:absolute;top:6px;right:6px;background:none;border:none;cursor:pointer;font-size:12px;color:var(--steel);" title="Remove">×</button>';
+    }
+    entryDiv.innerHTML += renderEntryFields(section, id, template, entry, idx);
+    container.appendChild(entryDiv);
+  });
+
+  // Add entry button
+  var addBtn = document.createElement('button');
+  addBtn.textContent = '+ Add entry';
+  addBtn.style.cssText = 'width:100%;padding:6px;background:none;border:1px dashed var(--mist);border-radius:8px;font-size:12px;font-family:Outfit,sans-serif;color:var(--steel);cursor:pointer;margin-bottom:8px;';
+  addBtn.onclick = function(e) { e.stopPropagation(); addEntry(section, id, template); };
+  container.appendChild(addBtn);
+
+  // Total across all entries
+  updateEntryTotal(section, id, template);
+}
+
+function renderEntryFields(section, id, template, entry, idx) {
+  var inputStyle = 'border:none;border-bottom:1px solid var(--mist);outline:none;font-size:12px;font-family:Outfit,sans-serif;background:transparent;color:var(--ink);padding:2px 4px;width:100%;box-sizing:border-box;';
+  var labelStyle = 'font-size:10px;color:var(--steel);display:block;margin-bottom:2px;';
+  var fieldStyle = 'flex:1;min-width:90px;';
+  var cb = 'saveEntry(\'' + section + '\',\'' + id + '\',' + idx + ')';
+
+  if (template === 'transfer') {
+    return '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Date</label>' +
+      '<input type="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Amount</label>' +
+      '<input type="text" value="' + (entry.amt || '') + '" placeholder="$0.00" style="' + inputStyle + '" oninput="this.dataset.key=\'amt\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Type</label>' +
+      '<select style="' + inputStyle + 'appearance:none;" oninput="this.dataset.key=\'dir\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()">' +
+      '<option value="deposit"' + (entry.dir === 'deposit' || !entry.dir ? ' selected' : '') + '>Deposit</option>' +
+      '<option value="withdrawal"' + (entry.dir === 'withdrawal' ? ' selected' : '') + '>Withdrawal</option>' +
+      '</select></div>' +
+      '<div id="entry-result-' + id + '-' + idx + '" style="font-size:11px;color:var(--sage);align-self:flex-end;padding-bottom:4px;"></div>' +
+      '</div>';
+  }
+  if (template === 'contribution') {
+    return '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">My contribution</label>' +
+      '<input type="text" value="' + (entry.myc || '') + '" placeholder="$0.00" style="' + inputStyle + '" oninput="this.dataset.key=\'myc\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Employer match</label>' +
+      '<input type="text" value="' + (entry.emp || '') + '" placeholder="$0.00" style="' + inputStyle + '" oninput="this.dataset.key=\'emp\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '</div>';
+  }
+  if (template === 'investment') {
+    return '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Fund / Ticker</label>' +
+      '<input type="text" value="' + (entry.fund || '') + '" placeholder="VOO, FXAIX…" style="' + inputStyle + '" oninput="this.dataset.key=\'fund\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Shares</label>' +
+      '<input type="text" value="' + (entry.shares || '') + '" placeholder="0.00" style="' + inputStyle + '" oninput="this.dataset.key=\'shares\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Price/share</label>' +
+      '<input type="text" value="' + (entry.price || '') + '" placeholder="$0.00" style="' + inputStyle + '" oninput="this.dataset.key=\'price\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Date</label>' +
+      '<input type="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '</div>';
+  }
+  if (template === 'interest') {
+    return '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Interest earned</label>' +
+      '<input type="text" value="' + (entry.interest || '') + '" placeholder="$0.00" style="' + inputStyle + '" oninput="this.dataset.key=\'interest\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">APY %</label>' +
+      '<input type="text" value="' + (entry.apy || '') + '" placeholder="4.5" style="' + inputStyle + '" oninput="this.dataset.key=\'apy\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Date</label>' +
+      '<input type="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '</div>';
+  }
+  return '';
+}
+
+function saveEntry(section, id, idx) {
   var all = loadAll();
   var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
   var row = rows.find(function(r) { return r.id === id; });
-  if (row) { row[key] = val; saveAll(all); scheduleSave(); }
+  if (!row) return;
+  if (!row._entries) row._entries = [{}];
+  while (row._entries.length <= idx) row._entries.push({});
+
+  // Collect all inputs from this entry's div
+  var container = document.getElementById('st-fields-' + id);
+  if (!container) return;
+  var entryDivs = container.querySelectorAll('.st-entry');
+  if (!entryDivs[idx]) return;
+  var inputs = entryDivs[idx].querySelectorAll('input, select');
+  inputs.forEach(function(inp) {
+    if (inp.dataset.key) row._entries[idx][inp.dataset.key] = inp.value;
+  });
+  saveAll(all);
+  scheduleSave();
 }
 
-function parseAmt(val) {
-  return parseFloat(String(val).replace(/[^0-9.-]/g, '')) || 0;
+function addEntry(section, id, template) {
+  var all = loadAll();
+  var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
+  var row = rows.find(function(r) { return r.id === id; });
+  if (!row) return;
+  if (!row._entries) row._entries = [{}];
+  row._entries.push({});
+  saveAll(all);
+  renderAllEntries(section, id, template, row._entries);
 }
 
-function applyToGrowth(id, amount, label) {
-  var growthInput = document.querySelector('[data-id="' + id + '"] [data-col="2"]');
-  if (!growthInput) return;
-  var abs = Math.abs(amount);
-  var sign = amount >= 0 ? '+' : '-';
-  growthInput.dataset.raw = amount;
-  growthInput.value = sign + '$' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  growthInput.classList.remove('growth-positive', 'growth-negative');
-  growthInput.classList.add(amount >= 0 ? 'growth-positive' : 'growth-negative');
-  growthInput.title = label;
+function removeEntry(section, id, idx) {
+  var all = loadAll();
+  var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
+  var row = rows.find(function(r) { return r.id === id; });
+  if (!row || !row._entries) return;
+  row._entries.splice(idx, 1);
+  if (!row._entries.length) row._entries = [{}];
+  saveAll(all);
+  var template = row._template || 'general';
+  renderAllEntries(section, id, template, row._entries);
 }
 
-function calcTransfer(id) {
-  var amtEl = document.getElementById('st-amt-' + id);
-  var dirEl = document.getElementById('st-dir-' + id);
-  var result = document.getElementById('st-result-' + id);
-  if (!amtEl || !dirEl || !result) return;
-  var amt = parseAmt(amtEl.value);
-  var isWithdrawal = dirEl.value === 'withdrawal';
-  var final = isWithdrawal ? -amt : amt;
-  if (amt > 0) {
-    result.style.color = final >= 0 ? 'var(--sage)' : 'var(--blush)';
-    result.textContent = (isWithdrawal ? '−' : '+') + '$' + amt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + (isWithdrawal ? 'withdrawn' : 'deposited');
-    applyToGrowth(id, final, 'Transfer');
-  } else {
-    result.textContent = '';
-  }
-}
+function updateEntryTotal(section, id, template) {
+  var all = loadAll();
+  var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
+  var row = rows.find(function(r) { return r.id === id; });
+  var entries = (row && row._entries) || [];
+  if (!entries.length || template === 'general') return;
 
-function calcContrib(section, id) {
-  var myEl = document.getElementById('st-myc-' + id);
-  var empEl = document.getElementById('st-emp-' + id);
-  var result = document.getElementById('st-result-' + id);
-  if (!result) return;
-  var my = parseAmt(myEl ? myEl.value : 0);
-  var emp = parseAmt(empEl ? empEl.value : 0);
-  var total = my + emp;
-  if (total > 0) {
-    result.style.color = 'var(--sage)';
-    var parts = [];
-    if (my > 0) parts.push('$' + my.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' you');
-    if (emp > 0) parts.push('$' + emp.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' employer');
-    result.textContent = '= $' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + (parts.length ? ' (' + parts.join(' + ') + ')' : '');
-    applyToGrowth(id, total, 'Contribution total');
-  } else {
-    result.textContent = '';
-  }
-}
+  var total = 0;
+  entries.forEach(function(e) {
+    if (template === 'transfer') {
+      var amt = parseAmt(e.amt);
+      total += e.dir === 'withdrawal' ? -amt : amt;
+    } else if (template === 'contribution') {
+      total += parseAmt(e.myc) + parseAmt(e.emp);
+    } else if (template === 'investment') {
+      total += parseAmt(e.shares) * parseAmt(e.price);
+    } else if (template === 'interest') {
+      total += parseAmt(e.interest);
+    }
+  });
 
-function calcInvestment(id) {
-  var sharesEl = document.getElementById('st-shares-' + id);
-  var priceEl = document.getElementById('st-price-' + id);
-  var fundEl = document.getElementById('st-fund-' + id);
-  var result = document.getElementById('st-result-' + id);
-  if (!result) return;
-  var shares = parseAmt(sharesEl ? sharesEl.value : 0);
-  var price = parseAmt(priceEl ? priceEl.value : 0);
-  var fund = fundEl ? fundEl.value.trim() : '';
-  var total = shares * price;
-  if (total > 0) {
-    result.style.color = 'var(--sage)';
-    result.textContent = (fund ? fund + ': ' : '') + shares + ' shares × $' + price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' = $' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    applyToGrowth(id, total, 'Investment purchase');
-  } else {
-    result.textContent = '';
-  }
-}
-
-function calcInterest(section, id) {
-  var intEl = document.getElementById('st-int-' + id);
-  var result = document.getElementById('st-result-' + id);
-  if (!result) return;
-  var interest = parseAmt(intEl ? intEl.value : 0);
-  if (interest > 0) {
-    result.style.color = 'var(--sage)';
-    result.textContent = '+$' + interest.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' interest earned';
-    applyToGrowth(id, interest, 'Interest earned');
-  } else {
-    result.textContent = '';
-  }
+  if (total !== 0) applyToGrowth(id, total, 'Auto-calculated from entries');
 }
 
 function saveNote(section, id, val) {
@@ -7310,13 +7291,25 @@ function closeNote(id) {
 }
 
 function noteBlur(section, id) {
-  // Close if empty — if user opened but didn't type anything
+  // Close if empty — but only if no template fields are filled
   var ta = document.getElementById('note-ta-' + id);
   if (ta && !ta.value.trim()) {
-    setTimeout(function() {
-      var wrap = document.getElementById('note-wrap-' + id);
-      if (wrap) wrap.classList.remove('open');
-    }, 150); // small delay so close button click registers first
+    // Check if any template fields have values
+    var wrap = document.getElementById('note-wrap-' + id);
+    var hasTemplateData = false;
+    if (wrap) {
+      var inputs = wrap.querySelectorAll('.savings-template ~ div input, #st-fields-' + id + ' input, #st-fields-' + id + ' select');
+      inputs.forEach(function(inp) { if (inp.value.trim()) hasTemplateData = true; });
+      // Also check if entries exist
+      var entries = wrap.querySelectorAll('.st-entry');
+      if (entries.length > 0) hasTemplateData = true;
+    }
+    if (!hasTemplateData) {
+      setTimeout(function() {
+        var w = document.getElementById('note-wrap-' + id);
+        if (w) w.classList.remove('open');
+      }, 150);
+    }
   }
 }
 
