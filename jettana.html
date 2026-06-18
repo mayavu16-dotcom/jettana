@@ -5904,7 +5904,12 @@ function renderEntryFields(section, id, template, entry, idx) {
       '<select style="' + inputStyle + 'appearance:none;" oninput="this.dataset.key=\'dir\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()">' +
       '<option value="deposit"' + (entry.dir === 'deposit' || !entry.dir ? ' selected' : '') + '>Deposit</option>' +
       '<option value="withdrawal"' + (entry.dir === 'withdrawal' ? ' selected' : '') + '>Withdrawal</option>' +
+      '<option value="transfer"' + (entry.dir === 'transfer' ? ' selected' : '') + '>Transfer</option>' +
       '</select></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">From</label>' +
+      '<input type="text" value="' + (entry.from || '') + '" placeholder="e.g. Checking" style="' + inputStyle + '" oninput="this.dataset.key=\'from\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">To</label>' +
+      '<input type="text" value="' + (entry.to || '') + '" placeholder="e.g. HYSA" style="' + inputStyle + '" oninput="this.dataset.key=\'to\';' + cb + '" onclick="event.stopPropagation()"></div>' +
       '<div id="entry-result-' + id + '-' + idx + '" style="font-size:11px;color:var(--sage);align-self:flex-end;padding-bottom:4px;"></div>' +
       '</div>';
   }
@@ -5996,7 +6001,9 @@ function updateEntryTotal(section, id, template) {
   entries.forEach(function(e) {
     if (template === 'transfer') {
       var amt = parseAmt(e.amt);
-      total += e.dir === 'withdrawal' ? -amt : amt;
+      if (e.dir === 'withdrawal') total -= amt;
+      else if (e.dir === 'transfer') total += amt; // neutral — just record the amount
+      else total += amt; // deposit
     } else if (template === 'contribution') {
       total += parseAmt(e.myc) + parseAmt(e.emp);
     } else if (template === 'investment') {
@@ -7291,26 +7298,28 @@ function closeNote(id) {
 }
 
 function noteBlur(section, id) {
-  // Close if empty — but only if no template fields are filled
   var ta = document.getElementById('note-ta-' + id);
-  if (ta && !ta.value.trim()) {
+  if (!ta || ta.value.trim()) return; // has text — never close
+  var wrap = document.getElementById('note-wrap-' + id);
+  setTimeout(function() {
+    // Check if focus moved to something inside the note wrap
+    var active = document.activeElement;
+    if (wrap && active && wrap.contains(active)) return;
+    // Check if active element is a template pill or button inside note
+    if (active && active.closest && active.closest('.note-wrap')) return;
     // Check if any template fields have values
-    var wrap = document.getElementById('note-wrap-' + id);
     var hasTemplateData = false;
     if (wrap) {
-      var inputs = wrap.querySelectorAll('.savings-template ~ div input, #st-fields-' + id + ' input, #st-fields-' + id + ' select');
+      var inputs = wrap.querySelectorAll('#st-fields-' + id + ' input, #st-fields-' + id + ' select');
       inputs.forEach(function(inp) { if (inp.value.trim()) hasTemplateData = true; });
-      // Also check if entries exist
       var entries = wrap.querySelectorAll('.st-entry');
-      if (entries.length > 0) hasTemplateData = true;
+      if (entries.length > 1) hasTemplateData = true; // more than the default empty entry
     }
     if (!hasTemplateData) {
-      setTimeout(function() {
-        var w = document.getElementById('note-wrap-' + id);
-        if (w) w.classList.remove('open');
-      }, 150);
+      var w = document.getElementById('note-wrap-' + id);
+      if (w) w.classList.remove('open');
     }
-  }
+  }, 200);
 }
 
 
