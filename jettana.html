@@ -4231,6 +4231,14 @@ function createFreshMonth(newKey) {
           paidColor: r.paidColor || '',
           numColor: r.numColor || '',
           strikeColor: r.strikeColor || '',
+          _template: r._template || '',
+          _myContrib: r._myContrib || '',
+          _empMatch: r._empMatch || '',
+          _apy: r._apy || '',
+          _fund: r._fund || '',
+          _shares: r._shares || '',
+          _price: r._price || '',
+          _tDir: r._tDir || '',
         };
         if (!all[newKey][section]) all[newKey][section] = [];
         all[newKey][section].push(newRow);
@@ -4363,6 +4371,14 @@ function copyMonthData(sourceKey, newKey) {
       paidColor: row.paidColor || '',
       numColor: row.numColor || '',
       strikeColor: row.strikeColor || '',
+      _template: row._template || '',
+      _myContrib: row._myContrib || '',
+      _empMatch: row._empMatch || '',
+      _apy: row._apy || '',
+      _fund: row._fund || '',
+      _shares: row._shares || '',
+      _price: row._price || '',
+      _tDir: row._tDir || '',
     }));
   });
   // Copy footer highlights and budget overrides from source month
@@ -5763,8 +5779,252 @@ function toggleNote(section, id) {
   var opening = !wrap.classList.contains('open');
   wrap.classList.toggle('open', opening);
   if (opening) {
+    if (section === 'savings') {
+      var noteInner = wrap.querySelector('.note-inner');
+      if (noteInner && !noteInner.querySelector('.savings-template')) {
+        var all = loadAll();
+        var rows = (all[currentMonthKey] && all[currentMonthKey].savings) || [];
+        var row = rows.find(function(r) { return r.id === id; });
+        var savedTemplate = (row && row._template) || 'general';
+
+        var templates = ['general','transfer','contribution','investment','interest'];
+        var templateLabels = { general: 'General', transfer: 'Transfer', contribution: 'Contribution', investment: 'Investment', interest: 'Interest' };
+
+        // Build pill selector
+        var pillHtml = '<div class="savings-template" style="display:flex;gap:4px;padding:8px 10px 6px;flex-wrap:wrap;border-bottom:1px solid var(--mist);">';
+        templates.forEach(function(t) {
+          var active = t === savedTemplate;
+          pillHtml += '<button onclick="setSavingsTemplate(\'' + section + '\',\'' + id + '\',\'' + t + '\')" ' +
+            'id="st-pill-' + id + '-' + t + '" ' +
+            'style="padding:3px 8px;border-radius:12px;border:1px solid var(--mist);font-size:10px;font-family:Outfit,sans-serif;cursor:pointer;transition:all 0.15s;' +
+            (active ? 'background:var(--sage);color:white;border-color:var(--sage);' : 'background:none;color:var(--steel);') + '" ' +
+            'onclick="event.stopPropagation();setSavingsTemplate(\'' + section + '\',\'' + id + '\',\'' + t + '\')">' +
+            templateLabels[t] + '</button>';
+        });
+        pillHtml += '</div><div id="st-fields-' + id + '" style="padding:8px 10px 0;"></div>';
+
+        var pillDiv = document.createElement('div');
+        pillDiv.innerHTML = pillHtml;
+        noteInner.insertBefore(pillDiv, noteInner.firstChild);
+
+        // Render fields for saved template
+        renderSavingsTemplateFields(section, id, savedTemplate, row);
+      }
+    }
     var ta = document.getElementById('note-ta-' + id);
     if (ta) setTimeout(function() { ta.focus(); }, 50);
+  }
+}
+
+function setSavingsTemplate(section, id, template) {
+  // Update pill styles
+  var templates = ['general','transfer','contribution','investment','interest'];
+  templates.forEach(function(t) {
+    var pill = document.getElementById('st-pill-' + id + '-' + t);
+    if (!pill) return;
+    if (t === template) {
+      pill.style.background = 'var(--sage)';
+      pill.style.color = 'white';
+      pill.style.borderColor = 'var(--sage)';
+    } else {
+      pill.style.background = 'none';
+      pill.style.color = 'var(--steel)';
+      pill.style.borderColor = 'var(--mist)';
+    }
+  });
+  // Save template choice to row
+  var all = loadAll();
+  var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
+  var row = rows.find(function(r) { return r.id === id; });
+  if (row) { row._template = template; saveAll(all); scheduleSave(); }
+  renderSavingsTemplateFields(section, id, template, row);
+}
+
+function renderSavingsTemplateFields(section, id, template, row) {
+  var container = document.getElementById('st-fields-' + id);
+  if (!container) return;
+  row = row || {};
+
+  var inputStyle = 'border:none;border-bottom:1px solid var(--mist);outline:none;font-size:12px;font-family:Outfit,sans-serif;background:transparent;color:var(--ink);padding:2px 4px;width:100%;box-sizing:border-box;';
+  var labelStyle = 'font-size:10px;color:var(--steel);display:block;margin-bottom:2px;';
+  var fieldStyle = 'flex:1;min-width:100px;';
+
+  if (template === 'general') {
+    container.innerHTML = '';
+    return;
+  }
+
+  if (template === 'transfer') {
+    container.innerHTML =
+      '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;">' +
+        '<div style="' + fieldStyle + '">' +
+          '<label style="' + labelStyle + '">Date</label>' +
+          '<input type="date" id="st-date-' + id + '" value="' + (row._tDate || '') + '" style="' + inputStyle + '" oninput="saveSavingsField(\'' + section + '\',\'' + id + '\',\'_tDate\',this.value)" onclick="event.stopPropagation()">' +
+        '</div>' +
+        '<div style="' + fieldStyle + '">' +
+          '<label style="' + labelStyle + '">Amount</label>' +
+          '<input type="text" id="st-amt-' + id + '" value="' + (row._tAmt || '') + '" placeholder="$0.00" style="' + inputStyle + '" oninput="saveSavingsField(\'' + section + '\',\'' + id + '\',\'_tAmt\',this.value);calcTransfer(\'' + id + '\')" onclick="event.stopPropagation()">' +
+        '</div>' +
+        '<div style="' + fieldStyle + '">' +
+          '<label style="' + labelStyle + '">Type</label>' +
+          '<select id="st-dir-' + id + '" style="' + inputStyle + 'appearance:none;" oninput="saveSavingsField(\'' + section + '\',\'' + id + '\',\'_tDir\',this.value);calcTransfer(\'' + id + '\')" onclick="event.stopPropagation()">' +
+            '<option value="deposit"' + (row._tDir === 'deposit' ? ' selected' : '') + '>Deposit</option>' +
+            '<option value="withdrawal"' + (row._tDir === 'withdrawal' ? ' selected' : '') + '>Withdrawal</option>' +
+          '</select>' +
+        '</div>' +
+      '</div>' +
+      '<div id="st-result-' + id + '" style="font-size:11px;font-weight:600;margin-bottom:8px;"></div>';
+    calcTransfer(id);
+
+  } else if (template === 'contribution') {
+    container.innerHTML =
+      '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;">' +
+        '<div style="' + fieldStyle + '">' +
+          '<label style="' + labelStyle + '">My contribution</label>' +
+          '<input type="text" id="st-myc-' + id + '" value="' + (row._myContrib || '') + '" placeholder="$0.00" style="' + inputStyle + '" oninput="saveSavingsField(\'' + section + '\',\'' + id + '\',\'_myContrib\',this.value);calcContrib(\'' + section + '\',\'' + id + '\')" onclick="event.stopPropagation()">' +
+        '</div>' +
+        '<div style="' + fieldStyle + '">' +
+          '<label style="' + labelStyle + '">Employer match</label>' +
+          '<input type="text" id="st-emp-' + id + '" value="' + (row._empMatch || '') + '" placeholder="$0.00" style="' + inputStyle + '" oninput="saveSavingsField(\'' + section + '\',\'' + id + '\',\'_empMatch\',this.value);calcContrib(\'' + section + '\',\'' + id + '\')" onclick="event.stopPropagation()">' +
+        '</div>' +
+      '</div>' +
+      '<div id="st-result-' + id + '" style="font-size:11px;font-weight:600;margin-bottom:8px;"></div>';
+    calcContrib(section, id);
+
+  } else if (template === 'investment') {
+    container.innerHTML =
+      '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;">' +
+        '<div style="' + fieldStyle + '">' +
+          '<label style="' + labelStyle + '">Fund / Ticker</label>' +
+          '<input type="text" id="st-fund-' + id + '" value="' + (row._fund || '') + '" placeholder="e.g. VOO, FXAIX" style="' + inputStyle + '" oninput="saveSavingsField(\'' + section + '\',\'' + id + '\',\'_fund\',this.value)" onclick="event.stopPropagation()">' +
+        '</div>' +
+        '<div style="' + fieldStyle + '">' +
+          '<label style="' + labelStyle + '">Shares</label>' +
+          '<input type="text" id="st-shares-' + id + '" value="' + (row._shares || '') + '" placeholder="0.00" style="' + inputStyle + '" oninput="saveSavingsField(\'' + section + '\',\'' + id + '\',\'_shares\',this.value);calcInvestment(\'' + id + '\')" onclick="event.stopPropagation()">' +
+        '</div>' +
+        '<div style="' + fieldStyle + '">' +
+          '<label style="' + labelStyle + '">Price per share</label>' +
+          '<input type="text" id="st-price-' + id + '" value="' + (row._price || '') + '" placeholder="$0.00" style="' + inputStyle + '" oninput="saveSavingsField(\'' + section + '\',\'' + id + '\',\'_price\',this.value);calcInvestment(\'' + id + '\')" onclick="event.stopPropagation()">' +
+        '</div>' +
+        '<div style="' + fieldStyle + '">' +
+          '<label style="' + labelStyle + '">Date</label>' +
+          '<input type="date" id="st-idate-' + id + '" value="' + (row._iDate || '') + '" style="' + inputStyle + '" oninput="saveSavingsField(\'' + section + '\',\'' + id + '\',\'_iDate\',this.value)" onclick="event.stopPropagation()">' +
+        '</div>' +
+      '</div>' +
+      '<div id="st-result-' + id + '" style="font-size:11px;font-weight:600;margin-bottom:8px;"></div>';
+    calcInvestment(id);
+
+  } else if (template === 'interest') {
+    container.innerHTML =
+      '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;">' +
+        '<div style="' + fieldStyle + '">' +
+          '<label style="' + labelStyle + '">Interest earned</label>' +
+          '<input type="text" id="st-int-' + id + '" value="' + (row._interest || '') + '" placeholder="$0.00" style="' + inputStyle + '" oninput="saveSavingsField(\'' + section + '\',\'' + id + '\',\'_interest\',this.value);calcInterest(\'' + section + '\',\'' + id + '\')" onclick="event.stopPropagation()">' +
+        '</div>' +
+        '<div style="' + fieldStyle + '">' +
+          '<label style="' + labelStyle + '">APY %</label>' +
+          '<input type="text" id="st-apy-' + id + '" value="' + (row._apy || '') + '" placeholder="e.g. 4.5" style="' + inputStyle + '" oninput="saveSavingsField(\'' + section + '\',\'' + id + '\',\'_apy\',this.value)" onclick="event.stopPropagation()">' +
+        '</div>' +
+        '<div style="' + fieldStyle + '">' +
+          '<label style="' + labelStyle + '">Date</label>' +
+          '<input type="date" id="st-intdate-' + id + '" value="' + (row._intDate || '') + '" style="' + inputStyle + '" oninput="saveSavingsField(\'' + section + '\',\'' + id + '\',\'_intDate\',this.value)" onclick="event.stopPropagation()">' +
+        '</div>' +
+      '</div>' +
+      '<div id="st-result-' + id + '" style="font-size:11px;font-weight:600;margin-bottom:8px;"></div>';
+    calcInterest(section, id);
+  }
+}
+
+function saveSavingsField(section, id, key, val) {
+  var all = loadAll();
+  var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
+  var row = rows.find(function(r) { return r.id === id; });
+  if (row) { row[key] = val; saveAll(all); scheduleSave(); }
+}
+
+function parseAmt(val) {
+  return parseFloat(String(val).replace(/[^0-9.-]/g, '')) || 0;
+}
+
+function applyToGrowth(id, amount, label) {
+  var growthInput = document.querySelector('[data-id="' + id + '"] [data-col="2"]');
+  if (!growthInput) return;
+  var abs = Math.abs(amount);
+  var sign = amount >= 0 ? '+' : '-';
+  growthInput.dataset.raw = amount;
+  growthInput.value = sign + '$' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  growthInput.classList.remove('growth-positive', 'growth-negative');
+  growthInput.classList.add(amount >= 0 ? 'growth-positive' : 'growth-negative');
+  growthInput.title = label;
+}
+
+function calcTransfer(id) {
+  var amtEl = document.getElementById('st-amt-' + id);
+  var dirEl = document.getElementById('st-dir-' + id);
+  var result = document.getElementById('st-result-' + id);
+  if (!amtEl || !dirEl || !result) return;
+  var amt = parseAmt(amtEl.value);
+  var isWithdrawal = dirEl.value === 'withdrawal';
+  var final = isWithdrawal ? -amt : amt;
+  if (amt > 0) {
+    result.style.color = final >= 0 ? 'var(--sage)' : 'var(--blush)';
+    result.textContent = (isWithdrawal ? '−' : '+') + '$' + amt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + (isWithdrawal ? 'withdrawn' : 'deposited');
+    applyToGrowth(id, final, 'Transfer');
+  } else {
+    result.textContent = '';
+  }
+}
+
+function calcContrib(section, id) {
+  var myEl = document.getElementById('st-myc-' + id);
+  var empEl = document.getElementById('st-emp-' + id);
+  var result = document.getElementById('st-result-' + id);
+  if (!result) return;
+  var my = parseAmt(myEl ? myEl.value : 0);
+  var emp = parseAmt(empEl ? empEl.value : 0);
+  var total = my + emp;
+  if (total > 0) {
+    result.style.color = 'var(--sage)';
+    var parts = [];
+    if (my > 0) parts.push('$' + my.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' you');
+    if (emp > 0) parts.push('$' + emp.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' employer');
+    result.textContent = '= $' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + (parts.length ? ' (' + parts.join(' + ') + ')' : '');
+    applyToGrowth(id, total, 'Contribution total');
+  } else {
+    result.textContent = '';
+  }
+}
+
+function calcInvestment(id) {
+  var sharesEl = document.getElementById('st-shares-' + id);
+  var priceEl = document.getElementById('st-price-' + id);
+  var fundEl = document.getElementById('st-fund-' + id);
+  var result = document.getElementById('st-result-' + id);
+  if (!result) return;
+  var shares = parseAmt(sharesEl ? sharesEl.value : 0);
+  var price = parseAmt(priceEl ? priceEl.value : 0);
+  var fund = fundEl ? fundEl.value.trim() : '';
+  var total = shares * price;
+  if (total > 0) {
+    result.style.color = 'var(--sage)';
+    result.textContent = (fund ? fund + ': ' : '') + shares + ' shares × $' + price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' = $' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    applyToGrowth(id, total, 'Investment purchase');
+  } else {
+    result.textContent = '';
+  }
+}
+
+function calcInterest(section, id) {
+  var intEl = document.getElementById('st-int-' + id);
+  var result = document.getElementById('st-result-' + id);
+  if (!result) return;
+  var interest = parseAmt(intEl ? intEl.value : 0);
+  if (interest > 0) {
+    result.style.color = 'var(--sage)';
+    result.textContent = '+$' + interest.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' interest earned';
+    applyToGrowth(id, interest, 'Interest earned');
+  } else {
+    result.textContent = '';
   }
 }
 
