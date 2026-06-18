@@ -4208,6 +4208,7 @@ function createFreshMonth(newKey) {
           [cfg.k2]: '',
           paid: false, date: '', date2: '', note: '',
           recurring: true,
+          textColor: r.textColor || '',
           paidColor: r.paidColor || '',
           numColor: r.numColor || '',
           strikeColor: r.strikeColor || '',
@@ -4339,6 +4340,7 @@ function copyMonthData(sourceKey, newKey) {
       date2: '',
       note: '',
       recurring: row.recurring || false,
+      textColor: row.textColor || '',
       paidColor: row.paidColor || '',
       numColor: row.numColor || '',
       strikeColor: row.strikeColor || '',
@@ -5189,8 +5191,32 @@ function formatDateLabel(dateStr) {
 function toggleDateInput(rowId) {
   const input = document.getElementById(`date-input-${rowId}`);
   if (!input) return;
-  if (input.style.display === 'block') { input.style.display = 'none'; }
-  else { input.style.display = 'block'; input.focus(); }
+  if (input.style.display === 'block') {
+    input.style.display = 'none';
+  } else {
+    input.style.display = 'block';
+    input.focus();
+    // On mobile, show a clear button if date exists
+    if ('ontouchstart' in window) {
+      var existing = document.getElementById('date-clear-' + rowId);
+      if (!existing) {
+        var clearBtn = document.createElement('button');
+        clearBtn.id = 'date-clear-' + rowId;
+        clearBtn.textContent = 'Clear date';
+        clearBtn.style.cssText = 'display:block;margin:4px auto;font-size:11px;padding:4px 10px;background:#F0F3F7;border:none;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif;color:var(--steel);';
+        clearBtn.onclick = function() {
+          var section = input.closest('[data-section-id]') && input.closest('[data-section-id]').dataset.sectionId;
+          var idParts = rowId.split('-2');
+          var baseId = idParts[0];
+          var isDate2 = idParts.length > 1;
+          if (isDate2) { saveDate2(section, baseId, ''); }
+          else { saveDate(section, rowId, ''); }
+          clearBtn.remove();
+        };
+        input.parentNode.insertBefore(clearBtn, input.nextSibling);
+      }
+    }
+  }
 }
 
 function hideDateInput(rowId) {
@@ -7820,7 +7846,7 @@ async function categorizeWithClaude(transactions) {
     return (i+1) + '. ' + t.desc + ' ($' + t.amount.toFixed(2) + ')';
   }).join('\n');
 
-  var prompt = 'Categorize each transaction into one of these categories: income, savings, housing, transport, food, health, gifts, misc, debt, skip (for transfers, payments, or unclear).\n\nTransactions:\n' + txList + '\n\nRespond with ONLY a JSON array of objects with exactly these fields for each transaction (same order as input):\n[{"category": "food", "label": "Trader Joes"}, ...]\n\nRules:\n- label must be ONLY the merchant/payee name — strip everything else: no city, no state, no zip code, no store numbers (#123), no reference codes, no dates, no random digits\n- Good label examples: "Whole Foods", "Netflix", "Shell Gas", "Amazon", "Chase Credit Card"\n- Bad label examples: "WHOLEFDS #1234 SAN FRANCISCO CA 94110", "NETFLIX.COM 123456789", "SHELL OIL 1234567 AUSTIN TX"\n- income: salary, deposits, refunds\n- savings: investment platforms, HYSA transfers\n- housing: rent, mortgage, utilities, insurance\n- transport: gas, uber, lyft, car payment, parking\n- food: restaurants, groceries, food delivery\n- health: pharmacy, gym, doctor, insurance\n- gifts: gifts, donations, charities\n- debt: credit card payments, loan payments\n- misc: everything else\n- skip: transfers between accounts, unclear transactions';
+  var prompt = 'Categorize each transaction into one of these categories: income, savings, housing, transport, food, health, subscriptions, gifts, misc, debt, skip (for transfers, payments, or unclear).\n\nTransactions:\n' + txList + '\n\nRespond with ONLY a JSON array of objects with exactly these fields for each transaction (same order as input):\n[{"category": "food", "label": "Trader Joes"}, ...]\n\nRules:\n- label must be ONLY the merchant/payee name — strip everything else: no city, no state, no zip code, no store numbers (#123), no reference codes, no dates, no random digits\n- Good label examples: "Whole Foods", "Netflix", "Shell Gas", "Amazon", "Chase Credit Card"\n- Bad label examples: "WHOLEFDS #1234 SAN FRANCISCO CA 94110", "NETFLIX.COM 123456789", "SHELL OIL 1234567 AUSTIN TX"\n- income: salary, deposits, refunds\n- savings: investment platforms, HYSA transfers\n- housing: rent, mortgage, utilities, insurance\n- transport: gas, uber, lyft, car payment, parking\n- food: restaurants, groceries, food delivery\n- health: pharmacy, gym, doctor, insurance\n- subscriptions: Netflix, Spotify, Apple, Disney+, YouTube, any recurring streaming or software service\n- gifts: gifts, donations, charities\n- debt: credit card payments, loan payments\n- misc: everything else\n- skip: transfers between accounts, unclear transactions';
 
   try {
     var response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -7929,8 +7955,8 @@ function keywordCategorize(desc) {
   if (/medical bill|hospital bill|collections/.test(d)) return 'debt';
 
   // ── Misc / Subscriptions ──────────────────────────────────
-  if (/netflix|hulu|disney[+]|hbo|max|paramount|peacock|apple tv|amazon prime|youtube premium/.test(d)) return 'misc';
-  if (/spotify|apple music|tidal|pandora|sirius/.test(d)) return 'misc';
+  if (/netflix|hulu|disney[+]|hbo|max|paramount|peacock|apple tv|amazon prime|youtube premium/.test(d)) return 'subscriptions';
+  if (/spotify|apple music|tidal|pandora|sirius/.test(d)) return 'subscriptions';
   if (/amazon|ebay|etsy|shein|zara|h&m|uniqlo|gap|old navy|banana republic/.test(d)) return 'misc';
   if (/apple store|google play|microsoft|adobe|dropbox|icloud/.test(d)) return 'misc';
   if (/venmo|zelle|paypal|cashapp|wire transfer|ach/.test(d)) return 'misc';
@@ -7942,7 +7968,7 @@ function keywordCategorize(desc) {
 
 function renderImportPreview(transactions) {
   var tbody = document.getElementById('import-tbody');
-  var sections = ['income','savings','housing','checking','transport','debt','food','health','gifts','misc','skip'];
+  var sections = ['income','savings','housing','checking','transport','debt','food','health','subscriptions','gifts','misc','skip'];
   tbody.innerHTML = transactions.map(function(t, i) {
     var opts = sections.map(function(s) {
       return '<option value="' + s + '"' + (t.category === s ? ' selected' : '') + '>' + 
@@ -8451,7 +8477,7 @@ function updateLegendSwatches() {
   var sep = document.getElementById('ct-legend-sep');
   if (!container) return;
   container.innerHTML = '';
-  var cards = _legendCards.filter(function(c) { return c.color; }).slice(-4);
+  var cards = _legendCards.filter(function(c) { return c.color; });
   if (!cards.length) {
     if (sep) sep.style.display = 'none';
     return;
