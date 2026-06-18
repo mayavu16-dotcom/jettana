@@ -6040,7 +6040,35 @@ function updateEntryTotal(section, id, template) {
     }
   });
 
-  if (total !== 0) applyToGrowth(id, total, 'Auto-calculated from entries');
+  if (total !== 0) applyToColumn(section, id, total, 'Auto-calculated from entries');
+}
+
+function applyToColumn(section, id, amount, label) {
+  // income → col 2 = received, savings → col 2 = gains/growth
+  var col = section === 'income' ? '2' : '2';
+  var input = document.querySelector('[data-id="' + id + '"] [data-col="' + col + '"]');
+  if (!input) return;
+  var abs = Math.abs(amount);
+  var sign = amount >= 0 ? '+' : '-';
+  input.dataset.raw = amount;
+  // For income, format without sign prefix
+  if (section === 'income') {
+    input.value = '$' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    input.classList.remove('growth-positive', 'growth-negative');
+  } else {
+    input.value = sign + '$' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    input.classList.remove('growth-positive', 'growth-negative');
+    input.classList.add(amount >= 0 ? 'growth-positive' : 'growth-negative');
+  }
+  input.title = label;
+  // Also save to the row data
+  var all = loadAll();
+  var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
+  var row = rows.find(function(r) { return r.id === id; });
+  if (row) {
+    var cfg = CONFIGS[section];
+    if (cfg) { row[cfg.k2] = amount; saveAll(all); scheduleSave(); renderAll(); }
+  }
 }
 
 function saveNote(section, id, val) {
