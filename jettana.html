@@ -369,12 +369,20 @@ body {
   border-radius: 4px;
   transition: opacity 0.15s, background 0.15s, color 0.15s;
   flex-shrink: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 .sec-hdr:hover .sec-clear-btn { opacity: 1; }
 .sec-clear-btn:hover { background: rgba(255,255,255,0.15); color: white; }
 @media (pointer: coarse) {
   .sec-clear-btn { opacity: 0 !important; }
   .sec-hdr.hdr-active .sec-clear-btn { opacity: 1 !important; }
+  .sec-hdr {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
 }
 
 /* ── Bulk select bar ─────────────────────────────────────────── */
