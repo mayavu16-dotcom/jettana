@@ -475,6 +475,8 @@ body {
   flex-shrink: 0;
   transition: opacity 0.15s;
   user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
   line-height: 1;
   display: flex;
   flex-direction: column;
@@ -503,6 +505,11 @@ body {
 @media (pointer: coarse) {
   .drag-handle { opacity: 0.15 !important; }
   .erow.row-active .drag-handle { opacity: 1 !important; }
+  .erow.dragging, .sec-card.dragging {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
 }
 .drag-handle:hover { background: var(--mist-light); opacity: 1; }
 /* Mobile: always slightly visible so users know it's tappable */
@@ -2176,6 +2183,8 @@ body.font-large.text-bold .erow-label-input {
   font-size: 14px;
   color: rgba(255,255,255,0.5);
   user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
   flex-shrink: 0;
   opacity: 0;
   transition: opacity 0.15s;
@@ -7423,6 +7432,8 @@ function initSectionDrag() {
 
     handle.addEventListener('touchstart', function(e) {
       var touch = e.touches[0];
+      card.style.webkitUserSelect = 'none';
+      card.style.userSelect = 'none';
       secTouchTimer = setTimeout(function() {
         secDragging = true;
         dragSrcCard = card;
@@ -7456,6 +7467,8 @@ function initSectionDrag() {
     }, { passive: false });
 
     handle.addEventListener('touchend', function(e) {
+      card.style.webkitUserSelect = '';
+      card.style.userSelect = '';
       if (secTouchTimer) { clearTimeout(secTouchTimer); secTouchTimer = null; }
       if (secClone) { secClone.remove(); secClone = null; }
       if (!secDragging) { secDragging = false; dragSrcCard = null; return; }
