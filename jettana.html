@@ -6126,7 +6126,10 @@ function updateEntryTotal(section, id, template) {
     totalEl = document.createElement('div');
     totalEl.id = 'st-grand-total-' + id;
     totalEl.style.cssText = 'padding:6px 0 2px;font-size:12px;font-weight:700;border-top:1px solid var(--mist);margin-top:4px;';
-    var addBtn = container.querySelector('button');
+    var addBtn = null;
+    for (var i = 0; i < container.childNodes.length; i++) {
+      if (container.childNodes[i].tagName === 'BUTTON') { addBtn = container.childNodes[i]; break; }
+    }
     if (addBtn) container.insertBefore(totalEl, addBtn);
     else container.appendChild(totalEl);
   }
