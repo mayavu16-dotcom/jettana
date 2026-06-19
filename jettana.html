@@ -6155,7 +6155,7 @@ function updateEntryTotal(section, id, template) {
 }
 
 function applyToColumn(section, id, amount, label) {
-  // Save to row data first synchronously
+  // Save to row data
   var all = loadAll();
   var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
   var row = rows.find(function(r) { return r.id === id; });
@@ -6163,28 +6163,25 @@ function applyToColumn(section, id, amount, label) {
     var cfg = CONFIGS[section];
     if (cfg) {
       row[cfg.k2] = amount;
-      saveAll(all); // synchronous save
+      saveAll(all);
     }
   }
-  // Update the input visually - data-id and data-col are on the same input element
+  // Update the col-2 input visually
+  var abs = Math.abs(amount);
+  var formatted = '$' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   var input = document.querySelector('input[data-id="' + id + '"][data-col="2"]');
+  if (!input) {
+    var rowEl = document.querySelector('#rows-' + section + ' .erow[data-id="' + id + '"]');
+    if (rowEl) input = rowEl.querySelector('input[data-col="2"]');
+  }
   if (input) {
-    var abs = Math.abs(amount);
-    input.dataset.raw = amount;
-    if (section === 'income') {
-      input.value = '$' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      input.classList.remove('growth-positive', 'growth-negative');
-    } else if (section === 'debt') {
-      // For debt, show plain positive amount (remaining balance)
-      input.value = '$' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      input.classList.remove('growth-positive', 'growth-negative');
-    } else {
-      var sign = amount >= 0 ? '+' : '-';
-      input.value = sign + '$' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      input.classList.remove('growth-positive', 'growth-negative');
+    input.value = formatted;
+    input.dataset.raw = String(amount);
+    input.title = label;
+    input.classList.remove('growth-positive', 'growth-negative');
+    if (section === 'savings' && amount !== 0) {
       input.classList.add(amount >= 0 ? 'growth-positive' : 'growth-negative');
     }
-    input.title = label;
   }
   // Refresh totals after save
   recalc();
