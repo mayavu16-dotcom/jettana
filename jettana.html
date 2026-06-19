@@ -4717,9 +4717,7 @@ function numFocus(el) {
   const raw = el.dataset.raw || '';
   el.value = raw ? raw : '';
   el.dataset.preEdit = raw; // stash value before editing
-  // Snapshot data now, before any changes
-  if (raw !== '') pushUndo('Edit cell');
-  el.select();
+  try { el.select(); } catch(e) {}
 }
 
 function numBlur(el) {
@@ -4727,12 +4725,10 @@ function numBlur(el) {
   const raw = parseFloat(trimmed);
   const preEdit = el.dataset.preEdit;
   const newRaw = (trimmed === '' || isNaN(raw) || raw === 0) ? '' : String(raw);
-  // Show undo toast only if value actually changed
-  if (preEdit !== '' && preEdit !== undefined && preEdit !== newRaw) {
+  // Only snapshot + show undo if value actually changed from a non-empty previous value
+  if (preEdit !== undefined && preEdit !== '' && preEdit !== newRaw) {
+    pushUndo('Edit cell');
     showUndoToast('Value changed — undo?');
-  } else if (undoStack.length && undoStack[undoStack.length - 1].description === 'Edit cell') {
-    // Value didn't change — pop the snapshot we pushed on focus
-    undoStack.pop();
   }
   if (trimmed === '' || isNaN(raw) || raw === 0) {
     el.dataset.raw = '';
@@ -6064,6 +6060,7 @@ function templateMoneyBlur(inp, section, id, template) {
     if (idx >= 0) saveEntry(section, id, idx);
   }
   updateEntryTotal(section, id, template);
+  if (raw > 0) showUndoToast('Value updated — undo?');
 }
 
 function saveEntry(section, id, idx) {
@@ -6116,6 +6113,16 @@ function updateEntryTotal(section, id, template) {
   if (!container) return;
   var entryDivs = container.querySelectorAll('.st-entry');
   if (!entryDivs.length) return;
+
+  // Snapshot before template writes — deduplicated so rapid typing only pushes once per row
+  var lastUndo = undoStack.length ? undoStack[undoStack.length - 1] : null;
+  var alreadySnapped = lastUndo && lastUndo.description === 'Template edit' && lastUndo.rowId === id;
+  if (!alreadySnapped) {
+    var snap = loadAll();
+    var snapData = JSON.stringify(snap[currentMonthKey] || {});
+    undoStack.push({ snapshot: snapData, month: currentMonthKey, description: 'Template edit', rowId: id });
+    if (undoStack.length > 20) undoStack.shift();
+  }
 
   var grandTotal = 0;
   var idx = 0;
