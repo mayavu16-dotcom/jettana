@@ -5779,7 +5779,7 @@ function toggleNote(section, id) {
   var opening = !wrap.classList.contains('open');
   wrap.classList.toggle('open', opening);
   if (opening) {
-    if (section === 'savings' || section === 'income') {
+    if (section === 'savings' || section === 'income' || section === 'debt') {
       var noteInner = wrap.querySelector('.note-inner');
       if (noteInner && !noteInner.querySelector('.savings-template')) {
         var all = loadAll();
@@ -5791,6 +5791,9 @@ function toggleNote(section, id) {
         if (section === 'income') {
           templates = ['general', 'paycheck'];
           templateLabels = { general: 'General', paycheck: 'Paycheck' };
+        } else if (section === 'debt') {
+          templates = ['general', 'payment'];
+          templateLabels = { general: 'General', payment: 'Payment' };
         } else {
           templates = ['general','transfer','contribution','investment','interest'];
           templateLabels = { general: 'General', transfer: 'Transfer', contribution: 'Contribution', investment: 'Investment', interest: 'Interest' };
@@ -5898,73 +5901,127 @@ function renderEntryFields(section, id, template, entry, idx) {
   var fieldStyle = 'flex:1;min-width:90px;';
   var cb = 'saveEntry(\'' + section + '\',\'' + id + '\',' + idx + ')';
 
+  if (template === 'payment') {
+    var blurCb = 'templateMoneyBlur(this,\'' + section + '\',\'' + id + '\',\'' + template + '\')';
+    return '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Date paid</label>' +
+      '<input type="date" data-key="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Amount paid</label>' +
+      '<input type="text" data-key="amt" value="' + (entry.amt ? '$' + parseFloat(String(entry.amt).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'amt\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Type</label>' +
+      '<select data-key="type" style="' + inputStyle + 'appearance:none;" oninput="this.dataset.key=\'type\';' + cb + '" onclick="event.stopPropagation()">' +
+      '<option value="minimum"' + (!entry.type || entry.type === 'minimum' ? ' selected' : '') + '>Minimum</option>' +
+      '<option value="extra"' + (entry.type === 'extra' ? ' selected' : '') + '>Extra</option>' +
+      '<option value="full"' + (entry.type === 'full' ? ' selected' : '') + '>Full payoff</option>' +
+      '</select></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Interest charged</label>' +
+      '<input type="text" data-key="interest" value="' + (entry.interest ? '$' + parseFloat(String(entry.interest).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'interest\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Due date</label>' +
+      '<input type="date" data-key="due" value="' + (entry.due || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'due\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '</div>';
+  }
+
   if (template === 'paycheck') {
     return '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Pay date</label>' +
-      '<input type="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<input type="date" data-key="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Hours worked</label>' +
-      '<input type="text" value="' + (entry.hours || '') + '" placeholder="e.g. 80" style="' + inputStyle + '" oninput="this.dataset.key=\'hours\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<input type="text" data-key="hours" value="' + (entry.hours || '') + '" placeholder="e.g. 80" style="' + inputStyle + '" oninput="this.dataset.key=\'hours\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Hourly rate</label>' +
-      '<input type="text" value="' + (entry.rate || '') + '" placeholder="$0.00" style="' + inputStyle + '" oninput="this.dataset.key=\'rate\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<input type="text" data-key="rate" value="' + (entry.rate ? '$' + parseFloat(String(entry.rate).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'rate\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Gross pay</label>' +
-      '<input type="text" value="' + (entry.gross || '') + '" placeholder="$0.00" style="' + inputStyle + '" oninput="this.dataset.key=\'gross\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<input type="text" data-key="gross" value="' + (entry.gross ? '$' + parseFloat(String(entry.gross).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'gross\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Taxes</label>' +
-      '<input type="text" value="' + (entry.taxes || '') + '" placeholder="$0.00" style="' + inputStyle + '" oninput="this.dataset.key=\'taxes\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<input type="text" data-key="taxes" value="' + (entry.taxes ? '$' + parseFloat(String(entry.taxes).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'taxes\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Deductions</label>' +
-      '<input type="text" value="' + (entry.deductions || '') + '" placeholder="$0.00" style="' + inputStyle + '" oninput="this.dataset.key=\'deductions\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<input type="text" data-key="deductions" value="' + (entry.deductions ? '$' + parseFloat(String(entry.deductions).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'deductions\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
       '</div>';
   }
 
   if (template === 'transfer') {
+    var blurCb = 'templateMoneyBlur(this,\'' + section + '\',\'' + id + '\',\'' + template + '\')';
     return '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Date</label>' +
-      '<input type="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<input type="date" data-key="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Amount</label>' +
-      '<input type="text" value="' + (entry.amt || '') + '" placeholder="$0.00" style="' + inputStyle + '" oninput="this.dataset.key=\'amt\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<input type="text" data-key="amt" value="' + (entry.amt ? '$' + parseFloat(String(entry.amt).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'amt\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Type</label>' +
-      '<select style="' + inputStyle + 'appearance:none;" oninput="this.dataset.key=\'dir\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()">' +
+      '<select data-key="dir" style="' + inputStyle + 'appearance:none;" oninput="this.dataset.key=\'dir\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()">' +
       '<option value="deposit"' + (entry.dir === 'deposit' || !entry.dir ? ' selected' : '') + '>Deposit</option>' +
       '<option value="withdrawal"' + (entry.dir === 'withdrawal' ? ' selected' : '') + '>Withdrawal</option>' +
       '<option value="transfer"' + (entry.dir === 'transfer' ? ' selected' : '') + '>Transfer</option>' +
       '</select></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">From</label>' +
-      '<input type="text" value="' + (entry.from || '') + '" placeholder="e.g. Checking" style="' + inputStyle + '" oninput="this.dataset.key=\'from\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<input type="text" data-key="from" value="' + (entry.from || '') + '" placeholder="e.g. Checking" style="' + inputStyle + '" oninput="this.dataset.key=\'from\';' + cb + '" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">To</label>' +
-      '<input type="text" value="' + (entry.to || '') + '" placeholder="e.g. HYSA" style="' + inputStyle + '" oninput="this.dataset.key=\'to\';' + cb + '" onclick="event.stopPropagation()"></div>' +
-      '<div id="entry-result-' + id + '-' + idx + '" style="font-size:11px;color:var(--sage);align-self:flex-end;padding-bottom:4px;"></div>' +
+      '<input type="text" data-key="to" value="' + (entry.to || '') + '" placeholder="e.g. HYSA" style="' + inputStyle + '" oninput="this.dataset.key=\'to\';' + cb + '" onclick="event.stopPropagation()"></div>' +
       '</div>';
   }
   if (template === 'contribution') {
+    var blurCb = 'templateMoneyBlur(this,\'' + section + '\',\'' + id + '\',\'' + template + '\')';
     return '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Date</label>' +
+      '<input type="date" data-key="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">My contribution</label>' +
-      '<input type="text" value="' + (entry.myc || '') + '" placeholder="$0.00" style="' + inputStyle + '" oninput="this.dataset.key=\'myc\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<input type="text" data-key="myc" value="' + (entry.myc ? '$' + parseFloat(String(entry.myc).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'myc\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Employer match</label>' +
-      '<input type="text" value="' + (entry.emp || '') + '" placeholder="$0.00" style="' + inputStyle + '" oninput="this.dataset.key=\'emp\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<input type="text" data-key="emp" value="' + (entry.emp ? '$' + parseFloat(String(entry.emp).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'emp\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<div style="align-self:flex-end;padding-bottom:4px;min-width:80px;" id="contrib-entry-total-' + id + '-' + idx + '"></div>' +
       '</div>';
   }
   if (template === 'investment') {
+    var blurCb = 'templateMoneyBlur(this,\'' + section + '\',\'' + id + '\',\'' + template + '\')';
     return '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Fund / Ticker</label>' +
-      '<input type="text" value="' + (entry.fund || '') + '" placeholder="VOO, FXAIX…" style="' + inputStyle + '" oninput="this.dataset.key=\'fund\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<input type="text" data-key="fund" value="' + (entry.fund || '') + '" placeholder="VOO, FXAIX…" style="' + inputStyle + '" oninput="this.dataset.key=\'fund\';' + cb + '" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Shares</label>' +
-      '<input type="text" value="' + (entry.shares || '') + '" placeholder="0.00" style="' + inputStyle + '" oninput="this.dataset.key=\'shares\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<input type="text" data-key="shares" value="' + (entry.shares || '') + '" placeholder="0.00" style="' + inputStyle + '" oninput="this.dataset.key=\'shares\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Price/share</label>' +
-      '<input type="text" value="' + (entry.price || '') + '" placeholder="$0.00" style="' + inputStyle + '" oninput="this.dataset.key=\'price\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<input type="text" data-key="price" value="' + (entry.price ? '$' + parseFloat(String(entry.price).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'price\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Date</label>' +
-      '<input type="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<input type="date" data-key="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
       '</div>';
   }
   if (template === 'interest') {
+    var blurCb = 'templateMoneyBlur(this,\'' + section + '\',\'' + id + '\',\'' + template + '\')';
     return '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Interest earned</label>' +
-      '<input type="text" value="' + (entry.interest || '') + '" placeholder="$0.00" style="' + inputStyle + '" oninput="this.dataset.key=\'interest\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<input type="text" data-key="interest" value="' + (entry.interest ? '$' + parseFloat(String(entry.interest).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'interest\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">APY %</label>' +
-      '<input type="text" value="' + (entry.apy || '') + '" placeholder="4.5" style="' + inputStyle + '" oninput="this.dataset.key=\'apy\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<input type="text" data-key="apy" value="' + (entry.apy || '') + '" placeholder="4.5" style="' + inputStyle + '" oninput="this.dataset.key=\'apy\';' + cb + '" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Date</label>' +
-      '<input type="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<input type="date" data-key="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
       '</div>';
   }
   return '';
+}
+
+
+function parseAmt(val) {
+  if (!val && val !== 0) return 0;
+  return parseFloat(String(val).replace(/[$,\s]/g, '')) || 0;
+}
+
+function templateMoneyFocus(inp) {
+  inp.value = inp.value.replace(/[$,]/g, '');
+}
+
+function templateMoneyBlur(inp, section, id, template) {
+  var raw = parseAmt(inp.value);
+  if (raw > 0) {
+    inp.value = '$' + raw.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  } else {
+    inp.value = '';
+  }
+  // Find the entry index from the parent .st-entry
+  var entryDiv = inp.closest('.st-entry');
+  var container = document.getElementById('st-fields-' + id);
+  if (entryDiv && container) {
+    var entryDivs = container.querySelectorAll('.st-entry');
+    var idx = Array.from(entryDivs).indexOf(entryDiv);
+    if (idx >= 0) saveEntry(section, id, idx);
+  }
+  updateEntryTotal(section, id, template);
 }
 
 function saveEntry(section, id, idx) {
@@ -6012,39 +6069,81 @@ function removeEntry(section, id, idx) {
 }
 
 function updateEntryTotal(section, id, template) {
-  var all = loadAll();
-  var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
-  var row = rows.find(function(r) { return r.id === id; });
-  var entries = (row && row._entries) || [];
-  if (!entries.length || template === 'general') return;
+  if (template === 'general') return;
+  var container = document.getElementById('st-fields-' + id);
+  if (!container) return;
+  var entryDivs = container.querySelectorAll('.st-entry');
+  if (!entryDivs.length) return;
 
-  var total = 0;
-  entries.forEach(function(e) {
-    if (template === 'transfer') {
-      var amt = parseAmt(e.amt);
-      if (e.dir === 'withdrawal') total -= amt;
-      else if (e.dir === 'transfer') total += amt;
-      else total += amt;
+  var grandTotal = 0;
+  var idx = 0;
+  entryDivs.forEach(function(entryDiv) {
+    var vals = {};
+    entryDiv.querySelectorAll('input[data-key], select[data-key]').forEach(function(inp) {
+      var key = inp.dataset.key || inp.getAttribute('data-key');
+      if (key) vals[key] = inp.value;
+    });
+
+    var entryTotal = 0;
+    if (template === 'payment') {
+      // Net effect: interest added - payment made = change in balance
+      var paid = parseAmt(vals.amt);
+      var interest = parseAmt(vals.interest);
+      entryTotal -= paid; // payment reduces balance (negative = good)
+      entryTotal += interest; // interest increases balance
     } else if (template === 'paycheck') {
-      var gross = parseAmt(e.gross);
-      if (!gross && e.hours && e.rate) gross = parseAmt(e.hours) * parseAmt(e.rate);
-      var taxes = parseAmt(e.taxes);
-      var deductions = parseAmt(e.deductions);
-      total += gross - taxes - deductions;
+      var gross = parseAmt(vals.gross);
+      if (!gross && vals.hours && vals.rate) gross = parseAmt(vals.hours) * parseAmt(vals.rate);
+      if (gross > 0) {
+        entryTotal = gross - parseAmt(vals.taxes) - parseAmt(vals.deductions);
+      }
+    } else if (template === 'transfer') {
+      var amt = parseAmt(vals.amt);
+      entryTotal = vals.dir === 'withdrawal' ? -amt : amt;
     } else if (template === 'contribution') {
-      total += parseAmt(e.myc) + parseAmt(e.emp);
+      var myc = parseAmt(vals.myc);
+      var emp = parseAmt(vals.emp);
+      entryTotal = myc + emp;
+      // Show per-entry total
+      var entryTotalEl = document.getElementById('contrib-entry-total-' + id + '-' + idx);
+      if (entryTotalEl && entryTotal > 0) {
+        entryTotalEl.style.cssText = 'font-size:11px;color:var(--sage);font-weight:600;align-self:flex-end;padding-bottom:4px;';
+        entryTotalEl.textContent = '= $' + entryTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      } else if (entryTotalEl) {
+        entryTotalEl.textContent = '';
+      }
     } else if (template === 'investment') {
-      total += parseAmt(e.shares) * parseAmt(e.price);
+      entryTotal = parseAmt(vals.shares) * parseAmt(vals.price);
     } else if (template === 'interest') {
-      total += parseAmt(e.interest);
+      entryTotal = parseAmt(vals.interest);
     }
+    grandTotal += entryTotal;
+    idx++;
   });
 
-  if (total !== 0) applyToColumn(section, id, total, 'Auto-calculated from entries');
+  // Show grand total below entries
+  var totalEl = document.getElementById('st-grand-total-' + id);
+  if (!totalEl) {
+    totalEl = document.createElement('div');
+    totalEl.id = 'st-grand-total-' + id;
+    totalEl.style.cssText = 'padding:6px 0 2px;font-size:12px;font-weight:700;border-top:1px solid var(--mist);margin-top:4px;';
+    var addBtn = container.querySelector('button');
+    if (addBtn) container.insertBefore(totalEl, addBtn);
+    else container.appendChild(totalEl);
+  }
+  if (grandTotal !== 0) {
+    var abs = Math.abs(grandTotal);
+    var sign = grandTotal >= 0 ? '+' : '−';
+    totalEl.style.color = grandTotal >= 0 ? 'var(--sage)' : 'var(--blush)';
+    totalEl.textContent = 'Total: ' + sign + '$' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    applyToColumn(section, id, grandTotal, 'Auto-calculated from entries');
+  } else {
+    totalEl.textContent = '';
+  }
 }
 
 function applyToColumn(section, id, amount, label) {
-  // Save to row data FIRST
+  // Save to row data first synchronously
   var all = loadAll();
   var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
   var row = rows.find(function(r) { return r.id === id; });
@@ -6052,27 +6151,64 @@ function applyToColumn(section, id, amount, label) {
     var cfg = CONFIGS[section];
     if (cfg) {
       row[cfg.k2] = amount;
-      saveAll(all);
-      scheduleSave();
+      saveAll(all); // synchronous save
     }
   }
-  // Then update the input visually
-  var input = document.querySelector('[data-id="' + id + '"] [data-col="2"]');
-  if (!input) return;
-  var abs = Math.abs(amount);
-  input.dataset.raw = amount;
-  if (section === 'income') {
-    input.value = '$' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    input.classList.remove('growth-positive', 'growth-negative');
-  } else {
-    var sign = amount >= 0 ? '+' : '-';
-    input.value = sign + '$' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    input.classList.remove('growth-positive', 'growth-negative');
-    input.classList.add(amount >= 0 ? 'growth-positive' : 'growth-negative');
+  // Update the input visually - data-id and data-col are on the same input element
+  var input = document.querySelector('input[data-id="' + id + '"][data-col="2"]');
+  if (input) {
+    var abs = Math.abs(amount);
+    input.dataset.raw = amount;
+    if (section === 'income') {
+      input.value = '$' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      input.classList.remove('growth-positive', 'growth-negative');
+    } else if (section === 'debt') {
+      // For debt, show plain positive amount (remaining balance)
+      input.value = '$' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      input.classList.remove('growth-positive', 'growth-negative');
+    } else {
+      var sign = amount >= 0 ? '+' : '-';
+      input.value = sign + '$' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      input.classList.remove('growth-positive', 'growth-negative');
+      input.classList.add(amount >= 0 ? 'growth-positive' : 'growth-negative');
+    }
+    input.title = label;
   }
-  input.title = label;
-  // Refresh summary totals only (not full re-render)
+  // Refresh totals after save
   recalc();
+  // Force savings growth footer update immediately
+  if (section === 'savings') {
+    var all2 = loadAll();
+    var savRows = (all2[currentMonthKey] && all2[currentMonthKey].savings) || [];
+    var savG = savRows.reduce(function(t, r) { return t + (parseFloat(r.gains) || 0); }, 0);
+    var el = document.getElementById('ft-savings-1');
+    if (el) {
+      if (!savG || savG === 0) {
+        el.textContent = '$0.00';
+        el.style.color = '';
+        el.style.fontWeight = '';
+      } else {
+        var absG = Math.abs(savG);
+        var signG = savG > 0 ? '+' : '-';
+        el.textContent = signG + '$' + absG.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        el.style.color = savG > 0 ? 'var(--sage-dark)' : 'var(--blush)';
+        el.style.fontWeight = '700';
+      }
+    }
+  }
+  // Force income received footer update
+  if (section === 'income') {
+    var all3 = loadAll();
+    var incRows = (all3[currentMonthKey] && all3[currentMonthKey].income) || [];
+    var incA = incRows.reduce(function(t, r) { return t + (parseFloat(r.received) || 0); }, 0);
+    var incEl = document.getElementById('ft-income-1');
+    if (incEl) {
+      incEl.textContent = '$' + Math.abs(incA).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    // Also update the summary card
+    var sumEl = document.getElementById('sum-income');
+    if (sumEl) sumEl.textContent = '$' + Math.abs(incA).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
 }
 
 function saveNote(section, id, val) {
