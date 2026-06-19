@@ -5813,7 +5813,7 @@ function toggleNote(section, id) {
   var opening = !wrap.classList.contains('open');
   wrap.classList.toggle('open', opening);
   if (opening) {
-    if (section === 'savings' || section === 'income' || section === 'debt') {
+    if (section === 'savings' || section === 'income' || section === 'debt' || section === 'transport' || section === 'subscriptions') {
       var noteInner = wrap.querySelector('.note-inner');
       if (noteInner && !noteInner.querySelector('.savings-template')) {
         var all = loadAll();
@@ -5828,6 +5828,12 @@ function toggleNote(section, id) {
         } else if (section === 'debt') {
           templates = ['general', 'payment'];
           templateLabels = { general: 'General', payment: 'Payment' };
+        } else if (section === 'transport') {
+          templates = ['general', 'fuel'];
+          templateLabels = { general: 'General', fuel: '⛽ Fuel' };
+        } else if (section === 'subscriptions') {
+          templates = ['general', 'subscription'];
+          templateLabels = { general: 'General', subscription: 'Manage' };
         } else {
           templates = ['general','transfer','contribution','investment','interest','performance'];
           templateLabels = { general: 'General', transfer: 'Transfer', contribution: 'Contribution', investment: 'Investment', interest: 'Interest', performance: 'Performance' };
@@ -6046,6 +6052,44 @@ function renderEntryFields(section, id, template, entry, idx) {
       (gainDisplay ? '<div style="width:100%;padding:6px 2px 2px;font-size:12px;font-weight:700;color:' + gainColor + ';">Market gain/loss: ' + gainDisplay + '</div>' : '') +
       '</div>';
   }
+  if (template === 'subscription') {
+    var statusVal = entry.substatus || 'active';
+    var statusOptions = ['active', 'cancel', 'renew'];
+    var statusColors = { active: '#27AE60', cancel: '#C0392B', renew: '#E67E22' };
+    var statusLabels = { active: '✓ Active', cancel: '✕ Cancel', renew: '↻ Renew' };
+    var selectStyle = inputStyle + 'color:' + statusColors[statusVal] + ';font-weight:600;';
+    return '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Renewal / charge date</label>' +
+      '<input type="date" data-key="subrenewal" value="' + (entry.subrenewal || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'subrenewal\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Cancel by</label>' +
+      '<input type="date" data-key="subcancelby" value="' + (entry.subcancelby || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'subcancelby\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Status</label>' +
+      '<select data-key="substatus" style="' + selectStyle + '" oninput="this.dataset.key=\'substatus\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\');this.style.color=({active:\'#27AE60\',cancel:\'#C0392B\',renew:\'#E67E22\'})[this.value]" onclick="event.stopPropagation()">' +
+      statusOptions.map(function(s) {
+        return '<option value="' + s + '"' + (s === statusVal ? ' selected' : '') + ' style="color:' + statusColors[s] + '">' + statusLabels[s] + '</option>';
+      }).join('') +
+      '</select></div>' +
+      '</div>';
+  }
+  if (template === 'fuel') {
+    var blurCb = 'templateMoneyBlur(this,\'' + section + '\',\'' + id + '\',\'' + template + '\')';
+    var fuelPrice = parseFloat(String(entry.fuelprice || '').replace(/[$,]/g, '')) || 0;
+    var fuelGal   = parseFloat(String(entry.fuelgal   || '').replace(/[,]/g, ''))  || 0;
+    var fuelMiles = parseFloat(String(entry.fuelmiles || '').replace(/[,]/g, ''))  || 0;
+    var fuelTotal = (fuelPrice && fuelGal) ? fuelPrice * fuelGal : 0;
+    var fuelMpg   = (fuelGal && fuelMiles) ? (fuelMiles / fuelGal).toFixed(1) : '';
+    return '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Price / gal</label>' +
+      '<input type="text" data-key="fuelprice" value="' + (entry.fuelprice ? '$' + parseFloat(String(entry.fuelprice).replace(/[$,]/g,'')).toFixed(3) : '') + '" placeholder="$0.000" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'fuelprice\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Gallons</label>' +
+      '<input type="text" data-key="fuelgal" value="' + (entry.fuelgal || '') + '" placeholder="0.000" style="' + inputStyle + '" oninput="this.dataset.key=\'fuelgal\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onblur="saveEntry(\'' + section + '\',\'' + id + '\',' + idx + ')" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Date</label>' +
+      '<input type="date" data-key="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Miles driven <span style="color:var(--steel);font-weight:400;">(optional)</span></label>' +
+      '<input type="text" data-key="fuelmiles" value="' + (entry.fuelmiles || '') + '" placeholder="0" style="' + inputStyle + '" oninput="this.dataset.key=\'fuelmiles\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onblur="saveEntry(\'' + section + '\',\'' + id + '\',' + idx + ')" onclick="event.stopPropagation()"></div>' +
+      (fuelMpg ? '<div style="width:100%;padding:4px 2px 0;font-size:11px;color:var(--steel);">⛽ ' + fuelMpg + ' MPG</div>' : '') +
+      '</div>';
+  }
   return '';
 }
 
@@ -6062,7 +6106,12 @@ function templateMoneyFocus(inp) {
 function templateMoneyBlur(inp, section, id, template) {
   var raw = parseAmt(inp.value);
   if (raw > 0) {
-    inp.value = '$' + raw.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    // Fuel price uses 3 decimal places (e.g. $3.459), everything else uses 2
+    var isFuelPrice = template === 'fuel' && inp.dataset.key === 'fuelprice';
+    inp.value = '$' + raw.toLocaleString('en-US', {
+      minimumFractionDigits: isFuelPrice ? 3 : 2,
+      maximumFractionDigits: isFuelPrice ? 3 : 2
+    });
   } else {
     inp.value = '';
   }
@@ -6195,6 +6244,13 @@ function updateEntryTotal(section, id, template) {
       }
     } else if (template === 'investment') {
       entryTotal = parseAmt(vals.shares) * parseAmt(vals.price);
+    } else if (template === 'fuel') {
+      var fp = parseAmt(vals.fuelprice);
+      var fg = parseFloat(String(vals.fuelgal || '').replace(/[,]/g, '')) || 0;
+      entryTotal = (fp && fg) ? fp * fg : 0;
+    } else if (template === 'subscription') {
+      // No numeric total — handled separately below
+      entryTotal = 0;
     } else if (template === 'performance') {
       entryTotal = parseAmt(vals.perfvalue); // account value → Actual column
     } else if (template === 'interest') {
@@ -6217,6 +6273,25 @@ function updateEntryTotal(section, id, template) {
     if (addBtn) container.insertBefore(totalEl, addBtn);
     else container.appendChild(totalEl);
   }
+  // Subscription template: show status summary regardless of grandTotal
+  if (template === 'subscription') {
+    var subVals = {};
+    entryDivs.forEach(function(ed) {
+      ed.querySelectorAll('input[data-key],select[data-key]').forEach(function(i) { subVals[i.dataset.key] = i.value; });
+    });
+    var subStatus = subVals.substatus || 'active';
+    var subRenewal = subVals.subrenewal || '';
+    var subCancelBy = subVals.subcancelby || '';
+    var subStatusColors = { active: '#27AE60', cancel: '#C0392B', renew: '#E67E22' };
+    var subStatusLabels = { active: '✓ Active', cancel: '✕ Cancel by', renew: '↻ Renew by' };
+    var dateLabel = subStatus === 'cancel' ? subCancelBy : subRenewal;
+    var formattedDate = dateLabel ? new Date(dateLabel + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+    totalEl.style.color = subStatusColors[subStatus] || 'var(--steel)';
+    totalEl.textContent = subStatusLabels[subStatus] + (formattedDate ? ' ' + formattedDate : '');
+    recalc();
+    return;
+  }
+
   if (grandTotal !== 0) {
     var abs = Math.abs(grandTotal);
     if (template === 'payment') {
