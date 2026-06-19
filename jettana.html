@@ -6245,27 +6245,31 @@ function updateEntryTotal(section, id, template) {
     }
   } else {
     totalEl.textContent = '';
-    // Clear the column value when entries are empty/cleared
+    // Only clear the column if the user had previously filled template entries and then removed them
+    // Never clear a manual value just because the template was opened with no data entered
     var cfg0 = CONFIGS[section];
     if (cfg0) {
       var all0 = loadAll();
       var rows0 = (all0[currentMonthKey] && all0[currentMonthKey][section]) || [];
       var row0 = rows0.find(function(r) { return r.id === id; });
-      if (row0) {
+      var hadEntries = row0 && row0._entries && row0._entries.some(function(e) {
+        return Object.values(e).some(function(v) { return v && v !== '' && v !== '0'; });
+      });
+      if (row0 && hadEntries) {
         row0[cfg0.k2] = '';
         if (template === 'performance') row0[cfg0.k1] = '';
         saveAll(all0);
+        var input0 = document.querySelector('input[data-id="' + id + '"][data-col="2"]');
+        if (!input0) {
+          var rowEl0 = document.querySelector('#rows-' + section + ' .erow[data-id="' + id + '"]');
+          if (rowEl0) input0 = rowEl0.querySelector('input[data-col="2"]');
+        }
+        if (input0) { input0.value = ''; input0.dataset.raw = ''; input0.classList.remove('growth-positive','growth-negative'); }
+        if (template === 'performance') {
+          var input0k1 = document.querySelector('input[data-id="' + id + '"][data-col="1"]');
+          if (input0k1) { input0k1.value = ''; input0k1.dataset.raw = ''; }
+        }
       }
-    }
-    var input0 = document.querySelector('input[data-id="' + id + '"][data-col="2"]');
-    if (!input0) {
-      var rowEl0 = document.querySelector('#rows-' + section + ' .erow[data-id="' + id + '"]');
-      if (rowEl0) input0 = rowEl0.querySelector('input[data-col="2"]');
-    }
-    if (input0) { input0.value = ''; input0.dataset.raw = ''; input0.classList.remove('growth-positive','growth-negative'); }
-    if (template === 'performance') {
-      var input0k1 = document.querySelector('input[data-id="' + id + '"][data-col="1"]');
-      if (input0k1) { input0k1.value = ''; input0k1.dataset.raw = ''; }
     }
     recalc();
   }
