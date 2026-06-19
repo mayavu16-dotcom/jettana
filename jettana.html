@@ -4716,12 +4716,24 @@ function renderRowEl(section, row, animate = false) {
 function numFocus(el) {
   const raw = el.dataset.raw || '';
   el.value = raw ? raw : '';
+  el.dataset.preEdit = raw; // stash value before editing
+  // Snapshot data now, before any changes
+  if (raw !== '') pushUndo('Edit cell');
   el.select();
 }
 
 function numBlur(el) {
   const trimmed = el.value.replace(/[$,\s]/g, '');
   const raw = parseFloat(trimmed);
+  const preEdit = el.dataset.preEdit;
+  const newRaw = (trimmed === '' || isNaN(raw) || raw === 0) ? '' : String(raw);
+  // Show undo toast only if value actually changed
+  if (preEdit !== '' && preEdit !== undefined && preEdit !== newRaw) {
+    showUndoToast('Value changed — undo?');
+  } else if (undoStack.length && undoStack[undoStack.length - 1].description === 'Edit cell') {
+    // Value didn't change — pop the snapshot we pushed on focus
+    undoStack.pop();
+  }
   if (trimmed === '' || isNaN(raw) || raw === 0) {
     el.dataset.raw = '';
     el.value = '';
@@ -6253,17 +6265,23 @@ function updateEntryTotal(section, id, template) {
 }
 
 function applyToColumn(section, id, amount, label) {
-  // Save to row data
   var all = loadAll();
   var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
   var row = rows.find(function(r) { return r.id === id; });
-  if (row) {
-    var cfg = CONFIGS[section];
-    if (cfg) {
-      row[cfg.k2] = amount;
-      saveAll(all);
-    }
-  }
+  if (!row) return;
+  var cfg = CONFIGS[section];
+  if (!cfg) return;
+
+  // Don't overwrite a manually-entered value unless the user has actively filled template fields
+  var existingVal = row[cfg.k2];
+  var hasExisting = existingVal !== '' && existingVal !== null && existingVal !== undefined && existingVal !== 0 && existingVal !== '0';
+  var hasFilledEntries = row._entries && row._entries.some(function(e) {
+    return Object.values(e).some(function(v) { return v && v !== '' && v !== '0'; });
+  });
+  if (hasExisting && !hasFilledEntries) return;
+
+  row[cfg.k2] = amount;
+  saveAll(all);
   // Update the col-2 input visually
   var abs = Math.abs(amount);
   var formatted = '$' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
