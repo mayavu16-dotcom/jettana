@@ -5915,13 +5915,14 @@ function renderEntryFields(section, id, template, entry, idx) {
       '<option value="full"' + (entry.type === 'full' ? ' selected' : '') + '>Full payoff</option>' +
       '</select></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Interest charged</label>' +
-      '<input type="text" data-key="interest" value="' + (entry.interest ? '$' + parseFloat(String(entry.interest).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'interest\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<input type="text" data-key="interest" value="' + (entry.interest ? '$' + parseFloat(String(entry.interest).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'interest\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Due date</label>' +
       '<input type="date" data-key="due" value="' + (entry.due || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'due\';' + cb + '" onclick="event.stopPropagation()"></div>' +
       '</div>';
   }
 
   if (template === 'paycheck') {
+    var blurCb = 'templateMoneyBlur(this,\'' + section + '\',\'' + id + '\',\'' + template + '\')';
     return '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Pay date</label>' +
       '<input type="date" data-key="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
@@ -6086,11 +6087,9 @@ function updateEntryTotal(section, id, template) {
 
     var entryTotal = 0;
     if (template === 'payment') {
-      // Net effect: interest added - payment made = change in balance
       var paid = parseAmt(vals.amt);
       var interest = parseAmt(vals.interest);
-      entryTotal -= paid; // payment reduces balance (negative = good)
-      entryTotal += interest; // interest increases balance
+      entryTotal = paid - interest; // net payment toward principal
     } else if (template === 'paycheck') {
       var gross = parseAmt(vals.gross);
       if (!gross && vals.hours && vals.rate) gross = parseAmt(vals.hours) * parseAmt(vals.rate);
@@ -6133,10 +6132,23 @@ function updateEntryTotal(section, id, template) {
   }
   if (grandTotal !== 0) {
     var abs = Math.abs(grandTotal);
-    var sign = grandTotal >= 0 ? '+' : '−';
-    totalEl.style.color = grandTotal >= 0 ? 'var(--sage)' : 'var(--blush)';
-    totalEl.textContent = 'Total: ' + sign + '$' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    applyToColumn(section, id, grandTotal, 'Auto-calculated from entries');
+    if (template === 'payment') {
+      // grandTotal = total net payments (paid - interest). Show it and compute remaining balance.
+      totalEl.style.color = 'var(--sage)';
+      totalEl.textContent = 'Paid: $' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      // Remaining = current balance - net payments
+      var dbtAll = loadAll();
+      var dbtRows = (dbtAll[currentMonthKey] && dbtAll[currentMonthKey][section]) || [];
+      var dbtRowData = dbtRows.find(function(r) { return r.id === id; }) || {};
+      var dbtCurrent = parseAmt(dbtRowData['current']) || 0;
+      var dbtRemaining = Math.max(0, dbtCurrent - grandTotal);
+      applyToColumn(section, id, dbtRemaining, 'Remaining balance after payments');
+    } else {
+      var sign = grandTotal >= 0 ? '+' : '\u2212';
+      totalEl.style.color = grandTotal >= 0 ? 'var(--sage)' : 'var(--blush)';
+      totalEl.textContent = 'Total: ' + sign + '$' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      applyToColumn(section, id, grandTotal, 'Auto-calculated from entries');
+    }
   } else {
     totalEl.textContent = '';
   }
