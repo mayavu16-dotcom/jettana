@@ -6116,8 +6116,27 @@ function removeEntry(section, id, idx) {
   var row = rows.find(function(r) { return r.id === id; });
   if (!row || !row._entries) return;
   row._entries.splice(idx, 1);
-  if (!row._entries.length) row._entries = [{}];
+  var allGone = !row._entries.length;
+  if (allGone) row._entries = [{}];
+  // If all entries removed, clear the column value that the template wrote
+  if (allGone && row._template && row._template !== 'general') {
+    var cfg = CONFIGS[section];
+    if (cfg) {
+      row[cfg.k2] = '';
+      if (row._template === 'performance') row[cfg.k1] = '';
+    }
+  }
   saveAll(all);
+  // Also clear the DOM inputs if all entries gone
+  if (allGone) {
+    var inp2 = document.querySelector('input[data-id="' + id + '"][data-col="2"]');
+    if (inp2) { inp2.value = ''; inp2.dataset.raw = ''; inp2.classList.remove('growth-positive','growth-negative'); }
+    if (row._template === 'performance') {
+      var inp1 = document.querySelector('input[data-id="' + id + '"][data-col="1"]');
+      if (inp1) { inp1.value = ''; inp1.dataset.raw = ''; }
+    }
+    recalc();
+  }
   var template = row._template || 'general';
   renderAllEntries(section, id, template, row._entries);
 }
