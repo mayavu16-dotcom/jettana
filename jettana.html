@@ -6816,6 +6816,9 @@ function toggleRecurring(section, id) {
         // Row already exists — just mark it as recurring and reset paid
         existingRow.recurring = true;
         existingRow.paid = false;
+        existingRow.paidColor = existingRow.paidColor || row.paidColor || '';
+        existingRow.numColor = existingRow.numColor || row.numColor || '';
+        existingRow.strikeColor = existingRow.strikeColor || row.strikeColor || '';
         injected++;
       } else {
         const newRow = {
@@ -6825,6 +6828,10 @@ function toggleRecurring(section, id) {
           [cfg.k2]: '',
           paid: false, date: '', date2: '', note: '',
           recurring: true,
+          paidColor: row.paidColor || '',
+          numColor: row.numColor || '',
+          strikeColor: row.strikeColor || '',
+          alloc: row.alloc || '',
         };
         futureMonth[section] = futureRows.concat([newRow]);
         injected++;
