@@ -5800,8 +5800,8 @@ function toggleNote(section, id) {
           templates = ['general', 'payment'];
           templateLabels = { general: 'General', payment: 'Payment' };
         } else {
-          templates = ['general','transfer','contribution','investment','interest'];
-          templateLabels = { general: 'General', transfer: 'Transfer', contribution: 'Contribution', investment: 'Investment', interest: 'Interest' };
+          templates = ['general','transfer','contribution','investment','interest','performance'];
+          templateLabels = { general: 'General', transfer: 'Transfer', contribution: 'Contribution', investment: 'Investment', interest: 'Interest', performance: 'Performance' };
         }
 
         // Build pill selector
@@ -5999,6 +5999,24 @@ function renderEntryFields(section, id, template, entry, idx) {
       '<input type="date" data-key="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
       '</div>';
   }
+  if (template === 'performance') {
+    var blurCb = 'templateMoneyBlur(this,\'' + section + '\',\'' + id + '\',\'' + template + '\')';
+    var perfValue = parseAmt(entry.perfvalue);
+    var perfBasis = parseAmt(entry.perfbasis);
+    var perfGain = (perfValue && perfBasis) ? (perfValue - perfBasis) : 0;
+    var perfPct  = (perfValue && perfBasis && perfBasis !== 0) ? ((perfValue - perfBasis) / perfBasis * 100) : 0;
+    var gainColor = perfGain > 0 ? '#27AE60' : perfGain < 0 ? '#C0392B' : 'inherit';
+    var gainDisplay = perfGain !== 0 ? (perfGain > 0 ? '+$' : '-$') + Math.abs(perfGain).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + '  (' + (perfPct >= 0 ? '+' : '') + perfPct.toFixed(2) + '%)' : '';
+    return '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Account value</label>' +
+      '<input type="text" data-key="perfvalue" value="' + (entry.perfvalue ? '$' + parseFloat(String(entry.perfvalue).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'perfvalue\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Cost basis</label>' +
+      '<input type="text" data-key="perfbasis" value="' + (entry.perfbasis ? '$' + parseFloat(String(entry.perfbasis).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'perfbasis\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Date</label>' +
+      '<input type="date" data-key="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      (gainDisplay ? '<div style="width:100%;padding:6px 2px 2px;font-size:12px;font-weight:700;color:' + gainColor + ';">Market gain/loss: ' + gainDisplay + '</div>' : '') +
+      '</div>';
+  }
   return '';
 }
 
@@ -6118,6 +6136,8 @@ function updateEntryTotal(section, id, template) {
       }
     } else if (template === 'investment') {
       entryTotal = parseAmt(vals.shares) * parseAmt(vals.price);
+    } else if (template === 'performance') {
+      entryTotal = parseAmt(vals.perfvalue); // account value → Actual column
     } else if (template === 'interest') {
       entryTotal = parseAmt(vals.interest);
     }
@@ -6151,6 +6171,47 @@ function updateEntryTotal(section, id, template) {
       var dbtCurrent = parseAmt(dbtRowData['current']) || 0;
       var dbtRemaining = Math.max(0, dbtCurrent - grandTotal);
       applyToColumn(section, id, dbtRemaining, 'Remaining balance after payments');
+    } else if (template === 'performance') {
+      var perfEntryVals = {};
+      entryDivs.forEach(function(ed) {
+        ed.querySelectorAll('input[data-key]').forEach(function(i) { perfEntryVals[i.dataset.key] = i.value; });
+      });
+      var perfV = parseAmt(perfEntryVals.perfvalue);
+      var perfB = parseAmt(perfEntryVals.perfbasis);
+      var perfGainLoss = (perfV && perfB) ? (perfV - perfB) : 0;
+      var perfPctVal   = (perfV && perfB && perfB !== 0) ? ((perfV - perfB) / perfB * 100) : 0;
+      // Save to row — user explicitly chose this template so always write
+      var perfAll = loadAll();
+      var perfRows = (perfAll[currentMonthKey] && perfAll[currentMonthKey][section]) || [];
+      var perfRow = perfRows.find(function(r) { return r.id === id; });
+      if (perfRow && perfRow._template === 'performance') {
+        perfRow.actual = perfV || '';
+        perfRow.gains  = perfGainLoss || '';
+        saveAll(perfAll);
+        // Update Actual input (col 1)
+        var inp1 = document.querySelector('input[data-id="' + id + '"][data-col="1"]');
+        if (inp1) { inp1.value = perfV ? '$' + perfV.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : ''; inp1.dataset.raw = String(perfV || ''); }
+        // Update Growth input (col 2)
+        var inp2 = document.querySelector('input[data-id="' + id + '"][data-col="2"]');
+        if (inp2) {
+          inp2.dataset.raw = String(perfGainLoss || '');
+          if (perfGainLoss !== 0) {
+            var gSign = perfGainLoss > 0 ? '+' : '-';
+            inp2.value = gSign + '$' + Math.abs(perfGainLoss).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+            inp2.classList.remove('growth-positive','growth-negative');
+            inp2.classList.add(perfGainLoss > 0 ? 'growth-positive' : 'growth-negative');
+          } else {
+            inp2.value = ''; inp2.classList.remove('growth-positive','growth-negative');
+          }
+        }
+      }
+      // Show summary line
+      var pctStr = perfPctVal !== 0 ? '  (' + (perfPctVal >= 0 ? '+' : '') + perfPctVal.toFixed(2) + '% cumulative)' : '';
+      totalEl.style.color = perfGainLoss >= 0 ? 'var(--sage)' : 'var(--blush)';
+      totalEl.textContent = perfGainLoss !== 0
+        ? 'Gain/loss: ' + (perfGainLoss > 0 ? '+$' : '-$') + Math.abs(perfGainLoss).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + pctStr
+        : perfV ? 'Value: $' + perfV.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '';
+      recalc();
     } else {
       var sign = grandTotal >= 0 ? '+' : '\u2212';
       totalEl.style.color = grandTotal >= 0 ? 'var(--sage)' : 'var(--blush)';
@@ -6165,14 +6226,22 @@ function updateEntryTotal(section, id, template) {
       var all0 = loadAll();
       var rows0 = (all0[currentMonthKey] && all0[currentMonthKey][section]) || [];
       var row0 = rows0.find(function(r) { return r.id === id; });
-      if (row0) { row0[cfg0.k2] = ''; saveAll(all0); }
+      if (row0) {
+        row0[cfg0.k2] = '';
+        if (template === 'performance') row0[cfg0.k1] = '';
+        saveAll(all0);
+      }
     }
     var input0 = document.querySelector('input[data-id="' + id + '"][data-col="2"]');
     if (!input0) {
       var rowEl0 = document.querySelector('#rows-' + section + ' .erow[data-id="' + id + '"]');
       if (rowEl0) input0 = rowEl0.querySelector('input[data-col="2"]');
     }
-    if (input0) { input0.value = ''; input0.dataset.raw = ''; }
+    if (input0) { input0.value = ''; input0.dataset.raw = ''; input0.classList.remove('growth-positive','growth-negative'); }
+    if (template === 'performance') {
+      var input0k1 = document.querySelector('input[data-id="' + id + '"][data-col="1"]');
+      if (input0k1) { input0k1.value = ''; input0k1.dataset.raw = ''; }
+    }
     recalc();
   }
 }
