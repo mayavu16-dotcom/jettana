@@ -7757,35 +7757,30 @@ function closeNote(id) {
 }
 
 function noteBlur(section, id) {
+  // On mobile, never close on blur — only the × button closes
+  if ('ontouchstart' in window) return;
   var ta = document.getElementById('note-ta-' + id);
   if (!ta || ta.value.trim()) return; // has text — never close
   var wrap = document.getElementById('note-wrap-' + id);
-  // Use longer delay on mobile since iOS is slow to update activeElement
-  var delay = ('ontouchstart' in window) ? 400 : 200;
   setTimeout(function() {
     // Check if focus moved to something inside the note wrap
     var active = document.activeElement;
     if (wrap && active && wrap.contains(active)) return;
     // Check if active element is a template pill or button inside note
     if (active && active.closest && active.closest('.note-wrap')) return;
-    // On mobile, also check if a pill was recently tapped via a flag
-    if (wrap && wrap.dataset.pillTapped === '1') {
-      wrap.dataset.pillTapped = '';
-      return;
-    }
     // Check if any template fields have values
     var hasTemplateData = false;
     if (wrap) {
       var inputs = wrap.querySelectorAll('#st-fields-' + id + ' input, #st-fields-' + id + ' select');
       inputs.forEach(function(inp) { if (inp.value.trim()) hasTemplateData = true; });
       var entries = wrap.querySelectorAll('.st-entry');
-      if (entries.length > 1) hasTemplateData = true; // more than the default empty entry
+      if (entries.length > 1) hasTemplateData = true;
     }
     if (!hasTemplateData) {
       var w = document.getElementById('note-wrap-' + id);
       if (w) w.classList.remove('open');
     }
-  }, delay);
+  }, 200);
 }
 
 
