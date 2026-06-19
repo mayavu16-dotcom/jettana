@@ -4240,6 +4240,7 @@ function createFreshMonth(newKey) {
           _shares: r._shares || '',
           _price: r._price || '',
           _tDir: r._tDir || '',
+          alloc: r.alloc || '',
         };
         if (!all[newKey][section]) all[newKey][section] = [];
         all[newKey][section].push(newRow);
@@ -4380,6 +4381,7 @@ function copyMonthData(sourceKey, newKey) {
       _shares: row._shares || '',
       _price: row._price || '',
       _tDir: row._tDir || '',
+      alloc: row.alloc || '',
     }));
   });
   // Copy footer highlights and budget overrides from source month
@@ -4638,7 +4640,7 @@ function renderRowEl(section, row, animate = false) {
         onkeydown="labelKeyDown(event,this); acKeyDown(event,this,'${section}')"
         onblur="setTimeout(hideAutocomplete, 150)"
         >
-      <span class="note-indicator ${row.note ? 'has-note' : ''}" id="note-dot-${row.id}" title="Has note"></span>
+      <span class="note-indicator ${(row.note || row.alloc) ? 'has-note' : ''}" id="note-dot-${row.id}" title="Has note"></span>
 
 
 
@@ -4680,7 +4682,11 @@ function renderRowEl(section, row, animate = false) {
   var noteDiv = document.createElement('div');
   noteDiv.className = 'note-row';
   noteDiv.id = 'note-wrap-' + row.id;
-  noteDiv.innerHTML = '<div class="note-inner"><textarea class="note-textarea" id="note-ta-' + row.id + '" placeholder="Add a note… (e.g. split with roommate, one-time purchase)" oninput="saveNote(\'' + section + '\',\'' + row.id + '\',this.value)" onblur="noteBlur(\'' + section + '\',\'' + row.id + '\')" onclick="event.stopPropagation()">' + escHtml(row.note || '') + '</textarea><button class="note-close" onclick="closeNote(\'' + row.id + '\')" title="Close">×</button></div>';
+  var allocHtml = '';
+  if (section === 'income') {
+    allocHtml = '<div style="display:flex;align-items:center;gap:6px;padding:6px 10px 0;"><span style="font-size:11px;color:var(--teal);font-weight:600;white-space:nowrap;">→ goes to</span><input type="text" id="alloc-input-' + row.id + '" value="' + escHtml(row.alloc || '') + '" placeholder="e.g. Marcus Savings, HYSA…" style="flex:1;border:none;border-bottom:1px solid var(--mist);outline:none;font-size:11px;font-family:Outfit,sans-serif;color:var(--teal);background:transparent;padding:2px 4px;" oninput="saveAlloc(\'income\',\'' + row.id + '\',this.value)" onclick="event.stopPropagation()"></div>';
+  }
+  noteDiv.innerHTML = '<div class="note-inner">' + allocHtml + '<textarea class="note-textarea" id="note-ta-' + row.id + '" placeholder="Add a note… (e.g. split with roommate, one-time purchase)" oninput="saveNote(\'' + section + '\',\'' + row.id + '\',this.value)" onblur="noteBlur(\'' + section + '\',\'' + row.id + '\')" onclick="event.stopPropagation()">' + escHtml(row.note || '') + '</textarea><button class="note-close" onclick="closeNote(\'' + row.id + '\')" title="Close">×</button></div>';
   container.appendChild(noteDiv);
 
   const hasLabel = !!row.label;
@@ -6323,6 +6329,19 @@ function saveNote(section, id, val) {
   // Update dot indicator
   var dot = document.getElementById('note-dot-' + id);
   if (dot) dot.classList.toggle('has-note', val.trim().length > 0);
+}
+
+function saveAlloc(section, id, val) {
+  var all = loadAll();
+  var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
+  var row = rows.find(function(r) { return r.id === id; });
+  if (!row) return;
+  row.alloc = val;
+  saveAll(all);
+  scheduleSave();
+  // Show note dot when alloc is set
+  var dot = document.getElementById('note-dot-' + id);
+  if (dot) dot.classList.toggle('has-note', !!(val.trim() || row.note));
 }
 
 
