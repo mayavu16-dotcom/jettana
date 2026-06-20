@@ -3061,7 +3061,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
             <div style="font-size:12px;color:#A07800;line-height:1.4;">Sample data only — nothing here affects your real budget. Explore freely, then switch to a real month in the sidebar.</div>
           </div>
         </div>
-        <button onclick="if(confirm('Delete the demo month?')){deleteDemoMonth();}" style="flex-shrink:0;font-size:12px;font-weight:600;color:#A07800;background:rgba(240,192,96,0.2);border:1px solid #F0C060;border-radius:6px;padding:5px 10px;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;">Remove demo</button>
+        <button onclick="confirmDeleteDemo()" style="flex-shrink:0;font-size:12px;font-weight:600;color:#A07800;background:rgba(240,192,96,0.2);border:1px solid #F0C060;border-radius:6px;padding:5px 10px;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;">Remove demo</button>
       </div>
       <div class="intention-wrap">
         <button class="intention-trigger" id="intention-trigger" onclick="toggleIntention()">
@@ -8033,8 +8033,24 @@ function hideChecklist() {
 
 // ── Demo Mode ─────────────────────────────────────────────────
 function loadDemo() {
-  if (!confirm('Load a demo month? This will add sample data to a new "Demo" month without affecting your real data. You can delete it anytime from the sidebar.')) return;
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = '<div style="background:white;border-radius:16px;padding:28px;width:100%;max-width:360px;margin:16px;font-family:Outfit,sans-serif;">' +
+    '<div style="font-size:18px;font-weight:700;color:var(--ink);margin-bottom:8px;">▶ Try demo</div>' +
+    '<div style="font-size:14px;color:var(--slate);line-height:1.6;margin-bottom:20px;">This loads a sample month with color-coded rows, card tracking, and templates pre-filled.<br><br>Your real data is completely untouched — you can delete the demo anytime.</div>' +
+    '<div style="display:flex;gap:10px;justify-content:flex-end;">' +
+    '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="font-size:13px;color:var(--steel);background:none;border:1px solid var(--mist);border-radius:8px;padding:8px 16px;cursor:pointer;font-family:Outfit,sans-serif;">Cancel</button>' +
+    '<button id="demo-confirm-btn" style="font-size:13px;font-weight:600;color:white;background:var(--sage);border:none;border-radius:8px;padding:8px 18px;cursor:pointer;font-family:Outfit,sans-serif;">Load demo</button>' +
+    '</div></div>';
+  document.body.appendChild(overlay);
+  overlay.querySelector('#demo-confirm-btn').onclick = function() {
+    overlay.remove();
+    _runLoadDemo();
+  };
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+}
 
+function _runLoadDemo() {
   var demoKey = 'demo-month';
   var all = loadAll();
 
@@ -8113,6 +8129,20 @@ function loadDemo() {
 
   recalc();
   showToast('Demo month loaded! Explore the color-coded rows and linked Debt section.', false);
+}
+
+function confirmDeleteDemo() {
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = '<div style="background:white;border-radius:16px;padding:28px;width:100%;max-width:340px;margin:16px;font-family:Outfit,sans-serif;">' +
+    '<div style="font-size:17px;font-weight:700;color:var(--ink);margin-bottom:8px;">Remove demo month?</div>' +
+    '<div style="font-size:14px;color:var(--slate);line-height:1.6;margin-bottom:20px;">This will delete all demo data. Your real months are untouched.</div>' +
+    '<div style="display:flex;gap:10px;justify-content:flex-end;">' +
+    '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="font-size:13px;color:var(--steel);background:none;border:1px solid var(--mist);border-radius:8px;padding:8px 16px;cursor:pointer;font-family:Outfit,sans-serif;">Cancel</button>' +
+    '<button onclick="this.closest(\'div[style*=fixed]\').remove();deleteDemoMonth();" style="font-size:13px;font-weight:600;color:white;background:var(--blush);border:none;border-radius:8px;padding:8px 18px;cursor:pointer;font-family:Outfit,sans-serif;">Remove</button>' +
+    '</div></div>';
+  document.body.appendChild(overlay);
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
 }
 
 function deleteDemoMonth() {
