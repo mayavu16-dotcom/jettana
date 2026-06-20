@@ -1993,7 +1993,8 @@ body.theme-custom .mom-hdr      { background: var(--custom-accent-dark, #2A4A7A)
 .note-inner {
   position: relative;
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: stretch;
 }
 .note-close {
   position: absolute;
@@ -3015,6 +3016,12 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
             <button class="more-menu-item" onclick="showWelcome(); hideMoreMenu()">
               <span>👋</span> Getting started
             </button>
+            <button class="more-menu-item" onclick="showChecklist(); hideMoreMenu()">
+              <span>✅</span> Setup checklist
+            </button>
+            <button class="more-menu-item" onclick="loadDemo(); hideMoreMenu()">
+              <span>▶</span> Try demo
+            </button>
             <button class="more-menu-item" onclick="showFeatures(); hideMoreMenu()">
               <span>✦</span> Features
             </button>
@@ -3535,6 +3542,25 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
   </div>
 </div>
 
+<!-- Setup Checklist Modal -->
+<div class="shortcuts-overlay" id="checklist-overlay" style="display:none;" onclick="hideChecklist()">
+  <div class="shortcuts-modal" onclick="event.stopPropagation()" style="max-width:480px;">
+    <div class="shortcuts-title">
+      Setup checklist
+      <button class="shortcuts-close" onclick="hideChecklist()">×</button>
+    </div>
+    <div style="padding:4px 0 12px;font-size:13px;color:var(--steel);">Work through these steps to get the most out of Jettana.</div>
+    <div id="checklist-items"></div>
+    <div style="margin-top:16px;padding:12px 14px;background:var(--mist-light);border-radius:10px;font-size:12px;color:var(--steel);line-height:1.6;">
+      💡 Want to see everything in action first? Tap <strong>⋯ → Try demo</strong> to load a pre-filled example month.
+    </div>
+    <div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end;">
+      <button onclick="resetChecklist()" style="font-size:12px;color:var(--steel);background:none;border:none;cursor:pointer;padding:4px 8px;">Reset</button>
+      <button onclick="hideChecklist()" style="font-size:13px;font-weight:600;color:white;background:var(--sage);border:none;border-radius:8px;padding:8px 18px;cursor:pointer;font-family:Outfit,sans-serif;">Done</button>
+    </div>
+  </div>
+</div>
+
 <!-- Features Modal -->
 <div class="shortcuts-overlay" id="features-overlay" style="display:none;" onclick="hideFeatures()">
   <div class="shortcuts-modal" style="width:520px;max-height:80vh;overflow-y:auto;" onclick="event.stopPropagation()">
@@ -3546,7 +3572,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
     <div class="shortcuts-group">
       <div class="shortcuts-group-title">Tracking</div>
       <div class="shortcut-row"><span>📊 <strong>12 sections</strong> — Income, Savings, Housing, Checking, Transport, Debt, Food, Health, Subscriptions, Gifts, Misc, and Notes</span></div>
-      <div class="shortcut-row"><span>✓ <strong>Mark as paid</strong> — click ✓ on any expense row to strike it through; color follows your chosen strikethrough color</span></div>
+      <div class="shortcut-row"><span>✓ <strong>Mark as paid</strong> — click ✓ on any expense row to strike it through; if a card link is set, the debt Current updates automatically and the checking/savings account balance decreases</span></div>
       <div class="shortcut-row"><span>📅 <strong>Date stamps</strong> — add planned and actual dates to any row via the date button that appears on hover</span></div>
       <div class="shortcut-row"><span>✎ <strong>Row notes</strong> — click ≡ on any row → Add note; a gold dot appears on hover to indicate a note exists</span></div>
       <div class="shortcut-row"><span>→ <strong>Income destination</strong> — open the note on any income row to set a "→ goes to" label (e.g. Marcus Savings, HYSA) showing where that income is allocated</span></div>
@@ -3558,39 +3584,43 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
     <div class="shortcuts-group">
       <div class="shortcuts-group-title">Templates</div>
-      <div class="shortcut-row"><span>💵 <strong>Paycheck (Income)</strong> — open the note on any income row → Paycheck; enter pay date, hours, hourly rate, gross pay, taxes and deductions; net pay auto-fills the Received column</span></div>
+      <div class="shortcut-row"><span>💵 <strong>Paycheck (Income)</strong> — open the note on any income row → Paycheck; enter pay date, hours, hourly rate, gross pay, taxes and deductions; net pay auto-fills the Received column. Gross pay is black, taxes red, deductions green for easy reading.</span></div>
       <div class="shortcut-row"><span>💳 <strong>Payment (Debt)</strong> — open the note on any debt row → Payment; log date paid, amount, type, interest charged and due date; remaining balance auto-fills the Remaining column</span></div>
       <div class="shortcut-row"><span>📈 <strong>Performance (Savings)</strong> — open the note on any savings row → Performance; enter account value and cost basis; market gain/loss and cumulative return % are auto-calculated and fill the Actual and Growth columns</span></div>
       <div class="shortcut-row"><span>💰 <strong>Contribution (Savings)</strong> — log your contribution and employer match; total auto-fills the Growth column</span></div>
       <div class="shortcut-row"><span>🔁 <strong>Transfer (Savings)</strong> — log deposits, withdrawals and transfers with direction, from and to fields</span></div>
       <div class="shortcut-row"><span>💹 <strong>Investment (Savings)</strong> — log fund/ticker, shares and price per share; total value auto-fills the Growth column</span></div>
       <div class="shortcut-row"><span>🏦 <strong>Interest (Savings)</strong> — log interest earned, APY % and date; amount auto-fills the Growth column</span></div>
-      <div class="shortcut-row"><span>⚠ <strong>Manual values protected</strong> — templates never overwrite a value you typed manually unless you've actively filled in the template fields</span></div>
+      <div class="shortcut-row"><span>⛽ <strong>Fuel (Transportation)</strong> — log price per gallon, gallons filled and date; total cost auto-fills the Actual column. Add miles driven to see your MPG.</span></div>
+      <div class="shortcut-row"><span>📅 <strong>Manage (Subscriptions)</strong> — set a renewal date, cancel-by deadline and status (Active / Cancel / Renew); status shows in color below the entry</span></div>
+      <div class="shortcut-row"><span>🏦 <strong>Transaction (Checking)</strong> — log deposits and withdrawals with description and date; net change auto-fills the Ending column. Supports Venmo, Zelle, Direct Deposit, Rent and more.</span></div>
+      <div class="shortcut-row"><span>⚠ <strong>Manual values protected</strong> — templates never overwrite a value you typed manually unless you've actively filled in the template fields. Opening a template or switching pills won't clear anything.</span></div>
     </div>
 
     <div class="shortcuts-group">
-      <div class="shortcuts-group-title">Colors</div>
+      <div class="shortcuts-group-title">Colors & Card Tracking</div>
       <div class="shortcut-row"><span>🎨 <strong>Color toolbar</strong> — click any row to open a floating toolbar; switch between Text, Number and Strikethrough tabs</span></div>
-      <div class="shortcut-row"><span>● <strong>Text color</strong> — colors the row label; great for matching rows to a card</span></div>
-      <div class="shortcut-row"><span>＃ <strong>Number color</strong> — colors the actual/received amount independently from the label</span></div>
-      <div class="shortcut-row"><span>A̶ <strong>Strikethrough color</strong> — sets the line-through color when a row is marked paid</span></div>
-      <div class="shortcut-row"><span>⎘ <strong>Copy color</strong> — open the color toolbar and click Copy to copy the current Text, Number or Strikethrough color to the clipboard</span></div>
-      <div class="shortcut-row"><span>⎘ <strong>Paste color</strong> — click ≡ on a row → Paste color → paste as any color type; works across types (universal clipboard)</span></div>
+      <div class="shortcut-row"><span>● <strong>Text color</strong> — colors the row label; great for visual grouping</span></div>
+      <div class="shortcut-row"><span>＃ <strong>Number color</strong> — colors the actual/received amount; used to identify which card an expense was charged to</span></div>
+      <div class="shortcut-row"><span>A̶ <strong>Strikethrough color</strong> — sets the line-through color when a row is marked paid; used to identify which account paid the expense</span></div>
+      <div class="shortcut-row"><span>🃏 <strong>My Cards legend</strong> — ⋯ → My Cards to build a color key for your credit/debit cards; assign a color to each card name</span></div>
+      <div class="shortcut-row"><span>🔗 <strong>Auto-calc debt from card color</strong> — open the note on any Debt row; the 🔗 Auto-calc from card dropdown links it to a legend card. Jettana then sums all expense rows whose <em>number color</em> matches that card and auto-fills the Current balance.</span></div>
+      <div class="shortcut-row"><span>✓ <strong>Strike = payment flow</strong> — when you mark an expense as paid, the linked card's Current decreases automatically (the charge is settled). The strike color also identifies which savings or checking account the money came from — that account's balance decreases too.</span></div>
+      <div class="shortcut-row"><span>⎘ <strong>Copy / paste color</strong> — open the color toolbar → Copy to copy any color; click ≡ on a row → Paste color to apply it as any type</span></div>
       <div class="shortcut-row"><span>✕ <strong>Clear all colors</strong> — click ≡ on a row → Clear all colors to reset text, number and strikethrough at once</span></div>
-      <div class="shortcut-row"><span>🃏 <strong>My Cards legend</strong> — ⋯ → My Cards legend to build a color key for your credit/debit cards; copy and paste colors between the legend and rows</span></div>
+      <div class="shortcut-row"><span>● <strong>Sticky row colors</strong> — coloring a row sets that color as the default for the next new row automatically</span></div>
     </div>
 
     <div class="shortcuts-group">
       <div class="shortcuts-group-title">Rows</div>
       <div class="shortcut-row"><span>≡ <strong>Row menu</strong> — click ≡ on desktop or long-press on mobile to access all row options</span></div>
-      <div class="shortcut-row"><span>⟳ <strong>Recurring rows</strong> — row menu → Mark as recurring; row carries over automatically when copying a month</span></div>
+      <div class="shortcut-row"><span>⟳ <strong>Recurring rows</strong> — row menu → Mark as recurring; row carries over automatically when copying a month, including its colors</span></div>
       <div class="shortcut-row"><span>⧉ <strong>Duplicate</strong> — row menu → Duplicate row copies the row and all its colors</span></div>
       <div class="shortcut-row"><span>⠿ <strong>Drag to reorder</strong> — hover a row to reveal the ⠿ handle; drag on desktop, long-press on mobile</span></div>
       <div class="shortcut-row"><span>↔ <strong>Move to another section</strong> — drag a row and drop it onto a different section header to move it</span></div>
       <div class="shortcut-row"><span>✨ <strong>Autocomplete</strong> — start typing a label to see suggestions from your history; selecting one prefills the amount and all 3 colors</span></div>
-      <div class="shortcut-row"><span>🗑 <strong>Delete rows</strong> — hover any section header to reveal 🗑; click it to choose: <em>Select rows to delete</em> (pick individual rows) or <em>Clear all rows</em> (wipe the whole section). Both are undoable</span></div>
-      <div class="shortcut-row"><span>↩ <strong>Undo delete</strong> — deleted a row by accident? Click UNDO in the toast that appears</span></div>
-      <div class="shortcut-row"><span>↩ <strong>Undo cell edit</strong> — changed a number by accident? An UNDO toast appears when you leave a cell whose value changed; click it to restore the previous value</span></div>
+      <div class="shortcut-row"><span>🗑 <strong>Delete rows</strong> — hover any section header to reveal 🗑; click it to choose: <em>Select rows to delete</em> or <em>Clear all rows</em>. Both are undoable.</span></div>
+      <div class="shortcut-row"><span>↩ <strong>Undo</strong> — most actions are undoable: deleting rows, clearing sections, editing a cell value, marking paid, filling template fields, and removing template entries. An UNDO button appears in the toast — click it within 5 seconds to reverse.</span></div>
     </div>
 
     <div class="shortcuts-group">
@@ -4703,7 +4733,7 @@ function renderRowEl(section, row, animate = false) {
   if (section === 'income') {
     allocHtml = '<div style="display:flex;align-items:center;gap:6px;padding:6px 10px 0;"><span style="font-size:11px;color:var(--teal);font-weight:600;white-space:nowrap;">→ goes to</span><input type="text" id="alloc-input-' + row.id + '" value="' + escHtml(row.alloc || '') + '" placeholder="e.g. Marcus Savings, HYSA…" style="flex:1;border:none;border-bottom:1px solid var(--mist);outline:none;font-size:11px;font-family:Outfit,sans-serif;color:var(--teal);background:transparent;padding:2px 4px;" oninput="saveAlloc(\'income\',\'' + row.id + '\',this.value)" onclick="event.stopPropagation()"></div>';
   }
-  noteDiv.innerHTML = '<div class="note-inner">' + allocHtml + '<textarea class="note-textarea" id="note-ta-' + row.id + '" placeholder="Add a note… (e.g. split with roommate, one-time purchase)" oninput="saveNote(\'' + section + '\',\'' + row.id + '\',this.value)" onblur="noteBlur(\'' + section + '\',\'' + row.id + '\')" onclick="event.stopPropagation()">' + escHtml(row.note || '') + '</textarea><button class="note-close" onclick="closeNote(\'' + row.id + '\')" title="Close">×</button></div>';
+  noteDiv.innerHTML = '<div class="note-inner">' + allocHtml + '<div style="position:relative;"><textarea class="note-textarea" id="note-ta-' + row.id + '" placeholder="Add a note… (e.g. split with roommate, one-time purchase)" oninput="saveNote(\'' + section + '\',\'' + row.id + '\',this.value)" onblur="noteBlur(\'' + section + '\',\'' + row.id + '\')" onclick="event.stopPropagation()">' + escHtml(row.note || '') + '</textarea><button class="note-close" onclick="closeNote(\'' + row.id + '\')" title="Close">×</button></div></div>';
   container.appendChild(noteDiv);
 
   const hasLabel = !!row.label;
@@ -7936,6 +7966,157 @@ function showAbout() {
 function hideAbout() {
   var el = document.getElementById('about-overlay');
   if (el) el.style.display = 'none';
+}
+
+// ── Setup Checklist ───────────────────────────────────────────
+var CHECKLIST_STEPS = [
+  { id: 'add_income',    icon: '💵', title: 'Add your income',          desc: 'Go to the Income section and add your salary or any other income source.' },
+  { id: 'add_expense',   icon: '🧾', title: 'Add an expense',           desc: 'Pick any section (Housing, Food, etc.) and add a row with a budget and actual amount.' },
+  { id: 'color_row',     icon: '🎨', title: 'Color-code a row',         desc: 'Click any row to open the color toolbar. Set a number color to match your card.' },
+  { id: 'add_card',      icon: '🃏', title: 'Set up My Cards legend',   desc: 'Tap ⋯ → My Cards and add your credit/debit cards with their colors.' },
+  { id: 'link_debt',     icon: '🔗', title: 'Link a card to Debt',      desc: 'Open the note on a Debt row and use the 🔗 Auto-calc dropdown to link a card. Your Current balance will auto-fill.' },
+  { id: 'mark_paid',     icon: '✓',  title: 'Mark an expense as paid',  desc: 'Click the ✓ circle on any expense row. Watch the linked card balance and account update automatically.' },
+  { id: 'try_template',  icon: '📋', title: 'Try a template',           desc: 'Open the note on an Income row → Paycheck, or a Debt row → Payment to log detailed transaction info.' },
+  { id: 'explore_notes', icon: '✎',  title: 'Add a note to a row',      desc: 'Click ≡ on any row → Add note. Income rows also let you set a "→ goes to" destination.' },
+];
+
+function loadChecklistState() {
+  try { return JSON.parse(localStorage.getItem('intentra_checklist') || '{}'); } catch { return {}; }
+}
+function saveChecklistState(state) {
+  localStorage.setItem('intentra_checklist', JSON.stringify(state));
+}
+
+function renderChecklist() {
+  var container = document.getElementById('checklist-items');
+  if (!container) return;
+  var state = loadChecklistState();
+  var completed = CHECKLIST_STEPS.filter(function(s) { return state[s.id]; }).length;
+  var pct = Math.round((completed / CHECKLIST_STEPS.length) * 100);
+  var html = '<div style="margin-bottom:14px;">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
+    '<span style="font-size:12px;color:var(--steel);">' + completed + ' of ' + CHECKLIST_STEPS.length + ' completed</span>' +
+    '<span style="font-size:12px;font-weight:700;color:var(--sage);">' + pct + '%</span></div>' +
+    '<div style="height:6px;background:var(--mist);border-radius:3px;overflow:hidden;">' +
+    '<div style="height:100%;background:var(--sage);border-radius:3px;width:' + pct + '%;transition:width 0.3s;"></div></div></div>';
+  CHECKLIST_STEPS.forEach(function(step) {
+    var done = !!state[step.id];
+    html += '<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--mist);cursor:pointer;" onclick="toggleChecklistStep(\'' + step.id + '\')">' +
+      '<div style="flex-shrink:0;width:22px;height:22px;border-radius:50%;border:2px solid ' + (done ? 'var(--sage)' : 'var(--mist)') + ';background:' + (done ? 'var(--sage)' : 'transparent') + ';display:flex;align-items:center;justify-content:center;margin-top:1px;transition:all 0.2s;">' +
+      (done ? '<span style="color:white;font-size:11px;">✓</span>' : '') + '</div>' +
+      '<div style="flex:1;">' +
+      '<div style="font-size:13px;font-weight:600;color:' + (done ? 'var(--steel)' : 'var(--ink)') + ';' + (done ? 'text-decoration:line-through;' : '') + '">' + step.icon + ' ' + step.title + '</div>' +
+      '<div style="font-size:12px;color:var(--steel);margin-top:2px;line-height:1.5;">' + step.desc + '</div>' +
+      '</div></div>';
+  });
+  container.innerHTML = html;
+}
+
+function toggleChecklistStep(stepId) {
+  var state = loadChecklistState();
+  state[stepId] = !state[stepId];
+  saveChecklistState(state);
+  renderChecklist();
+}
+
+function resetChecklist() {
+  saveChecklistState({});
+  renderChecklist();
+}
+
+function showChecklist() {
+  var el = document.getElementById('checklist-overlay');
+  if (el) el.style.display = 'flex';
+  renderChecklist();
+}
+
+function hideChecklist() {
+  var el = document.getElementById('checklist-overlay');
+  if (el) el.style.display = 'none';
+}
+
+// ── Demo Mode ─────────────────────────────────────────────────
+function loadDemo() {
+  if (!confirm('Load a demo month? This will add sample data to a new "Demo" month without affecting your real data. You can delete it anytime from the sidebar.')) return;
+
+  var demoKey = 'demo-month';
+  var all = loadAll();
+
+  // Build demo month data
+  var DISCOVER_COLOR = '#E8824A'; // orange
+  var BMO_COLOR      = '#4A85A0'; // teal/blue
+
+  all[demoKey] = {};
+  saveAll(all);
+
+  switchMonth(demoKey);
+
+  // Income rows
+  var incomeRows = [
+    { label: 'Bi-Weekly Pay',      planned: 3000, received: 2865, paidColor: '#6B9E70', numColor: '#6B9E70' },
+    { label: 'Freelance Design',   planned: 500,  received: 500,  paidColor: '#6B9E70', numColor: '#6B9E70' },
+  ];
+  incomeRows.forEach(function(d) { addRow('income', d, false); });
+
+  // Savings rows
+  var savingsRows = [
+    { label: 'Marcus HYSA',        actual: 500,  gains: 12   },
+    { label: 'Roth IRA',           actual: 200,  gains: 340  },
+  ];
+  savingsRows.forEach(function(d) { addRow('savings', d, false); });
+
+  // Housing — Discover charges (orange numbers)
+  var housingRows = [
+    { label: 'Rent',               budget: 1500, actual: 1500, numColor: DISCOVER_COLOR },
+    { label: 'Electric',           budget: 80,   actual: 67,   numColor: DISCOVER_COLOR },
+    { label: 'Internet',           budget: 60,   actual: 60,   numColor: DISCOVER_COLOR },
+  ];
+  housingRows.forEach(function(d) { addRow('housing', d, false); });
+
+  // Checking
+  var checkingRows = [
+    { label: 'BMO Checking', beginning: 3200, ending: 0, paidColor: BMO_COLOR, numColor: BMO_COLOR },
+  ];
+  checkingRows.forEach(function(d) { addRow('checking', d, false); });
+
+  // Transport — mix of cards
+  var transportRows = [
+    { label: 'Car Insurance',      budget: 120, actual: 120, numColor: DISCOVER_COLOR },
+    { label: 'Gas — Shell',        budget: 80,  actual: 54,  numColor: BMO_COLOR      },
+  ];
+  transportRows.forEach(function(d) { addRow('transport', d, false); });
+
+  // Debt — Discover linked
+  var debtRows = [
+    { label: 'Discover',  current: 0, remaining: 0, paidColor: DISCOVER_COLOR, numColor: DISCOVER_COLOR, _cardLink: DISCOVER_COLOR },
+    { label: 'BMO CC',    current: 0, remaining: 0, paidColor: BMO_COLOR,      numColor: BMO_COLOR },
+  ];
+  debtRows.forEach(function(d) { addRow('debt', d, false); });
+
+  // Food
+  var foodRows = [
+    { label: "Trader Joe's",       budget: 200, actual: 178, numColor: DISCOVER_COLOR },
+    { label: 'Chipotle',           budget: 40,  actual: 23,  numColor: DISCOVER_COLOR },
+    { label: 'Poke Bowl',          budget: 30,  actual: 31,  numColor: BMO_COLOR      },
+  ];
+  foodRows.forEach(function(d) { addRow('food', d, false); });
+
+  // Subscriptions
+  var subRows = [
+    { label: 'Netflix',            budget: 18, actual: 18, numColor: DISCOVER_COLOR },
+    { label: 'Spotify',            budget: 11, actual: 11, numColor: BMO_COLOR      },
+  ];
+  subRows.forEach(function(d) { addRow('subscriptions', d, false); });
+
+  // Add demo legend cards
+  _legendCards = [
+    { name: 'Discover', color: DISCOVER_COLOR },
+    { name: 'BMO Card', color: BMO_COLOR },
+  ];
+  saveLegend();
+
+  recalc();
+  showToast('Demo month loaded! Explore the color-coded rows and linked Debt section.', false);
 }
 
 function showFeatures() {
