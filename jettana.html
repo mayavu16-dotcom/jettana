@@ -5243,38 +5243,44 @@ function autoCalcDebtFromCards() {
   var debtRows = monthData['debt'] || [];
   var changed = false;
 
-  // Expense sections to scan
-  var EXPENSE_SECTIONS = ['housing','transport','food','health','subscriptions','gifts','misc'];
+  // Only scan true expense sections — checking is account balances, not card charges
+  var EXPENSE_SECTIONS = ['housing', 'transport', 'food', 'health', 'subscriptions', 'gifts', 'misc'];
 
   debtRows.forEach(function(debtRow) {
-    if (!debtRow._cardLink) return; // no card linked
+    if (!debtRow._cardLink) return;
     var linkedColor = debtRow._cardLink.toLowerCase();
 
-    // Sum all expense rows whose paidColor matches the linked card color
     var total = 0;
     EXPENSE_SECTIONS.forEach(function(sec) {
+      var cfg = CONFIGS[sec];
       var rows = monthData[sec] || [];
       rows.forEach(function(row) {
-        if (row.paidColor && row.paidColor.toLowerCase() === linkedColor) {
-          var val = parseAmt(row['actual'] || row['budget'] || 0);
-          if (val) total += val;
-        }
+        // Match on either text color or number color
+        var textColor = (row.paidColor || '').toLowerCase();
+        var numColor  = (row.numColor  || '').toLowerCase();
+        if (textColor !== linkedColor && numColor !== linkedColor) return;
+        // Always use the actual spend field (k2) for expense sections
+        // Fall back to budget (k1) only if actual is empty
+        var actual = parseAmt(row[cfg.k2]);
+        var budget = parseAmt(row[cfg.k1]);
+        var val = actual > 0 ? actual : budget;
+        if (val > 0) total += val;
       });
     });
 
-    if (total !== parseAmt(debtRow['current'] || 0)) {
-      debtRow['current'] = total;
+    var currentVal = parseAmt(debtRow['current'] || 0);
+    if (total !== currentVal) {
+      debtRow['current'] = total || '';
       changed = true;
-      // Update the DOM input for this row
       var inp = document.querySelector('input[data-id="' + debtRow.id + '"][data-col="1"]');
       if (inp) {
-        inp.value = total ? '$' + total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '';
-        inp.dataset.raw = String(total);
+        inp.value = total ? '$' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
+        inp.dataset.raw = total ? String(total) : '';
       }
     }
   });
 
-  if (changed) saveAll(all);
+  if (changed) { saveAll(all); recalc(); }
 }
 
 function setDebtCardLink(section, id, color) {
