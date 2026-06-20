@@ -4734,6 +4734,11 @@ function numFocus(el) {
   const raw = el.dataset.raw || '';
   el.value = raw ? raw : '';
   el.dataset.preEdit = raw; // stash value before editing
+  // Snapshot now before any changes — we'll pop it if nothing changes
+  if (raw !== '') {
+    pushUndo('Edit cell');
+    el.dataset.undoIdx = String(undoStack.length - 1);
+  }
   try { el.select(); } catch(e) {}
 }
 
@@ -4742,9 +4747,12 @@ function numBlur(el) {
   const raw = parseFloat(trimmed);
   const preEdit = el.dataset.preEdit;
   const newRaw = (trimmed === '' || isNaN(raw) || raw === 0) ? '' : String(raw);
-  // Only snapshot + show undo if value actually changed from a non-empty previous value
-  if (preEdit !== undefined && preEdit !== '' && preEdit !== newRaw) {
-    pushUndo('Edit cell');
+  // If value didn't change, pop the snapshot we pushed on focus
+  if (preEdit === newRaw || preEdit === undefined) {
+    var idx = parseInt(el.dataset.undoIdx || '-1');
+    if (idx >= 0 && idx === undoStack.length - 1) undoStack.pop();
+  } else if (preEdit !== '') {
+    // Value changed — show the toast
     showUndoToast('Value changed — undo?');
   }
   if (trimmed === '' || isNaN(raw) || raw === 0) {
@@ -5241,46 +5249,44 @@ function autoCalcDebtFromCards() {
   var monthData = all[currentMonthKey];
   if (!monthData) return;
   var debtRows = monthData['debt'] || [];
-  var changed = false;
 
+  // Only expense sections with an Actual column — no budget fallback ever
   var EXPENSE_SECTIONS = ['housing', 'transport', 'food', 'health', 'subscriptions', 'gifts', 'misc'];
 
   debtRows.forEach(function(debtRow) {
     if (!debtRow._cardLink) return;
     var linkedColor = debtRow._cardLink.toLowerCase();
 
-    var totalAll = 0;   // all charges (paid + unpaid) → Current
-    var totalPaid = 0;  // paid charges → deducted to get Remaining
+    var totalAll = 0;  // sum of actual values on all color-matched rows → Current
+    var totalPaid = 0; // sum of actual values on paid rows → subtracted to get Remaining
 
     EXPENSE_SECTIONS.forEach(function(sec) {
       var cfg = CONFIGS[sec];
       var rows = monthData[sec] || [];
       rows.forEach(function(row) {
-        // Only match rows where the user explicitly set the number color
-        // (not rows that inherited the default color automatically)
-        if (!row._numColorExplicit) return;
+        // Match on numColor only — must be non-empty and match the linked card color
         var numColor = (row.numColor || '').toLowerCase();
-        if (numColor !== linkedColor) return;
+        if (!numColor || numColor !== linkedColor) return;
+        // Actual column only — never use budget
         var actual = parseAmt(row[cfg.k2]);
-        var budget = parseAmt(row[cfg.k1]);
-        var val = actual > 0 ? actual : budget;
-        if (val <= 0) return;
-        totalAll += val;
-        if (row.paid) totalPaid += val;
+        if (actual <= 0) return;
+        totalAll += actual;
+        if (row.paid) totalPaid += actual;
       });
     });
 
-    // Always update both columns — clears any stale values from previous calculations
-    debtRow['current'] = totalAll || '';
-    debtRow['remaining'] = remaining || '';
-    changed = true;
+    var remaining = Math.max(0, totalAll - totalPaid);
 
+    // Write Current (col 1)
+    debtRow['current'] = totalAll || '';
     var inp1 = document.querySelector('input[data-id="' + debtRow.id + '"][data-col="1"]');
     if (inp1) {
       inp1.value = totalAll ? '$' + totalAll.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
       inp1.dataset.raw = totalAll ? String(totalAll) : '';
     }
 
+    // Write Remaining (col 2)
+    debtRow['remaining'] = remaining || '';
     var inp2 = document.querySelector('input[data-id="' + debtRow.id + '"][data-col="2"]');
     if (inp2) {
       inp2.value = remaining ? '$' + remaining.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
@@ -5288,7 +5294,7 @@ function autoCalcDebtFromCards() {
     }
   });
 
-  if (changed) saveAll(all);
+  saveAll(all);
 }
 
 function setDebtCardLink(section, id, color) {
@@ -5338,11 +5344,13 @@ function togglePaid(section, id) {
   const rows = all[currentMonthKey][section] || [];
   const row = rows.find(r => r.id === id);
   if (!row) return;
+  pushUndo((row.paid ? 'Unmark' : 'Mark') + ' paid: "' + (row.label || 'row') + '"');
   row.paid = !row.paid;
   saveAll(all);
   const el = document.querySelector(`#rows-${section} [data-id="${id}"]`);
   if (el) el.classList.toggle('paid', row.paid);
   applyPaidEffect(section, id, row.paid);
+  showUndoToast('Undo mark paid?');
   scheduleSave();
 }
 
@@ -5355,10 +5363,10 @@ function applyPaidEffect(section, id, isPaid) {
   var row = rows.find(function(r) { return r.id === id; });
   if (!row) return;
 
-  // Get the expense amount
+  // Get the expense amount — actual only, never fall back to budget
   var cfg = CONFIGS[section];
   if (!cfg) return;
-  var amount = parseAmt(row[cfg.k2]) || parseAmt(row[cfg.k1]) || 0;
+  var amount = parseAmt(row[cfg.k2]);
   if (!amount) return;
 
   var changed = false;
@@ -5948,6 +5956,8 @@ function toggleNote(section, id) {
   var opening = !wrap.classList.contains('open');
   wrap.classList.toggle('open', opening);
   if (opening) {
+    // Snapshot before the user edits anything in this note
+    pushUndo('Edit note/template');
     if (section === 'savings' || section === 'income' || section === 'debt' || section === 'transport' || section === 'subscriptions' || section === 'checking') {
       var noteInner = wrap.querySelector('.note-inner');
       if (noteInner && !noteInner.querySelector('.savings-template')) {
@@ -6352,6 +6362,7 @@ function removeEntry(section, id, idx) {
   var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
   var row = rows.find(function(r) { return r.id === id; });
   if (!row || !row._entries) return;
+  pushUndo('Remove template entry');
   row._entries.splice(idx, 1);
   var allGone = !row._entries.length;
   if (allGone) row._entries = [{}];
@@ -6384,16 +6395,6 @@ function updateEntryTotal(section, id, template) {
   if (!container) return;
   var entryDivs = container.querySelectorAll('.st-entry');
   if (!entryDivs.length) return;
-
-  // Snapshot before template writes — deduplicated so rapid typing only pushes once per row
-  var lastUndo = undoStack.length ? undoStack[undoStack.length - 1] : null;
-  var alreadySnapped = lastUndo && lastUndo.description === 'Template edit' && lastUndo.rowId === id;
-  if (!alreadySnapped) {
-    var snap = loadAll();
-    var snapData = JSON.stringify(snap[currentMonthKey] || {});
-    undoStack.push({ snapshot: snapData, month: currentMonthKey, description: 'Template edit', rowId: id });
-    if (undoStack.length > 20) undoStack.shift();
-  }
 
   var grandTotal = 0;
   var idx = 0;
@@ -9217,7 +9218,6 @@ function setNumColor(section, id, color, e) {
   var row = rows.find(function(r) { return r.id === id; });
   if (!row) return;
   row.numColor = color;
-  row._numColorExplicit = true; // user explicitly set this color
   saveAll(all);
   applyNumColor(id, color);
   // Save as sticky default for future rows
