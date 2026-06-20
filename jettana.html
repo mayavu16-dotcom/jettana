@@ -3053,6 +3053,16 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
     <div class="page-body">
 
       <!-- Monthly Intention -->
+      <div id="demo-banner" style="display:none;align-items:center;justify-content:space-between;gap:12px;background:#FFF8E7;border:1px solid #F0C060;border-radius:10px;padding:10px 16px;margin:8px 16px 0;font-family:Outfit,sans-serif;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:16px;">▶</span>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#7A5C00;">This is a demo month</div>
+            <div style="font-size:12px;color:#A07800;line-height:1.4;">Sample data only — nothing here affects your real budget. Explore freely, then switch to a real month in the sidebar.</div>
+          </div>
+        </div>
+        <button onclick="if(confirm('Delete the demo month?')){deleteDemoMonth();}" style="flex-shrink:0;font-size:12px;font-weight:600;color:#A07800;background:rgba(240,192,96,0.2);border:1px solid #F0C060;border-radius:6px;padding:5px 10px;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;">Remove demo</button>
+      </div>
       <div class="intention-wrap">
         <button class="intention-trigger" id="intention-trigger" onclick="toggleIntention()">
           Add intention
@@ -4178,6 +4188,7 @@ var _footerBudgetOverrides = {};
 
 function monthKey(year, month) { return `${year}-${String(month+1).padStart(2,'0')}`; }
 function monthLabel(key) {
+  if (key === 'demo-month') return '✦ Demo Month';
   const [y, m] = key.split('-');
   return new Date(+y, +m-1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
@@ -4460,6 +4471,9 @@ function switchMonth(key) {
   });
   document.getElementById('topbar-title').textContent = monthLabel(key);
   document.getElementById('topbar-sub').textContent = 'Monthly Budget Tracker · auto-saved'; // updated by updateSubtitle()
+  // Show/hide demo banner
+  var demoBanner = document.getElementById('demo-banner');
+  if (demoBanner) demoBanner.style.display = key === 'demo-month' ? 'flex' : 'none';
   renderSidebar();
   recalc();
   loadNwGoal();
@@ -8099,6 +8113,16 @@ function loadDemo() {
 
   recalc();
   showToast('Demo month loaded! Explore the color-coded rows and linked Debt section.', false);
+}
+
+function deleteDemoMonth() {
+  var all = loadAll();
+  delete all['demo-month'];
+  saveAll(all);
+  var now = new Date();
+  switchMonth(monthKey(now.getFullYear(), now.getMonth()));
+  renderSidebar();
+  showToast('Demo month removed.', false);
 }
 
 function showFeatures() {
