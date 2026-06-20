@@ -5256,7 +5256,9 @@ function autoCalcDebtFromCards() {
       var cfg = CONFIGS[sec];
       var rows = monthData[sec] || [];
       rows.forEach(function(row) {
-        // Card color is identified by the NUMBER color only
+        // Only match rows where the user explicitly set the number color
+        // (not rows that inherited the default color automatically)
+        if (!row._numColorExplicit) return;
         var numColor = (row.numColor || '').toLowerCase();
         if (numColor !== linkedColor) return;
         var actual = parseAmt(row[cfg.k2]);
@@ -9215,6 +9217,7 @@ function setNumColor(section, id, color, e) {
   var row = rows.find(function(r) { return r.id === id; });
   if (!row) return;
   row.numColor = color;
+  row._numColorExplicit = true; // user explicitly set this color
   saveAll(all);
   applyNumColor(id, color);
   // Save as sticky default for future rows
