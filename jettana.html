@@ -4256,6 +4256,7 @@ function createFreshMonth(newKey) {
           _price: r._price || '',
           _tDir: r._tDir || '',
           alloc: r.alloc || '',
+          _cardLink: r._cardLink || '',
         };
         if (!all[newKey][section]) all[newKey][section] = [];
         all[newKey][section].push(newRow);
@@ -4397,6 +4398,7 @@ function copyMonthData(sourceKey, newKey) {
       _price: row._price || '',
       _tDir: row._tDir || '',
       alloc: row.alloc || '',
+      _cardLink: row._cardLink || '',
     }));
   });
   // Copy footer highlights and budget overrides from source month
@@ -5230,6 +5232,61 @@ function recalc() {
       else if (pctRaw >= 80) pctEl.classList.add('pct-approaching');
     }
   });
+  autoCalcDebtFromCards();
+}
+
+function autoCalcDebtFromCards() {
+  if (!_legendCards || !_legendCards.length) return;
+  var all = loadAll();
+  var monthData = all[currentMonthKey];
+  if (!monthData) return;
+  var debtRows = monthData['debt'] || [];
+  var changed = false;
+
+  // Expense sections to scan
+  var EXPENSE_SECTIONS = ['housing','transport','food','health','subscriptions','gifts','misc'];
+
+  debtRows.forEach(function(debtRow) {
+    if (!debtRow._cardLink) return; // no card linked
+    var linkedColor = debtRow._cardLink.toLowerCase();
+
+    // Sum all expense rows whose paidColor matches the linked card color
+    var total = 0;
+    EXPENSE_SECTIONS.forEach(function(sec) {
+      var rows = monthData[sec] || [];
+      rows.forEach(function(row) {
+        if (row.paidColor && row.paidColor.toLowerCase() === linkedColor) {
+          var val = parseAmt(row['actual'] || row['budget'] || 0);
+          if (val) total += val;
+        }
+      });
+    });
+
+    if (total !== parseAmt(debtRow['current'] || 0)) {
+      debtRow['current'] = total;
+      changed = true;
+      // Update the DOM input for this row
+      var inp = document.querySelector('input[data-id="' + debtRow.id + '"][data-col="1"]');
+      if (inp) {
+        inp.value = total ? '$' + total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '';
+        inp.dataset.raw = String(total);
+      }
+    }
+  });
+
+  if (changed) saveAll(all);
+}
+
+function setDebtCardLink(section, id, color) {
+  var all = loadAll();
+  var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
+  var row = rows.find(function(r) { return r.id === id; });
+  if (!row) return;
+  row._cardLink = color;
+  saveAll(all);
+  scheduleSave();
+  autoCalcDebtFromCards();
+  recalc();
 }
 
 function scheduleSave() {
@@ -5813,7 +5870,7 @@ function toggleNote(section, id) {
   var opening = !wrap.classList.contains('open');
   wrap.classList.toggle('open', opening);
   if (opening) {
-    if (section === 'savings' || section === 'income' || section === 'debt' || section === 'transport' || section === 'subscriptions') {
+    if (section === 'savings' || section === 'income' || section === 'debt' || section === 'transport' || section === 'subscriptions' || section === 'checking') {
       var noteInner = wrap.querySelector('.note-inner');
       if (noteInner && !noteInner.querySelector('.savings-template')) {
         var all = loadAll();
@@ -5834,6 +5891,9 @@ function toggleNote(section, id) {
         } else if (section === 'subscriptions') {
           templates = ['general', 'subscription'];
           templateLabels = { general: 'General', subscription: 'Manage' };
+        } else if (section === 'checking') {
+          templates = ['general', 'transaction'];
+          templateLabels = { general: 'General', transaction: 'Transaction' };
         } else {
           templates = ['general','transfer','contribution','investment','interest','performance'];
           templateLabels = { general: 'General', transfer: 'Transfer', contribution: 'Contribution', investment: 'Investment', interest: 'Interest', performance: 'Performance' };
@@ -5853,7 +5913,16 @@ function toggleNote(section, id) {
 
         var pillDiv = document.createElement('div');
         pillDiv.innerHTML = pillHtml;
-        noteInner.insertBefore(pillDiv, noteInner.firstChild);
+
+        // For debt rows, inject card link selector above pills
+        if (section === 'debt') {
+          var cardLinkDiv = document.createElement('div');
+          cardLinkDiv.id = 'card-link-wrap-' + id;
+          cardLinkDiv.innerHTML = buildCardLinkHtml(section, id, row);
+          noteInner.insertBefore(cardLinkDiv, noteInner.firstChild);
+        }
+
+        noteInner.insertBefore(pillDiv, noteInner.lastChild);
 
         // Render fields for saved template
         renderSavingsTemplateFields(section, id, savedTemplate, row);
@@ -5862,6 +5931,27 @@ function toggleNote(section, id) {
     var ta = document.getElementById('note-ta-' + id);
     if (ta) setTimeout(function() { ta.focus(); }, 50);
   }
+}
+
+function buildCardLinkHtml(section, id, row) {
+  var linkedColor = row._cardLink || '';
+  var linkedCard = _legendCards && _legendCards.find(function(c) { return c.color === linkedColor; });
+  var cards = _legendCards || [];
+  var dotHtml = linkedCard
+    ? '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + linkedCard.color + ';flex-shrink:0;margin-right:2px;"></span>'
+    : '';
+  var optionsHtml = '<option value="">— not linked —</option>' +
+    cards.map(function(c) {
+      return '<option value="' + c.color + '"' + (c.color === linkedColor ? ' selected' : '') + '>' + escHtml(c.name || c.color) + '</option>';
+    }).join('');
+  return '<div style="display:flex;align-items:center;gap:6px;padding:8px 10px 6px;border-bottom:1px solid var(--mist);" onclick="event.stopPropagation()">' +
+    dotHtml +
+    '<span style="font-size:11px;color:var(--steel);font-weight:600;white-space:nowrap;">🔗 Auto-calc from card:</span>' +
+    '<select id="card-link-sel-' + id + '" style="flex:1;border:none;border-bottom:1px solid var(--mist);outline:none;font-size:11px;font-family:Outfit,sans-serif;color:var(--ink);background:transparent;padding:2px 4px;" ' +
+    'onchange="setDebtCardLink(\'' + section + '\',\'' + id + '\',this.value)" onclick="event.stopPropagation()">' +
+    optionsHtml + '</select>' +
+    (cards.length === 0 ? '<span style="font-size:10px;color:var(--steel);">Add cards in ⋯ → My Cards first</span>' : '') +
+    '</div>';
 }
 
 function setSavingsTemplate(section, id, template) {
@@ -6070,6 +6160,27 @@ function renderEntryFields(section, id, template, entry, idx) {
       '</select></div>' +
       '</div>';
   }
+  if (template === 'transaction') {
+    var blurCb = 'templateMoneyBlur(this,\'' + section + '\',\'' + id + '\',\'' + template + '\')';
+    var txType = entry.txtype || 'deposit';
+    var txTypeColor = txType === 'deposit' ? '#27AE60' : '#C0392B';
+    var txDescriptions = ['Direct Deposit', 'Paycheck', 'Venmo', 'Zelle', 'Cash App', 'ATM Withdrawal', 'Rent', 'Transfer', 'Refund', 'Other'];
+    return '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Type</label>' +
+      '<select data-key="txtype" style="' + inputStyle + 'color:' + txTypeColor + ';font-weight:600;" ' +
+      'oninput="this.dataset.key=\'txtype\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\');this.style.color=(this.value===\'deposit\'?\'#27AE60\':\'#C0392B\')" onclick="event.stopPropagation()">' +
+      '<option value="deposit"' + (txType === 'deposit' ? ' selected' : '') + ' style="color:#27AE60">↓ Deposit</option>' +
+      '<option value="withdrawal"' + (txType === 'withdrawal' ? ' selected' : '') + ' style="color:#C0392B">↑ Withdrawal</option>' +
+      '</select></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Amount</label>' +
+      '<input type="text" data-key="txamt" value="' + (entry.txamt ? '$' + parseFloat(String(entry.txamt).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + 'color:' + txTypeColor + ';" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'txamt\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + 'min-width:120px;"><label style="' + labelStyle + '">Description</label>' +
+      '<input type="text" data-key="txdesc" value="' + escHtml(entry.txdesc || '') + '" placeholder="e.g. Venmo, Rent…" style="' + inputStyle + '" list="tx-desc-list-' + id + '" oninput="this.dataset.key=\'txdesc\';' + cb + '" onclick="event.stopPropagation()">' +
+      '<datalist id="tx-desc-list-' + id + '">' + txDescriptions.map(function(d) { return '<option value="' + d + '">'; }).join('') + '</datalist></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Date</label>' +
+      '<input type="date" data-key="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '</div>';
+  }
   if (template === 'fuel') {
     var blurCb = 'templateMoneyBlur(this,\'' + section + '\',\'' + id + '\',\'' + template + '\')';
     var fuelPrice = parseFloat(String(entry.fuelprice || '').replace(/[$,]/g, '')) || 0;
@@ -6243,6 +6354,9 @@ function updateEntryTotal(section, id, template) {
       }
     } else if (template === 'investment') {
       entryTotal = parseAmt(vals.shares) * parseAmt(vals.price);
+    } else if (template === 'transaction') {
+      var txAmt = parseAmt(vals.txamt);
+      entryTotal = vals.txtype === 'withdrawal' ? -txAmt : txAmt;
     } else if (template === 'fuel') {
       var fp = parseAmt(vals.fuelprice);
       var fg = parseFloat(String(vals.fuelgal || '').replace(/[,]/g, '')) || 0;
@@ -6293,7 +6407,23 @@ function updateEntryTotal(section, id, template) {
 
   if (grandTotal !== 0) {
     var abs = Math.abs(grandTotal);
-    if (template === 'payment') {
+    if (template === 'transaction') {
+      // grandTotal = net of deposits - withdrawals; ending = beginning + net
+      var txAll = loadAll();
+      var txRows = (txAll[currentMonthKey] && txAll[currentMonthKey][section]) || [];
+      var txRowData = txRows.find(function(r) { return r.id === id; }) || {};
+      var txBeginning = parseAmt(txRowData['beginning']) || 0;
+      var txEnding = txBeginning + grandTotal;
+      if (txRowData) { txRowData['ending'] = txEnding; saveAll(txAll); }
+      // Update ending input (col 2)
+      var txInp = document.querySelector('input[data-id="' + id + '"][data-col="2"]');
+      if (txInp) { txInp.value = '$' + Math.abs(txEnding).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); txInp.dataset.raw = String(txEnding); }
+      // Show net summary
+      var txSign = grandTotal >= 0 ? '+' : '-';
+      totalEl.style.color = grandTotal >= 0 ? '#27AE60' : '#C0392B';
+      totalEl.textContent = 'Net: ' + txSign + '$' + abs.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + (txBeginning ? '  →  Ending: $' + Math.abs(txEnding).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '');
+      recalc();
+    } else if (template === 'payment') {
       // grandTotal = total net payments (paid - interest). Show it and compute remaining balance.
       totalEl.style.color = 'var(--sage)';
       totalEl.textContent = 'Paid: $' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -6925,6 +7055,7 @@ function toggleRecurring(section, id) {
           numColor: row.numColor || '',
           strikeColor: row.strikeColor || '',
           alloc: row.alloc || '',
+          _cardLink: row._cardLink || '',
         };
         futureMonth[section] = futureRows.concat([newRow]);
         injected++;
