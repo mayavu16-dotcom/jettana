@@ -5243,44 +5243,50 @@ function autoCalcDebtFromCards() {
   var debtRows = monthData['debt'] || [];
   var changed = false;
 
-  // Only scan true expense sections — checking is account balances, not card charges
   var EXPENSE_SECTIONS = ['housing', 'transport', 'food', 'health', 'subscriptions', 'gifts', 'misc'];
 
   debtRows.forEach(function(debtRow) {
     if (!debtRow._cardLink) return;
     var linkedColor = debtRow._cardLink.toLowerCase();
 
-    var total = 0;
+    var totalAll = 0;   // all charges (paid + unpaid) → Current
+    var totalPaid = 0;  // paid charges → deducted to get Remaining
+
     EXPENSE_SECTIONS.forEach(function(sec) {
       var cfg = CONFIGS[sec];
       var rows = monthData[sec] || [];
       rows.forEach(function(row) {
-        // Match on either text color or number color
-        var textColor = (row.paidColor || '').toLowerCase();
-        var numColor  = (row.numColor  || '').toLowerCase();
-        if (textColor !== linkedColor && numColor !== linkedColor) return;
-        // Always use the actual spend field (k2) for expense sections
-        // Fall back to budget (k1) only if actual is empty
+        // Card color is identified by the NUMBER color only
+        var numColor = (row.numColor || '').toLowerCase();
+        if (numColor !== linkedColor) return;
         var actual = parseAmt(row[cfg.k2]);
         var budget = parseAmt(row[cfg.k1]);
         var val = actual > 0 ? actual : budget;
-        if (val > 0) total += val;
+        if (val <= 0) return;
+        totalAll += val;
+        if (row.paid) totalPaid += val;
       });
     });
 
-    var currentVal = parseAmt(debtRow['current'] || 0);
-    if (total !== currentVal) {
-      debtRow['current'] = total || '';
-      changed = true;
-      var inp = document.querySelector('input[data-id="' + debtRow.id + '"][data-col="1"]');
-      if (inp) {
-        inp.value = total ? '$' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
-        inp.dataset.raw = total ? String(total) : '';
-      }
+    // Always update both columns — clears any stale values from previous calculations
+    debtRow['current'] = totalAll || '';
+    debtRow['remaining'] = remaining || '';
+    changed = true;
+
+    var inp1 = document.querySelector('input[data-id="' + debtRow.id + '"][data-col="1"]');
+    if (inp1) {
+      inp1.value = totalAll ? '$' + totalAll.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
+      inp1.dataset.raw = totalAll ? String(totalAll) : '';
+    }
+
+    var inp2 = document.querySelector('input[data-id="' + debtRow.id + '"][data-col="2"]');
+    if (inp2) {
+      inp2.value = remaining ? '$' + remaining.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
+      inp2.dataset.raw = remaining ? String(remaining) : '';
     }
   });
 
-  if (changed) { saveAll(all); recalc(); }
+  if (changed) saveAll(all);
 }
 
 function setDebtCardLink(section, id, color) {
@@ -5343,12 +5349,11 @@ function applyPaidEffect(section, id, isPaid) {
   var monthData = all[currentMonthKey];
   if (!monthData) return;
 
-  // Get the row being paid
   var rows = monthData[section] || [];
   var row = rows.find(function(r) { return r.id === id; });
   if (!row) return;
 
-  // Get the expense amount — use actual (k2) first, fall back to budget (k1)
+  // Get the expense amount
   var cfg = CONFIGS[section];
   if (!cfg) return;
   var amount = parseAmt(row[cfg.k2]) || parseAmt(row[cfg.k1]) || 0;
@@ -5356,45 +5361,35 @@ function applyPaidEffect(section, id, isPaid) {
 
   var changed = false;
 
-  // ── 1. Debt adjustment ─────────────────────────────────────
-  // If this row's text color matches a linked debt card, adjust its Current
-  var rowColor = (row.paidColor || '').toLowerCase();
-  if (rowColor) {
-    var debtRows = monthData['debt'] || [];
-    debtRows.forEach(function(debtRow) {
-      if (!debtRow._cardLink) return;
-      if (debtRow._cardLink.toLowerCase() !== rowColor) return;
-      var current = parseAmt(debtRow['current']) || 0;
-      // Paying reduces Current; un-paying restores it
-      debtRow['current'] = Math.max(0, isPaid ? current - amount : current + amount);
-      changed = true;
-      // Update DOM
-      var inp = document.querySelector('input[data-id="' + debtRow.id + '"][data-col="1"]');
-      if (inp) {
-        var val = debtRow['current'];
-        inp.value = val ? '$' + val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
-        inp.dataset.raw = val ? String(val) : '';
-      }
-    });
-  }
-
-  // ── 2. Savings / Checking adjustment ───────────────────────
-  // If this row's strike color matches a savings or checking row's color,
-  // reduce that account's balance (money left the account to pay the expense)
+  // ── Savings / Checking adjustment ──────────────────────────
+  // Strike color = which account paid. Match against account row's numColor or paidColor.
   var strikeColor = (row.strikeColor || '').toLowerCase();
   if (strikeColor) {
     ['savings', 'checking'].forEach(function(acctSec) {
-      var acctRows = monthData[acctSec] || [];
       var acctCfg = CONFIGS[acctSec];
+      var acctRows = monthData[acctSec] || [];
       acctRows.forEach(function(acctRow) {
-        var acctColor = (acctRow.paidColor || acctRow.numColor || '').toLowerCase();
-        if (!acctColor || acctColor !== strikeColor) return;
-        // For savings: adjust 'actual' (k1). For checking: adjust 'ending' (k2)
-        var field = acctSec === 'checking' ? acctCfg.k2 : acctCfg.k1;
-        var balance = parseAmt(acctRow[field]) || 0;
-        acctRow[field] = Math.max(0, isPaid ? balance - amount : balance + amount);
+        // Match account by its number color or text color
+        var acctNumColor  = (acctRow.numColor  || '').toLowerCase();
+        var acctTextColor = (acctRow.paidColor || '').toLowerCase();
+        if (acctNumColor !== strikeColor && acctTextColor !== strikeColor) return;
+        // For both savings and checking: track cumulative paid deductions separately
+        // so we never clobber manually-entered values
+        var field, balance;
+        if (acctSec === 'checking') {
+          // Track deductions in _paidAdj, compute ending = beginning - _paidAdj
+          var beginning = parseAmt(acctRow[acctCfg.k1]) || 0;
+          var adj = parseAmt(acctRow['_paidAdj']) || 0;
+          adj = isPaid ? adj + amount : Math.max(0, adj - amount);
+          acctRow['_paidAdj'] = adj;
+          acctRow[acctCfg.k2] = Math.max(0, beginning - adj);
+          field = acctCfg.k2;
+        } else {
+          field = acctCfg.k1; // savings actual
+          balance = parseAmt(acctRow[field]) || 0;
+          acctRow[field] = Math.max(0, isPaid ? balance - amount : balance + amount);
+        }
         changed = true;
-        // Update DOM — savings is col 1, checking ending is col 2
         var col = acctSec === 'checking' ? '2' : '1';
         var acctInp = document.querySelector('input[data-id="' + acctRow.id + '"][data-col="' + col + '"]');
         if (acctInp) {
@@ -5406,7 +5401,10 @@ function applyPaidEffect(section, id, isPaid) {
     });
   }
 
-  if (changed) { saveAll(all); recalc(); }
+  // Debt Current is handled automatically by autoCalcDebtFromCards
+  // which only sums unpaid rows — so just calling recalc() is enough
+  if (changed) saveAll(all);
+  recalc(); // always recalc — updates debt Current via autoCalcDebtFromCards
 }
 
 function formatDateLabel(dateStr) {
