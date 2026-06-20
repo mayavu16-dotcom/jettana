@@ -3484,7 +3484,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <div class="welcome-step-icon">📅</div>
           <div class="welcome-step-text">
             <strong>Start with this month</strong>
-            <span>Edit or clear the sample rows to match your real income and expenses across 12 categories.</span>
+            <span>Add your income and expenses across 12 categories. Or tap <strong>▶ Try demo</strong> below to see a fully worked example first.</span>
           </div>
         </div>
         <div class="welcome-step">
@@ -3536,7 +3536,8 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       </div>
     </div>
     <div class="welcome-footer">
-      <button class="welcome-start-btn" onclick="hideWelcome()">Get started →</button>
+      <button class="welcome-start-btn" onclick="hideWelcome()">Start fresh →</button>
+      <button class="welcome-features-btn" onclick="hideWelcome(); loadDemo();">▶ Try demo</button>
       <button class="welcome-features-btn" onclick="hideWelcome(); showFeatures();">See all features</button>
     </div>
   </div>
@@ -5590,25 +5591,6 @@ function init() {
     saveAll(all);
     switchMonth(todayKey);
     setTimeout(showWelcome, 600);
-    const seed = [
-      ['income',    { label: 'Salary',         planned: 4500, received: 4500 }],
-      ['income',    { label: 'Side income',     planned: 400,  received: 280  }],
-      ['savings',   { label: 'HYSA',            actual: 300,   gains: 14      }],
-      ['savings',   { label: '401(k)',           actual: 460,   gains: 42      }],
-      ['housing',   { label: 'Rent',            budget: 1400,  actual: 1400   }],
-      ['housing',   { label: 'Electric',        budget: 80,    actual: 72     }],
-      ['housing',   { label: 'Internet',        budget: 55,    actual: 55     }],
-      ['checking',  { label: 'Chase Checking',  beginning: 2100, ending: 2380 }],
-      ['transport', { label: 'Car Insurance',   budget: 120,   actual: 120    }],
-      ['transport', { label: 'Gas',             budget: 80,    actual: 91     }],
-      ['debt',      { label: 'Visa',            current: 1200, remaining: 990 }],
-      ['food',      { label: "Trader Joe's",    budget: 200,   actual: 183    }],
-      ['food',      { label: 'Chipotle',        budget: 50,    actual: 61     }],
-      ['food',      { label: 'Whole Foods',     budget: 80,    actual: 94     }],
-      ['health',    { label: 'Gym membership',  budget: 45,    actual: 45     }],
-      ['misc',      { label: 'Amazon',          budget: 60,    actual: 77     }],
-    ];
-    seed.forEach(([s, d]) => addRow(s, d, false));
   } else {
     switchMonth(key);
   }
