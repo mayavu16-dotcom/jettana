@@ -3741,13 +3741,10 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
   <div id="ct-legend-swatches" style="display:flex;align-items:center;gap:4px;"></div>
   <div id="ct-legend-sep" class="ct-sep" style="display:none;"></div>
   <div class="ct-swatches" id="ct-swatches">
-    <div class="ct-swatch" style="background:#4A85A0" data-color="#4A85A0" onclick="applyToolbarColor('#4A85A0')"></div>
-    <div class="ct-swatch" style="background:#6B9E70" data-color="#6B9E70" onclick="applyToolbarColor('#6B9E70')"></div>
-    <div class="ct-swatch" style="background:#C0736A" data-color="#C0736A" onclick="applyToolbarColor('#C0736A')"></div>
-    <div class="ct-swatch" style="background:#7B72AA" data-color="#7B72AA" onclick="applyToolbarColor('#7B72AA')"></div>
-    <div class="ct-swatch" style="background:#1A2332" data-color="#1A2332" onclick="applyToolbarColor('#1A2332')"></div>
-    <div class="ct-swatch" style="background:#5BAF9A" data-color="#5BAF9A" onclick="applyToolbarColor('#5BAF9A')"></div>
-    <input type="color" class="ct-custom" id="ct-custom-input" value="#4A85A0" title="Custom" onchange="applyToolbarColor(this.value)">
+    <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--steel);cursor:pointer;font-family:Outfit,sans-serif;">
+      <input type="color" class="ct-custom" id="ct-custom-input" value="#4A85A0" title="Pick a color" onchange="applyToolbarColor(this.value)">
+      Custom
+    </label>
   </div>
   <div class="ct-sep"></div>
   <button class="ct-copy-btn" onclick="copyToolbarColor()" title="Copy this color">Copy</button>
