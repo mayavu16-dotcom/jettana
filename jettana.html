@@ -268,6 +268,7 @@ body {
 .sum-card.c-blush::after  { background: var(--blush); }
 .sum-card.c-gold::after   { background: var(--gold); }
 .sum-card.c-teal::after   { background: var(--teal); }
+.sum-card.c-slate::after  { background: var(--steel); }
 
 .sum-label {
   font-size: 9.5px;
@@ -3134,15 +3135,15 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <div class="sum-amount" id="sum-expenses">$0</div>
           <div class="sum-sub">across all categories</div>
         </div>
+        <div class="sum-card c-slate">
+          <div class="sum-label">Net Balance</div>
+          <div class="sum-amount" id="sum-balance">$0</div>
+          <div class="sum-sub">income − expenses</div>
+        </div>
         <div class="sum-card c-gold">
           <div class="sum-label">Total Saved</div>
           <div class="sum-amount" id="sum-savings">$0</div>
           <div class="sum-sub">investments + savings</div>
-        </div>
-        <div class="sum-card c-teal">
-          <div class="sum-label">Net Balance</div>
-          <div class="sum-amount" id="sum-balance">$0</div>
-          <div class="sum-sub">income − expenses</div>
         </div>
       </div>
 
@@ -5221,7 +5222,9 @@ function recalc() {
   set('sum-savings',  fmt(savA));
   set('sum-balance',  fmt(balance));
   const balEl = document.getElementById('sum-balance');
-  if (balEl) balEl.style.color = balance >= 0 ? 'var(--teal)' : 'var(--blush)';
+  if (balEl) balEl.style.color = balance >= 0 ? 'var(--sage)' : 'var(--blush)';
+  const savEl = document.getElementById('sum-savings');
+  if (savEl) savEl.style.color = savA > 0 ? 'var(--sage-dark)' : '';
 
   set('bs-inc-p',  fmt(incP));
   (function() {
