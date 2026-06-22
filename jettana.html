@@ -4482,9 +4482,9 @@ function switchMonth(key) {
   var demoBanner = document.getElementById('demo-banner');
   if (demoBanner) demoBanner.style.display = key === 'demo-month' ? 'flex' : 'none';
   renderSidebar();
+  loadFooterBudgets();
   recalc();
   loadNwGoal();
-  loadFooterBudgets();
   loadFtHighlights();
   applyFtHighlights();
   // Cancel any active bulk selection
@@ -9593,8 +9593,17 @@ function footerBudgetFocus(el) {
 }
 
 function footerBudgetInput(el) {
+  var sec = el.dataset.section;
   var val = el.value.replace(/[$,]/g, '').trim();
-  el.classList.toggle('overridden', val !== '' && !isNaN(parseFloat(val)));
+  var num = parseFloat(val);
+  var isValid = val !== '' && !isNaN(num);
+  el.classList.toggle('overridden', isValid);
+  // Update in-memory override immediately so recalc uses it during typing
+  if (isValid) {
+    _footerBudgetOverrides[sec] = num;
+  } else {
+    delete _footerBudgetOverrides[sec];
+  }
 }
 
 function footerBudgetBlur(el) {
