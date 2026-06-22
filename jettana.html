@@ -8121,11 +8121,15 @@ function _runLoadDemo() {
   ];
   subRows.forEach(function(d) { addRow('subscriptions', d, false); });
 
-  // Add demo legend cards
-  _legendCards = [
+  // Add demo legend cards — only if those colors aren't already in the legend
+  var demoCards = [
     { name: 'Discover', color: DISCOVER_COLOR },
     { name: 'BMO Card', color: BMO_COLOR },
   ];
+  demoCards.forEach(function(demoCard) {
+    var exists = _legendCards.some(function(c) { return c.color === demoCard.color; });
+    if (!exists) _legendCards.push(demoCard);
+  });
   saveLegend();
 
   recalc();
