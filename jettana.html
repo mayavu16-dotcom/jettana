@@ -9752,6 +9752,11 @@ function loadFooterBudgets() {
   var all = loadAll();
   var month = all[currentMonthKey] || {};
   _footerBudgetOverrides = month._budgetOverrides ? JSON.parse(JSON.stringify(month._budgetOverrides)) : {};
+  // Sync overridden class on inputs to match loaded state
+  SECTIONS.forEach(function(sec) {
+    var inp = document.getElementById('ft-' + sec + '-0');
+    if (inp) inp.classList.toggle('overridden', _footerBudgetOverrides[sec] !== undefined);
+  });
 }
 
 function saveFooterBudgets() {
@@ -9789,9 +9794,11 @@ function footerBudgetBlur(el) {
   if (val === '' || isNaN(num)) {
     delete _footerBudgetOverrides[sec];
     el.classList.remove('overridden');
+    el.title = 'Click to set a custom budget. Leave blank to auto-calculate from rows.';
   } else {
     _footerBudgetOverrides[sec] = num;
     el.classList.add('overridden');
+    el.title = 'Custom budget override — click and clear to use auto-calculated total.';
   }
   saveFooterBudgets();
   recalc();
