@@ -4930,10 +4930,6 @@ function clearMonth() {
 var _secPopover = null;
 
 function clearSection(section) {
-  const all = loadAll();
-  const rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
-  if (!rows.length) { showToast('Section is already empty', false); return; }
-
   // Dismiss existing popover
   if (_secPopover) { _secPopover.remove(); _secPopover = null; }
 
@@ -5024,6 +5020,7 @@ function clearSection(section) {
     pop.appendChild(optClearActual);
   }
   _secPopover = pop;
+  document.body.appendChild(pop);
 
   // Position below the button
   const rect = btn.getBoundingClientRect();
