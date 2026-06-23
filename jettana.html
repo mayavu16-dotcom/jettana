@@ -5069,7 +5069,11 @@ function clearSection(section) {
       pop.remove(); _secPopover = null;
       pushUndo('Clear ' + k1Label + ' in ' + section);
       const a = loadAll();
-      (a[currentMonthKey][section] || []).forEach(function(row) { row[cfg.k1] = ''; });
+      (a[currentMonthKey][section] || []).forEach(function(row) {
+        row[cfg.k1] = '';
+        // For debt: also clear _cardLink so autoCalc doesn't immediately refill
+        if (section === 'debt') row._cardLink = '';
+      });
       saveAll(a);
       document.querySelectorAll('#rows-' + section + ' input[data-col="1"]').forEach(function(inp) {
         inp.value = ''; inp.dataset.raw = '';
@@ -5091,7 +5095,10 @@ function clearSection(section) {
       pop.remove(); _secPopover = null;
       pushUndo('Clear ' + k2Label + ' in ' + section);
       const a = loadAll();
-      (a[currentMonthKey][section] || []).forEach(function(row) { row[cfg.k2] = ''; });
+      (a[currentMonthKey][section] || []).forEach(function(row) {
+        row[cfg.k2] = '';
+        if (section === 'debt') row._cardLink = '';
+      });
       saveAll(a);
       document.querySelectorAll('#rows-' + section + ' input[data-col="2"]').forEach(function(inp) {
         inp.value = ''; inp.dataset.raw = ''; inp.classList.remove('growth-positive', 'growth-negative');
