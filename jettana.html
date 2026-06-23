@@ -9319,7 +9319,6 @@ function getRowHistory() {
         if (!seen[key]) {
           seen[key] = {
             label: row.label,
-            amount: row[CONFIGS[s].k1] || row[CONFIGS[s].k2] || '',
             section: s,
             paidColor: row.paidColor || '',
             numColor: row.numColor || '',
@@ -9390,20 +9389,7 @@ function selectAutocomplete(input, section, idx) {
   if (!item) return;
   input.value = item.label;
   input.dispatchEvent(new Event('input'));
-  // Auto-fill amount in col1 if available
-  if (item.amount) {
-    var row = input.closest('.erow');
-    if (row) {
-      var col1 = row.querySelector('[data-col="1"]');
-      if (col1 && !col1.value) {
-        col1.dataset.raw = item.amount;
-        col1.value = '$' + parseFloat(item.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        // Save the prefilled amount to storage
-        updateRow(col1.dataset.section, col1.dataset.id, col1.dataset.key, parseFloat(item.amount));
-      }
-    }
-  }
-  // Auto-apply all 3 colors if available (apply to DOM + persist to storage)
+  // Auto-apply all 3 colors if available
   var row2 = input.closest('.erow');
   if (row2) {
     var id = row2.dataset.id;
