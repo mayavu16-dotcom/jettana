@@ -5721,6 +5721,11 @@ function initEntryListDrop(container, section) {
 
 function initRowDrag(div, section) {
   div.addEventListener('dragstart', e => {
+    // Don't drag if the user is interacting with an input, textarea or select
+    if (e.target.closest('input, textarea, select')) {
+      e.preventDefault();
+      return;
+    }
     e.stopPropagation(); // prevent sec-card drag from firing
     dragSrc = div;
     div.classList.add('dragging');
@@ -5730,8 +5735,14 @@ function initRowDrag(div, section) {
     var card = div.closest('.sec-card');
     if (card) card.draggable = false;
   });
+  // Disable dragging while any input inside the row is focused
+  div.addEventListener('focusin', e => {
+    if (e.target.matches('input, textarea, select')) div.draggable = false;
+  });
+  div.addEventListener('focusout', e => {
+    if (e.target.matches('input, textarea, select')) div.draggable = true;
+  });
   div.addEventListener('dragend', () => {
-    div.classList.remove('dragging');
     document.querySelectorAll('.erow.drag-over').forEach(el => el.classList.remove('drag-over'));
     dragSrc = null;
   });
