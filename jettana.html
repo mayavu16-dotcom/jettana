@@ -6352,7 +6352,7 @@ function renderEntryFields(section, id, template, entry, idx) {
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Hourly rate</label>' +
       '<input type="text" data-key="rate" value="' + (entry.rate ? '$' + parseFloat(String(entry.rate).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'rate\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Gross pay</label>' +
-      '<input type="text" data-key="gross" value="' + (entry.gross ? '$' + parseFloat(String(entry.gross).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + 'color:#1A2332;" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'gross\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<input type="text" data-key="gross" value="' + (entry.gross ? '$' + parseFloat(String(entry.gross).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + 'color:var(--ink);" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'gross\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Taxes</label>' +
       '<input type="text" data-key="taxes" value="' + (entry.taxes ? '$' + parseFloat(String(entry.taxes).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + 'color:#C0392B;" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'taxes\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Deductions</label>' +
@@ -6911,6 +6911,8 @@ function applyDark(dark) {
   var btn = document.getElementById('dark-toggle');
   if (btn) btn.textContent = dark ? '☀️' : '🌙';
   try { localStorage.setItem('intentra_dark', dark ? '1' : '0'); } catch(e) {}
+  // Refresh intention color so dark/light flip applies
+  loadIntention();
 }
 
 function toggleDark() {
@@ -7186,10 +7188,24 @@ function applyIntentionColor(forceColor) {
   var color = forceColor || stored || '';
   var trigger = document.getElementById('intention-trigger');
   var inp     = document.getElementById('intention-input');
-  // Only set color if one was explicitly chosen; otherwise let CSS handle it
-  if (color) {
-    if (trigger && trigger.classList.contains('has-content')) trigger.style.color = color;
-    if (inp) inp.style.color = color;
+
+  // In dark mode, flip near-black colors to white so they're readable
+  var displayColor = color;
+  if (color && document.documentElement.classList.contains('dark')) {
+    var tmp = document.createElement('div');
+    tmp.style.color = color;
+    document.body.appendChild(tmp);
+    var rgb = getComputedStyle(tmp).color.match(/\d+/g);
+    document.body.removeChild(tmp);
+    if (rgb) {
+      var lum = (parseInt(rgb[0]) * 299 + parseInt(rgb[1]) * 587 + parseInt(rgb[2]) * 114) / 1000;
+      if (lum < 80) displayColor = '#FFFFFF';
+    }
+  }
+
+  if (displayColor) {
+    if (trigger && trigger.classList.contains('has-content')) trigger.style.color = displayColor;
+    if (inp) inp.style.color = displayColor;
   } else {
     if (trigger) trigger.style.color = '';
     if (inp) inp.style.color = '';
