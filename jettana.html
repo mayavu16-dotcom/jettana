@@ -3406,7 +3406,12 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <div class="mom-card" id="mom-card">
         <div class="mom-hdr">
           <span class="mom-hdr-title">Month-over-Month</span>
-          <span class="mom-hdr-sub" id="mom-hdr-sub">vs previous month</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:11px;color:rgba(255,255,255,0.6);">vs</span>
+            <select id="mom-compare-select" onchange="setMoMCompare(this.value)"
+              style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);border-radius:6px;color:white;font-size:11px;font-family:'Outfit',sans-serif;padding:3px 6px;cursor:pointer;outline:none;">
+            </select>
+          </div>
         </div>
         <div id="mom-body"></div>
       </div>
@@ -4547,6 +4552,7 @@ function copyMonthData(sourceKey, newKey) {
 function switchMonth(key) {
   currentMonthKey = key;
   localStorage.setItem('intentra_last_month', key);
+  _momCompareKey = null; // reset to auto (previous month) on switch
   // Reset collapsed sections on month switch
   document.querySelectorAll('.sec-card.collapsed').forEach(function(c) {
     c.classList.remove('collapsed');
@@ -6933,25 +6939,50 @@ function toggleDark() {
 
 
 // ── Month-over-Month Comparison ───────────────────────────────
+var _momCompareKey = null; // null = auto (previous month)
+
+function setMoMCompare(key) {
+  _momCompareKey = key || null;
+  renderMoM();
+}
+
 function renderMoM() {
   var body = document.getElementById('mom-body');
-  var subEl = document.getElementById('mom-hdr-sub');
   if (!body) return;
 
-  // Get sorted month keys
-  var keys = allMonthKeys().slice().reverse(); // oldest first
+  // Get all other months sorted newest first
+  var keys = allMonthKeys().filter(function(k) { return k !== currentMonthKey && k !== 'demo-month'; }).sort().reverse();
   var curKey = currentMonthKey;
-  var curIdx = keys.indexOf(curKey);
 
-  if (curIdx <= 0) {
-    body.innerHTML = '<div class="mom-no-data">No previous month to compare against yet.</div>';
-    return;
+  // Populate the dropdown
+  var select = document.getElementById('mom-compare-select');
+  if (select) {
+    // Default compare = previous month (first key older than current)
+    var olderKeys = allMonthKeys().filter(function(k) { return k < curKey && k !== 'demo-month'; }).sort();
+    var defaultPrev = olderKeys.length ? olderKeys[olderKeys.length - 1] : null;
+    var allOtherKeys = allMonthKeys().filter(function(k) { return k !== curKey && k !== 'demo-month'; }).sort().reverse();
+
+    if (allOtherKeys.length === 0) {
+      select.innerHTML = '<option value="">No other months</option>';
+      body.innerHTML = '<div class="mom-no-data">No previous month to compare against yet.</div>';
+      return;
+    }
+
+    var currentCompare = _momCompareKey || defaultPrev;
+    select.innerHTML = allOtherKeys.map(function(k) {
+      return '<option value="' + k + '"' + (k === currentCompare ? ' selected' : '') + '>' + monthLabel(k) + '</option>';
+    }).join('');
+
+    // Sync _momCompareKey to what's selected
+    if (!_momCompareKey || !allOtherKeys.includes(_momCompareKey)) {
+      _momCompareKey = currentCompare;
+    }
   }
 
-  var prevKey = keys[curIdx - 1];
-  if (subEl) {
-    var prevLabel = monthLabel(prevKey);
-    subEl.textContent = 'vs ' + prevLabel;
+  var prevKey = _momCompareKey || (allMonthKeys().filter(function(k) { return k < curKey && k !== 'demo-month'; }).sort().pop());
+  if (!prevKey) {
+    body.innerHTML = '<div class="mom-no-data">No previous month to compare against yet.</div>';
+    return;
   }
 
   var cur  = loadAll()[curKey]  || {};
