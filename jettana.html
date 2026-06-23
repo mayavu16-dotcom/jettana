@@ -7958,7 +7958,6 @@ function numKeyDown(e, el) {
   if (e.key !== 'Enter') return;
   e.preventDefault();
   var col = parseInt(el.dataset.col); // 1 or 2
-  var id  = el.dataset.id;
   var section = el.dataset.section;
 
   // Find all rows in this section
@@ -7966,20 +7965,13 @@ function numKeyDown(e, el) {
   var curRow = el.closest('.erow');
   var curIdx = rows.indexOf(curRow);
 
-  if (col === 1) {
-    // Move to col 2 of same row
-    var next = curRow.querySelector('[data-col="2"]');
-    if (next) { next.focus(); next.select(); }
+  // Enter always moves down to the same column in the next row
+  var nextRow = rows[curIdx + 1];
+  if (nextRow) {
+    var nextInput = nextRow.querySelector('[data-col="' + col + '"]');
+    if (nextInput) { nextInput.focus(); nextInput.select(); }
   } else {
-    // Move to LABEL of next row
-    var nextRow = rows[curIdx + 1];
-    if (nextRow) {
-      var nextLabel = nextRow.querySelector('.erow-label-input');
-      if (nextLabel) { nextLabel.focus(); }
-    } else {
-      // Last row — blur
-      el.blur();
-    }
+    el.blur();
   }
 }
 
@@ -8007,8 +7999,16 @@ function labelKeyDown(e, el) {
   // Move to col 1 of same row
   var row = el.closest('.erow');
   if (row) {
-    var numInput = row.querySelector('[data-col="1"]');
-    if (numInput) { numInput.focus(); numInput.select(); }
+    var section = row.dataset.section;
+    var rows = Array.from(document.querySelectorAll('#rows-' + section + ' .erow'));
+    var curIdx = rows.indexOf(row);
+    var nextRow = rows[curIdx + 1];
+    if (nextRow) {
+      var nextLabel = nextRow.querySelector('.erow-label-input');
+      if (nextLabel) { nextLabel.focus(); }
+    } else {
+      el.blur();
+    }
   }
 }
 
