@@ -10043,7 +10043,7 @@ function pasteToolbarColor() {
 document.addEventListener('click', function(e) {
   var toolbar = document.getElementById('color-toolbar');
   if (!toolbar || !toolbar.classList.contains('visible')) return;
-  // If clicking on a different erow, switch toolbar to that row instead of closing
+  // If clicking on a different erow background, switch toolbar to that row
   var clickedRow = e.target.closest('.erow');
   if (clickedRow && !e.target.closest('input, button, .paid-checkbox')) {
     var newId = clickedRow.dataset.id;
@@ -10052,6 +10052,11 @@ document.addEventListener('click', function(e) {
       showColorToolbar(newSection, newId, clickedRow);
       return;
     }
+  }
+  // If clicking an input/button in a DIFFERENT row, close the toolbar
+  if (clickedRow && clickedRow.dataset.id !== _tbId) {
+    hideColorToolbar();
+    return;
   }
   if (!toolbar.contains(e.target) && !e.target.closest('.erow') && !e.target.closest('.ctx-menu')) {
     hideColorToolbar();
