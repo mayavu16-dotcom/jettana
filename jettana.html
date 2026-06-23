@@ -154,11 +154,25 @@ body {
   line-height: 1;
   margin-left: auto;
 }
-.month-item:hover .month-del-btn { opacity: 1; }
+.month-edit-btn {
+  opacity: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(255,255,255,0.5);
+  font-size: 11px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.month-item:hover .month-del-btn,
+.month-item:hover .month-edit-btn { opacity: 1; }
 .month-del-btn:hover { color: white; background: rgba(255,255,255,0.15); }
-.month-item { display: flex; align-items: center; gap: 6px; }
+.month-edit-btn:hover { color: white; background: rgba(255,255,255,0.15); }
 @media (pointer: coarse) {
-  .month-del-btn { opacity: 0.5; }
+  .month-del-btn, .month-edit-btn { opacity: 0.5; }
 }
 
 .main-content {
@@ -4258,6 +4272,68 @@ function addNewMonth() {
   showCopyModal(keys, nextKey);
 }
 
+function renameMonth(oldKey) {
+  if (oldKey === 'demo-month') { showToast('Demo month can\'t be renamed', false); return; }
+  var parts = oldKey.split('-').map(Number);
+  var oy = parts[0], om = parts[1];
+  var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var monthOptions = months.map(function(name, i) {
+    var val = i + 1;
+    return '<option value="' + val + '"' + (val === om ? ' selected' : '') + '>' + name + '</option>';
+  }).join('');
+
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:2000;display:flex;align-items:center;justify-content:center;';
+  var modal = document.createElement('div');
+  modal.style.cssText = 'background:white;border-radius:12px;padding:24px;width:300px;box-shadow:0 20px 60px rgba(0,0,0,0.3);font-family:\'Outfit\',sans-serif;';
+  modal.innerHTML =
+    '<h3 style="margin:0 0 4px;font-size:16px;color:#1A2332;">Rename month</h3>' +
+    '<p style="margin:0 0 16px;font-size:12px;color:#6B7C8F;">Change the month or year — all your data moves with it.</p>' +
+    '<div style="display:flex;gap:10px;margin-bottom:20px;">' +
+      '<div style="flex:1;"><label style="font-size:11px;color:#6B7C8F;display:block;margin-bottom:4px;">Month</label>' +
+      '<select id="rename-month" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid #E8EDF2;font-family:\'Outfit\',sans-serif;font-size:13px;color:#1A2332;">' + monthOptions + '</select></div>' +
+      '<div style="flex:1;"><label style="font-size:11px;color:#6B7C8F;display:block;margin-bottom:4px;">Year</label>' +
+      '<input id="rename-year" type="number" value="' + oy + '" min="2000" max="2099" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid #E8EDF2;font-family:\'Outfit\',sans-serif;font-size:13px;color:#1A2332;box-sizing:border-box;"></div>' +
+    '</div>' +
+    '<div id="rename-error" style="font-size:12px;color:#C0736A;margin-bottom:12px;display:none;"></div>' +
+    '<div style="display:flex;gap:10px;">' +
+      '<button id="rename-cancel" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid #E8EDF2;background:white;font-family:\'Outfit\',sans-serif;font-size:13px;font-weight:600;color:#6B7C8F;cursor:pointer;">Cancel</button>' +
+      '<button id="rename-confirm" style="flex:1;padding:10px;border-radius:8px;border:none;background:#6B9E70;font-family:\'Outfit\',sans-serif;font-size:13px;font-weight:600;color:white;cursor:pointer;">Rename</button>' +
+    '</div>';
+
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+
+  modal.querySelector('#rename-cancel').onclick = function() { overlay.remove(); };
+  modal.querySelector('#rename-confirm').onclick = function() {
+    var m = parseInt(modal.querySelector('#rename-month').value);
+    var y = parseInt(modal.querySelector('#rename-year').value);
+    var errEl = modal.querySelector('#rename-error');
+    if (!y || y < 2000 || y > 2099) {
+      errEl.textContent = 'Please enter a valid year (2000–2099)'; errEl.style.display = 'block'; return;
+    }
+    var newKey = y + '-' + String(m).padStart(2, '0');
+    if (newKey === oldKey) { overlay.remove(); return; }
+    var all = loadAll();
+    if (all[newKey]) {
+      errEl.textContent = monthLabel(newKey) + ' already exists. Delete it first or pick a different date.';
+      errEl.style.display = 'block'; return;
+    }
+    all[newKey] = all[oldKey];
+    delete all[oldKey];
+    saveAll(all);
+    overlay.remove();
+    if (currentMonthKey === oldKey) {
+      currentMonthKey = newKey;
+      localStorage.setItem('intentra_last_month', newKey);
+    }
+    renderSidebar();
+    if (currentMonthKey === newKey) switchMonth(newKey);
+    showToast('Renamed to ' + monthLabel(newKey), false);
+  };
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+}
+
 function createFreshMonth(newKey) {
   if (!newKey) {
     const now = new Date();
@@ -4514,9 +4590,13 @@ function renderSidebar() {
     div.innerHTML = `
       <span class="month-label">${label}</span>
       <span class="dot"></span>
+      <button class="month-edit-btn" title="Rename month" id="edit-${key}">✎</button>
       <button class="month-del-btn" title="Delete month" id="del-${key}">✕</button>
     `;
     div.onclick = () => switchMonth(key);
+    const editBtn = div.querySelector(`#edit-${key}`);
+    editBtn.addEventListener('click', e => { e.stopPropagation(); renameMonth(key); });
+    editBtn.addEventListener('touchend', e => { e.stopPropagation(); e.preventDefault(); renameMonth(key); });
     const delBtn = div.querySelector(`#del-${key}`);
     delBtn.addEventListener('click', e => { e.stopPropagation(); deleteMonth(e, key); });
     delBtn.addEventListener('touchend', e => { e.stopPropagation(); e.preventDefault(); deleteMonth(e, key); });
