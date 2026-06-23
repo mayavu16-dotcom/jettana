@@ -9363,11 +9363,10 @@ function showAutocomplete(input, section) {
     div.dataset.idx = i;
 
     var colorDot = item.paidColor ? '<span class="autocomplete-item-color" style="background:' + item.paidColor + '"></span>' : '';
-    var amt = item.amount ? '$' + parseFloat(item.amount).toFixed(2) : '';
     var sec = item.section.charAt(0).toUpperCase() + item.section.slice(1);
 
     div.innerHTML = colorDot + '<span class="autocomplete-item-label">' + escHtml(item.label) + '</span>' +
-      '<span class="autocomplete-item-meta">' + amt + (amt ? ' · ' : '') + sec + '</span>';
+      '<span class="autocomplete-item-meta">' + sec + '</span>';
 
     div.addEventListener('mousedown', function(e) {
       e.preventDefault();
