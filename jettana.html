@@ -4308,6 +4308,7 @@ function createFreshMonth(newKey) {
           _tDir: r._tDir || '',
           alloc: r.alloc || '',
           _cardLink: r._cardLink || '',
+          _beginDate: r._beginDate || '',
         };
         if (!all[newKey][section]) all[newKey][section] = [];
         all[newKey][section].push(newRow);
@@ -4756,6 +4757,15 @@ function renderRowEl(section, row, animate = false) {
   var allocHtml = '';
   if (section === 'income') {
     allocHtml = '<div style="display:flex;align-items:center;gap:6px;padding:6px 10px 0;"><span style="font-size:11px;color:var(--teal);font-weight:600;white-space:nowrap;">→ goes to</span><input type="text" id="alloc-input-' + row.id + '" value="' + escHtml(row.alloc || '') + '" placeholder="e.g. Marcus Savings, HYSA…" style="flex:1;border:none;border-bottom:1px solid var(--mist);outline:none;font-size:11px;font-family:Outfit,sans-serif;color:var(--teal);background:transparent;padding:2px 4px;" oninput="saveAlloc(\'income\',\'' + row.id + '\',this.value)" onclick="event.stopPropagation()"></div>';
+  }
+  if (section === 'checking') {
+    var beginDateVal = row._beginDate || '';
+    allocHtml = '<div style="display:flex;align-items:center;gap:6px;padding:8px 10px 6px;border-bottom:1px solid var(--mist);" onclick="event.stopPropagation()">' +
+      '<span style="font-size:11px;color:var(--steel);font-weight:600;white-space:nowrap;">📅 Beginning balance date:</span>' +
+      '<input type="date" id="begin-date-' + row.id + '" value="' + beginDateVal + '" style="flex:1;border:none;border-bottom:1px solid var(--mist);outline:none;font-size:11px;font-family:Outfit,sans-serif;color:var(--ink);background:transparent;padding:2px 4px;" ' +
+      'onchange="saveBeginDate(\'checking\',\'' + row.id + '\',this.value)" onclick="event.stopPropagation()">' +
+      '<span style="font-size:10px;color:var(--steel);">Expenses before this date won\'t be deducted</span>' +
+      '</div>';
   }
   noteDiv.innerHTML = '<div class="note-inner">' + allocHtml + '<div style="position:relative;"><textarea class="note-textarea" id="note-ta-' + row.id + '" placeholder="Add a note… (e.g. split with roommate, one-time purchase)" oninput="saveNote(\'' + section + '\',\'' + row.id + '\',this.value)" onblur="noteBlur(\'' + section + '\',\'' + row.id + '\')" onclick="event.stopPropagation()">' + escHtml(row.note || '') + '</textarea><button class="note-close" onclick="closeNote(\'' + row.id + '\')" title="Close">×</button></div></div>';
   container.appendChild(noteDiv);
@@ -5443,6 +5453,11 @@ function applyPaidEffect(section, id, isPaid) {
         // so we never clobber manually-entered values
         var field, balance;
         if (acctSec === 'checking') {
+          // Skip if expense was dated before the beginning balance date
+          // (it was already accounted for in the beginning balance)
+          var beginDate = acctRow._beginDate || '';
+          var expenseDate = row.date || row.date2 || '';
+          if (beginDate && expenseDate && expenseDate < beginDate) return;
           // Track deductions in _paidAdj, compute ending = beginning - _paidAdj
           var beginning = parseAmt(acctRow[acctCfg.k1]) || 0;
           var adj = parseAmt(acctRow['_paidAdj']) || 0;
@@ -6712,6 +6727,16 @@ function saveNote(section, id, val) {
   // Update dot indicator
   var dot = document.getElementById('note-dot-' + id);
   if (dot) dot.classList.toggle('has-note', val.trim().length > 0);
+}
+
+function saveBeginDate(section, id, val) {
+  var all = loadAll();
+  var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
+  var row = rows.find(function(r) { return r.id === id; });
+  if (!row) return;
+  row._beginDate = val;
+  saveAll(all);
+  scheduleSave();
 }
 
 function saveAlloc(section, id, val) {
