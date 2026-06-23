@@ -8071,7 +8071,16 @@ function numKeyDown(e, el) {
     var nextInput = nextRow.querySelector('[data-col="' + col + '"]');
     if (nextInput) { nextInput.focus(); nextInput.select(); }
   } else {
-    el.blur();
+    // Last row — create a new one and focus its label
+    addRow(section);
+    setTimeout(function() {
+      var updatedRows = Array.from(document.querySelectorAll('#rows-' + section + ' .erow'));
+      var newRow = updatedRows[updatedRows.length - 1];
+      if (newRow) {
+        var labelInput = newRow.querySelector('.erow-label-input');
+        if (labelInput) labelInput.focus();
+      }
+    }, 50);
   }
 }
 
@@ -8107,7 +8116,16 @@ function labelKeyDown(e, el) {
       var nextLabel = nextRow.querySelector('.erow-label-input');
       if (nextLabel) { nextLabel.focus(); }
     } else {
-      el.blur();
+      // Last row — create a new one and focus its label
+      addRow(section);
+      setTimeout(function() {
+        var updatedRows = Array.from(document.querySelectorAll('#rows-' + section + ' .erow'));
+        var newRow = updatedRows[updatedRows.length - 1];
+        if (newRow) {
+          var newLabel = newRow.querySelector('.erow-label-input');
+          if (newLabel) newLabel.focus();
+        }
+      }, 50);
     }
   }
 }
