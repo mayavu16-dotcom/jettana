@@ -4973,7 +4973,56 @@ function clearSection(section) {
 
   pop.appendChild(optSelect);
   pop.appendChild(optClear);
-  document.body.appendChild(pop);
+
+  // Divider
+  const div = document.createElement('div');
+  div.style.cssText = 'height:1px;background:var(--mist);margin:2px 0;';
+  pop.appendChild(div);
+
+  const cfg = CONFIGS[section];
+  if (cfg && cfg.k1) {
+    var k1Label = { planned: 'Planned', budget: 'Budget', actual: 'Actual', beginning: 'Beginning balance', current: 'Current balance' }[cfg.k1] || cfg.k1;
+    const optClearBudget = document.createElement('button');
+    optClearBudget.textContent = '✕ Clear ' + k1Label;
+    optClearBudget.style.cssText = 'background:none;border:none;padding:8px 12px;text-align:left;font-size:13px;color:var(--steel);cursor:pointer;border-radius:5px;font-family:\'Outfit\',sans-serif;';
+    optClearBudget.onmouseenter = function() { this.style.background = 'var(--mist-light)'; };
+    optClearBudget.onmouseleave = function() { this.style.background = 'none'; };
+    optClearBudget.onclick = function() {
+      pop.remove(); _secPopover = null;
+      pushUndo('Clear ' + k1Label + ' in ' + section);
+      const a = loadAll();
+      (a[currentMonthKey][section] || []).forEach(function(row) { row[cfg.k1] = ''; });
+      saveAll(a);
+      document.querySelectorAll('#rows-' + section + ' input[data-col="1"]').forEach(function(inp) {
+        inp.value = ''; inp.dataset.raw = '';
+      });
+      recalc();
+      showUndoToast(k1Label + ' cleared');
+    };
+    pop.appendChild(optClearBudget);
+  }
+
+  if (cfg && cfg.k2) {
+    var k2Label = { received: 'Received', gains: 'Growth', actual: 'Actual', ending: 'Ending balance', remaining: 'Remaining balance' }[cfg.k2] || cfg.k2;
+    const optClearActual = document.createElement('button');
+    optClearActual.textContent = '✕ Clear ' + k2Label;
+    optClearActual.style.cssText = 'background:none;border:none;padding:8px 12px;text-align:left;font-size:13px;color:var(--steel);cursor:pointer;border-radius:5px;font-family:\'Outfit\',sans-serif;';
+    optClearActual.onmouseenter = function() { this.style.background = 'var(--mist-light)'; };
+    optClearActual.onmouseleave = function() { this.style.background = 'none'; };
+    optClearActual.onclick = function() {
+      pop.remove(); _secPopover = null;
+      pushUndo('Clear ' + k2Label + ' in ' + section);
+      const a = loadAll();
+      (a[currentMonthKey][section] || []).forEach(function(row) { row[cfg.k2] = ''; });
+      saveAll(a);
+      document.querySelectorAll('#rows-' + section + ' input[data-col="2"]').forEach(function(inp) {
+        inp.value = ''; inp.dataset.raw = ''; inp.classList.remove('growth-positive', 'growth-negative');
+      });
+      recalc();
+      showUndoToast(k2Label + ' cleared');
+    };
+    pop.appendChild(optClearActual);
+  }
   _secPopover = pop;
 
   // Position below the button
