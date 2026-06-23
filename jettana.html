@@ -3842,6 +3842,8 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
     <input type="color" value="#4A85A0" id="ft-custom-color" title="Custom">
   </div>
   <div class="ct-sep"></div>
+  <button class="ct-copy-btn" onclick="copyFtColor()">Copy</button>
+  <button class="ct-paste-btn" onclick="pasteFtColor()">Paste</button>
   <button class="ct-clear" id="ft-clear-btn" onclick="clearFtColor()">Clear</button>
   <button class="ct-close" onclick="hideFtColorPicker()">✕</button>
 </div>
@@ -10248,6 +10250,32 @@ function clearFtColor() {
   applyFtHighlights();
   updateFtSwatches();
   hideFtColorPicker();
+}
+
+var _copiedFtHighlight = null;
+
+function copyFtColor() {
+  if (!_ftPickerSection) return;
+  var hl = _ftHighlights[_ftPickerSection];
+  if (!hl || (!hl.bg && !hl.num)) {
+    showToast('Nothing to copy — no highlight set', false);
+    return;
+  }
+  _copiedFtHighlight = JSON.parse(JSON.stringify(hl));
+  showToast('Highlight copied', false);
+}
+
+function pasteFtColor() {
+  if (!_ftPickerSection) return;
+  if (!_copiedFtHighlight) {
+    showToast('Nothing to paste — copy a highlight first', false);
+    return;
+  }
+  _ftHighlights[_ftPickerSection] = JSON.parse(JSON.stringify(_copiedFtHighlight));
+  saveFtHighlights();
+  applyFtHighlights();
+  updateFtSwatches();
+  showToast('Highlight pasted', false);
 }
 
 window.addEventListener('load', function() {
