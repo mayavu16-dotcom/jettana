@@ -3168,7 +3168,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
         <div class="sec-card" data-section-id="income">
           <div class="sec-hdr bg-sage">
             <div class="sec-hdr-left"><h3>Income</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
-            <div class="sec-hdr-right"><button class="sec-clear-btn" onclick="clearSection('income')" title="Clear all rows in this section">🗑</button><button class="sec-collapse-btn" onclick="toggleSection('income')" title="Collapse section">▾</button></div></div>
+            <div class="sec-hdr-right"><button class="sec-clear-btn" onclick="clearSection('income')" title="Clear all rows in this section">🗑</button><span class="sec-total" id="hdr-income">$0</span><button class="sec-collapse-btn" onclick="toggleSection('income')" title="Collapse section">▾</button></div></div>
           <div class="sec-body">
           <div class="col-lbl-row"><span>Source</span><span>Planned</span><span>Received</span></div>
           <div class="bulk-bar" id="bulk-bar-income"><span class="bulk-bar-count" id="bulk-count-income">0 selected</span><button class="bulk-bar-btn" onclick="selectAllBulk('income')">Select all</button><button class="bulk-bar-btn danger" onclick="deleteSelectedBulk('income')">Delete selected</button><button class="bulk-bar-btn" onclick="cancelBulk('income')">Cancel</button></div><div class="entry-list" id="rows-income"></div>
