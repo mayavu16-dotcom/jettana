@@ -4391,6 +4391,24 @@ function renameSectionPrompt(key) {
     var scope = modal.querySelector('input[name="rename-sec-scope"]:checked').value;
     var isReset = !val || val === defaultName;
 
+    // Snapshot previous name for undo
+    var prevGlobalName = _sectionNames[key] || null;
+    var prevMonthName = null;
+    var a0 = loadAll();
+    if (a0[currentMonthKey] && a0[currentMonthKey]._sectionNames) {
+      prevMonthName = a0[currentMonthKey]._sectionNames[key] || null;
+    }
+    undoStack.push({
+      type: 'renameSection',
+      key: key,
+      scope: scope,
+      prevGlobalName: prevGlobalName,
+      prevMonthName: prevMonthName,
+      month: currentMonthKey,
+      description: 'Rename section'
+    });
+    if (undoStack.length > 20) undoStack.shift();
+
     if (scope === 'global') {
       if (isReset) delete _sectionNames[key]; else _sectionNames[key] = val;
       saveSectionNames();
@@ -4412,7 +4430,7 @@ function renameSectionPrompt(key) {
 
     applySectionNames();
     overlay.remove();
-    showToast('Section renamed', false);
+    showUndoToast('Section renamed');
   };
 
   inp.onkeydown = function(e) {
@@ -4472,6 +4490,14 @@ function renameMonth(oldKey) {
     all[newKey] = all[oldKey];
     delete all[oldKey];
     saveAll(all);
+    // Push undo entry that reverses the rename
+    undoStack.push({
+      type: 'renameMonth',
+      fromKey: newKey,
+      toKey: oldKey,
+      description: 'Rename month'
+    });
+    if (undoStack.length > 20) undoStack.shift();
     overlay.remove();
     if (currentMonthKey === oldKey) {
       currentMonthKey = newKey;
@@ -4479,7 +4505,7 @@ function renameMonth(oldKey) {
     }
     renderSidebar();
     if (currentMonthKey === newKey) switchMonth(newKey);
-    showToast('Renamed to ' + monthLabel(newKey), false);
+    showUndoToast('Renamed to ' + monthLabel(newKey));
   };
   overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
 }
@@ -8088,6 +8114,39 @@ function doUndo() {
     saveAll(all);
     renderSidebar();
     showToast('↩ ' + entry.description + ' restored', false);
+    return;
+  }
+
+  // Handle section rename undo
+  if (entry.type === 'renameSection') {
+    // Restore global name
+    if (entry.prevGlobalName) _sectionNames[entry.key] = entry.prevGlobalName;
+    else delete _sectionNames[entry.key];
+    saveSectionNames();
+    // Restore month-specific name
+    var allSec = loadAll();
+    if (allSec[entry.month]) {
+      if (!allSec[entry.month]._sectionNames) allSec[entry.month]._sectionNames = {};
+      if (entry.prevMonthName) allSec[entry.month]._sectionNames[entry.key] = entry.prevMonthName;
+      else delete allSec[entry.month]._sectionNames[entry.key];
+      saveAll(allSec);
+    }
+    applySectionNames();
+    showToast('↩ Section name restored', false);
+    return;
+  }
+  if (entry.type === 'renameMonth') {
+    var all = loadAll();
+    all[entry.toKey] = all[entry.fromKey];
+    delete all[entry.fromKey];
+    saveAll(all);
+    if (currentMonthKey === entry.fromKey) {
+      currentMonthKey = entry.toKey;
+      localStorage.setItem('intentra_last_month', entry.toKey);
+    }
+    renderSidebar();
+    if (currentMonthKey === entry.toKey) switchMonth(entry.toKey);
+    showToast('↩ Rename undone — back to ' + monthLabel(entry.toKey), false);
     return;
   }
 
