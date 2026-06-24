@@ -98,6 +98,34 @@ body {
   margin-bottom: 10px;
 }
 .month-list { display: flex; flex-direction: column; gap: 2px; }
+
+/* Year groups */
+.year-group { margin-bottom: 4px; }
+.year-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px 4px;
+  cursor: pointer;
+  user-select: none;
+}
+.year-header-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+  flex: 1;
+}
+.year-header:hover .year-header-label { color: rgba(255,255,255,0.6); }
+.year-toggle {
+  font-size: 9px;
+  color: rgba(255,255,255,0.3);
+  transition: transform 0.2s;
+}
+.year-group.collapsed .year-toggle { transform: rotate(-90deg); }
+.year-months { overflow: hidden; transition: max-height 0.25s ease; }
+.year-group.collapsed .year-months { max-height: 0 !important; }
 .month-item {
   display: flex;
   align-items: center;
@@ -4842,27 +4870,86 @@ function switchMonth(key) {
 
 function renderSidebar() {
   const list = document.getElementById('month-list');
-  const keys = allMonthKeys();
+  const keys = allMonthKeys(); // newest first
   list.innerHTML = '';
-  keys.forEach(key => {
-    const div = document.createElement('div');
-    div.className = `month-item ${key === currentMonthKey ? 'active' : ''} ${hasData(key) ? 'has-data' : ''}`;
-    const [y, m] = key.split('-');
-    const label = new Date(+y, +m-1, 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-    div.innerHTML = `
-      <span class="month-label">${label}</span>
-      <span class="dot"></span>
-      <button class="month-edit-btn" title="Rename month" id="edit-${key}">✎</button>
-      <button class="month-del-btn" title="Delete month" id="del-${key}">✕</button>
-    `;
-    div.onclick = () => switchMonth(key);
-    const editBtn = div.querySelector(`#edit-${key}`);
-    editBtn.addEventListener('click', e => { e.stopPropagation(); renameMonth(key); });
-    editBtn.addEventListener('touchend', e => { e.stopPropagation(); e.preventDefault(); renameMonth(key); });
-    const delBtn = div.querySelector(`#del-${key}`);
-    delBtn.addEventListener('click', e => { e.stopPropagation(); deleteMonth(e, key); });
-    delBtn.addEventListener('touchend', e => { e.stopPropagation(); e.preventDefault(); deleteMonth(e, key); });
-    list.appendChild(div);
+
+  if (!keys.length) return;
+
+  const currentYear = new Date().getFullYear();
+
+  // Group keys by year
+  var byYear = {};
+  keys.forEach(function(key) {
+    var y = key.split('-')[0];
+    if (!byYear[y]) byYear[y] = [];
+    byYear[y].push(key);
+  });
+
+  // Sort years newest first
+  var years = Object.keys(byYear).sort(function(a, b) { return b - a; });
+
+  years.forEach(function(year) {
+    var isCurrentYear = parseInt(year) === currentYear;
+    var yearKeys = byYear[year];
+
+    // Check if active month is in this year
+    var hasActive = yearKeys.some(function(k) { return k === currentMonthKey; });
+
+    // Collapse past years by default unless they contain the active month
+    var collapsed = !isCurrentYear && !hasActive;
+    // Restore saved collapse state
+    var savedState = localStorage.getItem('intentra_year_' + year);
+    if (savedState !== null) collapsed = savedState === '1';
+
+    var group = document.createElement('div');
+    group.className = 'year-group' + (collapsed ? ' collapsed' : '');
+    group.dataset.year = year;
+
+    // Year header
+    var header = document.createElement('div');
+    header.className = 'year-header';
+    header.innerHTML = '<span class="year-header-label">' + year + '</span><span class="year-toggle">▾</span>';
+    header.onclick = function() {
+      var isNowCollapsed = group.classList.toggle('collapsed');
+      monthsDiv.style.maxHeight = isNowCollapsed ? '0' : (yearKeys.length * itemHeight + 20) + 'px';
+      localStorage.setItem('intentra_year_' + year, isNowCollapsed ? '1' : '0');
+    };
+    group.appendChild(header);
+
+    // Month items container
+    var monthsDiv = document.createElement('div');
+    monthsDiv.className = 'year-months';
+    monthsDiv.style.display = 'flex';
+    monthsDiv.style.flexDirection = 'column';
+    monthsDiv.style.gap = '2px';
+
+    // Set max-height for animation
+    var itemHeight = 38; // approx px per month item
+    monthsDiv.style.maxHeight = collapsed ? '0' : (yearKeys.length * itemHeight + 20) + 'px';
+
+    yearKeys.forEach(function(key) {
+      var div = document.createElement('div');
+      div.className = 'month-item' + (key === currentMonthKey ? ' active' : '') + (hasData(key) ? ' has-data' : '');
+      var parts = key.split('-');
+      var label = new Date(+parts[0], +parts[1]-1, 1).toLocaleDateString('en-US', { month: 'short' });
+      if (key === 'demo-month') label = '✦ Demo';
+      div.innerHTML =
+        '<span class="month-label">' + label + '</span>' +
+        '<span class="dot"></span>' +
+        '<button class="month-edit-btn" title="Rename month" id="edit-' + key + '">✎</button>' +
+        '<button class="month-del-btn" title="Delete month" id="del-' + key + '">✕</button>';
+      div.onclick = function() { switchMonth(key); };
+      var editBtn = div.querySelector('#edit-' + key);
+      editBtn.addEventListener('click', function(e) { e.stopPropagation(); renameMonth(key); });
+      editBtn.addEventListener('touchend', function(e) { e.stopPropagation(); e.preventDefault(); renameMonth(key); });
+      var delBtn = div.querySelector('#del-' + key);
+      delBtn.addEventListener('click', function(e) { e.stopPropagation(); deleteMonth(e, key); });
+      delBtn.addEventListener('touchend', function(e) { e.stopPropagation(); e.preventDefault(); deleteMonth(e, key); });
+      monthsDiv.appendChild(div);
+    });
+
+    group.appendChild(monthsDiv);
+    list.appendChild(group);
   });
 }
 
