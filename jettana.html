@@ -3309,7 +3309,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <button class="add-row-btn" onclick="addRow('debt')"><span class="plus">+</span> Add account</button>
           <div class="sec-footer sec-footer-debt">
             <span>Outstanding Debt</span>
-            <span id="ft-debt-0">$0</span>
+            <span id="ft-debt-0" class="ft-actual-cell" data-section="debt-current" onclick="showFtColorPicker(event,'debt-current')" oncontextmenu="showFtColorPicker(event,'debt-current')" title="Click to highlight">$0</span>
             <span id="ft-debt-1" class="ft-actual-cell" data-section="debt" onclick="showFtColorPicker(event,'debt')" oncontextmenu="showFtColorPicker(event,'debt')" title="Click to highlight">$0</span>
           </div>
           </div>
@@ -10804,6 +10804,16 @@ function applyFtHighlights() {
     el.style.borderRadius = (data.bg || data.num) ? '4px' : '';
     el.style.padding = (data.bg || data.num) ? '2px 6px' : '';
   });
+  // Debt Current (ft-debt-0)
+  var debtCurData = _ftHighlights['debt-current'] || {};
+  var debtCurEl = document.getElementById('ft-debt-0');
+  if (debtCurEl) {
+    debtCurEl.style.background = debtCurData.bg ? debtCurData.bg + '99' : '';
+    debtCurEl.style.color = debtCurData.num || '';
+    debtCurEl.style.fontWeight = (debtCurData.bg || debtCurData.num) ? '700' : '';
+    debtCurEl.style.borderRadius = (debtCurData.bg || debtCurData.num) ? '4px' : '';
+    debtCurEl.style.padding = (debtCurData.bg || debtCurData.num) ? '2px 6px' : '';
+  }
   var savData = _ftHighlights['savings'] || {};
   var savEl = document.getElementById('ft-savings-0');
   if (savEl) {
