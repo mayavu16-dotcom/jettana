@@ -4502,6 +4502,90 @@ function showCopyModal(keys, newKey) {
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 }
 
+function showCopySectionModal(section) {
+  var otherKeys = allMonthKeys().filter(function(k) { return k !== currentMonthKey && k !== 'demo-month'; }).sort().reverse();
+  if (!otherKeys.length) { showToast('No other months to copy from', false); return; }
+
+  var cfg = CONFIGS[section];
+  var sectionName = section.charAt(0).toUpperCase() + section.slice(1);
+
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:2000;display:flex;align-items:center;justify-content:center;';
+
+  var monthOptions = otherKeys.map(function(k) {
+    return '<option value="' + k + '">' + monthLabel(k) + '</option>';
+  }).join('');
+
+  var modal = document.createElement('div');
+  modal.style.cssText = 'background:white;border-radius:12px;padding:24px;width:340px;box-shadow:0 20px 60px rgba(0,0,0,0.3);font-family:\'Outfit\',sans-serif;';
+  modal.innerHTML =
+    '<h3 style="margin:0 0 4px;font-size:16px;color:#1A2332;">⎘ Copy ' + sectionName + ' section</h3>' +
+    '<p style="margin:0 0 16px;font-size:12px;color:#6B7C8F;">Choose a source month and how to handle existing rows.</p>' +
+    '<div style="margin-bottom:12px;"><label style="font-size:11px;color:#6B7C8F;display:block;margin-bottom:4px;">Copy from</label>' +
+    '<select id="copy-sec-month" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid #E8EDF2;font-family:\'Outfit\',sans-serif;font-size:13px;color:#1A2332;">' + monthOptions + '</select></div>' +
+    '<div style="margin-bottom:20px;"><label style="font-size:11px;color:#6B7C8F;display:block;margin-bottom:8px;">How to handle existing rows</label>' +
+    '<div style="display:flex;flex-direction:column;gap:8px;">' +
+    '<label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#1A2332;cursor:pointer;"><input type="radio" name="copy-sec-mode" value="append" checked style="accent-color:#6B9E70;"> Append — add copied rows below existing ones</label>' +
+    '<label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#1A2332;cursor:pointer;"><input type="radio" name="copy-sec-mode" value="replace" style="accent-color:#6B9E70;"> Replace — clear this section first, then copy</label>' +
+    '</div></div>' +
+    '<div id="copy-sec-error" style="font-size:12px;color:#C0736A;margin-bottom:12px;display:none;"></div>' +
+    '<div style="display:flex;gap:10px;">' +
+    '<button id="copy-sec-cancel" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid #E8EDF2;background:white;font-family:\'Outfit\',sans-serif;font-size:13px;font-weight:600;color:#6B7C8F;cursor:pointer;">Cancel</button>' +
+    '<button id="copy-sec-confirm" style="flex:1;padding:10px;border-radius:8px;border:none;background:#6B9E70;font-family:\'Outfit\',sans-serif;font-size:13px;font-weight:600;color:white;cursor:pointer;">Copy rows</button>' +
+    '</div>';
+
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+
+  modal.querySelector('#copy-sec-cancel').onclick = function() { overlay.remove(); };
+  modal.querySelector('#copy-sec-confirm').onclick = function() {
+    var sourceKey = modal.querySelector('#copy-sec-month').value;
+    var mode = modal.querySelector('input[name="copy-sec-mode"]:checked').value;
+    var all = loadAll();
+    var sourceRows = (all[sourceKey] && all[sourceKey][section]) || [];
+
+    if (!sourceRows.length) {
+      var errEl = modal.querySelector('#copy-sec-error');
+      errEl.textContent = monthLabel(sourceKey) + ' has no rows in this section.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    pushUndo('Copy ' + sectionName + ' from ' + monthLabel(sourceKey));
+
+    var CLEAR_BOTH = ['savings', 'checking', 'debt'];
+    var newRows = sourceRows.map(function(row) {
+      return {
+        id: Date.now() + '_' + Math.random().toString(36).slice(2),
+        label: row.label || '',
+        [cfg.k1]: CLEAR_BOTH.includes(section) ? '' : (row[cfg.k1] || ''),
+        [cfg.k2]: '',
+        paid: false, date: '', date2: '', note: '', recurring: row.recurring || false,
+        paidColor: row.paidColor || '', numColor: row.numColor || '', strikeColor: row.strikeColor || '',
+        _template: row._template || '', alloc: row.alloc || '', _cardLink: row._cardLink || '',
+        _myContrib: row._myContrib || '', _empMatch: row._empMatch || '',
+        _apy: row._apy || '', _fund: row._fund || '', _shares: row._shares || '',
+        _price: row._price || '', _tDir: row._tDir || '', _beginDate: row._beginDate || '',
+      };
+    });
+
+    if (!all[currentMonthKey][section]) all[currentMonthKey][section] = [];
+    if (mode === 'replace') all[currentMonthKey][section] = newRows;
+    else all[currentMonthKey][section] = all[currentMonthKey][section].concat(newRows);
+
+    saveAll(all);
+    overlay.remove();
+
+    // Re-render section
+    var container = document.getElementById('rows-' + section);
+    if (container) container.innerHTML = '';
+    (all[currentMonthKey][section] || []).forEach(function(row) { renderRowEl(section, row, false); });
+    recalc();
+    showUndoToast(newRows.length + ' rows copied from ' + monthLabel(sourceKey));
+  };
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+}
+
 function copyMonthData(sourceKey, newKey) {
   const all = loadAll();
   const source = all[sourceKey] || {};
@@ -5115,6 +5199,22 @@ function clearSection(section) {
     pop.appendChild(optClearActual);
   }
   _secPopover = pop;
+  // Divider 2
+  const div2 = document.createElement('div');
+  div2.style.cssText = 'height:1px;background:var(--mist);margin:2px 0;';
+  pop.appendChild(div2);
+
+  const optCopySection = document.createElement('button');
+  optCopySection.textContent = '⎘ Copy from another month';
+  optCopySection.style.cssText = 'background:none;border:none;padding:8px 12px;text-align:left;font-size:13px;color:var(--steel);cursor:pointer;border-radius:5px;font-family:\'Outfit\',sans-serif;';
+  optCopySection.onmouseenter = function() { this.style.background = 'var(--mist-light)'; };
+  optCopySection.onmouseleave = function() { this.style.background = 'none'; };
+  optCopySection.onclick = function() {
+    pop.remove(); _secPopover = null;
+    showCopySectionModal(section);
+  };
+  pop.appendChild(optCopySection);
+
   document.body.appendChild(pop);
 
   // Position below the button
