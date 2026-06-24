@@ -5356,7 +5356,13 @@ function cancelBulk(section) {
 }
 
 function sum(rows, key) {
-  return (rows || []).reduce((t, r) => t + (r.exempt ? 0 : (parseFloat(r[key]) || 0)), 0);
+  return (rows || []).reduce((t, r) => {
+    if (r.exempt) return t;
+    var v = r[key];
+    if (v === '' || v === null || v === undefined) return t;
+    var n = parseFloat(String(v).replace(/[$,+]/g, ''));
+    return t + (isNaN(n) ? 0 : (String(v).trim().startsWith('-') ? -Math.abs(n) : n));
+  }, 0);
 }
 
 function sumExempt(rows, key) {
@@ -6972,7 +6978,7 @@ function applyToColumn(section, id, amount, label) {
   if (section === 'savings') {
     var all2 = loadAll();
     var savRows = (all2[currentMonthKey] && all2[currentMonthKey].savings) || [];
-    var savG = savRows.reduce(function(t, r) { return t + (parseFloat(r.gains) || 0); }, 0);
+    var savG = sum(savRows, 'gains');
     var el = document.getElementById('ft-savings-1');
     if (el) {
       if (!savG || savG === 0) {
