@@ -3084,7 +3084,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
               <span>⬆</span> Import bank statement
             </button>
             <button class="more-menu-item" onclick="toggleLegendPanel(); hideMoreMenu()">
-              <span>🎨</span> My Cards legend
+              <span>🃏</span> My Cards legend
             </button>
 
             <!-- Learn -->
@@ -3096,18 +3096,26 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
             <button class="more-menu-item" onclick="showWelcome(); hideMoreMenu()">
               <span>👋</span> Getting started
             </button>
-            <button class="more-menu-item" onclick="showChecklist(); hideMoreMenu()">
-              <span>✅</span> Setup checklist
-            </button>
             <button class="more-menu-item" onclick="loadDemo(); hideMoreMenu()">
               <span>▶</span> Try demo
             </button>
-            <button class="more-menu-item" onclick="showFeatures(); hideMoreMenu()">
-              <span>✦</span> Features
+
+            <!-- More (power features) -->
+            <div class="more-divider"></div>
+            <button class="more-menu-item" id="more-expand-btn" onclick="toggleMoreExpand()" style="color:var(--steel);">
+              <span>⚡</span> <span id="more-expand-label">Power features</span>
             </button>
-            <button class="more-menu-item" onclick="showShortcuts(); hideMoreMenu()" id="shortcuts-menu-item">
-              <span>⌨</span> Keyboard shortcuts
-            </button>
+            <div id="more-expanded" style="display:none;">
+              <button class="more-menu-item" onclick="showChecklist(); hideMoreMenu()" style="padding-left:24px;">
+                <span>✅</span> Setup checklist
+              </button>
+              <button class="more-menu-item" onclick="showFeatures(); hideMoreMenu()" style="padding-left:24px;">
+                <span>✦</span> Features
+              </button>
+              <button class="more-menu-item" onclick="showShortcuts(); hideMoreMenu()" id="shortcuts-menu-item" style="padding-left:24px;">
+                <span>⌨</span> Keyboard shortcuts
+              </button>
+            </div>
 
             <!-- Account -->
             <div class="more-divider"></div>
@@ -3226,6 +3234,10 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <div class="sec-body">
           <div class="col-lbl-row"><span>Source</span><span>Planned</span><span>Received</span></div>
           <div class="bulk-bar" id="bulk-bar-income"><span class="bulk-bar-count" id="bulk-count-income">0 selected</span><button class="bulk-bar-btn" onclick="selectAllBulk('income')">Select all</button><button class="bulk-bar-btn danger" onclick="deleteSelectedBulk('income')">Delete selected</button><button class="bulk-bar-btn" onclick="cancelBulk('income')">Cancel</button></div><div class="entry-list" id="rows-income"></div>
+          <div id="income-empty-state" style="display:none;padding:14px 16px;margin:4px 0;background:var(--sage-light);border-radius:8px;border-left:3px solid var(--sage);">
+            <div style="font-size:13px;font-weight:600;color:var(--sage-dark);margin-bottom:3px;">👆 Start here</div>
+            <div style="font-size:12px;color:var(--sage-dark);opacity:0.85;line-height:1.5;">Add your take-home pay or any income source. This is your baseline for the month.</div>
+          </div>
           <button class="add-row-btn" onclick="addRow('income')"><span class="plus">+</span> Add income source</button>
           <div class="sec-footer sec-footer-income">
             <span>Total Income</span>
@@ -3570,62 +3582,37 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 <div class="welcome-overlay" id="welcome-overlay" style="display:none;">
   <div class="welcome-modal">
     <div class="welcome-header">
-      <h2>Welcome to your budget tracker 👋</h2>
-      <p>A beautiful, private, all-in-one monthly budget tracker — your data syncs securely across all your devices.</p>
+      <h2>Welcome to Jettana 👋</h2>
+      <p>Your personal budget tracker. Add your income, track your expenses, and see exactly where your money goes.</p>
     </div>
     <div class="welcome-body">
       <div class="welcome-steps">
         <div class="welcome-step">
-          <div class="welcome-step-icon">📅</div>
+          <div class="welcome-step-icon">💵</div>
           <div class="welcome-step-text">
-            <strong>Start with this month</strong>
-            <span>Add your income and expenses across 12 categories. Or tap <strong>▶ Try demo</strong> below to see a fully worked example first.</span>
+            <strong>Start with your income</strong>
+            <span>Head to the Income section and add your take-home pay. That's your starting point.</span>
           </div>
         </div>
         <div class="welcome-step">
-          <div class="welcome-step-icon">🎨</div>
+          <div class="welcome-step-icon">🧾</div>
           <div class="welcome-step-text">
-            <strong>Make it yours with color themes</strong>
-            <span>Tap ⋯ → Appearance to pick a color theme or toggle dark mode 🌙.</span>
+            <strong>Add your expenses</strong>
+            <span>Fill in Housing, Food, Transport and other sections with your monthly costs — budget and actual.</span>
           </div>
         </div>
         <div class="welcome-step">
-          <div class="welcome-step-icon">⬆</div>
+          <div class="welcome-step-icon">📊</div>
           <div class="welcome-step-text">
-            <strong>Import your bank statement</strong>
-            <span>Drop a CSV from your bank via ⋯ → Import. Transactions are auto-categorized — review and confirm before adding.</span>
+            <strong>See your picture</strong>
+            <span>The summary at the top updates live — income, expenses, net balance and savings all in one view.</span>
           </div>
         </div>
         <div class="welcome-step">
-          <div class="welcome-step-icon">✓</div>
+          <div class="welcome-step-icon" style="font-size:18px;letter-spacing:2px;">⋯</div>
           <div class="welcome-step-text">
-            <strong>Mark expenses as paid</strong>
-            <span>Tap the circle on any expense row to mark it as paid and strike it through.</span>
-          </div>
-        </div>
-        <div class="welcome-step">
-          <div class="welcome-step-icon">✦</div>
-          <div class="welcome-step-text">
-            <strong>Set a monthly intention</strong>
-            <span>Tap above the summary cards to add a quote or goal for the month — pick any color you like.</span>
-          </div>
-        </div>
-        <div class="welcome-step">
-          <div class="welcome-step-icon" style="font-size:18px;letter-spacing:1px;">⋯</div>
-          <div class="welcome-step-text">
-            <strong>Explore more features</strong>
-            <span>Tap ⋯ → Features for the full list of everything Jettana can do.</span>
-          </div>
-        </div>
-
-        <div style="margin-top:16px;padding:14px 16px;background:var(--mist-light);border-radius:10px;border-left:3px solid #4A85A0;">
-          <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:10px;">💡 Pro tip — the 3-color card system</div>
-          <div style="font-size:12px;color:var(--slate);line-height:1.7;">
-            Click any row to open the color toolbar and set three independent colors:<br>
-            <span style="color:#4A85A0;font-weight:600;">● Text color</span> — label shows which card owns it<br>
-            <span style="color:#A8823E;font-weight:600;">＃ Number color</span> — amounts in your card's color<br>
-            <span style="color:#C0736A;font-weight:600;text-decoration:line-through;">A̶ Strikethrough</span> — cross out in your card's color when paid<br><br>
-            <span style="color:var(--steel);font-size:11px;">At a glance you'll know exactly which card paid each expense.</span>
+            <strong>Explore when you're ready</strong>
+            <span>Color coding, card tracking, templates and more are all in ⋯ → Features whenever you want to go deeper.</span>
           </div>
         </div>
       </div>
@@ -3633,7 +3620,6 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
     <div class="welcome-footer">
       <button class="welcome-start-btn" onclick="hideWelcome()">Start fresh →</button>
       <button class="welcome-features-btn" onclick="hideWelcome(); loadDemo();">▶ Try demo</button>
-      <button class="welcome-features-btn" onclick="hideWelcome(); showFeatures();">See all features</button>
     </div>
   </div>
 </div>
@@ -5640,6 +5626,9 @@ function recalc() {
 
   const incP = sum(d.income,    'planned');
   const incA = sum(d.income,    'received');
+  // Show/hide income empty state
+  var incEmptyState = document.getElementById('income-empty-state');
+  if (incEmptyState) incEmptyState.style.display = (!d.income || d.income.length === 0) ? 'block' : 'none';
   const savA = sum(d.savings,   'actual');
   const savG = sum(d.savings,   'gains');
   const houB = sum(d.housing,   'budget');  const houA = sum(d.housing,   'actual');
@@ -8565,9 +8554,23 @@ function toggleMoreMenu(e) {
   // Close other menus
   hideExportMenu();
 }
+function toggleMoreExpand() {
+  var expanded = document.getElementById('more-expanded');
+  var label = document.getElementById('more-expand-label');
+  if (!expanded) return;
+  var isOpen = expanded.style.display !== 'none';
+  expanded.style.display = isOpen ? 'none' : 'block';
+  if (label) label.textContent = isOpen ? 'Power features' : 'Hide power features';
+}
+
 function hideMoreMenu() {
   var menu = document.getElementById('more-menu');
   if (menu) menu.style.display = 'none';
+  // Reset expanded state
+  var expanded = document.getElementById('more-expanded');
+  var label = document.getElementById('more-expand-label');
+  if (expanded) expanded.style.display = 'none';
+  if (label) label.textContent = 'Power features';
 }
 document.addEventListener('click', function(e) {
   var wrap = document.getElementById('more-wrap');
