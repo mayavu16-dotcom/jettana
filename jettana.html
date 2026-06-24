@@ -8244,10 +8244,10 @@ function labelKeyDown(e, el) {
     if (section && id) showColorToolbar(section, id, row);
     return;
   }
-  // T/N/S — switch toolbar type when toolbar is open (desktop only)
-  if (!('ontouchstart' in window) && _tbId && (e.key === 't' || e.key === 'T')) { e.preventDefault(); setToolbarType('text'); return; }
-  if (!('ontouchstart' in window) && _tbId && (e.key === 'n' || e.key === 'N')) { e.preventDefault(); setToolbarType('num'); return; }
-  if (!('ontouchstart' in window) && _tbId && (e.key === 's' || e.key === 'S')) { e.preventDefault(); setToolbarType('strike'); return; }
+  // T/N/S — switch toolbar type when toolbar is open (desktop only, only when input is empty)
+  if (!('ontouchstart' in window) && _tbId && el.value.length === 0 && (e.key === 't' || e.key === 'T')) { e.preventDefault(); setToolbarType('text'); return; }
+  if (!('ontouchstart' in window) && _tbId && el.value.length === 0 && (e.key === 'n' || e.key === 'N')) { e.preventDefault(); setToolbarType('num'); return; }
+  if (!('ontouchstart' in window) && _tbId && el.value.length === 0 && (e.key === 's' || e.key === 'S')) { e.preventDefault(); setToolbarType('strike'); return; }
   // Escape — close toolbar
   if (e.key === 'Escape') { hideColorToolbar(); return; }
   if (e.key !== 'Enter') return;
