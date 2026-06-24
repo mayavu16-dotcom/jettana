@@ -4184,6 +4184,7 @@ async function syncFromSupabase() {
     // No data found for this user (new account) — start fresh
   }
   migrateZeros();
+  migrateFormattedNumbers();
   init();
   loadSectionOrder();
   initSectionDrag();
@@ -6179,7 +6180,35 @@ function migrateZeros() {
   if (changed) saveAll(all);
 }
 
+function migrateFormattedNumbers() {
+  // Clean up any numeric fields stored as formatted strings e.g. "+$352.00", "$100.00"
+  var NUMERIC_KEYS = ['planned','received','actual','gains','budget','beginning','ending','current','remaining'];
+  var all = loadAll();
+  var changed = false;
+  Object.keys(all).forEach(function(monthKey) {
+    var month = all[monthKey];
+    Object.keys(month).forEach(function(section) {
+      if (!Array.isArray(month[section])) return;
+      month[section].forEach(function(row) {
+        NUMERIC_KEYS.forEach(function(key) {
+          var v = row[key];
+          if (typeof v === 'string' && v !== '') {
+            var cleaned = String(v).replace(/[$,+\s]/g, '');
+            var n = parseFloat(cleaned);
+            if (!isNaN(n) && String(v) !== String(n)) {
+              row[key] = n || '';
+              changed = true;
+            }
+          }
+        });
+      });
+    });
+  });
+  if (changed) saveAll(all);
+}
+
 migrateZeros();
+migrateFormattedNumbers();
 init();
 loadDefaultColors();
 loadBoldText();
