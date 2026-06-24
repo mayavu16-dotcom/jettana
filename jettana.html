@@ -3246,7 +3246,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <div class="sec-footer sec-footer-savings">
             <span>Total Savings</span>
             <span id="ft-savings-0" class="ft-actual-cell" data-section="savings" onclick="showFtColorPicker(event,'savings')" oncontextmenu="showFtColorPicker(event,'savings')" title="Click to highlight">$0</span>
-            <span id="ft-savings-1">$0</span>
+            <span id="ft-savings-1" class="ft-actual-cell" data-section="savings-growth" onclick="showFtColorPicker(event,'savings-growth')" oncontextmenu="showFtColorPicker(event,'savings-growth')" title="Click to highlight">$0</span>
           </div>
           </div>
         </div>
@@ -10822,6 +10822,16 @@ function applyFtHighlights() {
     savEl.style.fontWeight = (savData.bg || savData.num) ? '700' : '';
     savEl.style.borderRadius = (savData.bg || savData.num) ? '4px' : '';
     savEl.style.padding = (savData.bg || savData.num) ? '2px 6px' : '';
+  }
+  // Savings Growth (ft-savings-1)
+  var savGrowthData = _ftHighlights['savings-growth'] || {};
+  var savGrowthEl = document.getElementById('ft-savings-1');
+  if (savGrowthEl) {
+    savGrowthEl.style.background = savGrowthData.bg ? savGrowthData.bg + '99' : '';
+    savGrowthEl.style.color = savGrowthData.num || '';
+    savGrowthEl.style.fontWeight = (savGrowthData.bg || savGrowthData.num) ? '700' : '';
+    savGrowthEl.style.borderRadius = (savGrowthData.bg || savGrowthData.num) ? '4px' : '';
+    savGrowthEl.style.padding = (savGrowthData.bg || savGrowthData.num) ? '2px 6px' : '';
   }
 }
 
