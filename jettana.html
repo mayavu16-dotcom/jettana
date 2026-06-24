@@ -6181,30 +6181,35 @@ function migrateZeros() {
 }
 
 function migrateFormattedNumbers() {
-  // Clean up any numeric fields stored as formatted strings e.g. "+$352.00", "$100.00"
   var NUMERIC_KEYS = ['planned','received','actual','gains','budget','beginning','ending','current','remaining'];
   var all = loadAll();
   var changed = false;
   Object.keys(all).forEach(function(monthKey) {
     var month = all[monthKey];
+    if (typeof month !== 'object' || Array.isArray(month)) return;
     Object.keys(month).forEach(function(section) {
       if (!Array.isArray(month[section])) return;
       month[section].forEach(function(row) {
         NUMERIC_KEYS.forEach(function(key) {
           var v = row[key];
+          // Fix NaN stored as number
+          if (typeof v === 'number' && isNaN(v)) { row[key] = ''; changed = true; return; }
+          // Fix formatted strings like "+$352.00", "$100.00", "-$50.00"
           if (typeof v === 'string' && v !== '') {
-            var cleaned = String(v).replace(/[$,+\s]/g, '');
+            var cleaned = v.replace(/[$,+\s]/g, '');
             var n = parseFloat(cleaned);
-            if (!isNaN(n) && String(v) !== String(n)) {
-              row[key] = (n === 0) ? '' : n;
-              changed = true;
+            if (!isNaN(n)) {
+              // Handle negative sign that was before the $
+              var isNeg = v.trim().startsWith('-');
+              var result = isNeg ? -Math.abs(n) : n;
+              if (v !== String(result)) { row[key] = result === 0 ? '' : result; changed = true; }
             }
           }
         });
       });
     });
   });
-  if (changed) saveAll(all);
+  if (changed) { saveAll(all); }
 }
 
 migrateZeros();
