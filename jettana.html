@@ -3755,10 +3755,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <div class="shortcut-row"><span>Confirm entry</span><span class="shortcut-key"><span class="kbd">Enter</span></span></div>
       <div class="shortcut-row"><span>Next field</span><span class="shortcut-key"><span class="kbd">Tab</span></span></div>
       <div class="shortcut-row"><span>Undo delete</span><span class="shortcut-key"><span class="kbd">Click UNDO toast</span></span></div>
-      <div class="shortcut-row"><span>Open color toolbar</span><span class="shortcut-key"><span class="kbd">C</span></span></div>
-      <div class="shortcut-row"><span>Color toolbar — text</span><span class="shortcut-key"><span class="kbd">T</span></span></div>
-      <div class="shortcut-row"><span>Color toolbar — number</span><span class="shortcut-key"><span class="kbd">N</span></span></div>
-      <div class="shortcut-row"><span>Color toolbar — strike</span><span class="shortcut-key"><span class="kbd">S</span></span></div>
+
     </div>
     <div class="shortcuts-group">
       <div class="shortcuts-group-title">General</div>
@@ -8452,22 +8449,6 @@ function numKeyDown(e, el) {
 }
 
 function labelKeyDown(e, el) {
-  // C — open color toolbar (desktop only, only when input is empty)
-  if (!('ontouchstart' in window) && (e.key === 'c' || e.key === 'C')) {
-    if (e.ctrlKey || e.metaKey) return; // allow Ctrl+C copy
-    if (el.value.length > 0) return; // allow typing c normally when input has content
-    var row = el.closest('.erow');
-    if (!row) return;
-    e.preventDefault();
-    var section = row.dataset.section;
-    var id = row.dataset.id;
-    if (section && id) showColorToolbar(section, id, row);
-    return;
-  }
-  // T/N/S — switch toolbar type when toolbar is open (desktop only, only when input is empty)
-  if (!('ontouchstart' in window) && _tbId && el.value.length === 0 && (e.key === 't' || e.key === 'T')) { e.preventDefault(); setToolbarType('text'); return; }
-  if (!('ontouchstart' in window) && _tbId && el.value.length === 0 && (e.key === 'n' || e.key === 'N')) { e.preventDefault(); setToolbarType('num'); return; }
-  if (!('ontouchstart' in window) && _tbId && el.value.length === 0 && (e.key === 's' || e.key === 'S')) { e.preventDefault(); setToolbarType('strike'); return; }
   // Escape — close toolbar
   if (e.key === 'Escape') { hideColorToolbar(); return; }
   if (e.key !== 'Enter') return;
