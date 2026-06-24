@@ -4979,9 +4979,9 @@ function numFocus(el) {
 }
 
 function numBlur(el) {
-  // Auto-calculate simple expressions like 50+25, 1500-200, 40*3, 100/4
+  // Auto-calculate expressions like 50+25, 1500-200-50+100, 40*3/2
   var raw0 = el.value.replace(/[$,\s]/g, '');
-  if (/^-?[\d.]+[\+\-\*\/]-?[\d.]+$/.test(raw0)) {
+  if (/^-?[\d.]+(?:[\+\-\*\/]-?[\d.]+)+$/.test(raw0)) {
     try {
       var result = Function('"use strict"; return (' + raw0 + ')')();
       if (typeof result === 'number' && isFinite(result)) {
