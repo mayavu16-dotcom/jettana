@@ -352,6 +352,13 @@ body {
   letter-spacing: 0.8px;
   text-transform: uppercase;
   color: white;
+  cursor: default;
+}
+.sec-hdr h3[ondblclick] {
+  cursor: text;
+}
+.sec-hdr h3[ondblclick]:hover {
+  opacity: 0.85;
 }
 .sec-hdr-left {
   display: flex;
@@ -3185,7 +3192,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
         <div class="sec-card" data-section-id="income">
           <div class="sec-hdr bg-sage">
-            <div class="sec-hdr-left"><h3>Income</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
+            <div class="sec-hdr-left"><h3 id="sec-title-income" ondblclick="renameSectionPrompt('income')" ontouchstart="_secLongPress=setTimeout(function(){renameSectionPrompt('income');},600)" ontouchend="clearTimeout(_secLongPress)" ontouchmove="clearTimeout(_secLongPress)" title="Double-click or long-press to rename">Income</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
             <div class="sec-hdr-right"><button class="sec-clear-btn" onclick="clearSection('income')" title="Clear all rows in this section">🗑</button><span class="sec-total" id="hdr-income">$0</span><button class="sec-collapse-btn" onclick="toggleSection('income')" title="Collapse section">▾</button></div></div>
           <div class="sec-body">
           <div class="col-lbl-row"><span>Source</span><span>Planned</span><span>Received</span></div>
@@ -3201,7 +3208,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
         <div class="sec-card" data-section-id="savings">
           <div class="sec-hdr bg-gold">
-            <div class="sec-hdr-left"><h3>Savings &amp; Investments</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
+            <div class="sec-hdr-left"><h3 id="sec-title-savings" ondblclick="renameSectionPrompt('savings')" ontouchstart="_secLongPress=setTimeout(function(){renameSectionPrompt('savings');},600)" ontouchend="clearTimeout(_secLongPress)" ontouchmove="clearTimeout(_secLongPress)" title="Double-click or long-press to rename">Savings &amp; Investments</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
             <div class="sec-hdr-right"><button class="sec-clear-btn" onclick="clearSection('savings')" title="Clear all rows in this section">🗑</button><span class="sec-total" id="hdr-savings">$0</span><button class="sec-collapse-btn" onclick="toggleSection('savings')" title="Collapse section">▾</button></div></div>
           <div class="sec-body">
           <div class="col-lbl-row"><span>Account / Fund</span><span>Actual</span><span>Growth</span></div>
@@ -3217,7 +3224,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
         <div class="sec-card" data-section-id="housing">
           <div class="sec-hdr bg-blush">
-            <div class="sec-hdr-left"><h3>Housing &amp; Utilities</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
+            <div class="sec-hdr-left"><h3 id="sec-title-housing" ondblclick="renameSectionPrompt('housing')" ontouchstart="_secLongPress=setTimeout(function(){renameSectionPrompt('housing');},600)" ontouchend="clearTimeout(_secLongPress)" ontouchmove="clearTimeout(_secLongPress)" title="Double-click or long-press to rename">Housing &amp; Utilities</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
             <div class="sec-hdr-right"><button class="sec-clear-btn" onclick="clearSection('housing')" title="Clear all rows in this section">🗑</button><span class="sec-total" id="hdr-housing">$0</span><span class="hdr-pct-label" id="hdr-pct-housing"></span><button class="sec-collapse-btn" onclick="toggleSection('housing')" title="Collapse section">▾</button></div></div>
           <div class="sec-body">
           <div class="col-lbl-row"><span>Item</span><span>Budget</span><span>Actual</span></div>
@@ -3233,7 +3240,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
         <div class="sec-card" data-section-id="checking">
           <div class="sec-hdr bg-teal">
-            <div class="sec-hdr-left"><h3>Checking Accounts</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
+            <div class="sec-hdr-left"><h3 id="sec-title-checking" ondblclick="renameSectionPrompt('checking')" ontouchstart="_secLongPress=setTimeout(function(){renameSectionPrompt('checking');},600)" ontouchend="clearTimeout(_secLongPress)" ontouchmove="clearTimeout(_secLongPress)" title="Double-click or long-press to rename">Checking Accounts</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
             <div class="sec-hdr-right"><button class="sec-clear-btn" onclick="clearSection('checking')" title="Clear all rows in this section">🗑</button><span class="sec-total" id="hdr-checking">$0</span><button class="sec-collapse-btn" onclick="toggleSection('checking')" title="Collapse section">▾</button></div></div>
           <div class="sec-body">
           <div class="col-lbl-row"><span>Account</span><span>Beginning</span><span>Ending</span></div>
@@ -3249,7 +3256,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
         <div class="sec-card" data-section-id="transport">
           <div class="sec-hdr bg-blush">
-            <div class="sec-hdr-left"><h3>Transportation</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
+            <div class="sec-hdr-left"><h3 id="sec-title-transport" ondblclick="renameSectionPrompt('transport')" ontouchstart="_secLongPress=setTimeout(function(){renameSectionPrompt('transport');},600)" ontouchend="clearTimeout(_secLongPress)" ontouchmove="clearTimeout(_secLongPress)" title="Double-click or long-press to rename">Transportation</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
             <div class="sec-hdr-right"><button class="sec-clear-btn" onclick="clearSection('transport')" title="Clear all rows in this section">🗑</button><span class="sec-total" id="hdr-transport">$0</span><span class="hdr-pct-label" id="hdr-pct-transport"></span><button class="sec-collapse-btn" onclick="toggleSection('transport')" title="Collapse section">▾</button></div></div>
           <div class="sec-body">
           <div class="col-lbl-row"><span>Item</span><span>Budget</span><span>Actual</span></div>
@@ -3265,7 +3272,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
         <div class="sec-card" data-section-id="debt">
           <div class="sec-hdr bg-debt">
-            <div class="sec-hdr-left"><h3>Debt</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
+            <div class="sec-hdr-left"><h3 id="sec-title-debt" ondblclick="renameSectionPrompt('debt')" ontouchstart="_secLongPress=setTimeout(function(){renameSectionPrompt('debt');},600)" ontouchend="clearTimeout(_secLongPress)" ontouchmove="clearTimeout(_secLongPress)" title="Double-click or long-press to rename">Debt</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
             <div class="sec-hdr-right"><button class="sec-clear-btn" onclick="clearSection('debt')" title="Clear all rows in this section">🗑</button><span class="sec-total" id="hdr-debt">$0</span><button class="sec-collapse-btn" onclick="toggleSection('debt')" title="Collapse section">▾</button></div></div>
           <div class="sec-body">
           <div class="col-lbl-row"><span>Account</span><span>Current</span><span>Remaining</span></div>
@@ -3281,7 +3288,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
         <div class="sec-card" data-section-id="food">
           <div class="sec-hdr bg-blush">
-            <div class="sec-hdr-left"><h3>Food &amp; Dining</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
+            <div class="sec-hdr-left"><h3 id="sec-title-food" ondblclick="renameSectionPrompt('food')" ontouchstart="_secLongPress=setTimeout(function(){renameSectionPrompt('food');},600)" ontouchend="clearTimeout(_secLongPress)" ontouchmove="clearTimeout(_secLongPress)" title="Double-click or long-press to rename">Food &amp; Dining</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
             <div class="sec-hdr-right"><button class="sec-clear-btn" onclick="clearSection('food')" title="Clear all rows in this section">🗑</button><span class="sec-total" id="hdr-food">$0</span><span class="hdr-pct-label" id="hdr-pct-food"></span><button class="sec-collapse-btn" onclick="toggleSection('food')" title="Collapse section">▾</button></div></div>
           <div class="sec-body">
           <div class="col-lbl-row"><span>Where / What</span><span>Budget</span><span>Actual</span></div>
@@ -3297,7 +3304,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
         <div class="sec-card" data-section-id="health">
           <div class="sec-hdr bg-lav">
-            <div class="sec-hdr-left"><h3>Health &amp; Wellness</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
+            <div class="sec-hdr-left"><h3 id="sec-title-health" ondblclick="renameSectionPrompt('health')" ontouchstart="_secLongPress=setTimeout(function(){renameSectionPrompt('health');},600)" ontouchend="clearTimeout(_secLongPress)" ontouchmove="clearTimeout(_secLongPress)" title="Double-click or long-press to rename">Health &amp; Wellness</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
             <div class="sec-hdr-right"><button class="sec-clear-btn" onclick="clearSection('health')" title="Clear all rows in this section">🗑</button><span class="sec-total" id="hdr-health">$0</span><span class="hdr-pct-label" id="hdr-pct-health"></span><button class="sec-collapse-btn" onclick="toggleSection('health')" title="Collapse section">▾</button></div></div>
           <div class="sec-body">
           <div class="col-lbl-row"><span>Item</span><span>Budget</span><span>Actual</span></div>
@@ -3313,7 +3320,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
         <div class="sec-card" data-section-id="subscriptions">
           <div class="sec-hdr bg-teal">
-            <div class="sec-hdr-left"><h3>Subscriptions</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
+            <div class="sec-hdr-left"><h3 id="sec-title-subscriptions" ondblclick="renameSectionPrompt('subscriptions')" ontouchstart="_secLongPress=setTimeout(function(){renameSectionPrompt('subscriptions');},600)" ontouchend="clearTimeout(_secLongPress)" ontouchmove="clearTimeout(_secLongPress)" title="Double-click or long-press to rename">Subscriptions</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
             <div class="sec-hdr-right"><button class="sec-clear-btn" onclick="clearSection('subscriptions')" title="Clear all rows in this section">🗑</button><span class="sec-total" id="hdr-subscriptions">$0</span><span class="hdr-pct-label" id="hdr-pct-subscriptions"></span><button class="sec-collapse-btn" onclick="toggleSection('subscriptions')" title="Collapse section">▾</button></div></div>
           <div class="sec-body">
           <div class="col-lbl-row"><span>Service</span><span>Budget</span><span>Actual</span></div>
@@ -3329,7 +3336,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
         <div class="sec-card" data-section-id="gifts">
           <div class="sec-hdr bg-gifts">
-            <div class="sec-hdr-left"><h3>Gifts &amp; Donations</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
+            <div class="sec-hdr-left"><h3 id="sec-title-gifts" ondblclick="renameSectionPrompt('gifts')" ontouchstart="_secLongPress=setTimeout(function(){renameSectionPrompt('gifts');},600)" ontouchend="clearTimeout(_secLongPress)" ontouchmove="clearTimeout(_secLongPress)" title="Double-click or long-press to rename">Gifts &amp; Donations</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
             <div class="sec-hdr-right"><button class="sec-clear-btn" onclick="clearSection('gifts')" title="Clear all rows in this section">🗑</button><span class="sec-total" id="hdr-gifts">$0</span><span class="hdr-pct-label" id="hdr-pct-gifts"></span><button class="sec-collapse-btn" onclick="toggleSection('gifts')" title="Collapse section">▾</button></div></div>
           <div class="sec-body">
           <div class="col-lbl-row"><span>Recipient / Cause</span><span>Budget</span><span>Actual</span></div>
@@ -3345,7 +3352,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
         <div class="sec-card" data-section-id="misc">
           <div class="sec-hdr bg-steel">
-            <div class="sec-hdr-left"><h3>Miscellaneous</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
+            <div class="sec-hdr-left"><h3 id="sec-title-misc" ondblclick="renameSectionPrompt('misc')" ontouchstart="_secLongPress=setTimeout(function(){renameSectionPrompt('misc');},600)" ontouchend="clearTimeout(_secLongPress)" ontouchmove="clearTimeout(_secLongPress)" title="Double-click or long-press to rename">Miscellaneous</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
             <div class="sec-hdr-right"><button class="sec-clear-btn" onclick="clearSection('misc')" title="Clear all rows in this section">🗑</button><span class="sec-total" id="hdr-misc">$0</span><span class="hdr-pct-label" id="hdr-pct-misc"></span><button class="sec-collapse-btn" onclick="toggleSection('misc')" title="Collapse section">▾</button></div></div>
           <div class="sec-body">
           <div class="col-lbl-row"><span>Item</span><span>Budget</span><span>Actual</span></div>
@@ -3361,7 +3368,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
         <div class="sec-card sec-card-notes" data-section-id="notes" style="grid-column: span 1; display:flex; flex-direction:column; align-self:stretch;">
           <div class="sec-hdr bg-gold">
-            <div class="sec-hdr-left"><h3>Notes</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
+            <div class="sec-hdr-left"><h3 id="sec-title-notes" ondblclick="renameSectionPrompt('notes')" ontouchstart="_secLongPress=setTimeout(function(){renameSectionPrompt('notes');},600)" ontouchend="clearTimeout(_secLongPress)" ontouchmove="clearTimeout(_secLongPress)" title="Double-click or long-press to rename">Notes</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
             <div class="sec-hdr-right"><button class="sec-clear-btn" onclick="clearNotes()" title="Clear notes">🗑</button><button class="sec-collapse-btn" onclick="toggleSection('notes')" title="Collapse section">▾</button></div>
           </div>
           <div class="sec-body" id="notes-body" style="display:flex;flex-direction:column;flex:1;">
@@ -4192,6 +4199,7 @@ async function syncFromSupabase() {
   loadBoldText();
   loadFontSize();
   loadLegend();
+  loadSectionNames();
 }
 
 // Push data to Supabase in background
@@ -4295,6 +4303,115 @@ function addNewMonth() {
     nextKey = `${ny}-${String(nm).padStart(2,'0')}`;
   }
   showCopyModal(keys, nextKey);
+}
+
+// ── Section Renaming ─────────────────────────────────────────
+var DEFAULT_SECTION_NAMES = {
+  income: 'Income', savings: 'Savings & Investments', housing: 'Housing & Utilities',
+  checking: 'Checking Accounts', transport: 'Transportation', debt: 'Debt',
+  food: 'Food & Dining', health: 'Health & Wellness', subscriptions: 'Subscriptions',
+  gifts: 'Gifts & Donations', misc: 'Miscellaneous', notes: 'Notes'
+};
+var _sectionNames = {};
+var _secLongPress = null; // global names: { sectionKey: name }
+
+function loadSectionNames() {
+  try {
+    var saved = localStorage.getItem('intentra_section_names');
+    _sectionNames = saved ? JSON.parse(saved) : {};
+  } catch(e) { _sectionNames = {}; }
+  applySectionNames();
+}
+
+function saveSectionNames() {
+  try { localStorage.setItem('intentra_section_names', JSON.stringify(_sectionNames)); } catch(e) {}
+}
+
+function applySectionNames() {
+  var all = loadAll();
+  var monthData = all[currentMonthKey] || {};
+  var monthNames = monthData._sectionNames || {};
+  Object.keys(DEFAULT_SECTION_NAMES).forEach(function(key) {
+    // Month-specific name takes priority over global
+    var name = monthNames[key] || _sectionNames[key] || DEFAULT_SECTION_NAMES[key];
+    var el = document.getElementById('sec-title-' + key);
+    if (el) el.textContent = name;
+  });
+}
+
+function getSectionName(key) {
+  var all = loadAll();
+  var monthNames = (all[currentMonthKey] && all[currentMonthKey]._sectionNames) || {};
+  return monthNames[key] || _sectionNames[key] || DEFAULT_SECTION_NAMES[key] || key;
+}
+
+function renameSectionPrompt(key) {
+  var currentName = getSectionName(key);
+  var defaultName = DEFAULT_SECTION_NAMES[key];
+  var all = loadAll();
+  var monthNames = (all[currentMonthKey] && all[currentMonthKey]._sectionNames) || {};
+  var hasMonthOverride = !!monthNames[key];
+  var hasGlobalOverride = !!_sectionNames[key];
+
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;';
+  var modal = document.createElement('div');
+  modal.style.cssText = 'background:white;border-radius:12px;padding:24px;width:100%;max-width:320px;box-shadow:0 20px 60px rgba(0,0,0,0.3);font-family:\'Outfit\',sans-serif;';
+  modal.innerHTML =
+    '<h3 style="margin:0 0 4px;font-size:16px;color:#1A2332;">Rename section</h3>' +
+    '<p style="margin:0 0 14px;font-size:12px;color:#6B7C8F;">Custom name for <strong>' + escHtml(defaultName) + '</strong>. Clear to restore default.</p>' +
+    '<input id="rename-sec-input" type="text" value="' + escHtml(currentName) + '" placeholder="' + escHtml(defaultName) + '" ' +
+    'style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid #E8EDF2;font-family:\'Outfit\',sans-serif;font-size:14px;color:#1A2332;box-sizing:border-box;outline:none;margin-bottom:14px;" />' +
+    '<div style="margin-bottom:20px;"><p style="margin:0 0 8px;font-size:11px;color:#6B7C8F;font-weight:600;">Apply to</p>' +
+    '<div style="display:flex;flex-direction:column;gap:8px;">' +
+    '<label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#1A2332;cursor:pointer;"><input type="radio" name="rename-sec-scope" value="month" ' + (!hasGlobalOverride || hasMonthOverride ? 'checked' : '') + ' style="accent-color:#6B9E70;"> This month only</label>' +
+    '<label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#1A2332;cursor:pointer;"><input type="radio" name="rename-sec-scope" value="global" ' + (hasGlobalOverride && !hasMonthOverride ? 'checked' : '') + ' style="accent-color:#6B9E70;"> All months</label>' +
+    '</div></div>' +
+    '<div style="display:flex;gap:10px;">' +
+    '<button id="rename-sec-cancel" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid #E8EDF2;background:white;font-family:\'Outfit\',sans-serif;font-size:13px;font-weight:600;color:#6B7C8F;cursor:pointer;">Cancel</button>' +
+    '<button id="rename-sec-confirm" style="flex:1;padding:10px;border-radius:8px;border:none;background:#6B9E70;font-family:\'Outfit\',sans-serif;font-size:13px;font-weight:600;color:white;cursor:pointer;">Save</button>' +
+    '</div>';
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+
+  var inp = modal.querySelector('#rename-sec-input');
+  setTimeout(function() { inp.focus(); inp.select(); }, 50);
+
+  modal.querySelector('#rename-sec-cancel').onclick = function() { overlay.remove(); };
+  modal.querySelector('#rename-sec-confirm').onclick = function() {
+    var val = inp.value.trim();
+    var scope = modal.querySelector('input[name="rename-sec-scope"]:checked').value;
+    var isReset = !val || val === defaultName;
+
+    if (scope === 'global') {
+      if (isReset) delete _sectionNames[key]; else _sectionNames[key] = val;
+      saveSectionNames();
+      // Also clear any month override for this key
+      var a2 = loadAll();
+      if (a2[currentMonthKey] && a2[currentMonthKey]._sectionNames) {
+        delete a2[currentMonthKey]._sectionNames[key];
+        saveAll(a2);
+      }
+    } else {
+      // This month only
+      var a = loadAll();
+      if (!a[currentMonthKey]) a[currentMonthKey] = {};
+      if (!a[currentMonthKey]._sectionNames) a[currentMonthKey]._sectionNames = {};
+      if (isReset) delete a[currentMonthKey]._sectionNames[key];
+      else a[currentMonthKey]._sectionNames[key] = val;
+      saveAll(a);
+    }
+
+    applySectionNames();
+    overlay.remove();
+    showToast('Section renamed', false);
+  };
+
+  inp.onkeydown = function(e) {
+    if (e.key === 'Enter') modal.querySelector('#rename-sec-confirm').click();
+    if (e.key === 'Escape') overlay.remove();
+  };
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
 }
 
 function renameMonth(oldKey) {
@@ -4678,6 +4795,7 @@ function switchMonth(key) {
   loadNwGoal();
   loadFtHighlights();
   applyFtHighlights();
+  applySectionNames();
   // Cancel any active bulk selection
   if (_bulkSection) cancelBulk(_bulkSection);
   // Close section popover if open
