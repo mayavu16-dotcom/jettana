@@ -1673,6 +1673,7 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
 .ctx-item:hover { background: var(--mist-light); }
 .ctx-item .ctx-icon { font-size: 14px; width: 18px; text-align: center; }
 .ctx-item.ctx-recurring { color: var(--sage-dark); }
+.ctx-item.ctx-exempt-on { color: var(--steel); font-style: italic; }
 .ctx-item.ctx-danger    { color: var(--blush); }
 .ctx-divider { height: 1px; background: var(--mist); margin: 3px 0; }
 .dark .ctx-menu { background: #1E2A38; border-color: #2A3A4A; }
@@ -1691,6 +1692,23 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
   opacity: 0.8;
 }
 .erow.has-recurring .recurring-dot { display: inline-block; }
+
+/* Exempt row */
+.erow.exempt-row .erow-num-input[data-col="2"] { opacity: 0.45; }
+.exempt-badge {
+  display: none;
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--steel);
+  background: var(--mist);
+  border-radius: 3px;
+  padding: 1px 4px;
+  letter-spacing: 0.3px;
+  line-height: 1.6;
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+.erow.exempt-row .exempt-badge { display: inline-block; }
 
 /* ── Undo toast ──────────────────────────────────────────────── */
 .toast-undo {
@@ -3914,6 +3932,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
   </div>
   <button class="ctx-item" id="ctx-clear-color" style="display:none;"><span class="ctx-icon" style="color:var(--steel);">✕</span>Clear all colors</button>
   <button class="ctx-item" id="ctx-recurring"><span class="ctx-icon">⟳</span><span id="ctx-recurring-label">Mark as recurring</span></button>
+  <button class="ctx-item" id="ctx-exempt"><span class="ctx-icon">◎</span><span id="ctx-exempt-label">Mark as exempt</span></button>
   <button class="ctx-item" id="ctx-duplicate"><span class="ctx-icon">⧉</span>Duplicate row</button>
   <div class="ctx-divider"></div>
   <button class="ctx-item ctx-danger" id="ctx-delete"><span class="ctx-icon">×</span>Delete row</button>
@@ -4800,6 +4819,7 @@ function renderRowEl(section, row, animate = false) {
 
   div.draggable = true;
   if (row.recurring) div.classList.add('has-recurring');
+  if (row.exempt) div.classList.add('exempt-row');
   if (row.paidColor) {
     setTimeout(function() { applyTextColor(row.id, row.paidColor); }, 0);
   }
@@ -4885,6 +4905,7 @@ function renderRowEl(section, row, animate = false) {
         onblur="setTimeout(hideAutocomplete, 150)"
         >
       <span class="note-indicator ${(row.note || row.alloc) ? 'has-note' : ''}" id="note-dot-${row.id}" title="Has note"></span>
+      <span class="exempt-badge" id="exempt-badge-${row.id}" title="Exempt — not included in totals">exempt</span>
 
 
 
@@ -5335,7 +5356,11 @@ function cancelBulk(section) {
 }
 
 function sum(rows, key) {
-  return (rows || []).reduce((t, r) => t + (parseFloat(r[key]) || 0), 0);
+  return (rows || []).reduce((t, r) => t + (r.exempt ? 0 : (parseFloat(r[key]) || 0)), 0);
+}
+
+function sumExempt(rows, key) {
+  return (rows || []).reduce((t, r) => t + (r.exempt ? (parseFloat(r[key]) || 0) : 0), 0);
 }
 function setNumInputValue(input, formattedStr) {
   input.value = formattedStr;
@@ -7442,7 +7467,23 @@ window.addEventListener('load', function() {
 });
 
 
-// ── Recurring + Duplicate ─────────────────────────────────────
+// ── Exempt ────────────────────────────────────────────────────
+function toggleExempt(section, id) {
+  var all = loadAll();
+  var rows = all[currentMonthKey][section] || [];
+  var row = rows.find(function(r) { return r.id === id; });
+  if (!row) return;
+  row.exempt = !row.exempt;
+  saveAll(all);
+  scheduleSave();
+  // Update DOM
+  var erow = document.querySelector('#rows-' + section + ' .erow[data-id="' + id + '"]');
+  if (erow) erow.classList.toggle('exempt-row', row.exempt);
+  var badge = document.getElementById('exempt-badge-' + id);
+  if (badge) badge.style.display = row.exempt ? 'inline-block' : 'none';
+  recalc();
+  showToast(row.exempt ? 'Marked as exempt — excluded from totals' : 'Exemption removed', false);
+}
 function toggleRecurring(section, id) {
   const all = loadAll();
   const rows = all[currentMonthKey][section] || [];
@@ -7574,6 +7615,12 @@ function showCtxMenu(e, section, id) {
     recLabel.textContent = row.recurring ? 'Remove recurring' : 'Mark as recurring';
     document.getElementById('ctx-recurring').className = row.recurring
       ? 'ctx-item ctx-recurring' : 'ctx-item';
+  }
+  var exemptLabel = document.getElementById('ctx-exempt-label');
+  if (exemptLabel && row) {
+    exemptLabel.textContent = row.exempt ? 'Remove exemption' : 'Mark as exempt';
+    document.getElementById('ctx-exempt').className = row.exempt
+      ? 'ctx-item ctx-exempt-on' : 'ctx-item';
   }
   var noteLabel = document.getElementById('ctx-note-label');
   if (noteLabel && row) {
@@ -7822,6 +7869,11 @@ window.addEventListener('load', function() {
   var ctxRec = document.getElementById('ctx-recurring');
   if (ctxRec) ctxRec.addEventListener('click', function() {
     if (ctxSection && ctxId) toggleRecurring(ctxSection, ctxId);
+    hideCtxMenu();
+  });
+  var ctxExempt = document.getElementById('ctx-exempt');
+  if (ctxExempt) ctxExempt.addEventListener('click', function() {
+    if (ctxSection && ctxId) toggleExempt(ctxSection, ctxId);
     hideCtxMenu();
   });
   var ctxDup = document.getElementById('ctx-duplicate');
