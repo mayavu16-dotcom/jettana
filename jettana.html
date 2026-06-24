@@ -3638,14 +3638,17 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
     <div class="shortcuts-group">
       <div class="shortcuts-group-title">Tracking</div>
-      <div class="shortcut-row"><span>📊 <strong>12 sections</strong> — Income, Savings, Housing, Checking, Transport, Debt, Food, Health, Subscriptions, Gifts, Misc, and Notes</span></div>
-      <div class="shortcut-row"><span>✓ <strong>Mark as paid</strong> — click ✓ on any expense row to strike it through; if a card link is set, the debt Current updates automatically and the checking/savings account balance decreases</span></div>
+      <div class="shortcut-row"><span>📊 <strong>12 sections</strong> — Income, Savings, Housing, Checking, Transportation, Debt, Food, Health, Subscriptions, Gifts, Misc, and Notes</span></div>
+      <div class="shortcut-row"><span>✎ <strong>Rename sections</strong> — double-click (desktop) or long-press (mobile) any section header to rename it; choose "This month only" or "All months"</span></div>
+      <div class="shortcut-row"><span>✓ <strong>Mark as paid</strong> — click ✓ on any expense row to strike it through; if a card link is set, the debt Current updates and the linked checking/savings account balance decreases</span></div>
+      <div class="shortcut-row"><span>◎ <strong>Mark as exempt</strong> — row menu → Mark as exempt; the row stays visible for documentation but its actual value is excluded from section totals. Great for stipends or employer-paid expenses.</span></div>
       <div class="shortcut-row"><span>📅 <strong>Date stamps</strong> — add planned and actual dates to any row via the date button that appears on hover</span></div>
+      <div class="shortcut-row"><span>📅 <strong>Beginning balance date</strong> — open the note on any Checking row to set a beginning balance date; expenses dated before that date won't be deducted from the balance</span></div>
       <div class="shortcut-row"><span>✎ <strong>Row notes</strong> — click ≡ on any row → Add note; a gold dot appears on hover to indicate a note exists</span></div>
-      <div class="shortcut-row"><span>→ <strong>Income destination</strong> — open the note on any income row to set a "→ goes to" label (e.g. Marcus Savings, HYSA) showing where that income is allocated</span></div>
+      <div class="shortcut-row"><span>→ <strong>Income destination</strong> — open the note on any income row to set a "→ goes to" label (e.g. Marcus Savings, HYSA)</span></div>
       <div class="shortcut-row"><span>🔄 <strong>Subscriptions</strong> — dedicated section for recurring services; included in expense totals and month-over-month comparison</span></div>
-      <div class="shortcut-row"><span>📝 <strong>Notes</strong> — free-form notes per month with bullet points and checkable to-dos; syncs across all your devices</span></div>
-      <div class="shortcut-row"><span>🎨 <strong>Footer highlight</strong> — click the Actual/Received total in any section footer to set a background and number color</span></div>
+      <div class="shortcut-row"><span>📝 <strong>Notes</strong> — free-form notes per month with bullet points and checkable to-dos; syncs across devices</span></div>
+      <div class="shortcut-row"><span>🎨 <strong>Footer highlight</strong> — click the Actual/Received total in any section footer to set a background and number color; supports copy, paste and clear</span></div>
       <div class="shortcut-row"><span>🎯 <strong>Net worth goal</strong> — click the Goal cell in the Net Worth Overview to set a target</span></div>
     </div>
 
@@ -3682,21 +3685,28 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <div class="shortcuts-group-title">Rows</div>
       <div class="shortcut-row"><span>≡ <strong>Row menu</strong> — click ≡ on desktop or long-press on mobile to access all row options</span></div>
       <div class="shortcut-row"><span>⟳ <strong>Recurring rows</strong> — row menu → Mark as recurring; row carries over automatically when copying a month, including its colors</span></div>
+      <div class="shortcut-row"><span>◎ <strong>Exempt rows</strong> — row menu → Mark as exempt; value is visible for documentation but excluded from totals</span></div>
       <div class="shortcut-row"><span>⧉ <strong>Duplicate</strong> — row menu → Duplicate row copies the row and all its colors</span></div>
       <div class="shortcut-row"><span>⠿ <strong>Drag to reorder</strong> — hover a row to reveal the ⠿ handle; drag on desktop, long-press on mobile</span></div>
       <div class="shortcut-row"><span>↔ <strong>Move to another section</strong> — drag a row and drop it onto a different section header to move it</span></div>
-      <div class="shortcut-row"><span>✨ <strong>Autocomplete</strong> — start typing a label to see suggestions from your history; selecting one prefills the amount and all 3 colors</span></div>
-      <div class="shortcut-row"><span>🗑 <strong>Delete rows</strong> — hover any section header to reveal 🗑; click it to choose: <em>Select rows to delete</em> or <em>Clear all rows</em>. Both are undoable.</span></div>
-      <div class="shortcut-row"><span>↩ <strong>Undo</strong> — most actions are undoable: deleting rows, clearing sections, editing a cell value, marking paid, filling template fields, and removing template entries. An UNDO button appears in the toast — click it within 5 seconds to reverse.</span></div>
+      <div class="shortcut-row"><span>✨ <strong>Autocomplete</strong> — start typing a label to see suggestions from your history; selecting one prefills all 3 colors</span></div>
+      <div class="shortcut-row"><span>⌨ <strong>Enter key</strong> — pressing Enter in any cell moves down to the same column in the next row; on the last row it creates a new row automatically</span></div>
+      <div class="shortcut-row"><span>🧮 <strong>Expression calculator</strong> — type a math expression in any number cell (e.g. <em>50+25+30</em> or <em>1500-200-50</em>) and it auto-calculates when you tab or click away</span></div>
+      <div class="shortcut-row"><span>🗑 <strong>Delete / clear rows</strong> — hover any section header to reveal 🗑; click to: select rows to delete, clear all rows, clear the Budget column, clear the Actual column, or copy the section from another month</span></div>
+      <div class="shortcut-row"><span>⎘ <strong>Copy section from another month</strong> — 🗑 → Copy from another month; choose to append or replace existing rows</span></div>
+      <div class="shortcut-row"><span>↩ <strong>Undo</strong> — most actions are undoable: deleting rows, clearing sections, editing a cell value, marking paid, filling template fields, removing entries, and copying sections. An UNDO button appears in the toast — click it within 5 seconds to reverse.</span></div>
     </div>
 
     <div class="shortcuts-group">
       <div class="shortcuts-group-title">Months</div>
       <div class="shortcut-row"><span>📋 <strong>Copy month</strong> — click + New Month to copy from a previous month; carries rows, colors, recurring items, budget overrides and footer highlights</span></div>
-      <div class="shortcut-row"><span>🔖 <strong>Last month restore</strong> — when you return to the app, it reopens the last month you were viewing instead of defaulting to the current month</span></div>
-      <div class="shortcut-row"><span>📊 <strong>Month-over-month</strong> — scroll to the bottom to compare 6 spending categories vs the previous month</span></div>
+      <div class="shortcut-row"><span>✎ <strong>Rename month</strong> — hover a month in the sidebar → ✎ to change its month or year; all data moves with it</span></div>
+      <div class="shortcut-row"><span>🔖 <strong>Last month restore</strong> — when you return to the app, it reopens the last month you were viewing</span></div>
+      <div class="shortcut-row"><span>📊 <strong>Month-over-month</strong> — scroll to the bottom to compare spending vs any month you choose from the dropdown</span></div>
       <div class="shortcut-row"><span>🔍 <strong>Search</strong> — search across all rows in the current month by label, amount or date</span></div>
       <div class="shortcut-row"><span>✕ <strong>Clear month</strong> — ⋯ → Clear month to wipe all rows for the current month</span></div>
+      <div class="shortcut-row"><span>▶ <strong>Try demo</strong> — ⋯ → Try demo to load a pre-filled sample month showing card tracking, templates and color coding in action</span></div>
+      <div class="shortcut-row"><span>✅ <strong>Setup checklist</strong> — ⋯ → Setup checklist for a guided 8-step walkthrough of Jettana's key features</span></div>
     </div>
 
     <div class="shortcuts-group">
@@ -3713,6 +3723,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
     <div class="shortcuts-group">
       <div class="shortcuts-group-title">Layout</div>
+      <div class="shortcut-row"><span>✎ <strong>Rename sections</strong> — double-click (desktop) or long-press (mobile) any section header; save for this month only or all months</span></div>
       <div class="shortcut-row"><span>⠿ <strong>Reorder sections</strong> — hover any section header to reveal ⠿; drag on desktop, long-press on mobile</span></div>
       <div class="shortcut-row"><span>▾ <strong>Collapse sections</strong> — click ▾ on any section header to hide its rows; click again to expand</span></div>
     </div>
