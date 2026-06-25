@@ -5856,6 +5856,21 @@ function autoCalcDebtFromCards() {
 
     var remaining = Math.max(0, totalAll - totalPaid);
 
+    // If there are payment template entries, add those payments to the remaining calculation
+    var paymentTotal = 0;
+    if (debtRow._entries && debtRow._entries.length > 0) {
+      debtRow._entries.forEach(function(e) {
+        var type = e._type || debtRow._template;
+        if (type === 'payment') {
+          var paid = parseAmt(e.amt) || 0;
+          var interest = parseAmt(e.interest) || 0;
+          paymentTotal += Math.max(0, paid - interest);
+        }
+      });
+    }
+
+    var finalRemaining = Math.max(0, remaining - paymentTotal);
+
     // Write Current (col 1)
     debtRow['current'] = totalAll || '';
     var inp1 = document.querySelector('input[data-id="' + debtRow.id + '"][data-col="1"]');
@@ -5864,21 +5879,12 @@ function autoCalcDebtFromCards() {
       inp1.dataset.raw = totalAll ? String(totalAll) : '';
     }
 
-    // Only write Remaining if no payment template entries exist
-    // (payment template calculates remaining more accurately from actual payments made)
-    var hasPaymentEntries = debtRow._entries && debtRow._entries.length > 0 &&
-      debtRow._entries.some(function(e) {
-        var type = e._type || debtRow._template;
-        return type === 'payment' && parseAmt(e.amt) > 0;
-      });
-
-    if (!hasPaymentEntries) {
-      debtRow['remaining'] = remaining || '';
-      var inp2 = document.querySelector('input[data-id="' + debtRow.id + '"][data-col="2"]');
-      if (inp2) {
-        inp2.value = remaining ? '$' + remaining.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
-        inp2.dataset.raw = remaining ? String(remaining) : '';
-      }
+    // Write Remaining = unpaid card charges minus any logged payments
+    debtRow['remaining'] = finalRemaining || '';
+    var inp2 = document.querySelector('input[data-id="' + debtRow.id + '"][data-col="2"]');
+    if (inp2) {
+      inp2.value = finalRemaining ? '$' + finalRemaining.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
+      inp2.dataset.raw = finalRemaining ? String(finalRemaining) : '';
     }
   });
 
@@ -7151,20 +7157,8 @@ function updateEntryTotal(section, id, template) {
     } else if (template === 'payment' || storedEntries.some(function(e) { return e._type === 'payment'; })) {
       totalEl.style.color = 'var(--sage)';
       totalEl.textContent = 'Paid: $' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      var dbtAll = loadAll();
-      var dbtRows = (dbtAll[currentMonthKey] && dbtAll[currentMonthKey][section]) || [];
-      var dbtRowData = dbtRows.find(function(r) { return r.id === id; }) || {};
-      var dbtCurrent = parseAmt(dbtRowData['current']) || 0;
-      var dbtRemaining = Math.max(0, dbtCurrent - grandTotal);
-      // Write remaining directly to storage so autoCalcDebtFromCards won't overwrite it
-      dbtRowData['remaining'] = dbtRemaining || '';
-      saveAll(dbtAll);
-      // Update DOM
-      var remInp = document.querySelector('input[data-id="' + id + '"][data-col="2"]');
-      if (remInp) {
-        remInp.value = dbtRemaining ? '$' + dbtRemaining.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
-        remInp.dataset.raw = dbtRemaining ? String(dbtRemaining) : '';
-      }
+      // Let autoCalcDebtFromCards handle the full remaining calculation
+      // (it now combines struck expenses + payment entries)
       recalc();
     } else if (template === 'transaction') {
       var txSign = grandTotal >= 0 ? '+' : '-';
