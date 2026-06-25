@@ -8748,15 +8748,19 @@ var TOUR_STEPS = [
         var all = loadAll();
         var debtRows = (all[currentMonthKey] && all[currentMonthKey]['debt']) || [];
         var linked = debtRows.find(function(r) { return r._cardLink; });
-        if (linked) {
-          // Make sure the note isn't already open
-          var existingNote = document.getElementById('note-wrap-' + linked.id);
-          if (existingNote && existingNote.style.display !== 'none') {
-            closeNote(linked.id);
-            setTimeout(function() { toggleNote('debt', linked.id); }, 300);
-          } else {
+        if (!linked) return;
+        var noteWrap = document.getElementById('note-wrap-' + linked.id);
+        if (!noteWrap) return;
+        // Close if already open, then reopen
+        if (noteWrap.classList.contains('open')) {
+          noteWrap.classList.remove('open');
+          setTimeout(function() {
             toggleNote('debt', linked.id);
-          }
+            setTimeout(function() { noteWrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 200);
+          }, 200);
+        } else {
+          toggleNote('debt', linked.id);
+          setTimeout(function() { noteWrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 200);
         }
       }, 700);
     },
@@ -8838,9 +8842,7 @@ function renderTourStep() {
 
   // Run cleanup for previous step
   var prevStep = TOUR_STEPS[_tourStep - 1];
-  if (prevStep && prevStep.cleanup) {
-    try { prevStep.cleanup(); } catch(e) {}
-  }
+  if (prevStep && prevStep.cleanup) { try { prevStep.cleanup(); } catch(e) {} }
 
   var target = document.querySelector(step.target);
   if (!target) {
@@ -8849,48 +8851,68 @@ function renderTourStep() {
     return;
   }
 
-  // Force hidden elements visible for the tour
+  // Force hidden elements visible
   if (step.target.indexOf('drag-handle') !== -1 || step.target.indexOf('paid-checkbox') !== -1) {
     target.style.opacity = '1';
     target.style.visibility = 'visible';
   }
 
-  target.scrollIntoView({ behavior: 'smooth', block: step.scrollBlock || 'center' });
+  var isMobile = window.innerWidth < 768;
+
+  // Scroll strategy
+  if (isMobile) {
+    // On mobile scroll target to top ~20% of screen so tooltip has room at bottom
+    var r0 = target.getBoundingClientRect();
+    var idealTop = window.innerHeight * 0.20;
+    window.scrollBy({ top: r0.top - idealTop, behavior: 'smooth' });
+  } else {
+    target.scrollIntoView({ behavior: 'smooth', block: step.scrollBlock || 'center' });
+  }
 
   setTimeout(function() {
     var rect = target.getBoundingClientRect();
-    var pad = 8;
     var vw = window.innerWidth;
     var vh = window.innerHeight;
-    var isMobile = vw < 768;
-    var ttW = isMobile ? Math.min(vw - 32, 300) : 300;
+    isMobile = vw < 768;
+    var pad = 8;
 
-    // Position highlight (always fixed)
+    // Update content first so offsetHeight is accurate
+    document.getElementById('tour-step-label').textContent = 'Step ' + (_tourStep + 1) + ' of ' + TOUR_STEPS.length;
+    document.getElementById('tour-title').textContent = step.title;
+    document.getElementById('tour-desc').textContent = step.desc;
+    var dotsEl = document.getElementById('tour-dots');
+    dotsEl.innerHTML = TOUR_STEPS.map(function(_, i) {
+      return '<div style="width:6px;height:6px;border-radius:50%;background:' + (i === _tourStep ? '#6B9E70' : '#E8EDF2') + ';"></div>';
+    }).join('');
+    document.getElementById('tour-prev').style.visibility = _tourStep === 0 ? 'hidden' : 'visible';
+    var nextBtn = document.getElementById('tour-next');
+    if (_tourStep === TOUR_STEPS.length - 1) {
+      nextBtn.textContent = 'Done ✓';
+      nextBtn.onclick = endTour;
+    } else {
+      nextBtn.textContent = 'Next →';
+      nextBtn.onclick = function() { tourStep(1); };
+    }
+
+    // Highlight
     var hl = document.getElementById('tour-highlight');
+    hl.style.transition = 'all 0.3s ease';
     hl.style.left = Math.max(0, rect.left - pad) + 'px';
     hl.style.top = Math.max(0, rect.top - pad) + 'px';
     hl.style.width = (rect.width + pad * 2) + 'px';
     hl.style.height = (rect.height + pad * 2) + 'px';
 
-    // Position tooltip
+    // Tooltip
     var tt = document.getElementById('tour-tooltip');
+    var ttW = isMobile ? (vw - 32) : 300;
     tt.style.width = ttW + 'px';
-    var ttH = tt.offsetHeight || 190;
+    var ttH = tt.offsetHeight || 200;
     var left, top;
 
     if (isMobile) {
-      // Mobile: try below highlight first, then above, then float at bottom
-      left = Math.max(16, vw / 2 - ttW / 2);
-      var spaceBelow = vh - (rect.bottom + pad + 12);
-      var spaceAbove = rect.top - pad - 12;
-      if (spaceBelow >= ttH + 16) {
-        top = rect.bottom + pad + 12;
-      } else if (spaceAbove >= ttH + 16) {
-        top = rect.top - ttH - pad - 12;
-      } else {
-        // Float near bottom with gap above nav
-        top = vh - ttH - 20;
-      }
+      // Always pin to bottom of screen on mobile
+      left = 16;
+      top = vh - ttH - 20;
     } else {
       if (step.position === 'bottom') {
         left = rect.left + rect.width / 2 - ttW / 2;
@@ -8905,41 +8927,19 @@ function renderTourStep() {
         left = rect.left - ttW - pad - 12;
         top = rect.top + rect.height / 2 - ttH / 2;
       }
+      left = Math.max(16, Math.min(vw - ttW - 16, left));
+      top = Math.max(16, Math.min(vh - ttH - 16, top));
     }
-
-    left = Math.max(16, Math.min(vw - ttW - 16, left));
-    top = Math.max(16, Math.min(vh - ttH - 16, top));
 
     tt.style.left = left + 'px';
     tt.style.top = top + 'px';
 
-    // Update content
-    document.getElementById('tour-step-label').textContent = 'Step ' + (_tourStep + 1) + ' of ' + TOUR_STEPS.length;
-    document.getElementById('tour-title').textContent = step.title;
-    document.getElementById('tour-desc').textContent = step.desc;
-
-    var dotsEl = document.getElementById('tour-dots');
-    dotsEl.innerHTML = TOUR_STEPS.map(function(_, i) {
-      return '<div style="width:6px;height:6px;border-radius:50%;background:' + (i === _tourStep ? '#6B9E70' : '#E8EDF2') + ';transition:background 0.2s;"></div>';
-    }).join('');
-
-    document.getElementById('tour-prev').style.visibility = _tourStep === 0 ? 'hidden' : 'visible';
-    var nextBtn = document.getElementById('tour-next');
-    if (_tourStep === TOUR_STEPS.length - 1) {
-      nextBtn.textContent = 'Done ✓';
-      nextBtn.onclick = endTour;
-    } else {
-      nextBtn.textContent = 'Next →';
-      nextBtn.onclick = function() { tourStep(1); };
-    }
-
-    // Run this step's action after a short delay
+    // Run action
     if (step.action) {
       setTimeout(function() { try { step.action(); } catch(e) {} }, 300);
     }
-  }, 650);
+  }, 700);
 }
-
 // Allow clicking backdrop to skip to next step (unless step has noBackdropAdvance)
 document.addEventListener('click', function(e) {
   if (!_tourActive) return;
@@ -9202,6 +9202,17 @@ function _runLoadDemo() {
 
   switchMonth(demoKey);
 
+  // ── Set up legend cards FIRST so autoCalcDebtFromCards works from the start ──
+  var demoCards = [
+    { name: 'Discover', color: DISCOVER_COLOR },
+    { name: 'BMO Card', color: BMO_COLOR },
+  ];
+  demoCards.forEach(function(demoCard) {
+    var exists = _legendCards.some(function(c) { return c.color === demoCard.color; });
+    if (!exists) _legendCards.push(demoCard);
+  });
+  saveLegend();
+
   // Income rows
   var incomeRows = [
     { label: 'Bi-Weekly Pay',      planned: 3000, received: 2865, paidColor: '#6B9E70', numColor: '#6B9E70' },
@@ -9239,8 +9250,8 @@ function _runLoadDemo() {
 
   // Debt — Discover linked
   var debtRows = [
-    { label: 'Discover',  current: 1747, remaining: 1747, paidColor: DISCOVER_COLOR, numColor: DISCOVER_COLOR, _cardLink: DISCOVER_COLOR },
-    { label: 'BMO CC',    current: 174,  remaining: 174,  paidColor: BMO_COLOR,      numColor: BMO_COLOR,      _cardLink: BMO_COLOR },
+    { label: 'Discover', paidColor: DISCOVER_COLOR, numColor: DISCOVER_COLOR, _cardLink: DISCOVER_COLOR },
+    { label: 'BMO CC',   paidColor: BMO_COLOR,      numColor: BMO_COLOR,      _cardLink: BMO_COLOR },
   ];
   debtRows.forEach(function(d) { addRow('debt', d, false); });
 
@@ -9258,17 +9269,6 @@ function _runLoadDemo() {
     { label: 'Spotify',            budget: 11, actual: 11, numColor: BMO_COLOR      },
   ];
   subRows.forEach(function(d) { addRow('subscriptions', d, false); });
-
-  // Add demo legend cards — only if those colors aren't already in the legend
-  var demoCards = [
-    { name: 'Discover', color: DISCOVER_COLOR },
-    { name: 'BMO Card', color: BMO_COLOR },
-  ];
-  demoCards.forEach(function(demoCard) {
-    var exists = _legendCards.some(function(c) { return c.color === demoCard.color; });
-    if (!exists) _legendCards.push(demoCard);
-  });
-  saveLegend();
 
   recalc();
   showToast('Demo month loaded! Explore the color-coded rows and linked Debt section.', false);
