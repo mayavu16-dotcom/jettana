@@ -5819,6 +5819,7 @@ function recalc() {
     }
   });
   autoCalcDebtFromCards();
+  recalcCheckingBalances();
 }
 
 function autoCalcDebtFromCards() {
@@ -5863,12 +5864,19 @@ function autoCalcDebtFromCards() {
       inp1.dataset.raw = totalAll ? String(totalAll) : '';
     }
 
-    // Write Remaining (col 2)
-    debtRow['remaining'] = remaining || '';
-    var inp2 = document.querySelector('input[data-id="' + debtRow.id + '"][data-col="2"]');
-    if (inp2) {
-      inp2.value = remaining ? '$' + remaining.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
-      inp2.dataset.raw = remaining ? String(remaining) : '';
+    // Only write Remaining if no payment template entries exist
+    // (payment template calculates remaining more accurately from actual payments made)
+    var hasPaymentEntries = debtRow._template === 'payment' &&
+      debtRow._entries && debtRow._entries.length > 0 &&
+      debtRow._entries.some(function(e) { return parseAmt(e.amount) > 0; });
+
+    if (!hasPaymentEntries) {
+      debtRow['remaining'] = remaining || '';
+      var inp2 = document.querySelector('input[data-id="' + debtRow.id + '"][data-col="2"]');
+      if (inp2) {
+        inp2.value = remaining ? '$' + remaining.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
+        inp2.dataset.raw = remaining ? String(remaining) : '';
+      }
     }
   });
 
@@ -5950,41 +5958,20 @@ function applyPaidEffect(section, id, isPaid) {
   var changed = false;
 
   // ── Savings / Checking adjustment ──────────────────────────
-  // Strike color = which account paid. Match against account row's numColor or paidColor.
   var strikeColor = (row.strikeColor || '').toLowerCase();
   if (strikeColor) {
-    ['savings', 'checking'].forEach(function(acctSec) {
+    ['savings'].forEach(function(acctSec) {
       var acctCfg = CONFIGS[acctSec];
       var acctRows = monthData[acctSec] || [];
       acctRows.forEach(function(acctRow) {
-        // Match account by its number color or text color
         var acctNumColor  = (acctRow.numColor  || '').toLowerCase();
         var acctTextColor = (acctRow.paidColor || '').toLowerCase();
         if (acctNumColor !== strikeColor && acctTextColor !== strikeColor) return;
-        // For both savings and checking: track cumulative paid deductions separately
-        // so we never clobber manually-entered values
-        var field, balance;
-        if (acctSec === 'checking') {
-          // Skip if expense was dated before the beginning balance date
-          // (it was already accounted for in the beginning balance)
-          var beginDate = acctRow._beginDate || '';
-          var expenseDate = row.date || row.date2 || '';
-          if (beginDate && expenseDate && expenseDate < beginDate) return;
-          // Track deductions in _paidAdj, compute ending = beginning - _paidAdj
-          var beginning = parseAmt(acctRow[acctCfg.k1]) || 0;
-          var adj = parseAmt(acctRow['_paidAdj']) || 0;
-          adj = isPaid ? adj + amount : Math.max(0, adj - amount);
-          acctRow['_paidAdj'] = adj;
-          acctRow[acctCfg.k2] = Math.max(0, beginning - adj);
-          field = acctCfg.k2;
-        } else {
-          field = acctCfg.k1; // savings actual
-          balance = parseAmt(acctRow[field]) || 0;
-          acctRow[field] = Math.max(0, isPaid ? balance - amount : balance + amount);
-        }
+        var field = acctCfg.k1;
+        var balance = parseAmt(acctRow[field]) || 0;
+        acctRow[field] = Math.max(0, isPaid ? balance - amount : balance + amount);
         changed = true;
-        var col = acctSec === 'checking' ? '2' : '1';
-        var acctInp = document.querySelector('input[data-id="' + acctRow.id + '"][data-col="' + col + '"]');
+        var acctInp = document.querySelector('input[data-id="' + acctRow.id + '"][data-col="1"]');
         if (acctInp) {
           var val = acctRow[field];
           acctInp.value = val ? '$' + val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
@@ -5994,13 +5981,63 @@ function applyPaidEffect(section, id, isPaid) {
     });
   }
 
-  // Debt Current is handled automatically by autoCalcDebtFromCards
-  // which only sums unpaid rows — so just calling recalc() is enough
   if (changed) saveAll(all);
-  recalc(); // always recalc — updates debt Current via autoCalcDebtFromCards
-}
 
-function formatDateLabel(dateStr) {
+  // Always fully recalculate checking balances from scratch
+  recalcCheckingBalances();
+  recalc();
+
+function recalcCheckingBalances() {
+  // Fully recalculate ending balance for all checking accounts from scratch
+  // Called after any paid toggle, color change, date change, or beginDate change
+  var all = loadAll();
+  var monthData = all[currentMonthKey];
+  if (!monthData) return;
+
+  var EXPENSE_SECTIONS = ['housing', 'transport', 'food', 'health', 'subscriptions', 'gifts', 'misc'];
+  var checkingRows = monthData['checking'] || [];
+  var changed = false;
+
+  checkingRows.forEach(function(acctRow) {
+    var acctColor = (acctRow.numColor || acctRow.paidColor || '').toLowerCase();
+    if (!acctColor) return;
+
+    var beginning = parseAmt(acctRow['beginning']) || 0;
+    var beginDate = acctRow._beginDate || '';
+    var totalDeductions = 0;
+
+    EXPENSE_SECTIONS.forEach(function(sec) {
+      var cfg = CONFIGS[sec];
+      var rows = monthData[sec] || [];
+      rows.forEach(function(row) {
+        if (!row.paid) return;
+        var strikeColor = (row.strikeColor || '').toLowerCase();
+        if (strikeColor !== acctColor) return;
+        // Skip if expense dated before beginning balance date
+        var expenseDate = row.date || row.date2 || '';
+        if (beginDate && expenseDate && expenseDate < beginDate) return;
+        var actual = parseAmt(row[cfg.k2]);
+        var budget = parseAmt(row[cfg.k1]);
+        var amount = actual > 0 ? actual : budget;
+        if (amount > 0) totalDeductions += amount;
+      });
+    });
+
+    var ending = Math.max(0, beginning - totalDeductions);
+    acctRow['ending'] = ending || '';
+    acctRow['_paidAdj'] = totalDeductions;
+    changed = true;
+
+    // Update DOM
+    var inp = document.querySelector('input[data-id="' + acctRow.id + '"][data-col="2"]');
+    if (inp) {
+      inp.value = ending ? '$' + ending.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
+      inp.dataset.raw = ending ? String(ending) : '';
+    }
+  });
+
+  if (changed) saveAll(all);
+}
   if (!dateStr) return '+ date';
   const [y, m, d] = dateStr.split('-');
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -7293,6 +7330,8 @@ function saveBeginDate(section, id, val) {
   row._beginDate = val;
   saveAll(all);
   scheduleSave();
+  recalcCheckingBalances();
+  recalc();
 }
 
 function saveAlloc(section, id, val) {
@@ -10247,6 +10286,9 @@ function setStrikeColor(section, id, color, e) {
   var picker = document.getElementById('global-strike-picker');
   if (picker) picker.style.display = 'none';
   _strikePickerId = null;
+  // Recalc checking balances since strike color determines which account is affected
+  recalcCheckingBalances();
+  recalc();
 }
 
 function clearStrikeColor(section, id, e) {
