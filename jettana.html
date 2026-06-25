@@ -540,6 +540,7 @@ body {
   line-height: 1;
   display: flex;
   flex-direction: column;
+  position: relative;
   gap: 2px;
   align-items: center;
   justify-content: center;
@@ -562,6 +563,8 @@ body {
   border-radius: 1px;
 }
 .erow:hover .drag-handle { opacity: 1; }
+/* Show drag handle when hint dot is visible */
+.drag-handle:has(#row-menu-hint-dot[style*="block"]) { opacity: 1 !important; }
 @media (pointer: coarse) {
   .drag-handle { opacity: 0.15 !important; }
   .erow.row-active .drag-handle { opacity: 1 !important; }
@@ -1735,6 +1738,10 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
 @keyframes nudge-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(107,158,112,0.4); }
   50% { box-shadow: 0 0 0 6px rgba(107,158,112,0); }
+}
+@keyframes hint-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.6; }
 }
 
 /* Exempt row */
@@ -3035,7 +3042,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
         </div>
         <button class="dark-toggle" id="dark-toggle" onclick="toggleDark()" title="Toggle dark mode">🌙</button>
         <div class="more-wrap" id="more-wrap">
-          <button class="btn btn-ghost" onclick="toggleMoreMenu(event)" title="More options" style="font-size:18px;width:34px;padding:0;letter-spacing:1px;">⋯</button>
+          <button class="btn btn-ghost" id="more-btn" onclick="toggleMoreMenu(event); dismissMoreHint()" title="More options" style="font-size:18px;width:34px;padding:0;letter-spacing:1px;position:relative;">⋯<span id="more-hint-dot" style="display:none;position:absolute;top:4px;right:4px;width:7px;height:7px;background:#6B9E70;border-radius:50%;animation:hint-pulse 1.5s ease-in-out infinite;"></span></button>
           <div class="more-menu" id="more-menu" style="display:none;">
 
             <!-- Upgrade CTA -->
@@ -3640,12 +3647,12 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
 <!-- Tour Overlay -->
 <div id="tour-overlay" style="display:none;position:fixed;inset:0;z-index:9000;pointer-events:none;">
-  <!-- Dimmed backdrop with cutout handled via JS -->
-  <div id="tour-backdrop" style="position:absolute;inset:0;background:rgba(0,0,0,0.55);"></div>
-  <!-- Highlight ring -->
-  <div id="tour-highlight" style="position:absolute;border-radius:10px;box-shadow:0 0 0 4px #F0C060,0 0 0 9999px rgba(0,0,0,0.55);transition:all 0.35s ease;z-index:9001;pointer-events:none;"></div>
-  <!-- Tooltip bubble -->
-  <div id="tour-tooltip" style="position:absolute;background:white;border-radius:14px;padding:20px;width:300px;box-shadow:0 8px 40px rgba(0,0,0,0.25);z-index:9002;pointer-events:all;font-family:Outfit,sans-serif;transition:all 0.35s ease;">
+  <!-- Dimmed backdrop -->
+  <div id="tour-backdrop" style="position:fixed;inset:0;background:rgba(0,0,0,0.55);"></div>
+  <!-- Highlight ring — fixed so it stays on target while scrolling -->
+  <div id="tour-highlight" style="position:fixed;border-radius:10px;box-shadow:0 0 0 4px #F0C060,0 0 0 9999px rgba(0,0,0,0.55);transition:all 0.35s ease;z-index:9001;pointer-events:none;"></div>
+  <!-- Tooltip bubble — fixed position -->
+  <div id="tour-tooltip" style="position:fixed;background:white;border-radius:14px;padding:20px;width:300px;box-shadow:0 8px 40px rgba(0,0,0,0.25);z-index:9002;pointer-events:all;font-family:Outfit,sans-serif;transition:left 0.35s ease,top 0.35s ease;">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
       <div id="tour-step-label" style="font-size:10px;font-weight:700;letter-spacing:1px;color:#A07800;text-transform:uppercase;"></div>
       <button onclick="endTour()" style="background:none;border:none;cursor:pointer;color:#6B7C8F;font-size:16px;line-height:1;padding:0 0 0 8px;" title="Skip tour">✕</button>
@@ -3659,7 +3666,6 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
     </div>
   </div>
 </div>
-
 
 <div class="shortcuts-overlay" id="checklist-overlay" style="display:none;" onclick="hideChecklist()">
   <div class="shortcuts-modal" onclick="event.stopPropagation()" style="max-width:480px;">
@@ -4259,6 +4265,7 @@ async function syncFromSupabase() {
   loadFontSize();
   loadLegend();
   loadSectionNames();
+  showRowMenuHintIfNeeded();
 }
 
 // Push data to Supabase in background
@@ -5159,7 +5166,7 @@ function renderRowEl(section, row, animate = false) {
   });
   div.innerHTML = `
     <div class="erow-label-wrap">
-      <button class="drag-handle" title="Options" onclick="showCtxMenuBtn(event,'${section}','${row.id}')" ontouchend="event.preventDefault();showCtxMenuBtn(event,'${section}','${row.id}')"><span></span><span></span><span></span></button>
+      <button class="drag-handle" title="Options" onclick="showCtxMenuBtn(event,'${section}','${row.id}');dismissRowMenuHint()" ontouchend="event.preventDefault();showCtxMenuBtn(event,'${section}','${row.id}');dismissRowMenuHint()"><span></span><span></span><span></span><span id="row-menu-hint-dot" style="display:none;position:absolute;top:2px;right:2px;width:6px;height:6px;background:#6B9E70;border-radius:50%;animation:hint-pulse 1.5s ease-in-out infinite;pointer-events:none;"></span></button>
       <button class="del-btn" onclick="delRow('${section}','${row.id}')" title="Remove row">×</button>
       <input type="text" class="erow-label-input" placeholder="${cfg.ph}" value="${escHtml(row.label||'')}"
         data-section="${section}" data-id="${row.id}" data-key="label" data-col="0"
@@ -6534,6 +6541,7 @@ init();
 loadDefaultColors();
 loadBoldText();
 loadFontSize();
+showMoreHintIfNeeded();
 
 
 
@@ -8649,8 +8657,9 @@ var TOUR_STEPS = [
   {
     target: '.mom-card',
     title: 'Compare any two months',
-    desc: 'Scroll down to see Month-over-Month. Use the dropdown to compare against any previous month — great for spotting spending trends.',
-    position: 'top'
+    desc: 'Use the dropdown to compare against any previous month — great for spotting spending trends over time.',
+    position: 'top',
+    scrollBlock: 'end'
   },
   {
     target: '#more-btn',
@@ -8695,33 +8704,42 @@ function renderTourStep() {
   // Find target element
   var target = document.querySelector(step.target);
   if (!target) {
-    // Skip to next if target not found
     if (_tourStep < TOUR_STEPS.length - 1) { _tourStep++; renderTourStep(); }
     else endTour();
     return;
   }
 
-  // Scroll target into view
-  target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  // Scroll target into view first, then position after scroll settles
+  target.scrollIntoView({ behavior: 'smooth', block: step.scrollBlock || 'center' });
 
   setTimeout(function() {
     var rect = target.getBoundingClientRect();
     var pad = 8;
+    var vw = window.innerWidth;
+    var vh = window.innerHeight;
+    var isMobile = vw < 768;
+
+    // On mobile tooltip is narrower
+    var ttW = isMobile ? Math.min(vw - 24, 280) : 300;
 
     // Position highlight
     var hl = document.getElementById('tour-highlight');
     hl.style.left = (rect.left - pad) + 'px';
-    hl.style.top = (rect.top - pad) + 'px';
+    hl.style.top = (rect.top + window.scrollY - pad) + 'px';
     hl.style.width = (rect.width + pad * 2) + 'px';
     hl.style.height = (rect.height + pad * 2) + 'px';
 
-    // Position tooltip
+    // Position tooltip — on mobile always place below target or at bottom of screen
     var tt = document.getElementById('tour-tooltip');
-    var ttW = 300, ttH = 200;
-    var vw = window.innerWidth, vh = window.innerHeight;
+    tt.style.width = ttW + 'px';
+    var ttH = tt.offsetHeight || 200;
     var left, top;
 
-    if (step.position === 'bottom') {
+    if (isMobile) {
+      // On mobile: always bottom of screen, full width
+      left = 12;
+      top = vh - ttH - 80;
+    } else if (step.position === 'bottom') {
       left = rect.left + rect.width / 2 - ttW / 2;
       top = rect.bottom + pad + 12;
     } else if (step.position === 'top') {
@@ -8741,6 +8759,11 @@ function renderTourStep() {
 
     tt.style.left = left + 'px';
     tt.style.top = top + 'px';
+    tt.style.position = 'fixed';
+
+    // Also fix highlight to use fixed positioning
+    hl.style.position = 'fixed';
+    hl.style.top = (rect.top - pad) + 'px';
 
     // Update content
     document.getElementById('tour-step-label').textContent = 'Step ' + (_tourStep + 1) + ' of ' + TOUR_STEPS.length;
@@ -8763,7 +8786,7 @@ function renderTourStep() {
       nextBtn.textContent = 'Next →';
       nextBtn.onclick = function() { tourStep(1); };
     }
-  }, 400);
+  }, 450);
 }
 
 // Allow clicking backdrop to skip to next step
@@ -8775,6 +8798,38 @@ document.addEventListener('click', function(e) {
     tourStep(1);
   }
 });
+
+function dismissRowMenuHint() {
+  // Hide all hint dots and mark as seen
+  document.querySelectorAll('#row-menu-hint-dot').forEach(function(d) { d.style.display = 'none'; });
+  try { localStorage.setItem('intentra_row_hint_seen', '1'); } catch(e) {}
+}
+
+function showRowMenuHintIfNeeded() {
+  try {
+    if (localStorage.getItem('intentra_row_hint_seen')) return;
+    // Show hint on first drag handle found
+    setTimeout(function() {
+      var dot = document.getElementById('row-menu-hint-dot');
+      if (dot) dot.style.display = 'block';
+    }, 800);
+  } catch(e) {}
+}
+
+function dismissMoreHint() {
+  var dot = document.getElementById('more-hint-dot');
+  if (dot) dot.style.display = 'none';
+  try { localStorage.setItem('intentra_more_hint_seen', '1'); } catch(e) {}
+}
+
+function showMoreHintIfNeeded() {
+  try {
+    if (!localStorage.getItem('intentra_more_hint_seen')) {
+      var dot = document.getElementById('more-hint-dot');
+      if (dot) dot.style.display = 'block';
+    }
+  } catch(e) {}
+}
 
 function toggleMoreExpand() {
   var expanded = document.getElementById('more-expanded');
