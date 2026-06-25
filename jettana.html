@@ -8655,7 +8655,7 @@ var TOUR_STEPS = [
           preventDefault: function() {}
         };
         showCtxMenu(fakeE, 'housing', row.dataset.id);
-        // After menu opens, shift highlight to cover it
+        // After menu opens, shift highlight to cover it and move tooltip if needed
         setTimeout(function() {
           var menu = document.getElementById('ctx-menu');
           if (menu && menu.style.display !== 'none') {
@@ -8667,6 +8667,23 @@ var TOUR_STEPS = [
               hl.style.top = (mr.top - 4) + 'px';
               hl.style.width = (mr.width + 8) + 'px';
               hl.style.height = (mr.height + 8) + 'px';
+            }
+            // Reposition tooltip to not overlap menu
+            var tt = document.getElementById('tour-tooltip');
+            if (tt) {
+              var vw = window.innerWidth;
+              var vh = window.innerHeight;
+              var ttH = tt.offsetHeight || 200;
+              var ttW = tt.offsetWidth || 300;
+              // Put tooltip above menu if it fits, otherwise below
+              if (mr.top > ttH + 20) {
+                tt.style.top = (mr.top - ttH - 12) + 'px';
+              } else {
+                tt.style.top = (mr.bottom + 12) + 'px';
+              }
+              // Center horizontally on menu
+              var newLeft = mr.left + mr.width / 2 - ttW / 2;
+              tt.style.left = Math.max(16, Math.min(vw - ttW - 16, newLeft)) + 'px';
             }
           }
         }, 400);
@@ -8904,30 +8921,56 @@ function renderTourStep() {
 
     // Tooltip
     var tt = document.getElementById('tour-tooltip');
-    var ttW = isMobile ? (vw - 32) : 300;
+    var ttW = isMobile ? Math.min(vw - 32, 300) : 300;
     tt.style.width = ttW + 'px';
     var ttH = tt.offsetHeight || 200;
     var left, top;
 
     if (isMobile) {
-      // Always pin to bottom of screen on mobile
-      left = 16;
-      top = vh - ttH - 20;
+      // Center horizontally
+      left = Math.max(16, vw / 2 - ttW / 2);
+      // Try below target first, then above, then near bottom if neither fits
+      var spaceBelow = vh - (rect.bottom + pad + 12);
+      var spaceAbove = rect.top - pad - 12;
+      if (spaceBelow >= ttH + 16) {
+        top = rect.bottom + pad + 12;
+      } else if (spaceAbove >= ttH + 16) {
+        top = rect.top - ttH - pad - 12;
+      } else {
+        // Not enough room either side — put below target but clamp
+        top = Math.min(rect.bottom + pad + 8, vh - ttH - 16);
+      }
     } else {
+      // Desktop: smart positioning that avoids sidebar (220px) and off-screen edges
+      var sidebarW = 220;
       if (step.position === 'bottom') {
         left = rect.left + rect.width / 2 - ttW / 2;
         top = rect.bottom + pad + 12;
+        // If bottom goes off-screen, flip to top
+        if (top + ttH > vh - 16) top = rect.top - ttH - pad - 12;
       } else if (step.position === 'top') {
         left = rect.left + rect.width / 2 - ttW / 2;
         top = rect.top - ttH - pad - 12;
+        // If top goes off-screen, flip to bottom
+        if (top < 16) top = rect.bottom + pad + 12;
       } else if (step.position === 'right') {
         left = rect.right + pad + 12;
         top = rect.top + rect.height / 2 - ttH / 2;
-      } else {
+        // If right goes off-screen, fall back to bottom
+        if (left + ttW > vw - 16) {
+          left = rect.left + rect.width / 2 - ttW / 2;
+          top = rect.bottom + pad + 12;
+        }
+      } else { // left
         left = rect.left - ttW - pad - 12;
         top = rect.top + rect.height / 2 - ttH / 2;
+        // If left goes into sidebar, fall back to bottom
+        if (left < sidebarW + 16) {
+          left = rect.left + rect.width / 2 - ttW / 2;
+          top = rect.bottom + pad + 12;
+        }
       }
-      left = Math.max(16, Math.min(vw - ttW - 16, left));
+      left = Math.max(sidebarW + 16, Math.min(vw - ttW - 16, left));
       top = Math.max(16, Math.min(vh - ttH - 16, top));
     }
 
@@ -9248,13 +9291,6 @@ function _runLoadDemo() {
   ];
   transportRows.forEach(function(d) { addRow('transport', d, false); });
 
-  // Debt — Discover linked
-  var debtRows = [
-    { label: 'Discover', paidColor: DISCOVER_COLOR, numColor: DISCOVER_COLOR, _cardLink: DISCOVER_COLOR },
-    { label: 'BMO CC',   paidColor: BMO_COLOR,      numColor: BMO_COLOR,      _cardLink: BMO_COLOR },
-  ];
-  debtRows.forEach(function(d) { addRow('debt', d, false); });
-
   // Food
   var foodRows = [
     { label: "Trader Joe's",       budget: 200, actual: 178, numColor: DISCOVER_COLOR },
@@ -9269,6 +9305,13 @@ function _runLoadDemo() {
     { label: 'Spotify',            budget: 11, actual: 11, numColor: BMO_COLOR      },
   ];
   subRows.forEach(function(d) { addRow('subscriptions', d, false); });
+
+  // Debt — added LAST so autoCalcDebtFromCards has all expense rows available
+  var debtRows = [
+    { label: 'Discover', paidColor: DISCOVER_COLOR, numColor: DISCOVER_COLOR, _cardLink: DISCOVER_COLOR },
+    { label: 'BMO CC',   paidColor: BMO_COLOR,      numColor: BMO_COLOR,      _cardLink: BMO_COLOR },
+  ];
+  debtRows.forEach(function(d) { addRow('debt', d, false); });
 
   recalc();
   showToast('Demo month loaded! Explore the color-coded rows and linked Debt section.', false);
