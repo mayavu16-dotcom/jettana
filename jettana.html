@@ -5987,6 +5987,16 @@ function applyPaidEffect(section, id, isPaid) {
   recalcCheckingBalances();
   recalc();
 
+function formatDateLabel(dateStr) {
+  if (!dateStr) return '';
+  var parts = dateStr.split('-');
+  if (parts.length !== 3) return dateStr;
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var m = parseInt(parts[1], 10) - 1;
+  var d = parseInt(parts[2], 10);
+  return months[m] + ' ' + d;
+}
+
 function recalcCheckingBalances() {
   // Fully recalculate ending balance for all checking accounts from scratch
   // Called after any paid toggle, color change, date change, or beginDate change
