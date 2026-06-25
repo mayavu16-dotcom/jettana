@@ -6730,7 +6730,7 @@ function renderSavingsTemplateFields(section, id, template, row) {
   }
 }
 
-function renderAllEntries(section, id, template, entries) {
+function renderAllEntries(section, id, template, entries, skipTotal) {
   var container = document.getElementById('st-fields-' + id);
   if (!container) return;
   container.innerHTML = '';
@@ -6751,7 +6751,7 @@ function renderAllEntries(section, id, template, entries) {
   });
 
   // Total across all entries
-  updateEntryTotal(section, id, template);
+  if (!skipTotal) updateEntryTotal(section, id, template);
 }
 
 function renderEntryFields(section, id, template, entry, idx) {
@@ -6996,7 +6996,12 @@ function addTypedEntry(section, id, type) {
   if (!row._entries) row._entries = [];
   row._entries.push({ _type: type });
   saveAll(all);
-  renderAllEntries(section, id, row._template || type, row._entries);
+  // Re-render without recalculating totals — new entry is empty
+  var container = document.getElementById('st-fields-' + id);
+  if (!container) return;
+  var rowTemplate = row._template || type;
+  // Rebuild entries display
+  renderAllEntries(section, id, rowTemplate, row._entries, true);
 }
 
 function addEntry(section, id, template) {
@@ -7157,20 +7162,25 @@ function updateEntryTotal(section, id, template) {
     }
   } else {
     totalEl.textContent = '';
-    var cfg0 = CONFIGS[section];
-    if (cfg0) {
-      var all0 = loadAll();
-      var rows0 = (all0[currentMonthKey] && all0[currentMonthKey][section]) || [];
-      var row0 = rows0.find(function(r) { return r.id === id; });
-      var hadEntries = row0 && row0._entries && row0._entries.some(function(e) {
-        return Object.values(e).some(function(v) { return v && v !== '' && v !== '0'; });
+    // Only clear the column if ALL entries are truly empty (no data entered at all)
+    var allEntriesEmpty = storedEntries.every(function(e) {
+      return Object.keys(e).filter(function(k) { return k !== '_type'; }).every(function(k) {
+        var v = e[k]; return !v || v === '' || v === '0';
       });
-      if (row0 && hadEntries) {
-        row0[cfg0.k2] = '';
-        saveAll(all0);
-        var inp2c = document.querySelector('input[data-id="' + id + '"][data-col="2"]');
-        if (inp2c) { inp2c.value = ''; inp2c.dataset.raw = ''; }
-        recalc();
+    });
+    if (allEntriesEmpty) {
+      var cfg0 = CONFIGS[section];
+      if (cfg0) {
+        var all0 = loadAll();
+        var rows0 = (all0[currentMonthKey] && all0[currentMonthKey][section]) || [];
+        var row0 = rows0.find(function(r) { return r.id === id; });
+        if (row0) {
+          row0[cfg0.k2] = '';
+          saveAll(all0);
+          var inp2c = document.querySelector('input[data-id="' + id + '"][data-col="2"]');
+          if (inp2c) { inp2c.value = ''; inp2c.dataset.raw = ''; inp2c.classList.remove('growth-positive','growth-negative'); }
+          recalc();
+        }
       }
     }
   }
