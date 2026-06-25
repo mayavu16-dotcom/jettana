@@ -6635,14 +6635,13 @@ function toggleNote(section, id) {
           templateLabels = { general: 'General', transfer: 'Transfer', contribution: 'Contribution', investment: 'Investment', interest: 'Interest', performance: 'Performance' };
         }
 
-        // Build pill selector
+        // Build pill selector — each pill adds an entry of that type
         var pillHtml = '<div class="savings-template" style="display:flex;gap:4px;padding:8px 10px 6px;flex-wrap:wrap;border-bottom:1px solid var(--mist);">';
-        templates.forEach(function(t) {
-          var active = t === savedTemplate;
-          pillHtml += '<button ontouchstart="var w=this.closest(\'.note-wrap\');if(w)w.dataset.pillTapped=\'1\';" onclick="setSavingsTemplate(\'' + section + '\',\'' + id + '\',\'' + t + '\')" ' +
+        pillHtml += '<span style="font-size:10px;color:var(--steel);align-self:center;margin-right:2px;">+ Add:</span>';
+        templates.filter(function(t) { return t !== 'general'; }).forEach(function(t) {
+          pillHtml += '<button ontouchstart="var w=this.closest(\'.note-wrap\');if(w)w.dataset.pillTapped=\'1\';" onclick="addTypedEntry(\'' + section + '\',\'' + id + '\',\'' + t + '\')" ' +
             'id="st-pill-' + id + '-' + t + '" ' +
-            'style="padding:3px 8px;border-radius:12px;border:1px solid var(--mist);font-size:10px;font-family:Outfit,sans-serif;cursor:pointer;transition:all 0.15s;' +
-            (active ? 'background:var(--sage);color:white;border-color:var(--sage);' : 'background:none;color:var(--steel);') + '">' +
+            'style="padding:3px 8px;border-radius:12px;border:1px solid var(--mist);font-size:10px;font-family:Outfit,sans-serif;cursor:pointer;transition:all 0.15s;background:none;color:var(--steel);">' +
             templateLabels[t] + '</button>';
         });
         pillHtml += '</div><div id="st-fields-' + id + '" style="padding:8px 10px 0;"></div>';
@@ -6719,20 +6718,16 @@ function renderSavingsTemplateFields(section, id, template, row) {
   if (!container) return;
   row = row || {};
 
-  if (template === 'general') {
-    container.innerHTML = '';
-    return;
-  }
-
   // Initialize entries array if not exists
   var all = loadAll();
   var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
   var rowData = rows.find(function(r) { return r.id === id; }) || {};
   var entries = rowData._entries || [];
-  if (!entries.length) entries = [{}]; // start with one empty entry
 
   container.innerHTML = '';
-  renderAllEntries(section, id, template, entries);
+  if (entries.length) {
+    renderAllEntries(section, id, template, entries);
+  }
 }
 
 function renderAllEntries(section, id, template, entries) {
@@ -6740,21 +6735,20 @@ function renderAllEntries(section, id, template, entries) {
   if (!container) return;
   container.innerHTML = '';
 
+  var TYPE_LABELS = { contribution: 'Contribution', transfer: 'Transfer', investment: 'Investment', interest: 'Interest', performance: 'Performance', payment: 'Payment', paycheck: 'Paycheck', transaction: 'Transaction', fuel: 'Fuel', manage: 'Manage' };
+
   entries.forEach(function(entry, idx) {
+    var entryType = entry._type || template; // fall back to row template for old entries
+    var typeLabel = TYPE_LABELS[entryType] || entryType;
     var entryDiv = document.createElement('div');
     entryDiv.className = 'st-entry';
     entryDiv.style.cssText = 'border:1px solid var(--mist);border-radius:8px;padding:10px;margin-bottom:8px;position:relative;';
+    // Type header label
+    entryDiv.innerHTML = '<div style="font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--sage-dark);margin-bottom:6px;">' + typeLabel + '</div>';
     entryDiv.innerHTML += '<button onclick="removeEntry(\'' + section + '\',\'' + id + '\',' + idx + ')" style="position:absolute;top:6px;right:6px;background:none;border:none;cursor:pointer;font-size:14px;color:var(--steel);line-height:1;padding:2px 4px;border-radius:4px;" title="Remove entry" onmousedown="event.stopPropagation()">×</button>';
-    entryDiv.innerHTML += renderEntryFields(section, id, template, entry, idx);
+    entryDiv.innerHTML += renderEntryFields(section, id, entryType, entry, idx);
     container.appendChild(entryDiv);
   });
-
-  // Add entry button
-  var addBtn = document.createElement('button');
-  addBtn.textContent = '+ Add entry';
-  addBtn.style.cssText = 'width:100%;padding:6px;background:none;border:1px dashed var(--mist);border-radius:8px;font-size:12px;font-family:Outfit,sans-serif;color:var(--steel);cursor:pointer;margin-bottom:8px;';
-  addBtn.onclick = function(e) { e.stopPropagation(); addEntry(section, id, template); };
-  container.appendChild(addBtn);
 
   // Total across all entries
   updateEntryTotal(section, id, template);
@@ -6994,6 +6988,17 @@ function saveEntry(section, id, idx) {
   scheduleSave();
 }
 
+function addTypedEntry(section, id, type) {
+  var all = loadAll();
+  var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
+  var row = rows.find(function(r) { return r.id === id; });
+  if (!row) return;
+  if (!row._entries) row._entries = [];
+  row._entries.push({ _type: type });
+  saveAll(all);
+  renderAllEntries(section, id, row._template || type, row._entries);
+}
+
 function addEntry(section, id, template) {
   var all = loadAll();
   var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
@@ -7038,13 +7043,18 @@ function removeEntry(section, id, idx) {
 }
 
 function updateEntryTotal(section, id, template) {
-  if (template === 'general') return;
   var container = document.getElementById('st-fields-' + id);
   if (!container) return;
   var entryDivs = container.querySelectorAll('.st-entry');
   if (!entryDivs.length) return;
 
+  // Load entries to get per-entry types
+  var allData = loadAll();
+  var rowData = ((allData[currentMonthKey] && allData[currentMonthKey][section]) || []).find(function(r) { return r.id === id; }) || {};
+  var storedEntries = rowData._entries || [];
+
   var grandTotal = 0;
+  var hasPerfEntry = false;
   var idx = 0;
   entryDivs.forEach(function(entryDiv) {
     var vals = {};
@@ -7053,47 +7063,43 @@ function updateEntryTotal(section, id, template) {
       if (key) vals[key] = inp.value;
     });
 
+    // Use per-entry type if available, fall back to row template
+    var entryType = (storedEntries[idx] && storedEntries[idx]._type) || template;
+
     var entryTotal = 0;
-    if (template === 'payment') {
+    if (entryType === 'payment') {
       var paid = parseAmt(vals.amt);
       var interest = parseAmt(vals.interest);
-      entryTotal = paid - interest; // net payment toward principal
-    } else if (template === 'paycheck') {
+      entryTotal = paid - interest;
+    } else if (entryType === 'paycheck') {
       var gross = parseAmt(vals.gross);
       if (!gross && vals.hours && vals.rate) gross = parseAmt(vals.hours) * parseAmt(vals.rate);
-      if (gross > 0) {
-        entryTotal = gross - parseAmt(vals.taxes) - parseAmt(vals.deductions);
-      }
-    } else if (template === 'transfer') {
+      if (gross > 0) entryTotal = gross - parseAmt(vals.taxes) - parseAmt(vals.deductions);
+    } else if (entryType === 'transfer') {
       var amt = parseAmt(vals.amt);
       entryTotal = vals.dir === 'withdrawal' ? -amt : amt;
-    } else if (template === 'contribution') {
+    } else if (entryType === 'contribution') {
       var myc = parseAmt(vals.myc);
       var emp = parseAmt(vals.emp);
       entryTotal = myc + emp;
-      // Show per-entry total
       var entryTotalEl = document.getElementById('contrib-entry-total-' + id + '-' + idx);
       if (entryTotalEl && entryTotal > 0) {
         entryTotalEl.style.cssText = 'font-size:11px;color:var(--sage);font-weight:600;align-self:flex-end;padding-bottom:4px;';
         entryTotalEl.textContent = '= $' + entryTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      } else if (entryTotalEl) {
-        entryTotalEl.textContent = '';
-      }
-    } else if (template === 'investment') {
+      } else if (entryTotalEl) { entryTotalEl.textContent = ''; }
+    } else if (entryType === 'investment') {
       entryTotal = parseAmt(vals.shares) * parseAmt(vals.price);
-    } else if (template === 'transaction') {
+    } else if (entryType === 'transaction') {
       var txAmt = parseAmt(vals.txamt);
       entryTotal = vals.txtype === 'withdrawal' ? -txAmt : txAmt;
-    } else if (template === 'fuel') {
+    } else if (entryType === 'fuel') {
       var fp = parseAmt(vals.fuelprice);
       var fg = parseFloat(String(vals.fuelgal || '').replace(/[,]/g, '')) || 0;
       entryTotal = (fp && fg) ? fp * fg : 0;
-    } else if (template === 'subscription') {
-      // No numeric total — handled separately below
-      entryTotal = 0;
-    } else if (template === 'performance') {
-      entryTotal = parseAmt(vals.perfvalue); // account value → Actual column
-    } else if (template === 'interest') {
+    } else if (entryType === 'performance') {
+      entryTotal = parseAmt(vals.perfvalue);
+      hasPerfEntry = true;
+    } else if (entryType === 'interest') {
       entryTotal = parseAmt(vals.interest);
     }
     grandTotal += entryTotal;
@@ -7113,105 +7119,44 @@ function updateEntryTotal(section, id, template) {
     if (addBtn) container.insertBefore(totalEl, addBtn);
     else container.appendChild(totalEl);
   }
-  // Subscription template: show status summary regardless of grandTotal
-  if (template === 'subscription') {
-    var subVals = {};
-    entryDivs.forEach(function(ed) {
-      ed.querySelectorAll('input[data-key],select[data-key]').forEach(function(i) { subVals[i.dataset.key] = i.value; });
-    });
-    var subStatus = subVals.substatus || 'active';
-    var subRenewal = subVals.subrenewal || '';
-    var subCancelBy = subVals.subcancelby || '';
-    var subStatusColors = { active: '#27AE60', cancel: '#C0392B', renew: '#E67E22' };
-    var subStatusLabels = { active: '✓ Active', cancel: '✕ Cancel by', renew: '↻ Renew by' };
-    var dateLabel = subStatus === 'cancel' ? subCancelBy : subRenewal;
-    var formattedDate = dateLabel ? new Date(dateLabel + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
-    totalEl.style.color = subStatusColors[subStatus] || 'var(--steel)';
-    totalEl.textContent = subStatusLabels[subStatus] + (formattedDate ? ' ' + formattedDate : '');
-    recalc();
-    return;
-  }
 
-  if (grandTotal !== 0) {
-    var abs = Math.abs(grandTotal);
-    if (template === 'transaction') {
-      // grandTotal = net of deposits - withdrawals; ending = beginning + net
-      var txAll = loadAll();
-      var txRows = (txAll[currentMonthKey] && txAll[currentMonthKey][section]) || [];
-      var txRowData = txRows.find(function(r) { return r.id === id; }) || {};
-      var txBeginning = parseAmt(txRowData['beginning']) || 0;
-      var txEnding = txBeginning + grandTotal;
-      if (txRowData) { txRowData['ending'] = txEnding; saveAll(txAll); }
-      // Update ending input (col 2)
-      var txInp = document.querySelector('input[data-id="' + id + '"][data-col="2"]');
-      if (txInp) { txInp.value = '$' + Math.abs(txEnding).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); txInp.dataset.raw = String(txEnding); }
-      // Show net summary
-      var txSign = grandTotal >= 0 ? '+' : '-';
-      totalEl.style.color = grandTotal >= 0 ? '#27AE60' : '#C0392B';
-      totalEl.textContent = 'Net: ' + txSign + '$' + abs.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + (txBeginning ? '  →  Ending: $' + Math.abs(txEnding).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '');
-      recalc();
+  var abs = Math.abs(grandTotal);
+
+  if (grandTotal !== 0 || hasPerfEntry) {
+    if (hasPerfEntry) {
+      // Performance entry — update Actual column with account value
+      totalEl.style.color = grandTotal >= 0 ? 'var(--sage)' : 'var(--blush)';
+      totalEl.textContent = 'Value: $' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      applyToColumn(section, id, grandTotal, 'Auto-calculated from entries');
     } else if (template === 'payment') {
-      // grandTotal = total net payments (paid - interest). Show it and compute remaining balance.
       totalEl.style.color = 'var(--sage)';
       totalEl.textContent = 'Paid: $' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      // Remaining = current balance - net payments
       var dbtAll = loadAll();
       var dbtRows = (dbtAll[currentMonthKey] && dbtAll[currentMonthKey][section]) || [];
       var dbtRowData = dbtRows.find(function(r) { return r.id === id; }) || {};
       var dbtCurrent = parseAmt(dbtRowData['current']) || 0;
       var dbtRemaining = Math.max(0, dbtCurrent - grandTotal);
       applyToColumn(section, id, dbtRemaining, 'Remaining balance after payments');
-    } else if (template === 'performance') {
-      var perfEntryVals = {};
-      entryDivs.forEach(function(ed) {
-        ed.querySelectorAll('input[data-key]').forEach(function(i) { perfEntryVals[i.dataset.key] = i.value; });
-      });
-      var perfV = parseAmt(perfEntryVals.perfvalue);
-      var perfB = parseAmt(perfEntryVals.perfbasis);
-      var perfGainLoss = (perfV && perfB) ? (perfV - perfB) : 0;
-      var perfPctVal   = (perfV && perfB && perfB !== 0) ? ((perfV - perfB) / perfB * 100) : 0;
-      // Save to row — user explicitly chose this template so always write
-      var perfAll = loadAll();
-      var perfRows = (perfAll[currentMonthKey] && perfAll[currentMonthKey][section]) || [];
-      var perfRow = perfRows.find(function(r) { return r.id === id; });
-      if (perfRow && perfRow._template === 'performance') {
-        perfRow.actual = perfV || '';
-        perfRow.gains  = perfGainLoss || '';
-        saveAll(perfAll);
-        // Update Actual input (col 1)
-        var inp1 = document.querySelector('input[data-id="' + id + '"][data-col="1"]');
-        if (inp1) { inp1.value = perfV ? '$' + perfV.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : ''; inp1.dataset.raw = String(perfV || ''); }
-        // Update Growth input (col 2)
-        var inp2 = document.querySelector('input[data-id="' + id + '"][data-col="2"]');
-        if (inp2) {
-          inp2.dataset.raw = String(perfGainLoss || '');
-          if (perfGainLoss !== 0) {
-            var gSign = perfGainLoss > 0 ? '+' : '-';
-            inp2.value = gSign + '$' + Math.abs(perfGainLoss).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-            inp2.classList.remove('growth-positive','growth-negative');
-            inp2.classList.add(perfGainLoss > 0 ? 'growth-positive' : 'growth-negative');
-          } else {
-            inp2.value = ''; inp2.classList.remove('growth-positive','growth-negative');
-          }
-        }
-      }
-      // Show summary line
-      var pctStr = perfPctVal !== 0 ? '  (' + (perfPctVal >= 0 ? '+' : '') + perfPctVal.toFixed(2) + '% cumulative)' : '';
-      totalEl.style.color = perfGainLoss >= 0 ? 'var(--sage)' : 'var(--blush)';
-      totalEl.textContent = perfGainLoss !== 0
-        ? 'Gain/loss: ' + (perfGainLoss > 0 ? '+$' : '-$') + Math.abs(perfGainLoss).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + pctStr
-        : perfV ? 'Value: $' + perfV.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '';
+    } else if (template === 'transaction') {
+      var txSign = grandTotal >= 0 ? '+' : '-';
+      var txBeginning = 0;
+      var txEnding = 0;
+      var txAll2 = loadAll();
+      var txRows2 = (txAll2[currentMonthKey] && txAll2[currentMonthKey][section]) || [];
+      var txRowData2 = txRows2.find(function(r) { return r.id === id; }) || {};
+      txBeginning = parseAmt(txRowData2['beginning']) || 0;
+      txEnding = txBeginning + grandTotal;
+      totalEl.style.color = grandTotal >= 0 ? '#27AE60' : '#C0392B';
+      totalEl.textContent = 'Net: ' + txSign + '$' + abs.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + (txBeginning ? '  →  Ending: $' + Math.abs(txEnding).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '');
       recalc();
     } else {
-      var sign = grandTotal >= 0 ? '+' : '\u2212';
+      var sign = grandTotal >= 0 ? '+' : '−';
       totalEl.style.color = grandTotal >= 0 ? 'var(--sage)' : 'var(--blush)';
       totalEl.textContent = 'Total: ' + sign + '$' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       applyToColumn(section, id, grandTotal, 'Auto-calculated from entries');
     }
   } else {
     totalEl.textContent = '';
-    // Only clear the column if the user had previously filled template entries and then removed them
-    // Never clear a manual value just because the template was opened with no data entered
     var cfg0 = CONFIGS[section];
     if (cfg0) {
       var all0 = loadAll();
@@ -7222,21 +7167,12 @@ function updateEntryTotal(section, id, template) {
       });
       if (row0 && hadEntries) {
         row0[cfg0.k2] = '';
-        if (template === 'performance') row0[cfg0.k1] = '';
         saveAll(all0);
-        var input0 = document.querySelector('input[data-id="' + id + '"][data-col="2"]');
-        if (!input0) {
-          var rowEl0 = document.querySelector('#rows-' + section + ' .erow[data-id="' + id + '"]');
-          if (rowEl0) input0 = rowEl0.querySelector('input[data-col="2"]');
-        }
-        if (input0) { input0.value = ''; input0.dataset.raw = ''; input0.classList.remove('growth-positive','growth-negative'); }
-        if (template === 'performance') {
-          var input0k1 = document.querySelector('input[data-id="' + id + '"][data-col="1"]');
-          if (input0k1) { input0k1.value = ''; input0k1.dataset.raw = ''; }
-        }
+        var inp2c = document.querySelector('input[data-id="' + id + '"][data-col="2"]');
+        if (inp2c) { inp2c.value = ''; inp2c.dataset.raw = ''; }
+        recalc();
       }
     }
-    recalc();
   }
 }
 
