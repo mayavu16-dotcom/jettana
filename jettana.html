@@ -1727,7 +1727,15 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
   vertical-align: middle;
   opacity: 0.8;
 }
-.erow.has-recurring .recurring-dot { display: inline-block; }
+.add-row-btn.nudge {
+  border-color: var(--sage) !important;
+  color: var(--sage-dark) !important;
+  animation: nudge-pulse 2s ease-in-out infinite;
+}
+@keyframes nudge-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(107,158,112,0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(107,158,112,0); }
+}
 
 /* Exempt row */
 .erow.exempt-row .erow-num-input[data-col="2"] { opacity: 0.45; }
@@ -3099,6 +3107,9 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
             <button class="more-menu-item" onclick="loadDemo(); hideMoreMenu()">
               <span>▶</span> Try demo
             </button>
+            <button class="more-menu-item" id="restart-tour-btn" onclick="startTour(); hideMoreMenu()" style="display:none;">
+              <span>🗺</span> Restart tour
+            </button>
 
             <!-- More (power features) -->
             <div class="more-divider"></div>
@@ -3149,7 +3160,10 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
             <div style="font-size:12px;color:#A07800;line-height:1.4;">Sample data only — nothing here affects your real budget. Explore freely, then switch to a real month in the sidebar.</div>
           </div>
         </div>
-        <button onclick="confirmDeleteDemo()" style="flex-shrink:0;font-size:12px;font-weight:600;color:#A07800;background:rgba(240,192,96,0.2);border:1px solid #F0C060;border-radius:6px;padding:5px 10px;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;">Remove demo</button>
+        <div style="display:flex;gap:8px;flex-shrink:0;">
+          <button onclick="startTour()" style="font-size:12px;font-weight:600;color:white;background:#A07800;border:none;border-radius:6px;padding:5px 10px;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;">🗺 Take the tour</button>
+          <button onclick="confirmDeleteDemo()" style="font-size:12px;font-weight:600;color:#A07800;background:rgba(240,192,96,0.2);border:1px solid #F0C060;border-radius:6px;padding:5px 10px;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;">Remove demo</button>
+        </div>
       </div>
       <div class="intention-wrap">
         <button class="intention-trigger" id="intention-trigger" onclick="toggleIntention()">
@@ -3235,10 +3249,10 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <div class="col-lbl-row"><span>Source</span><span>Planned</span><span>Received</span></div>
           <div class="bulk-bar" id="bulk-bar-income"><span class="bulk-bar-count" id="bulk-count-income">0 selected</span><button class="bulk-bar-btn" onclick="selectAllBulk('income')">Select all</button><button class="bulk-bar-btn danger" onclick="deleteSelectedBulk('income')">Delete selected</button><button class="bulk-bar-btn" onclick="cancelBulk('income')">Cancel</button></div><div class="entry-list" id="rows-income"></div>
           <div id="income-empty-state" style="display:none;padding:14px 16px;margin:4px 0;background:var(--sage-light);border-radius:8px;border-left:3px solid var(--sage);">
-            <div style="font-size:13px;font-weight:600;color:var(--sage-dark);margin-bottom:3px;">👆 Start here</div>
+            <div style="font-size:13px;font-weight:600;color:var(--sage-dark);margin-bottom:3px;">👇 Start here</div>
             <div style="font-size:12px;color:var(--sage-dark);opacity:0.85;line-height:1.5;">Add your take-home pay or any income source. This is your baseline for the month.</div>
           </div>
-          <button class="add-row-btn" onclick="addRow('income')"><span class="plus">+</span> Add income source</button>
+          <button class="add-row-btn" id="add-income-btn" onclick="addRow('income')"><span class="plus">+</span> Add income source</button>
           <div class="sec-footer sec-footer-income">
             <span>Total Income</span>
             <input type="text" id="ft-income-0" class="footer-budget-input" placeholder="auto" data-section="income" value="" onfocus="footerBudgetFocus(this)" onblur="footerBudgetBlur(this)" oninput="footerBudgetInput(this)" title="Click to set a budget override. Leave blank to auto-calculate.">
@@ -3624,7 +3638,29 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
   </div>
 </div>
 
-<!-- Setup Checklist Modal -->
+<!-- Tour Overlay -->
+<div id="tour-overlay" style="display:none;position:fixed;inset:0;z-index:9000;pointer-events:none;">
+  <!-- Dimmed backdrop with cutout handled via JS -->
+  <div id="tour-backdrop" style="position:absolute;inset:0;background:rgba(0,0,0,0.55);"></div>
+  <!-- Highlight ring -->
+  <div id="tour-highlight" style="position:absolute;border-radius:10px;box-shadow:0 0 0 4px #F0C060,0 0 0 9999px rgba(0,0,0,0.55);transition:all 0.35s ease;z-index:9001;pointer-events:none;"></div>
+  <!-- Tooltip bubble -->
+  <div id="tour-tooltip" style="position:absolute;background:white;border-radius:14px;padding:20px;width:300px;box-shadow:0 8px 40px rgba(0,0,0,0.25);z-index:9002;pointer-events:all;font-family:Outfit,sans-serif;transition:all 0.35s ease;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+      <div id="tour-step-label" style="font-size:10px;font-weight:700;letter-spacing:1px;color:#A07800;text-transform:uppercase;"></div>
+      <button onclick="endTour()" style="background:none;border:none;cursor:pointer;color:#6B7C8F;font-size:16px;line-height:1;padding:0 0 0 8px;" title="Skip tour">✕</button>
+    </div>
+    <div id="tour-title" style="font-size:16px;font-weight:700;color:#1A2332;margin-bottom:6px;"></div>
+    <div id="tour-desc" style="font-size:13px;color:#3D4F63;line-height:1.6;margin-bottom:16px;"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <button id="tour-prev" onclick="tourStep(-1)" style="font-size:12px;color:#6B7C8F;background:none;border:1px solid #E8EDF2;border-radius:8px;padding:6px 12px;cursor:pointer;font-family:Outfit,sans-serif;">← Back</button>
+      <div id="tour-dots" style="display:flex;gap:5px;"></div>
+      <button id="tour-next" onclick="tourStep(1)" style="font-size:13px;font-weight:600;color:white;background:#6B9E70;border:none;border-radius:8px;padding:7px 16px;cursor:pointer;font-family:Outfit,sans-serif;">Next →</button>
+    </div>
+  </div>
+</div>
+
+
 <div class="shortcuts-overlay" id="checklist-overlay" style="display:none;" onclick="hideChecklist()">
   <div class="shortcuts-modal" onclick="event.stopPropagation()" style="max-width:480px;">
     <div class="shortcuts-title">
@@ -5626,9 +5662,12 @@ function recalc() {
 
   const incP = sum(d.income,    'planned');
   const incA = sum(d.income,    'received');
-  // Show/hide income empty state
+  // Show/hide income empty state + nudge button
   var incEmptyState = document.getElementById('income-empty-state');
-  if (incEmptyState) incEmptyState.style.display = (!d.income || d.income.length === 0) ? 'block' : 'none';
+  var addIncomeBtn = document.getElementById('add-income-btn');
+  var incIsEmpty = !d.income || d.income.length === 0;
+  if (incEmptyState) incEmptyState.style.display = incIsEmpty ? 'block' : 'none';
+  if (addIncomeBtn) addIncomeBtn.classList.toggle('nudge', incIsEmpty);
   const savA = sum(d.savings,   'actual');
   const savG = sum(d.savings,   'gains');
   const houB = sum(d.housing,   'budget');  const houA = sum(d.housing,   'actual');
@@ -8560,6 +8599,183 @@ function toggleMoreMenu(e) {
   // Close other menus
   hideExportMenu();
 }
+// ── Guided Tour ───────────────────────────────────────────────
+var _tourStep = 0;
+var _tourActive = false;
+
+var TOUR_STEPS = [
+  {
+    target: '.summary-cards',
+    title: 'Your financial snapshot',
+    desc: 'These four cards update live — Income, Expenses, Net Balance and Total Saved. At a glance you always know where you stand.',
+    position: 'bottom'
+  },
+  {
+    target: '#rows-income',
+    title: 'Start with your income',
+    desc: 'Add your salary, side income, or any money coming in. This is the baseline everything else is measured against.',
+    position: 'bottom'
+  },
+  {
+    target: '[data-section="housing"] .erow:first-child',
+    title: 'Click any row to color-code it',
+    desc: 'Try clicking the Rent row. A color toolbar pops up — set the number color to match your credit card. That\'s how Jettana knows which card paid for what.',
+    position: 'right'
+  },
+  {
+    target: '[data-section="housing"] .erow:first-child .paid-checkbox',
+    title: 'Mark expenses as paid',
+    desc: 'Click the circle on any row to strike it through when you\'ve paid it. If it\'s linked to a card, the debt balance updates automatically.',
+    position: 'right'
+  },
+  {
+    target: '.sec-card[data-section-id="debt"]',
+    title: 'Debt auto-calculates from card colors',
+    desc: 'Discover is linked to orange — all orange expenses sum up as the Current balance. Strike them as paid and Remaining decreases. Open Discover\'s note to see the 🔗 card link.',
+    position: 'left'
+  },
+  {
+    target: '.sec-card[data-section-id="checking"]',
+    title: 'Checking accounts track your cash',
+    desc: 'Set a Beginning balance. When you strike an expense using the matching strike color, the Ending balance decreases automatically.',
+    position: 'left'
+  },
+  {
+    target: '.sec-card[data-section-id="savings"]',
+    title: 'Track savings & investments',
+    desc: 'Open any savings row\'s note to log Contributions, Transfers, Interest, Performance and more — mix entry types on the same account.',
+    position: 'left'
+  },
+  {
+    target: '.mom-card',
+    title: 'Compare any two months',
+    desc: 'Scroll down to see Month-over-Month. Use the dropdown to compare against any previous month — great for spotting spending trends.',
+    position: 'top'
+  },
+  {
+    target: '#more-btn',
+    title: 'Explore more when you\'re ready',
+    desc: 'Tap ⋯ to find Templates, My Cards legend, Import, Appearance and more. You now know the core — everything else builds on top of this.',
+    position: 'bottom',
+    last: true
+  }
+];
+
+function startTour() {
+  if (currentMonthKey !== 'demo-month') {
+    showToast('The tour is only available in the demo month', false);
+    return;
+  }
+  _tourStep = 0;
+  _tourActive = true;
+  document.getElementById('tour-overlay').style.display = 'block';
+  document.getElementById('tour-overlay').style.pointerEvents = 'all';
+  // Show restart tour button in menu
+  var restartBtn = document.getElementById('restart-tour-btn');
+  if (restartBtn) restartBtn.style.display = 'flex';
+  renderTourStep();
+}
+
+function endTour() {
+  _tourActive = false;
+  document.getElementById('tour-overlay').style.display = 'none';
+  document.getElementById('tour-overlay').style.pointerEvents = 'none';
+  showToast('Tour ended — explore freely! Restart anytime from ⋯', false);
+}
+
+function tourStep(dir) {
+  _tourStep = Math.max(0, Math.min(TOUR_STEPS.length - 1, _tourStep + dir));
+  renderTourStep();
+}
+
+function renderTourStep() {
+  var step = TOUR_STEPS[_tourStep];
+  if (!step) return;
+
+  // Find target element
+  var target = document.querySelector(step.target);
+  if (!target) {
+    // Skip to next if target not found
+    if (_tourStep < TOUR_STEPS.length - 1) { _tourStep++; renderTourStep(); }
+    else endTour();
+    return;
+  }
+
+  // Scroll target into view
+  target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  setTimeout(function() {
+    var rect = target.getBoundingClientRect();
+    var pad = 8;
+
+    // Position highlight
+    var hl = document.getElementById('tour-highlight');
+    hl.style.left = (rect.left - pad) + 'px';
+    hl.style.top = (rect.top - pad) + 'px';
+    hl.style.width = (rect.width + pad * 2) + 'px';
+    hl.style.height = (rect.height + pad * 2) + 'px';
+
+    // Position tooltip
+    var tt = document.getElementById('tour-tooltip');
+    var ttW = 300, ttH = 200;
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var left, top;
+
+    if (step.position === 'bottom') {
+      left = rect.left + rect.width / 2 - ttW / 2;
+      top = rect.bottom + pad + 12;
+    } else if (step.position === 'top') {
+      left = rect.left + rect.width / 2 - ttW / 2;
+      top = rect.top - ttH - pad - 12;
+    } else if (step.position === 'right') {
+      left = rect.right + pad + 12;
+      top = rect.top + rect.height / 2 - ttH / 2;
+    } else { // left
+      left = rect.left - ttW - pad - 12;
+      top = rect.top + rect.height / 2 - ttH / 2;
+    }
+
+    // Clamp to viewport
+    left = Math.max(12, Math.min(vw - ttW - 12, left));
+    top = Math.max(12, Math.min(vh - ttH - 12, top));
+
+    tt.style.left = left + 'px';
+    tt.style.top = top + 'px';
+
+    // Update content
+    document.getElementById('tour-step-label').textContent = 'Step ' + (_tourStep + 1) + ' of ' + TOUR_STEPS.length;
+    document.getElementById('tour-title').textContent = step.title;
+    document.getElementById('tour-desc').textContent = step.desc;
+
+    // Dots
+    var dotsEl = document.getElementById('tour-dots');
+    dotsEl.innerHTML = TOUR_STEPS.map(function(_, i) {
+      return '<div style="width:7px;height:7px;border-radius:50%;background:' + (i === _tourStep ? '#6B9E70' : '#E8EDF2') + ';transition:background 0.2s;"></div>';
+    }).join('');
+
+    // Buttons
+    document.getElementById('tour-prev').style.visibility = _tourStep === 0 ? 'hidden' : 'visible';
+    var nextBtn = document.getElementById('tour-next');
+    if (_tourStep === TOUR_STEPS.length - 1) {
+      nextBtn.textContent = 'Done ✓';
+      nextBtn.onclick = endTour;
+    } else {
+      nextBtn.textContent = 'Next →';
+      nextBtn.onclick = function() { tourStep(1); };
+    }
+  }, 400);
+}
+
+// Allow clicking backdrop to skip to next step
+document.addEventListener('click', function(e) {
+  if (!_tourActive) return;
+  var overlay = document.getElementById('tour-overlay');
+  var tooltip = document.getElementById('tour-tooltip');
+  if (overlay && overlay.contains(e.target) && tooltip && !tooltip.contains(e.target)) {
+    tourStep(1);
+  }
+});
+
 function toggleMoreExpand() {
   var expanded = document.getElementById('more-expanded');
   var label = document.getElementById('more-expand-label');
