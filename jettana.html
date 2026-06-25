@@ -8210,6 +8210,12 @@ window.addEventListener('load', function() {
   // Close on click outside
   document.addEventListener('click', function(e) {
     var menu = document.getElementById('ctx-menu');
+    var tourTooltip = document.getElementById('tour-tooltip');
+    // Don't close ctx menu if clicking inside the tour tooltip
+    if (tourTooltip && tourTooltip.contains(e.target)) return;
+    // Don't close ctx menu if tour is active and showing it (noBackdropAdvance step)
+    var step = TOUR_STEPS[_tourStep];
+    if (_tourActive && step && step.noBackdropAdvance) return;
     if (menu && !menu.contains(e.target)) hideCtxMenu();
   });
   document.addEventListener('keydown', function(e) {
@@ -8633,9 +8639,36 @@ var TOUR_STEPS = [
     title: 'The ≡ row menu',
     desc: 'Here\'s what opens when you tap ≡ — note, duplicate, recurring, exempt, colors and more. All row options in one place.',
     position: 'right',
+    noBackdropAdvance: true,
     action: function() {
-      var handle = document.querySelector('#rows-housing .erow:first-child .drag-handle');
-      if (handle) { var e = { clientX: handle.getBoundingClientRect().left, clientY: handle.getBoundingClientRect().top, stopPropagation: function(){}, preventDefault: function(){} }; showCtxMenuBtn(e, 'housing', document.querySelector('#rows-housing .erow:first-child').dataset.id); }
+      setTimeout(function() {
+        var row = document.querySelector('#rows-housing .erow:first-child');
+        if (!row) return;
+        var handle = row.querySelector('.drag-handle');
+        if (!handle) return;
+        var rect = handle.getBoundingClientRect();
+        var fakeE = {
+          clientX: rect.right + 4,
+          clientY: rect.top + rect.height / 2,
+          stopPropagation: function() {},
+          preventDefault: function() {}
+        };
+        showCtxMenu(fakeE, 'housing', row.dataset.id);
+        // After menu opens, move highlight to cover the menu
+        setTimeout(function() {
+          var menu = document.getElementById('ctx-menu');
+          if (menu && menu.style.display !== 'none') {
+            var mr = menu.getBoundingClientRect();
+            var hl = document.getElementById('tour-highlight');
+            if (hl) {
+              hl.style.left = (mr.left - 4) + 'px';
+              hl.style.top = (mr.top - 4) + 'px';
+              hl.style.width = (mr.width + 8) + 'px';
+              hl.style.height = (mr.height + 8) + 'px';
+            }
+          }
+        }, 200);
+      }, 500);
     },
     cleanup: function() { hideCtxMenu(); }
   },
@@ -8888,9 +8921,11 @@ function renderTourStep() {
   }, 650);
 }
 
-// Allow clicking backdrop to skip to next step
+// Allow clicking backdrop to skip to next step (unless step has noBackdropAdvance)
 document.addEventListener('click', function(e) {
   if (!_tourActive) return;
+  var step = TOUR_STEPS[_tourStep];
+  if (step && step.noBackdropAdvance) return;
   var overlay = document.getElementById('tour-overlay');
   var tooltip = document.getElementById('tour-tooltip');
   if (overlay && overlay.contains(e.target) && tooltip && !tooltip.contains(e.target)) {
