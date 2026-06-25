@@ -8615,56 +8615,74 @@ var TOUR_STEPS = [
   {
     target: '.summary-cards',
     title: 'Your financial snapshot',
-    desc: 'These four cards update live — Income, Expenses, Net Balance and Total Saved. At a glance you always know where you stand.',
+    desc: 'These four cards update live — Income, Expenses, Net Balance and Total Saved. At a glance you always know where you stand for the month.',
     position: 'bottom'
   },
   {
-    target: '#rows-income',
+    target: '.sec-card[data-section-id="income"]',
     title: 'Start with your income',
-    desc: 'Add your salary, side income, or any money coming in. This is the baseline everything else is measured against.',
+    desc: 'Add your salary, side income, or any money coming in. This sets your baseline — everything else is measured against it.',
     position: 'bottom'
   },
   {
-    target: '[data-section="housing"] .erow:first-child',
-    title: 'Click any row to color-code it',
-    desc: 'Try clicking the Rent row. A color toolbar pops up — set the number color to match your credit card. That\'s how Jettana knows which card paid for what.',
+    target: '.sec-card[data-section-id="housing"]',
+    title: 'Housing & Utilities',
+    desc: 'Track your rent, mortgage, electricity, internet and other fixed home costs. Set a Budget for what you plan to spend, and fill in Actual as bills arrive.',
     position: 'right'
   },
   {
-    target: '[data-section="housing"] .erow:first-child .paid-checkbox',
+    target: '#rows-housing .erow:first-child .drag-handle',
+    title: 'The ≡ row menu',
+    desc: 'Click (or long-press on mobile) the ≡ on any row to access options — add a note, duplicate, mark as recurring, mark as exempt, move to another section, and more.',
+    position: 'right'
+  },
+  {
+    target: '.sec-card[data-section-id="transport"]',
+    title: 'Transportation, Food, Health & more',
+    desc: 'Each category has its own section — Transportation, Food & Dining, Health & Wellness, Subscriptions, Gifts and Misc. Use them to see exactly where your money goes.',
+    position: 'right'
+  },
+  {
+    target: '#rows-housing .erow:first-child',
+    title: 'Color-code by card',
+    desc: 'Click any row to open the color toolbar. Set the number color to match your credit card color — that\'s how Jettana knows which card paid for what.',
+    position: 'bottom'
+  },
+  {
+    target: '#rows-housing .erow:first-child .paid-checkbox',
     title: 'Mark expenses as paid',
-    desc: 'Click the circle on any row to strike it through when you\'ve paid it. If it\'s linked to a card, the debt balance updates automatically.',
+    desc: 'Click the circle on any row to strike it through once paid. The linked card\'s debt balance updates automatically.',
     position: 'right'
   },
   {
     target: '.sec-card[data-section-id="debt"]',
-    title: 'Debt auto-calculates from card colors',
-    desc: 'Discover is linked to orange — all orange expenses sum up as the Current balance. Strike them as paid and Remaining decreases. Open Discover\'s note to see the 🔗 card link.',
+    title: 'Debt tracks your card balances',
+    desc: 'Discover is linked to orange — all orange-numbered expenses sum as the Current balance. Strike them paid and Remaining decreases. Open the note to see the 🔗 card link.',
     position: 'left'
   },
   {
     target: '.sec-card[data-section-id="checking"]',
-    title: 'Checking accounts track your cash',
-    desc: 'Set a Beginning balance. When you strike an expense using the matching strike color, the Ending balance decreases automatically.',
+    title: 'Checking accounts',
+    desc: 'Enter a Beginning balance. When you strike an expense with the matching strike color, the Ending balance decreases automatically — no manual math needed.',
     position: 'left'
   },
   {
     target: '.sec-card[data-section-id="savings"]',
-    title: 'Track savings & investments',
-    desc: 'Open any savings row\'s note to log Contributions, Transfers, Interest, Performance and more — mix entry types on the same account.',
+    title: 'Savings & Investments',
+    desc: 'Track your HYSA, 401k, Roth IRA and more. Open any row\'s note to log Contributions, Interest, Performance or Transfers — you can mix entry types on one account.',
     position: 'left'
   },
   {
     target: '.mom-card',
-    title: 'Compare any two months',
-    desc: 'Use the dropdown to compare against any previous month — great for spotting spending trends over time.',
+    title: 'Month-over-Month comparison',
+    desc: 'Compare this month against any previous month using the dropdown. Great for spotting spending trends and seeing your progress over time.',
     position: 'top',
     scrollBlock: 'end'
   },
   {
     target: '#more-btn',
     title: 'Explore more when you\'re ready',
-    desc: 'Tap ⋯ to find Templates, My Cards legend, Import, Appearance and more. You now know the core — everything else builds on top of this.',
+    desc: 'Tap ⋯ to find Templates, My Cards legend, section renaming, Import, Appearance and more. You now know the core — everything else builds on top of this.',
     position: 'bottom',
     last: true
   }
