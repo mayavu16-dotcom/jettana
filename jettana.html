@@ -8659,47 +8659,60 @@ var TOUR_STEPS = [
   {
     target: '#rows-housing .erow:first-child',
     title: 'Mark expenses as paid',
-    desc: 'Watch — when you strike a row, it crosses out and the linked card\'s debt balance updates automatically.',
+    desc: 'Watch Rent get struck through — Discover\'s balance will update automatically when an expense linked to it is paid.',
     position: 'bottom',
     action: function() {
       var row = document.querySelector('#rows-housing .erow:first-child');
-      if (row) {
-        var id = row.dataset.id;
-        var all = loadAll();
-        var rows = (all[currentMonthKey] && all[currentMonthKey]['housing']) || [];
-        var r = rows.find(function(r) { return r.id === id; });
-        if (r && !r.paid) togglePaid('housing', id);
-      }
+      if (!row) return;
+      var id = row.dataset.id;
+      // First ensure it is NOT paid (show empty state first)
+      var all = loadAll();
+      var rows = (all[currentMonthKey] && all[currentMonthKey]['housing']) || [];
+      var r = rows.find(function(x) { return x.id === id; });
+      if (r && r.paid) togglePaid('housing', id);
+      // Then after a short delay, strike it
+      setTimeout(function() {
+        var all2 = loadAll();
+        var rows2 = (all2[currentMonthKey] && all2[currentMonthKey]['housing']) || [];
+        var r2 = rows2.find(function(x) { return x.id === id; });
+        if (r2 && !r2.paid) togglePaid('housing', id);
+      }, 900);
     },
     cleanup: function() {
-      // Un-strike when leaving this step
       var row = document.querySelector('#rows-housing .erow:first-child');
-      if (row) {
-        var id = row.dataset.id;
-        var all = loadAll();
-        var rows = (all[currentMonthKey] && all[currentMonthKey]['housing']) || [];
-        var r = rows.find(function(r) { return r.id === id; });
-        if (r && r.paid) togglePaid('housing', id);
-      }
+      if (!row) return;
+      var id = row.dataset.id;
+      var all = loadAll();
+      var rows = (all[currentMonthKey] && all[currentMonthKey]['housing']) || [];
+      var r = rows.find(function(x) { return x.id === id; });
+      if (r && r.paid) togglePaid('housing', id);
     }
   },
   {
     target: '.sec-card[data-section-id="debt"]',
     title: 'Debt tracks your card balances',
-    desc: 'Discover auto-calculates from orange expenses. Watch the note open — the 🔗 card link shows how it\'s connected.',
+    desc: 'Discover auto-calculates from orange expenses. The note is opening now — see the card link that makes it all work.',
     position: 'left',
     action: function() {
       setTimeout(function() {
-        var discoverRow = document.querySelector('#rows-debt .erow:first-child');
-        if (discoverRow) {
-          var id = discoverRow.dataset.id;
-          toggleNote('debt', id, discoverRow);
+        // Find the debt row with _cardLink set
+        var all = loadAll();
+        var debtRows = (all[currentMonthKey] && all[currentMonthKey]['debt']) || [];
+        var linked = debtRows.find(function(r) { return r._cardLink; });
+        if (linked) {
+          // Use the correct 2-arg toggleNote
+          toggleNote('debt', linked.id);
         }
-      }, 300);
+      }, 600);
     },
     cleanup: function() {
-      var noteWrap = document.querySelector('.note-wrap.open');
-      if (noteWrap) { var id = noteWrap.dataset.rowId; if (id) closeNote(id); }
+      // Close any open note panels
+      document.querySelectorAll('.note-wrap').forEach(function(n) {
+        if (n.style.display !== 'none' && n.style.display !== '') {
+          var closeBtn = n.querySelector('.note-close');
+          if (closeBtn) closeBtn.click();
+        }
+      });
     }
   },
   {
@@ -8722,11 +8735,11 @@ var TOUR_STEPS = [
     scrollBlock: 'center'
   },
   {
-    target: '.mom-card',
+    target: '#mom-card',
     title: 'Month-over-Month comparison',
     desc: 'Compare this month against any previous month using the dropdown. Great for spotting spending trends and seeing your progress over time.',
     position: 'top',
-    scrollBlock: 'end'
+    scrollBlock: 'nearest'
   },
   {
     target: '#more-btn',
@@ -8872,7 +8885,7 @@ function renderTourStep() {
     if (step.action) {
       setTimeout(function() { try { step.action(); } catch(e) {} }, 300);
     }
-  }, 450);
+  }, 650);
 }
 
 // Allow clicking backdrop to skip to next step
