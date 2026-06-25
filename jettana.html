@@ -5866,9 +5866,11 @@ function autoCalcDebtFromCards() {
 
     // Only write Remaining if no payment template entries exist
     // (payment template calculates remaining more accurately from actual payments made)
-    var hasPaymentEntries = debtRow._template === 'payment' &&
-      debtRow._entries && debtRow._entries.length > 0 &&
-      debtRow._entries.some(function(e) { return parseAmt(e.amount) > 0; });
+    var hasPaymentEntries = debtRow._entries && debtRow._entries.length > 0 &&
+      debtRow._entries.some(function(e) {
+        var type = e._type || debtRow._template;
+        return type === 'payment' && parseAmt(e.amt) > 0;
+      });
 
     if (!hasPaymentEntries) {
       debtRow['remaining'] = remaining || '';
@@ -7146,7 +7148,7 @@ function updateEntryTotal(section, id, template) {
       totalEl.style.color = grandTotal >= 0 ? 'var(--sage)' : 'var(--blush)';
       totalEl.textContent = 'Value: $' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       applyToColumn(section, id, grandTotal, 'Auto-calculated from entries');
-    } else if (template === 'payment') {
+    } else if (template === 'payment' || storedEntries.some(function(e) { return e._type === 'payment'; })) {
       totalEl.style.color = 'var(--sage)';
       totalEl.textContent = 'Paid: $' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       var dbtAll = loadAll();
@@ -7154,7 +7156,16 @@ function updateEntryTotal(section, id, template) {
       var dbtRowData = dbtRows.find(function(r) { return r.id === id; }) || {};
       var dbtCurrent = parseAmt(dbtRowData['current']) || 0;
       var dbtRemaining = Math.max(0, dbtCurrent - grandTotal);
-      applyToColumn(section, id, dbtRemaining, 'Remaining balance after payments');
+      // Write remaining directly to storage so autoCalcDebtFromCards won't overwrite it
+      dbtRowData['remaining'] = dbtRemaining || '';
+      saveAll(dbtAll);
+      // Update DOM
+      var remInp = document.querySelector('input[data-id="' + id + '"][data-col="2"]');
+      if (remInp) {
+        remInp.value = dbtRemaining ? '$' + dbtRemaining.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
+        remInp.dataset.raw = dbtRemaining ? String(dbtRemaining) : '';
+      }
+      recalc();
     } else if (template === 'transaction') {
       var txSign = grandTotal >= 0 ? '+' : '-';
       var txBeginning = 0;
