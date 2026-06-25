@@ -8641,6 +8641,7 @@ var TOUR_STEPS = [
     position: 'right',
     noBackdropAdvance: true,
     action: function() {
+      // Show the ≡ handle for 1.2s so user sees it, then open the menu
       setTimeout(function() {
         var row = document.querySelector('#rows-housing .erow:first-child');
         if (!row) return;
@@ -8654,21 +8655,22 @@ var TOUR_STEPS = [
           preventDefault: function() {}
         };
         showCtxMenu(fakeE, 'housing', row.dataset.id);
-        // After menu opens, move highlight to cover the menu
+        // After menu opens, shift highlight to cover it
         setTimeout(function() {
           var menu = document.getElementById('ctx-menu');
           if (menu && menu.style.display !== 'none') {
             var mr = menu.getBoundingClientRect();
             var hl = document.getElementById('tour-highlight');
             if (hl) {
+              hl.style.transition = 'all 0.4s ease';
               hl.style.left = (mr.left - 4) + 'px';
               hl.style.top = (mr.top - 4) + 'px';
               hl.style.width = (mr.width + 8) + 'px';
               hl.style.height = (mr.height + 8) + 'px';
             }
           }
-        }, 200);
-      }, 500);
+        }, 400);
+      }, 1200);
     },
     cleanup: function() { hideCtxMenu(); }
   },
@@ -8690,26 +8692,41 @@ var TOUR_STEPS = [
     cleanup: function() { hideColorToolbar(); }
   },
   {
-    target: '#rows-housing .erow:first-child',
+    target: '#rows-housing .erow:first-child .paid-checkbox',
     title: 'Mark expenses as paid',
-    desc: 'Watch Rent get struck through — Discover\'s balance will update automatically when an expense linked to it is paid.',
-    position: 'bottom',
+    desc: 'See the circle? Tap it to mark any expense as paid — it strikes through and the linked card balance updates automatically.',
+    position: 'right',
     action: function() {
       var row = document.querySelector('#rows-housing .erow:first-child');
       if (!row) return;
       var id = row.dataset.id;
-      // First ensure it is NOT paid (show empty state first)
+      // Ensure row starts unpaid so user sees the circle clearly first
       var all = loadAll();
       var rows = (all[currentMonthKey] && all[currentMonthKey]['housing']) || [];
       var r = rows.find(function(x) { return x.id === id; });
       if (r && r.paid) togglePaid('housing', id);
-      // Then after a short delay, strike it
+      // After 1.5s, strike it so they see the transition
       setTimeout(function() {
         var all2 = loadAll();
         var rows2 = (all2[currentMonthKey] && all2[currentMonthKey]['housing']) || [];
         var r2 = rows2.find(function(x) { return x.id === id; });
-        if (r2 && !r2.paid) togglePaid('housing', id);
-      }, 900);
+        if (r2 && !r2.paid) {
+          // Shift highlight to the full row so they see it crossed out
+          var erow = document.querySelector('#rows-housing .erow:first-child');
+          if (erow) {
+            var rr = erow.getBoundingClientRect();
+            var hl = document.getElementById('tour-highlight');
+            if (hl) {
+              hl.style.transition = 'all 0.3s ease';
+              hl.style.left = (rr.left - 8) + 'px';
+              hl.style.top = (rr.top - 8) + 'px';
+              hl.style.width = (rr.width + 16) + 'px';
+              hl.style.height = (rr.height + 16) + 'px';
+            }
+          }
+          togglePaid('housing', id);
+        }
+      }, 1500);
     },
     cleanup: function() {
       var row = document.querySelector('#rows-housing .erow:first-child');
@@ -8724,28 +8741,30 @@ var TOUR_STEPS = [
   {
     target: '.sec-card[data-section-id="debt"]',
     title: 'Debt tracks your card balances',
-    desc: 'Discover auto-calculates from orange expenses. The note is opening now — see the card link that makes it all work.',
+    desc: 'Discover auto-calculates from orange expenses. Watch the note open to see the card link in action.',
     position: 'left',
     action: function() {
       setTimeout(function() {
-        // Find the debt row with _cardLink set
         var all = loadAll();
         var debtRows = (all[currentMonthKey] && all[currentMonthKey]['debt']) || [];
         var linked = debtRows.find(function(r) { return r._cardLink; });
         if (linked) {
-          // Use the correct 2-arg toggleNote
-          toggleNote('debt', linked.id);
+          // Make sure the note isn't already open
+          var existingNote = document.getElementById('note-wrap-' + linked.id);
+          if (existingNote && existingNote.style.display !== 'none') {
+            closeNote(linked.id);
+            setTimeout(function() { toggleNote('debt', linked.id); }, 300);
+          } else {
+            toggleNote('debt', linked.id);
+          }
         }
-      }, 600);
+      }, 700);
     },
     cleanup: function() {
-      // Close any open note panels
-      document.querySelectorAll('.note-wrap').forEach(function(n) {
-        if (n.style.display !== 'none' && n.style.display !== '') {
-          var closeBtn = n.querySelector('.note-close');
-          if (closeBtn) closeBtn.click();
-        }
-      });
+      var all = loadAll();
+      var debtRows = (all[currentMonthKey] && all[currentMonthKey]['debt']) || [];
+      var linked = debtRows.find(function(r) { return r._cardLink; });
+      if (linked) closeNote(linked.id);
     }
   },
   {
@@ -9221,7 +9240,7 @@ function _runLoadDemo() {
   // Debt — Discover linked
   var debtRows = [
     { label: 'Discover',  current: 1747, remaining: 1747, paidColor: DISCOVER_COLOR, numColor: DISCOVER_COLOR, _cardLink: DISCOVER_COLOR },
-    { label: 'BMO CC',    current: 174,  remaining: 174,  paidColor: BMO_COLOR,      numColor: BMO_COLOR },
+    { label: 'BMO CC',    current: 174,  remaining: 174,  paidColor: BMO_COLOR,      numColor: BMO_COLOR,      _cardLink: BMO_COLOR },
   ];
   debtRows.forEach(function(d) { addRow('debt', d, false); });
 
