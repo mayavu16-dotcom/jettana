@@ -6736,15 +6736,28 @@ function renderAllEntries(section, id, template, entries, skipTotal) {
   container.innerHTML = '';
 
   var TYPE_LABELS = { contribution: 'Contribution', transfer: 'Transfer', investment: 'Investment', interest: 'Interest', performance: 'Performance', payment: 'Payment', paycheck: 'Paycheck', transaction: 'Transaction', fuel: 'Fuel', manage: 'Manage' };
+  var TYPE_COLORS = {
+    contribution: 'var(--sage-dark)',
+    investment:   'var(--sage-dark)',
+    interest:     'var(--sage-dark)',
+    transfer:     '#4A85A0',
+    performance:  '#A8823E',
+    payment:      'var(--blush)',
+    paycheck:     'var(--sage-dark)',
+    transaction:  '#4A85A0',
+    fuel:         '#7B72AA',
+    manage:       'var(--steel)',
+  };
 
   entries.forEach(function(entry, idx) {
-    var entryType = entry._type || template; // fall back to row template for old entries
+    var entryType = entry._type || template;
     var typeLabel = TYPE_LABELS[entryType] || entryType;
+    var typeColor = TYPE_COLORS[entryType] || 'var(--steel)';
     var entryDiv = document.createElement('div');
     entryDiv.className = 'st-entry';
-    entryDiv.style.cssText = 'border:1px solid var(--mist);border-radius:8px;padding:10px;margin-bottom:8px;position:relative;';
+    entryDiv.style.cssText = 'border:1px solid var(--mist);border-left:3px solid ' + typeColor + ';border-radius:8px;padding:10px;margin-bottom:8px;position:relative;';
     // Type header label
-    entryDiv.innerHTML = '<div style="font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--sage-dark);margin-bottom:6px;">' + typeLabel + '</div>';
+    entryDiv.innerHTML = '<div style="font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:' + typeColor + ';margin-bottom:6px;">' + typeLabel + '</div>';
     entryDiv.innerHTML += '<button onclick="removeEntry(\'' + section + '\',\'' + id + '\',' + idx + ')" style="position:absolute;top:6px;right:6px;background:none;border:none;cursor:pointer;font-size:14px;color:var(--steel);line-height:1;padding:2px 4px;border-radius:4px;" title="Remove entry" onmousedown="event.stopPropagation()">×</button>';
     entryDiv.innerHTML += renderEntryFields(section, id, entryType, entry, idx);
     container.appendChild(entryDiv);
