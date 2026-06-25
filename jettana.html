@@ -8631,8 +8631,13 @@ var TOUR_STEPS = [
   {
     target: '#rows-housing .erow:first-child .drag-handle',
     title: 'The ≡ row menu',
-    desc: 'Click (or long-press on mobile) the ≡ on any row to access options — add a note, duplicate, mark as recurring, mark as exempt, move to another section, and more.',
-    position: 'right'
+    desc: 'Here\'s what opens when you tap ≡ — note, duplicate, recurring, exempt, colors and more. All row options in one place.',
+    position: 'right',
+    action: function() {
+      var handle = document.querySelector('#rows-housing .erow:first-child .drag-handle');
+      if (handle) { var e = { clientX: handle.getBoundingClientRect().left, clientY: handle.getBoundingClientRect().top, stopPropagation: function(){}, preventDefault: function(){} }; showCtxMenuBtn(e, 'housing', document.querySelector('#rows-housing .erow:first-child').dataset.id); }
+    },
+    cleanup: function() { hideCtxMenu(); }
   },
   {
     target: '.sec-card[data-section-id="transport"]',
@@ -8643,20 +8648,59 @@ var TOUR_STEPS = [
   {
     target: '#rows-housing .erow:first-child',
     title: 'Color-code by card',
-    desc: 'Click any row to open the color toolbar. Set the number color to match your credit card — that\'s how Jettana knows which card paid for what.',
-    position: 'bottom'
+    desc: 'Here\'s the color toolbar — tap Text, Number or Strikethrough to assign colors. Set Number color to match your card and Jettana knows which card paid for what.',
+    position: 'bottom',
+    action: function() {
+      var row = document.querySelector('#rows-housing .erow:first-child');
+      if (row) showColorToolbar('housing', row.dataset.id, row);
+    },
+    cleanup: function() { hideColorToolbar(); }
   },
   {
-    target: '#rows-housing .erow:first-child .paid-checkbox',
+    target: '#rows-housing .erow:first-child',
     title: 'Mark expenses as paid',
-    desc: 'Click the circle on any row to strike it through once paid. The linked card\'s debt balance updates automatically.',
-    position: 'right'
+    desc: 'Watch — when you strike a row, it crosses out and the linked card\'s debt balance updates automatically.',
+    position: 'bottom',
+    action: function() {
+      var row = document.querySelector('#rows-housing .erow:first-child');
+      if (row) {
+        var id = row.dataset.id;
+        var all = loadAll();
+        var rows = (all[currentMonthKey] && all[currentMonthKey]['housing']) || [];
+        var r = rows.find(function(r) { return r.id === id; });
+        if (r && !r.paid) togglePaid('housing', id);
+      }
+    },
+    cleanup: function() {
+      // Un-strike when leaving this step
+      var row = document.querySelector('#rows-housing .erow:first-child');
+      if (row) {
+        var id = row.dataset.id;
+        var all = loadAll();
+        var rows = (all[currentMonthKey] && all[currentMonthKey]['housing']) || [];
+        var r = rows.find(function(r) { return r.id === id; });
+        if (r && r.paid) togglePaid('housing', id);
+      }
+    }
   },
   {
     target: '.sec-card[data-section-id="debt"]',
     title: 'Debt tracks your card balances',
-    desc: 'Discover is linked to orange — all orange-numbered expenses sum as the Current balance. Strike them paid and Remaining decreases. Open the note to see the card link.',
-    position: 'left'
+    desc: 'Discover auto-calculates from orange expenses. Watch the note open — the 🔗 card link shows how it\'s connected.',
+    position: 'left',
+    action: function() {
+      setTimeout(function() {
+        var discoverRow = document.querySelector('#rows-debt .erow:first-child');
+        if (discoverRow) {
+          var id = discoverRow.dataset.id;
+          toggleNote('debt', id, discoverRow);
+        }
+      }, 300);
+    },
+    cleanup: function() {
+      var noteWrap = document.querySelector('.note-wrap.open');
+      if (noteWrap) { var id = noteWrap.dataset.rowId; if (id) closeNote(id); }
+    }
   },
   {
     target: '.sec-card[data-section-id="checking"]',
@@ -8709,6 +8753,9 @@ function startTour() {
 }
 
 function endTour() {
+  // Run cleanup for current step
+  var step = TOUR_STEPS[_tourStep];
+  if (step && step.cleanup) { try { step.cleanup(); } catch(e) {} }
   _tourActive = false;
   document.getElementById('tour-overlay').style.display = 'none';
   document.getElementById('tour-overlay').style.pointerEvents = 'none';
@@ -8723,6 +8770,12 @@ function tourStep(dir) {
 function renderTourStep() {
   var step = TOUR_STEPS[_tourStep];
   if (!step) return;
+
+  // Run cleanup for previous step
+  var prevStep = TOUR_STEPS[_tourStep - 1];
+  if (prevStep && prevStep.cleanup) {
+    try { prevStep.cleanup(); } catch(e) {}
+  }
 
   var target = document.querySelector(step.target);
   if (!target) {
@@ -8813,6 +8866,11 @@ function renderTourStep() {
     } else {
       nextBtn.textContent = 'Next →';
       nextBtn.onclick = function() { tourStep(1); };
+    }
+
+    // Run this step's action after a short delay
+    if (step.action) {
+      setTimeout(function() { try { step.action(); } catch(e) {} }, 300);
     }
   }, 450);
 }
@@ -9114,8 +9172,8 @@ function _runLoadDemo() {
 
   // Debt — Discover linked
   var debtRows = [
-    { label: 'Discover',  current: 0, remaining: 0, paidColor: DISCOVER_COLOR, numColor: DISCOVER_COLOR, _cardLink: DISCOVER_COLOR },
-    { label: 'BMO CC',    current: 0, remaining: 0, paidColor: BMO_COLOR,      numColor: BMO_COLOR },
+    { label: 'Discover',  current: 1747, remaining: 1747, paidColor: DISCOVER_COLOR, numColor: DISCOVER_COLOR, _cardLink: DISCOVER_COLOR },
+    { label: 'BMO CC',    current: 174,  remaining: 174,  paidColor: BMO_COLOR,      numColor: BMO_COLOR },
   ];
   debtRows.forEach(function(d) { addRow('debt', d, false); });
 
