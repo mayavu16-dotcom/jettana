@@ -5986,15 +5986,6 @@ function applyPaidEffect(section, id, isPaid) {
   // Always fully recalculate checking balances from scratch
   recalcCheckingBalances();
   recalc();
-
-function formatDateLabel(dateStr) {
-  if (!dateStr) return '';
-  var parts = dateStr.split('-');
-  if (parts.length !== 3) return dateStr;
-  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  var m = parseInt(parts[1], 10) - 1;
-  var d = parseInt(parts[2], 10);
-  return months[m] + ' ' + d;
 }
 
 function recalcCheckingBalances() {
@@ -6048,6 +6039,8 @@ function recalcCheckingBalances() {
 
   if (changed) saveAll(all);
 }
+
+function formatDateLabel(dateStr) {
   if (!dateStr) return '+ date';
   const [y, m, d] = dateStr.split('-');
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
