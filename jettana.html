@@ -3647,18 +3647,16 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
 <!-- Tour Overlay -->
 <div id="tour-overlay" style="display:none;position:fixed;inset:0;z-index:9000;pointer-events:none;">
-  <!-- Dimmed backdrop -->
-  <div id="tour-backdrop" style="position:fixed;inset:0;background:rgba(0,0,0,0.55);"></div>
-  <!-- Highlight ring — fixed so it stays on target while scrolling -->
-  <div id="tour-highlight" style="position:fixed;border-radius:10px;box-shadow:0 0 0 4px #F0C060,0 0 0 9999px rgba(0,0,0,0.55);transition:all 0.35s ease;z-index:9001;pointer-events:none;"></div>
-  <!-- Tooltip bubble — fixed position -->
-  <div id="tour-tooltip" style="position:fixed;background:white;border-radius:14px;padding:20px;width:300px;box-shadow:0 8px 40px rgba(0,0,0,0.25);z-index:9002;pointer-events:all;font-family:Outfit,sans-serif;transition:left 0.35s ease,top 0.35s ease;">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+  <!-- Highlight ring — box-shadow creates the cutout dim effect -->
+  <div id="tour-highlight" style="position:fixed;border-radius:10px;transition:all 0.3s ease;z-index:9001;pointer-events:none;box-shadow:0 0 0 3px #F0C060,0 0 0 9999px rgba(0,0,0,0.6);"></div>
+  <!-- Tooltip bubble -->
+  <div id="tour-tooltip" style="position:fixed;background:white;border-radius:14px;padding:18px 20px;width:300px;box-shadow:0 8px 40px rgba(0,0,0,0.3);z-index:9002;pointer-events:all;font-family:Outfit,sans-serif;transition:left 0.3s ease,top 0.3s ease;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
       <div id="tour-step-label" style="font-size:10px;font-weight:700;letter-spacing:1px;color:#A07800;text-transform:uppercase;"></div>
       <button onclick="endTour()" style="background:none;border:none;cursor:pointer;color:#6B7C8F;font-size:16px;line-height:1;padding:0 0 0 8px;" title="Skip tour">✕</button>
     </div>
-    <div id="tour-title" style="font-size:16px;font-weight:700;color:#1A2332;margin-bottom:6px;"></div>
-    <div id="tour-desc" style="font-size:13px;color:#3D4F63;line-height:1.6;margin-bottom:16px;"></div>
+    <div id="tour-title" style="font-size:15px;font-weight:700;color:#1A2332;margin-bottom:5px;"></div>
+    <div id="tour-desc" style="font-size:12px;color:#3D4F63;line-height:1.6;margin-bottom:14px;"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;">
       <button id="tour-prev" onclick="tourStep(-1)" style="font-size:12px;color:#6B7C8F;background:none;border:1px solid #E8EDF2;border-radius:8px;padding:6px 12px;cursor:pointer;font-family:Outfit,sans-serif;">← Back</button>
       <div id="tour-dots" style="display:flex;gap:5px;"></div>
@@ -8613,7 +8611,7 @@ var _tourActive = false;
 
 var TOUR_STEPS = [
   {
-    target: '.summary-cards',
+    target: '.summary-strip',
     title: 'Your financial snapshot',
     desc: 'These four cards update live — Income, Expenses, Net Balance and Total Saved. At a glance you always know where you stand for the month.',
     position: 'bottom'
@@ -8645,7 +8643,7 @@ var TOUR_STEPS = [
   {
     target: '#rows-housing .erow:first-child',
     title: 'Color-code by card',
-    desc: 'Click any row to open the color toolbar. Set the number color to match your credit card color — that\'s how Jettana knows which card paid for what.',
+    desc: 'Click any row to open the color toolbar. Set the number color to match your credit card — that\'s how Jettana knows which card paid for what.',
     position: 'bottom'
   },
   {
@@ -8657,7 +8655,7 @@ var TOUR_STEPS = [
   {
     target: '.sec-card[data-section-id="debt"]',
     title: 'Debt tracks your card balances',
-    desc: 'Discover is linked to orange — all orange-numbered expenses sum as the Current balance. Strike them paid and Remaining decreases. Open the note to see the 🔗 card link.',
+    desc: 'Discover is linked to orange — all orange-numbered expenses sum as the Current balance. Strike them paid and Remaining decreases. Open the note to see the card link.',
     position: 'left'
   },
   {
@@ -8669,8 +8667,15 @@ var TOUR_STEPS = [
   {
     target: '.sec-card[data-section-id="savings"]',
     title: 'Savings & Investments',
-    desc: 'Track your HYSA, 401k, Roth IRA and more. Open any row\'s note to log Contributions, Interest, Performance or Transfers — you can mix entry types on one account.',
+    desc: 'Track your HYSA, 401k, Roth IRA and more. Open any row\'s note to log Contributions, Interest, Performance or Transfers — mix entry types on one account.',
     position: 'left'
+  },
+  {
+    target: '.bottom-card',
+    title: 'Monthly Summary & Net Worth',
+    desc: 'The Monthly Summary shows planned vs actual balance at a glance. Net Worth Overview tracks your total assets vs liabilities — click the Goal cell to set a target.',
+    position: 'top',
+    scrollBlock: 'center'
   },
   {
     target: '.mom-card',
@@ -8719,7 +8724,6 @@ function renderTourStep() {
   var step = TOUR_STEPS[_tourStep];
   if (!step) return;
 
-  // Find target element
   var target = document.querySelector(step.target);
   if (!target) {
     if (_tourStep < TOUR_STEPS.length - 1) { _tourStep++; renderTourStep(); }
@@ -8727,7 +8731,12 @@ function renderTourStep() {
     return;
   }
 
-  // Scroll target into view first, then position after scroll settles
+  // Force hidden elements visible for the tour
+  if (step.target.indexOf('drag-handle') !== -1 || step.target.indexOf('paid-checkbox') !== -1) {
+    target.style.opacity = '1';
+    target.style.visibility = 'visible';
+  }
+
   target.scrollIntoView({ behavior: 'smooth', block: step.scrollBlock || 'center' });
 
   setTimeout(function() {
@@ -8736,65 +8745,66 @@ function renderTourStep() {
     var vw = window.innerWidth;
     var vh = window.innerHeight;
     var isMobile = vw < 768;
+    var ttW = isMobile ? Math.min(vw - 32, 300) : 300;
 
-    // On mobile tooltip is narrower
-    var ttW = isMobile ? Math.min(vw - 24, 280) : 300;
-
-    // Position highlight
+    // Position highlight (always fixed)
     var hl = document.getElementById('tour-highlight');
-    hl.style.left = (rect.left - pad) + 'px';
-    hl.style.top = (rect.top + window.scrollY - pad) + 'px';
+    hl.style.left = Math.max(0, rect.left - pad) + 'px';
+    hl.style.top = Math.max(0, rect.top - pad) + 'px';
     hl.style.width = (rect.width + pad * 2) + 'px';
     hl.style.height = (rect.height + pad * 2) + 'px';
 
-    // Position tooltip — on mobile always place below target or at bottom of screen
+    // Position tooltip
     var tt = document.getElementById('tour-tooltip');
     tt.style.width = ttW + 'px';
-    var ttH = tt.offsetHeight || 200;
+    var ttH = tt.offsetHeight || 190;
     var left, top;
 
     if (isMobile) {
-      // On mobile: always bottom of screen, full width
-      left = 12;
-      top = vh - ttH - 80;
-    } else if (step.position === 'bottom') {
-      left = rect.left + rect.width / 2 - ttW / 2;
-      top = rect.bottom + pad + 12;
-    } else if (step.position === 'top') {
-      left = rect.left + rect.width / 2 - ttW / 2;
-      top = rect.top - ttH - pad - 12;
-    } else if (step.position === 'right') {
-      left = rect.right + pad + 12;
-      top = rect.top + rect.height / 2 - ttH / 2;
-    } else { // left
-      left = rect.left - ttW - pad - 12;
-      top = rect.top + rect.height / 2 - ttH / 2;
+      // Mobile: try below highlight first, then above, then float at bottom
+      left = Math.max(16, vw / 2 - ttW / 2);
+      var spaceBelow = vh - (rect.bottom + pad + 12);
+      var spaceAbove = rect.top - pad - 12;
+      if (spaceBelow >= ttH + 16) {
+        top = rect.bottom + pad + 12;
+      } else if (spaceAbove >= ttH + 16) {
+        top = rect.top - ttH - pad - 12;
+      } else {
+        // Float near bottom with gap above nav
+        top = vh - ttH - 20;
+      }
+    } else {
+      if (step.position === 'bottom') {
+        left = rect.left + rect.width / 2 - ttW / 2;
+        top = rect.bottom + pad + 12;
+      } else if (step.position === 'top') {
+        left = rect.left + rect.width / 2 - ttW / 2;
+        top = rect.top - ttH - pad - 12;
+      } else if (step.position === 'right') {
+        left = rect.right + pad + 12;
+        top = rect.top + rect.height / 2 - ttH / 2;
+      } else {
+        left = rect.left - ttW - pad - 12;
+        top = rect.top + rect.height / 2 - ttH / 2;
+      }
     }
 
-    // Clamp to viewport
-    left = Math.max(12, Math.min(vw - ttW - 12, left));
-    top = Math.max(12, Math.min(vh - ttH - 12, top));
+    left = Math.max(16, Math.min(vw - ttW - 16, left));
+    top = Math.max(16, Math.min(vh - ttH - 16, top));
 
     tt.style.left = left + 'px';
     tt.style.top = top + 'px';
-    tt.style.position = 'fixed';
-
-    // Also fix highlight to use fixed positioning
-    hl.style.position = 'fixed';
-    hl.style.top = (rect.top - pad) + 'px';
 
     // Update content
     document.getElementById('tour-step-label').textContent = 'Step ' + (_tourStep + 1) + ' of ' + TOUR_STEPS.length;
     document.getElementById('tour-title').textContent = step.title;
     document.getElementById('tour-desc').textContent = step.desc;
 
-    // Dots
     var dotsEl = document.getElementById('tour-dots');
     dotsEl.innerHTML = TOUR_STEPS.map(function(_, i) {
-      return '<div style="width:7px;height:7px;border-radius:50%;background:' + (i === _tourStep ? '#6B9E70' : '#E8EDF2') + ';transition:background 0.2s;"></div>';
+      return '<div style="width:6px;height:6px;border-radius:50%;background:' + (i === _tourStep ? '#6B9E70' : '#E8EDF2') + ';transition:background 0.2s;"></div>';
     }).join('');
 
-    // Buttons
     document.getElementById('tour-prev').style.visibility = _tourStep === 0 ? 'hidden' : 'visible';
     var nextBtn = document.getElementById('tour-next');
     if (_tourStep === TOUR_STEPS.length - 1) {
