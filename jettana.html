@@ -8712,7 +8712,7 @@ var TOUR_STEPS = [
     target: '#rows-housing .erow:first-child .paid-checkbox',
     title: 'Mark expenses as paid',
     desc: 'See the circle? Tap it to mark any expense as paid — it strikes through and the linked card balance updates automatically.',
-    position: 'right',
+    position: 'bottom',
     action: function() {
       var row = document.querySelector('#rows-housing .erow:first-child');
       if (!row) return;
@@ -9312,6 +9312,18 @@ function _runLoadDemo() {
     { label: 'BMO CC',   paidColor: BMO_COLOR,      numColor: BMO_COLOR,      _cardLink: BMO_COLOR },
   ];
   debtRows.forEach(function(d) { addRow('debt', d, false); });
+
+  // Force legend cards into memory and storage right before final recalc
+  // (ensures autoCalcDebtFromCards finds them even if _legendCards was reset)
+  var demoCardsAgain = [
+    { name: 'Discover', color: DISCOVER_COLOR },
+    { name: 'BMO Card', color: BMO_COLOR },
+  ];
+  demoCardsAgain.forEach(function(dc) {
+    var exists = _legendCards.some(function(c) { return c.color === dc.color; });
+    if (!exists) _legendCards.push(dc);
+  });
+  saveLegend();
 
   recalc();
   showToast('Demo month loaded! Explore the color-coded rows and linked Debt section.', false);
