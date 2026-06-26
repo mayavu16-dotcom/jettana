@@ -5477,7 +5477,17 @@ function clearSection(section) {
   optSelect.onmouseleave = function() { this.style.background = 'none'; };
   optSelect.onclick = function() {
     pop.remove(); _secPopover = null;
-    enterBulkMode(section);
+    enterBulkMode(section, 'delete');
+  };
+
+  const optSelectPaid = document.createElement('button');
+  optSelectPaid.textContent = '✓ Select rows to mark paid';
+  optSelectPaid.style.cssText = 'background:none;border:none;padding:8px 12px;text-align:left;font-size:13px;color:var(--sage-dark);cursor:pointer;border-radius:5px;font-family:\'Outfit\',sans-serif;';
+  optSelectPaid.onmouseenter = function() { this.style.background = 'var(--mist-light)'; };
+  optSelectPaid.onmouseleave = function() { this.style.background = 'none'; };
+  optSelectPaid.onclick = function() {
+    pop.remove(); _secPopover = null;
+    enterBulkMode(section, 'paid');
   };
 
   const optClear = document.createElement('button');
@@ -5498,6 +5508,7 @@ function clearSection(section) {
   };
 
   pop.appendChild(optSelect);
+  pop.appendChild(optSelectPaid);
   pop.appendChild(optClear);
 
   // Divider
@@ -5596,14 +5607,18 @@ function clearSection(section) {
 // ── Bulk select ───────────────────────────────────────────────
 var _bulkSection = null;
 var _bulkSelected = new Set();
+var _bulkMode = 'delete'; // 'delete' | 'paid'
 
-function enterBulkMode(section) {
-  // Cancel any existing bulk mode in another section
+function enterBulkMode(section, mode) {
   if (_bulkSection && _bulkSection !== section) cancelBulk(_bulkSection);
   _bulkSection = section;
   _bulkSelected = new Set();
+  _bulkMode = mode || 'delete';
   var bar = document.getElementById('bulk-bar-' + section);
-  if (bar) bar.classList.add('visible');
+  if (bar) {
+    bar.classList.add('visible');
+    updateBulkBarButtons(section);
+  }
   var list = document.getElementById('rows-' + section);
   if (list) list.classList.add('bulk-active');
   updateBulkBar(section);
@@ -5627,6 +5642,53 @@ function toggleBulkRow(section, id) {
 function updateBulkBar(section) {
   var count = document.getElementById('bulk-count-' + section);
   if (count) count.textContent = _bulkSelected.size + ' row' + (_bulkSelected.size !== 1 ? 's' : '') + ' selected';
+  updateBulkBarButtons(section);
+}
+
+function updateBulkBarButtons(section) {
+  var bar = document.getElementById('bulk-bar-' + section);
+  if (!bar) return;
+  bar.innerHTML = '';
+
+  var countSpan = document.createElement('span');
+  countSpan.className = 'bulk-bar-count';
+  countSpan.id = 'bulk-count-' + section;
+  countSpan.textContent = _bulkSelected.size + ' row' + (_bulkSelected.size !== 1 ? 's' : '') + ' selected';
+  bar.appendChild(countSpan);
+
+  var selectAllBtn = document.createElement('button');
+  selectAllBtn.className = 'bulk-bar-btn';
+  selectAllBtn.textContent = 'Select all';
+  selectAllBtn.onclick = function() { selectAllBulk(section); };
+  bar.appendChild(selectAllBtn);
+
+  if (_bulkMode === 'paid') {
+    var markPaidBtn = document.createElement('button');
+    markPaidBtn.className = 'bulk-bar-btn';
+    markPaidBtn.style.cssText = 'border-color:var(--sage);color:var(--sage);';
+    markPaidBtn.textContent = '✓ Mark paid';
+    markPaidBtn.onclick = function() { markPaidSelectedBulk(section, true); };
+    bar.appendChild(markPaidBtn);
+
+    var markUnpaidBtn = document.createElement('button');
+    markUnpaidBtn.className = 'bulk-bar-btn';
+    markUnpaidBtn.style.cssText = 'border-color:var(--steel);color:var(--steel);';
+    markUnpaidBtn.textContent = '↩ Mark unpaid';
+    markUnpaidBtn.onclick = function() { markPaidSelectedBulk(section, false); };
+    bar.appendChild(markUnpaidBtn);
+  } else {
+    var deleteBtn = document.createElement('button');
+    deleteBtn.className = 'bulk-bar-btn danger';
+    deleteBtn.textContent = 'Delete selected';
+    deleteBtn.onclick = function() { deleteSelectedBulk(section); };
+    bar.appendChild(deleteBtn);
+  }
+
+  var cancelBtn = document.createElement('button');
+  cancelBtn.className = 'bulk-bar-btn';
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.onclick = function() { cancelBulk(section); };
+  bar.appendChild(cancelBtn);
 }
 
 function selectAllBulk(section) {
@@ -5668,6 +5730,23 @@ function deleteSelectedBulk(section) {
   recalc();
   renderSidebar();
   showUndoToast(n + ' row' + (n !== 1 ? 's' : '') + ' deleted');
+}
+
+function markPaidSelectedBulk(section, setPaid) {
+  if (!_bulkSelected.size) return;
+  pushUndo((setPaid ? 'Mark paid' : 'Mark unpaid') + ' — ' + _bulkSelected.size + ' rows');
+  var ids = new Set(_bulkSelected);
+  ids.forEach(function(id) {
+    var all = loadAll();
+    var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
+    var row = rows.find(function(r) { return r.id === id; });
+    if (row && row.paid !== setPaid) {
+      togglePaid(section, id);
+    }
+  });
+  var n = ids.size;
+  cancelBulk(section);
+  showUndoToast(n + ' row' + (n !== 1 ? 's' : '') + (setPaid ? ' marked paid' : ' marked unpaid'));
 }
 
 function cancelBulk(section) {
