@@ -3638,22 +3638,23 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
     <button onclick="calcInput('C')"   class="calc-btn calc-fn">C</button>
     <button onclick="calcInput('+/-')" class="calc-btn calc-fn">+/−</button>
     <button onclick="calcInput('%')"   class="calc-btn calc-fn">%</button>
-    <button onclick="calcInput('/')"   class="calc-btn calc-op">÷</button>
+    <button onclick="calcInput('⌫')"   class="calc-btn calc-fn" style="font-size:18px;">⌫</button>
     <button onclick="calcInput('7')"   class="calc-btn">7</button>
     <button onclick="calcInput('8')"   class="calc-btn">8</button>
     <button onclick="calcInput('9')"   class="calc-btn">9</button>
-    <button onclick="calcInput('*')"   class="calc-btn calc-op">×</button>
+    <button onclick="calcInput('/')"   class="calc-btn calc-op">÷</button>
     <button onclick="calcInput('4')"   class="calc-btn">4</button>
     <button onclick="calcInput('5')"   class="calc-btn">5</button>
     <button onclick="calcInput('6')"   class="calc-btn">6</button>
-    <button onclick="calcInput('-')"   class="calc-btn calc-op">−</button>
+    <button onclick="calcInput('*')"   class="calc-btn calc-op">×</button>
     <button onclick="calcInput('1')"   class="calc-btn">1</button>
     <button onclick="calcInput('2')"   class="calc-btn">2</button>
     <button onclick="calcInput('3')"   class="calc-btn">3</button>
-    <button onclick="calcInput('+')"   class="calc-btn calc-op">+</button>
+    <button onclick="calcInput('-')"   class="calc-btn calc-op">−</button>
     <button onclick="calcInput('0')"   class="calc-btn" style="grid-column:span 2;">0</button>
     <button onclick="calcInput('.')"   class="calc-btn">.</button>
-    <button onclick="calcInput('=')"   class="calc-btn calc-eq">=</button>
+    <button onclick="calcInput('+')"   class="calc-btn calc-op">+</button>
+    <button onclick="calcInput('=')"   class="calc-btn calc-eq" style="grid-column:span 4;height:48px;">=</button>
   </div>
 </div>
 
@@ -9111,6 +9112,17 @@ function calcInput(val) {
   var expr = document.getElementById('calc-expr');
 
   if (val === 'C') { calcReset(); return; }
+
+  if (val === '⌫') {
+    if (!_calcNewNum && _calcDisplay.length > 1) {
+      _calcDisplay = _calcDisplay.slice(0, -1);
+    } else {
+      _calcDisplay = '0';
+      _calcNewNum = true;
+    }
+    disp.textContent = _calcDisplay;
+    return;
+  }
 
   if (val === '=') {
     try {
