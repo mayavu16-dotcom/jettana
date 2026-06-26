@@ -2211,6 +2211,7 @@ body.theme-custom .mom-hdr      { background: var(--custom-accent-dark, #2A4A7A)
   display: inline-flex;
   align-items: center;
   margin-right: 8px;
+  touch-action: manipulation;
 }
 
 .paid-color-picker-popup {
@@ -5277,8 +5278,7 @@ function renderRowEl(section, row, animate = false) {
 
 
       ${allowPaid ? `<div class="paid-color-wrap">
-        <div class="paid-checkbox" onclick="togglePaid('${section}','${row.id}')" title="Mark as paid">✓</div>
-
+        <div class="paid-checkbox" onclick="event.stopPropagation();togglePaid('${section}','${row.id}')" ontouchstart="event.stopPropagation();event.preventDefault();togglePaid('${section}','${row.id}')" title="Mark as paid">✓</div>
       </div>` : ''}
     </div>
     <div class="num-col-wrap">
