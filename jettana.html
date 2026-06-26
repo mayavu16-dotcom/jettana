@@ -2319,31 +2319,33 @@ body.font-large.text-bold .erow-label-input {
 /* ── Section reordering ──────────────────────────────────────── */
 .sec-drag-handle {
   cursor: grab;
-  font-size: 14px;
-  color: rgba(255,255,255,0.5);
+  font-size: 13px;
+  color: white;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
   flex-shrink: 0;
   opacity: 0;
-  transition: opacity 0.15s;
-  position: static;
-  transform: none;
+  transition: opacity 0.15s, background 0.15s;
   margin-left: 6px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 5px;
+  padding: 4px 7px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
 }
 @media (pointer: coarse) {
   .sec-drag-handle {
-    display: block;
     opacity: 0;
-    position: static;
-    transform: none;
+    font-size: 14px;
     margin-left: 8px;
-    margin-right: 0;
-    font-size: 16px;
   }
   .sec-hdr.hdr-active .sec-drag-handle { opacity: 1; }
 }
 .sec-hdr:hover .sec-drag-handle { opacity: 1; }
+.sec-drag-handle:hover { background: rgba(255,255,255,0.25); }
 .sec-drag-handle:active { cursor: grabbing; }
 .sec-card.dragging {
   opacity: 0.4;
