@@ -5513,21 +5513,10 @@ function clearSection(section) {
     showUndoToast('Section cleared');
   };
 
-  pop.appendChild(optSelect);
+  // Order: paid → color → delete → divider → clear budget → clear actual → divider → copy → clear all
   pop.appendChild(optSelectPaid);
-
-  const optSelectColor = document.createElement('button');
-  optSelectColor.textContent = '🎨 Select rows to color';
-  optSelectColor.style.cssText = 'background:none;border:none;padding:8px 12px;text-align:left;font-size:13px;color:#A8823E;cursor:pointer;border-radius:5px;font-family:\'Outfit\',sans-serif;';
-  optSelectColor.onmouseenter = function() { this.style.background = 'var(--mist-light)'; };
-  optSelectColor.onmouseleave = function() { this.style.background = 'none'; };
-  optSelectColor.onclick = function() {
-    pop.remove(); _secPopover = null;
-    enterBulkMode(section, 'color');
-  };
   pop.appendChild(optSelectColor);
-
-  pop.appendChild(optClear);
+  pop.appendChild(optSelect);
 
   // Divider
   const div = document.createElement('div');
@@ -5548,7 +5537,6 @@ function clearSection(section) {
       const a = loadAll();
       (a[currentMonthKey][section] || []).forEach(function(row) {
         row[cfg.k1] = '';
-        // For debt: also clear _cardLink so autoCalc doesn't immediately refill
         if (section === 'debt') row._cardLink = '';
       });
       saveAll(a);
@@ -5585,7 +5573,9 @@ function clearSection(section) {
     };
     pop.appendChild(optClearActual);
   }
+
   _secPopover = pop;
+
   // Divider 2
   const div2 = document.createElement('div');
   div2.style.cssText = 'height:1px;background:var(--mist);margin:2px 0;';
@@ -5601,6 +5591,9 @@ function clearSection(section) {
     showCopySectionModal(section);
   };
   pop.appendChild(optCopySection);
+
+  // Clear all rows — most destructive, always last
+  pop.appendChild(optClear);
 
   document.body.appendChild(pop);
 
