@@ -1742,6 +1742,15 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
   #calc-fab  { left: 16px; }
   #calc-panel { left: 16px; }
 }
+.calc-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: #E8EDF2;
+}
+.dark .calc-grid { background: #2A3A4A; }
+.dark #calc-panel { background: #1A2635 !important; }
+.calc-btn {
   background: white;
   border: none;
   padding: 0;
@@ -1763,10 +1772,12 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
 .calc-btn.calc-eq:active { background: var(--sage-dark); }
 #calc-fab:hover  { transform: scale(1.08); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
 #calc-fab:active { transform: scale(0.95); }
-.dark #calc-panel { background: var(--card); }
-.dark .calc-btn   { background: var(--card); color: var(--ink); }
-.dark .calc-btn:hover  { background: var(--mist); }
-.dark .calc-btn:active { background: var(--mist-light); }
+.dark #calc-panel { background: #1A2635 !important; }
+.dark .calc-btn   { background: #1E2D3D; color: white; }
+.dark .calc-btn:hover  { background: #253647; }
+.dark .calc-btn:active { background: #2A3D52; }
+.dark .calc-btn.calc-fn { color: rgba(255,255,255,0.5); }
+.dark .calc-btn.calc-op { color: #8FC49A; }
   border-color: var(--sage) !important;
   color: var(--sage-dark) !important;
   animation: nudge-pulse 2s ease-in-out infinite;
@@ -3649,7 +3660,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
     <div id="calc-expr" style="font-size:11px;color:rgba(255,255,255,0.4);min-height:18px;text-align:right;letter-spacing:0.3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px;"></div>
     <div id="calc-display" style="font-size:36px;font-weight:700;color:white;text-align:right;letter-spacing:-0.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.1;">0</div>
   </div>
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#E8EDF2;">
+  <div class="calc-grid">
     <button onclick="calcInput('C')"   class="calc-btn calc-fn">C</button>
     <button onclick="calcInput('+/-')" class="calc-btn calc-fn">+/−</button>
     <button onclick="calcInput('%')"   class="calc-btn calc-fn">%</button>
