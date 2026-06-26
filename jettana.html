@@ -5532,7 +5532,17 @@ function clearSection(section, btnEl) {
     enterBulkMode(section, 'paid');
   };
 
-  // Order: paid → color → delete → divider → clear budget → clear actual → divider → copy → clear all
+  const optSelectColor = document.createElement('button');
+  optSelectColor.textContent = '🎨 Select rows to color';
+  optSelectColor.style.cssText = 'background:none;border:none;padding:8px 12px;text-align:left;font-size:13px;color:#A8823E;cursor:pointer;border-radius:5px;font-family:\'Outfit\',sans-serif;';
+  optSelectColor.onmouseenter = function() { this.style.background = 'var(--mist-light)'; };
+  optSelectColor.onmouseleave = function() { this.style.background = 'none'; };
+  optSelectColor.onclick = function() {
+    pop.remove(); _secPopover = null;
+    enterBulkMode(section, 'color');
+  };
+
+  // Order: paid → color → delete → divider → clear budget → clear actual → divider → copy
   pop.appendChild(optSelectPaid);
   pop.appendChild(optSelectColor);
   pop.appendChild(optSelect);
