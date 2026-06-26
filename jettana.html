@@ -5858,28 +5858,14 @@ function applyBulkColor(section, slot, color) {
   _bulkSelected.forEach(function(id) {
     var row = rows.find(function(r) { return r.id === id; });
     if (!row) return;
+    // Update stored values
     if (slot === 'text'   || slot === 'all') row.paidColor   = color;
     if (slot === 'num'    || slot === 'all') row.numColor    = color;
     if (slot === 'strike' || slot === 'all') row.strikeColor = color;
-    // Re-apply colors to DOM
-    var el = document.querySelector('#rows-' + section + ' [data-id="' + id + '"]');
-    if (el) {
-      applyIntentionColor(id, color, slot === 'text' || slot === 'all' ? 'text' : null);
-      if (slot === 'num' || slot === 'all') {
-        var numInp = el.querySelector('.erow-num-input');
-        if (numInp) numInp.style.color = color || '';
-        var numInp2 = el.querySelector('.erow-num-input2');
-        if (numInp2) numInp2.style.color = color || '';
-      }
-      if (slot === 'text' || slot === 'all') {
-        var labelInp = el.querySelector('.erow-label-input');
-        if (labelInp) labelInp.style.color = color || '';
-      }
-      if (slot === 'strike' || slot === 'all') {
-        el.style.setProperty('--paid-color', color || '');
-        applyStrikeColor(id, color);
-      }
-    }
+    // Apply to DOM using the same functions the color toolbar uses
+    if (slot === 'text'   || slot === 'all') applyTextColor(id, color);
+    if (slot === 'num'    || slot === 'all') applyNumColor(id, color);
+    if (slot === 'strike' || slot === 'all') applyStrikeColor(id, color);
   });
   saveAll(all);
   recalc();
