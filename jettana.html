@@ -1763,6 +1763,7 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
   cursor: pointer;
   transition: background 0.1s;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 .calc-btn:hover  { background: #F5F7FA; }
 .calc-btn:active { background: #E8EDF2; }
@@ -3663,26 +3664,26 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
     <div id="calc-display" style="font-size:36px;font-weight:700;color:white;text-align:right;letter-spacing:-0.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.1;">0</div>
   </div>
   <div class="calc-grid">
-    <button onclick="calcInput('C')"   class="calc-btn calc-fn">C</button>
-    <button onclick="calcInput('+/-')" class="calc-btn calc-fn">+/−</button>
-    <button onclick="calcInput('%')"   class="calc-btn calc-fn">%</button>
-    <button onclick="calcInput('⌫')"   class="calc-btn calc-fn" style="font-size:16px;">⌫</button>
-    <button onclick="calcInput('7')"   class="calc-btn">7</button>
-    <button onclick="calcInput('8')"   class="calc-btn">8</button>
-    <button onclick="calcInput('9')"   class="calc-btn">9</button>
-    <button onclick="calcInput('/')"   class="calc-btn calc-op">÷</button>
-    <button onclick="calcInput('4')"   class="calc-btn">4</button>
-    <button onclick="calcInput('5')"   class="calc-btn">5</button>
-    <button onclick="calcInput('6')"   class="calc-btn">6</button>
-    <button onclick="calcInput('*')"   class="calc-btn calc-op">×</button>
-    <button onclick="calcInput('1')"   class="calc-btn">1</button>
-    <button onclick="calcInput('2')"   class="calc-btn">2</button>
-    <button onclick="calcInput('3')"   class="calc-btn">3</button>
-    <button onclick="calcInput('-')"   class="calc-btn calc-op">−</button>
-    <button onclick="calcInput('0')"   class="calc-btn" style="grid-column:span 2;">0</button>
-    <button onclick="calcInput('.')"   class="calc-btn">.</button>
-    <button onclick="calcInput('+')"   class="calc-btn calc-op">+</button>
-    <button onclick="calcInput('=')"   class="calc-btn calc-eq" style="grid-column:span 4;">=</button>
+    <button ontouchstart="event.preventDefault();calcInput('C')" onclick="calcInput('C')"   class="calc-btn calc-fn">C</button>
+    <button ontouchstart="event.preventDefault();calcInput('+/-')" onclick="calcInput('+/-')" class="calc-btn calc-fn">+/−</button>
+    <button ontouchstart="event.preventDefault();calcInput('%')" onclick="calcInput('%')"   class="calc-btn calc-fn">%</button>
+    <button ontouchstart="event.preventDefault();calcInput('⌫')" onclick="calcInput('⌫')"   class="calc-btn calc-fn" style="font-size:16px;">⌫</button>
+    <button ontouchstart="event.preventDefault();calcInput('7')" onclick="calcInput('7')"   class="calc-btn">7</button>
+    <button ontouchstart="event.preventDefault();calcInput('8')" onclick="calcInput('8')"   class="calc-btn">8</button>
+    <button ontouchstart="event.preventDefault();calcInput('9')" onclick="calcInput('9')"   class="calc-btn">9</button>
+    <button ontouchstart="event.preventDefault();calcInput('/')" onclick="calcInput('/')"   class="calc-btn calc-op">÷</button>
+    <button ontouchstart="event.preventDefault();calcInput('4')" onclick="calcInput('4')"   class="calc-btn">4</button>
+    <button ontouchstart="event.preventDefault();calcInput('5')" onclick="calcInput('5')"   class="calc-btn">5</button>
+    <button ontouchstart="event.preventDefault();calcInput('6')" onclick="calcInput('6')"   class="calc-btn">6</button>
+    <button ontouchstart="event.preventDefault();calcInput('*')" onclick="calcInput('*')"   class="calc-btn calc-op">×</button>
+    <button ontouchstart="event.preventDefault();calcInput('1')" onclick="calcInput('1')"   class="calc-btn">1</button>
+    <button ontouchstart="event.preventDefault();calcInput('2')" onclick="calcInput('2')"   class="calc-btn">2</button>
+    <button ontouchstart="event.preventDefault();calcInput('3')" onclick="calcInput('3')"   class="calc-btn">3</button>
+    <button ontouchstart="event.preventDefault();calcInput('-')" onclick="calcInput('-')"   class="calc-btn calc-op">−</button>
+    <button ontouchstart="event.preventDefault();calcInput('0')" onclick="calcInput('0')"   class="calc-btn" style="grid-column:span 2;">0</button>
+    <button ontouchstart="event.preventDefault();calcInput('.')" onclick="calcInput('.')"   class="calc-btn">.</button>
+    <button ontouchstart="event.preventDefault();calcInput('+')" onclick="calcInput('+')"   class="calc-btn calc-op">+</button>
+    <button ontouchstart="event.preventDefault();calcInput('=')" onclick="calcInput('=')"   class="calc-btn calc-eq" style="grid-column:span 4;">=</button>
   </div>
 </div>
 
