@@ -1745,8 +1745,8 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
   background: white;
   border: none;
   padding: 0;
-  height: 54px;
-  font-size: 16px;
+  height: 64px;
+  font-size: 18px;
   font-family: 'Outfit', sans-serif;
   font-weight: 500;
   color: var(--ink);
@@ -1756,9 +1756,9 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
 }
 .calc-btn:hover  { background: #F5F7FA; }
 .calc-btn:active { background: #E8EDF2; }
-.calc-btn.calc-fn  { color: var(--steel); font-weight: 600; }
-.calc-btn.calc-op  { color: var(--sage-dark); font-weight: 700; font-size: 18px; }
-.calc-btn.calc-eq  { background: var(--sage); color: white; font-weight: 700; font-size: 20px; }
+.calc-btn.calc-fn  { color: var(--steel); font-weight: 600; font-size: 14px; }
+.calc-btn.calc-op  { color: var(--sage-dark); font-weight: 700; font-size: 20px; }
+.calc-btn.calc-eq  { background: var(--sage); color: white; font-weight: 700; font-size: 22px; }
 .calc-btn.calc-eq:hover  { background: var(--sage-dark); }
 .calc-btn.calc-eq:active { background: var(--sage-dark); }
 #calc-fab:hover  { transform: scale(1.08); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
@@ -3669,7 +3669,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
     <button onclick="calcInput('0')"   class="calc-btn" style="grid-column:span 2;">0</button>
     <button onclick="calcInput('.')"   class="calc-btn">.</button>
     <button onclick="calcInput('+')"   class="calc-btn calc-op">+</button>
-    <button onclick="calcInput('=')"   class="calc-btn calc-eq" style="grid-column:span 4;height:52px;font-size:20px;">=</button>
+    <button onclick="calcInput('=')"   class="calc-btn calc-eq" style="grid-column:span 4;">=</button>
   </div>
 </div>
 
