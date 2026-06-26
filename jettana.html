@@ -6982,6 +6982,14 @@ function toggleNote(section, id) {
   var wrap = document.getElementById('note-wrap-' + id);
   if (!wrap) return;
   var opening = !wrap.classList.contains('open');
+
+  // Close any other open notes first
+  if (opening) {
+    document.querySelectorAll('.note-row.open').forEach(function(n) {
+      if (n !== wrap) n.classList.remove('open');
+    });
+  }
+
   wrap.classList.toggle('open', opening);
   if (opening) {
     // Snapshot before the user edits anything in this note
