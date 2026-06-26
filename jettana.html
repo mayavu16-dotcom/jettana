@@ -611,6 +611,8 @@ body {
   color: white;
   margin-left: 0;
   margin-right: 0;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 .erow:hover .paid-checkbox { opacity: 1; }
 .erow.paid .paid-checkbox {
@@ -1329,7 +1331,7 @@ body {
 .note-textarea:focus { border-color: var(--sage); background: white; }
 .note-textarea::placeholder { color: var(--mist); font-style: italic; }
 .note-indicator {
-  width: 6px; height: 6px;
+  width: 8px; height: 8px;
   border-radius: 50%;
   background: var(--gold);
   flex-shrink: 0;
@@ -1340,8 +1342,14 @@ body {
   right: 36px;
   transform: translateY(-50%);
   pointer-events: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
+.note-indicator.has-note { pointer-events: all; cursor: pointer; }
 .erow:hover .note-indicator.has-note { opacity: 1; }
+@media (pointer: coarse) {
+  .erow .note-indicator.has-note { opacity: 1; }
+}
 .erow-label-input { cursor: text; }
 .erow-label-input:focus { cursor: text; }
 @media (pointer: fine) {
@@ -1714,6 +1722,8 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
   width: 100%;
   text-align: left;
   font-family: 'Outfit', sans-serif;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 .ctx-item:hover { background: var(--mist-light); }
 .ctx-item .ctx-icon { font-size: 14px; width: 18px; text-align: center; }
@@ -5261,7 +5271,7 @@ function renderRowEl(section, row, animate = false) {
         onkeydown="labelKeyDown(event,this); acKeyDown(event,this,'${section}')"
         onblur="setTimeout(hideAutocomplete, 150)"
         >
-      <span class="note-indicator ${(row.note || row.alloc) ? 'has-note' : ''}" id="note-dot-${row.id}" title="Has note"></span>
+      <span class="note-indicator ${(row.note || row.alloc) ? 'has-note' : ''}" id="note-dot-${row.id}" title="Has note" onclick="event.stopPropagation();toggleNote('${section}','${row.id}')" ontouchstart="event.stopPropagation();event.preventDefault();toggleNote('${section}','${row.id}')"></span>
       <span class="exempt-badge" id="exempt-badge-${row.id}" title="Exempt — not included in totals">exempt</span>
 
 
