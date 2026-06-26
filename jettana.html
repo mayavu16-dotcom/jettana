@@ -1730,7 +1730,32 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
   vertical-align: middle;
   opacity: 0.8;
 }
-.add-row-btn.nudge {
+.calc-btn {
+  background: white;
+  border: none;
+  padding: 0;
+  height: 54px;
+  font-size: 16px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+.calc-btn:hover  { background: #F5F7FA; }
+.calc-btn:active { background: #E8EDF2; }
+.calc-btn.calc-fn  { color: var(--steel); font-weight: 600; }
+.calc-btn.calc-op  { color: var(--sage-dark); font-weight: 700; font-size: 18px; }
+.calc-btn.calc-eq  { background: var(--sage); color: white; font-weight: 700; font-size: 20px; }
+.calc-btn.calc-eq:hover  { background: var(--sage-dark); }
+.calc-btn.calc-eq:active { background: var(--sage-dark); }
+#calc-fab:hover  { transform: scale(1.08); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+#calc-fab:active { transform: scale(0.95); }
+.dark #calc-panel { background: var(--card); }
+.dark .calc-btn   { background: var(--card); color: var(--ink); }
+.dark .calc-btn:hover  { background: var(--mist); }
+.dark .calc-btn:active { background: var(--mist-light); }
   border-color: var(--sage) !important;
   color: var(--sage-dark) !important;
   animation: nudge-pulse 2s ease-in-out infinite;
@@ -3596,6 +3621,39 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       </p>
       <p style="font-size:14px;color:var(--steel);font-style:italic;margin-top:20px;border-top:1px solid var(--mist);padding-top:16px;">— Maya 💚</p>
     </div>
+  </div>
+</div>
+
+<!-- Floating Calculator -->
+<div id="calc-fab" onclick="toggleCalc()" title="Calculator" style="position:fixed;bottom:24px;right:24px;width:44px;height:44px;background:var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:1500;box-shadow:0 4px 16px rgba(0,0,0,0.25);transition:transform 0.2s,box-shadow 0.2s;user-select:none;">
+  <span style="font-size:18px;color:white;line-height:1;">🧮</span>
+</div>
+
+<div id="calc-panel" style="display:none;position:fixed;bottom:80px;right:24px;width:260px;background:white;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.2);z-index:1500;overflow:hidden;font-family:'Outfit',sans-serif;">
+  <div style="background:var(--ink);padding:16px 16px 12px;">
+    <div id="calc-expr" style="font-size:11px;color:rgba(255,255,255,0.4);min-height:16px;text-align:right;letter-spacing:0.3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+    <div id="calc-display" style="font-size:28px;font-weight:700;color:white;text-align:right;letter-spacing:-0.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">0</div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#E8EDF2;">
+    <button onclick="calcInput('C')"   class="calc-btn calc-fn">C</button>
+    <button onclick="calcInput('+/-')" class="calc-btn calc-fn">+/−</button>
+    <button onclick="calcInput('%')"   class="calc-btn calc-fn">%</button>
+    <button onclick="calcInput('/')"   class="calc-btn calc-op">÷</button>
+    <button onclick="calcInput('7')"   class="calc-btn">7</button>
+    <button onclick="calcInput('8')"   class="calc-btn">8</button>
+    <button onclick="calcInput('9')"   class="calc-btn">9</button>
+    <button onclick="calcInput('*')"   class="calc-btn calc-op">×</button>
+    <button onclick="calcInput('4')"   class="calc-btn">4</button>
+    <button onclick="calcInput('5')"   class="calc-btn">5</button>
+    <button onclick="calcInput('6')"   class="calc-btn">6</button>
+    <button onclick="calcInput('-')"   class="calc-btn calc-op">−</button>
+    <button onclick="calcInput('1')"   class="calc-btn">1</button>
+    <button onclick="calcInput('2')"   class="calc-btn">2</button>
+    <button onclick="calcInput('3')"   class="calc-btn">3</button>
+    <button onclick="calcInput('+')"   class="calc-btn calc-op">+</button>
+    <button onclick="calcInput('0')"   class="calc-btn" style="grid-column:span 2;">0</button>
+    <button onclick="calcInput('.')"   class="calc-btn">.</button>
+    <button onclick="calcInput('=')"   class="calc-btn calc-eq">=</button>
   </div>
 </div>
 
@@ -9026,6 +9084,125 @@ function showMoreHintIfNeeded() {
     }
   } catch(e) {}
 }
+
+// ── Floating Calculator ───────────────────────────────────────
+var _calcExpr = '';
+var _calcDisplay = '0';
+var _calcNewNum = true;
+
+function toggleCalc() {
+  var panel = document.getElementById('calc-panel');
+  if (!panel) return;
+  var isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) calcReset();
+}
+
+function calcReset() {
+  _calcExpr = '';
+  _calcDisplay = '0';
+  _calcNewNum = true;
+  document.getElementById('calc-display').textContent = '0';
+  document.getElementById('calc-expr').textContent = '';
+}
+
+function calcInput(val) {
+  var disp = document.getElementById('calc-display');
+  var expr = document.getElementById('calc-expr');
+
+  if (val === 'C') { calcReset(); return; }
+
+  if (val === '=') {
+    try {
+      var full = _calcExpr + _calcDisplay;
+      expr.textContent = full + ' =';
+      var result = Function('"use strict"; return (' + full + ')')();
+      result = Math.round(result * 1e10) / 1e10; // fix floating point
+      _calcDisplay = String(result);
+      _calcExpr = '';
+      _calcNewNum = true;
+      disp.textContent = parseFloat(_calcDisplay).toLocaleString('en-US', { maximumFractionDigits: 10 });
+    } catch(e) {
+      disp.textContent = 'Error';
+      _calcExpr = '';
+      _calcDisplay = '0';
+      _calcNewNum = true;
+    }
+    return;
+  }
+
+  if (val === '+/-') {
+    var n = parseFloat(_calcDisplay);
+    if (!isNaN(n) && n !== 0) {
+      _calcDisplay = String(-n);
+      disp.textContent = _calcDisplay;
+    }
+    return;
+  }
+
+  if (val === '%') {
+    var pct = parseFloat(_calcDisplay);
+    if (!isNaN(pct)) {
+      _calcDisplay = String(pct / 100);
+      disp.textContent = _calcDisplay;
+    }
+    return;
+  }
+
+  // Operator
+  if (['+', '-', '*', '/'].indexOf(val) !== -1) {
+    _calcExpr += _calcDisplay + val;
+    expr.textContent = _calcExpr;
+    _calcNewNum = true;
+    return;
+  }
+
+  // Digit or decimal
+  if (_calcNewNum) {
+    _calcDisplay = val === '.' ? '0.' : val;
+    _calcNewNum = false;
+  } else {
+    if (val === '.' && _calcDisplay.indexOf('.') !== -1) return;
+    if (_calcDisplay === '0' && val !== '.') {
+      _calcDisplay = val;
+    } else {
+      _calcDisplay += val;
+    }
+  }
+  disp.textContent = _calcDisplay;
+}
+
+// Close calculator when clicking outside
+document.addEventListener('click', function(e) {
+  var panel = document.getElementById('calc-panel');
+  var fab = document.getElementById('calc-fab');
+  if (!panel || panel.style.display === 'none') return;
+  if (!panel.contains(e.target) && !fab.contains(e.target)) {
+    panel.style.display = 'none';
+  }
+});
+
+// Keyboard support for calculator
+document.addEventListener('keydown', function(e) {
+  var panel = document.getElementById('calc-panel');
+  if (!panel || panel.style.display === 'none') return;
+  var key = e.key;
+  if ('0123456789'.indexOf(key) !== -1) { calcInput(key); e.preventDefault(); }
+  else if (key === '+') { calcInput('+'); e.preventDefault(); }
+  else if (key === '-') { calcInput('-'); e.preventDefault(); }
+  else if (key === '*') { calcInput('*'); e.preventDefault(); }
+  else if (key === '/') { calcInput('/'); e.preventDefault(); }
+  else if (key === '%') { calcInput('%'); e.preventDefault(); }
+  else if (key === '.') { calcInput('.'); e.preventDefault(); }
+  else if (key === 'Enter' || key === '=') { calcInput('='); e.preventDefault(); }
+  else if (key === 'Escape') { panel.style.display = 'none'; }
+  else if (key === 'Backspace') {
+    if (_calcDisplay.length > 1) { _calcDisplay = _calcDisplay.slice(0, -1); }
+    else { _calcDisplay = '0'; _calcNewNum = true; }
+    document.getElementById('calc-display').textContent = _calcDisplay;
+    e.preventDefault();
+  }
+});
 
 function toggleMoreExpand() {
   var expanded = document.getElementById('more-expanded');
