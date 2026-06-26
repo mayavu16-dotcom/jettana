@@ -433,7 +433,7 @@ body {
 .sec-clear-btn:hover { background: rgba(255,255,255,0.25); }
 .sec-trash-btn:hover { background: rgba(255,100,90,0.3); border-color: rgba(255,150,140,0.4); }
 @media (pointer: coarse) {
-  .sec-clear-btn, .sec-trash-btn { opacity: 0.5 !important; }
+  .sec-clear-btn, .sec-trash-btn { opacity: 0 !important; }
   .sec-hdr.hdr-active .sec-clear-btn,
   .sec-hdr.hdr-active .sec-trash-btn { opacity: 1 !important; }
   .sec-hdr {
@@ -2334,13 +2334,14 @@ body.font-large.text-bold .erow-label-input {
 @media (pointer: coarse) {
   .sec-drag-handle {
     display: block;
-    opacity: 0.6;
+    opacity: 0;
     position: static;
     transform: none;
     margin-left: 8px;
     margin-right: 0;
     font-size: 16px;
   }
+  .sec-hdr.hdr-active .sec-drag-handle { opacity: 1; }
 }
 .sec-hdr:hover .sec-drag-handle { opacity: 1; }
 .sec-drag-handle:active { cursor: grabbing; }
