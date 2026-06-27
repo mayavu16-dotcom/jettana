@@ -1100,8 +1100,8 @@ body {
 .hamburger-btn {
   display: flex;
   position: fixed;
-  top: 14px;
-  left: 180px;
+  top: 16px;
+  left: 174px;
   z-index: 300;
   background: rgba(255,255,255,0.12);
   border: 1px solid rgba(255,255,255,0.15);
@@ -1118,8 +1118,12 @@ body {
 }
 .hamburger-btn:hover { background: rgba(255,255,255,0.22); }
 .hamburger-btn:focus { outline: none; }
-/* When sidebar collapsed, move button to left edge */
-body.sidebar-collapsed .hamburger-btn { left: 14px; }
+body.sidebar-collapsed .hamburger-btn {
+  left: 14px;
+  background: #263545;
+  border-color: #3A4A5A;
+}
+body.sidebar-collapsed .topbar { padding-left: 62px; }
 .hamburger-btn span {
   display: block;
   width: 18px;
