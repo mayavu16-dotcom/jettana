@@ -3701,7 +3701,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
   <span style="font-size:18px;color:white;line-height:1;">🧮</span>
 </div>
 
-<div id="calc-panel" style="display:none;width:220px;background:white;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.2);z-index:1500;overflow:hidden;font-family:'Outfit',sans-serif;">
+<div id="calc-panel" style="display:none;width:220px;background:var(--white);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.2);z-index:1500;overflow:hidden;font-family:'Outfit',sans-serif;">
   <div style="background:#1A2332;padding:12px 16px 10px;">
     <div id="calc-expr" style="font-size:11px;color:rgba(255,255,255,0.4);min-height:18px;text-align:right;letter-spacing:0.3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px;"></div>
     <div id="calc-display" style="font-size:36px;font-weight:700;color:white;text-align:right;letter-spacing:-0.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.1;">0</div>
@@ -3782,7 +3782,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
   <!-- Highlight ring — box-shadow creates the cutout dim effect -->
   <div id="tour-highlight" style="position:fixed;border-radius:10px;transition:all 0.3s ease;z-index:9001;pointer-events:none;box-shadow:0 0 0 3px #F0C060,0 0 0 9999px rgba(0,0,0,0.6);"></div>
   <!-- Tooltip bubble -->
-  <div id="tour-tooltip" style="position:fixed;background:white;border-radius:14px;padding:18px 20px;width:300px;box-shadow:0 8px 40px rgba(0,0,0,0.3);z-index:9002;pointer-events:all;font-family:Outfit,sans-serif;transition:left 0.3s ease,top 0.3s ease;">
+  <div id="tour-tooltip" style="position:fixed;background:var(--white);border-radius:14px;padding:18px 20px;width:300px;box-shadow:0 8px 40px rgba(0,0,0,0.3);z-index:9002;pointer-events:all;font-family:Outfit,sans-serif;transition:left 0.3s ease,top 0.3s ease;">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
       <div id="tour-step-label" style="font-size:10px;font-weight:700;letter-spacing:1px;color:#A07800;text-transform:uppercase;"></div>
       <button onclick="endTour()" style="background:none;border:none;cursor:pointer;color:#6B7C8F;font-size:16px;line-height:1;padding:0 0 0 8px;" title="Skip tour">✕</button>
@@ -4287,7 +4287,7 @@ async function signOut() {
 function confirmDeleteAccount() {
   var modal = document.createElement('div');
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;';
-  modal.innerHTML = '<div style="background:white;border-radius:16px;padding:32px;width:100%;max-width:380px;margin:16px;font-family:\'Outfit\',sans-serif;">' +
+  modal.innerHTML = '<div style="background:var(--white);border-radius:16px;padding:32px;width:100%;max-width:380px;margin:16px;font-family:\'Outfit\',sans-serif;">' +
     '<div style="font-size:22px;font-weight:700;color:#1A2332;margin-bottom:8px;">Delete account?</div>' +
     '<div style="font-size:14px;color:#8A9AB5;margin-bottom:24px;line-height:1.5;">This will permanently delete your account and all your budget data. This cannot be undone.</div>' +
     '<div style="display:flex;gap:10px;">' +
@@ -4564,7 +4564,7 @@ function renameSectionPrompt(key) {
     '<label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#1A2332;cursor:pointer;"><input type="radio" name="rename-sec-scope" value="global" ' + (hasGlobalOverride && !hasMonthOverride ? 'checked' : '') + ' style="accent-color:#6B9E70;"> All months</label>' +
     '</div></div>' +
     '<div style="display:flex;gap:10px;">' +
-    '<button id="rename-sec-cancel" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid #E8EDF2;background:white;font-family:\'Outfit\',sans-serif;font-size:13px;font-weight:600;color:#6B7C8F;cursor:pointer;">Cancel</button>' +
+    '<button id="rename-sec-cancel" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid #E8EDF2;background:var(--white);font-family:\'Outfit\',sans-serif;font-size:13px;font-weight:600;color:#6B7C8F;cursor:pointer;">Cancel</button>' +
     '<button id="rename-sec-confirm" style="flex:1;padding:10px;border-radius:8px;border:none;background:#6B9E70;font-family:\'Outfit\',sans-serif;font-size:13px;font-weight:600;color:white;cursor:pointer;">Save</button>' +
     '</div>';
   overlay.appendChild(modal);
@@ -4653,7 +4653,7 @@ function renameMonth(oldKey) {
     '</div>' +
     '<div id="rename-error" style="font-size:12px;color:#C0736A;margin-bottom:12px;display:none;"></div>' +
     '<div style="display:flex;gap:10px;">' +
-      '<button id="rename-cancel" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid #E8EDF2;background:white;font-family:\'Outfit\',sans-serif;font-size:13px;font-weight:600;color:#6B7C8F;cursor:pointer;">Cancel</button>' +
+      '<button id="rename-cancel" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid #E8EDF2;background:var(--white);font-family:\'Outfit\',sans-serif;font-size:13px;font-weight:600;color:#6B7C8F;cursor:pointer;">Cancel</button>' +
       '<button id="rename-confirm" style="flex:1;padding:10px;border-radius:8px;border:none;background:#6B9E70;font-family:\'Outfit\',sans-serif;font-size:13px;font-weight:600;color:white;cursor:pointer;">Rename</button>' +
     '</div>';
 
@@ -4790,13 +4790,13 @@ function showCopyModal(keys, newKey) {
     <div style="display:flex;gap:8px;margin-bottom:16px;">
       <div style="flex:1;">
         <label style="font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#6B7C8F;display:block;margin-bottom:5px;">Month</label>
-        <select id="pick-month" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid #E8EDF2;font-family:'Outfit',sans-serif;font-size:13px;color:#1A2332;background:white;cursor:pointer;">
+        <select id="pick-month" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid #E8EDF2;font-family:'Outfit',sans-serif;font-size:13px;color:#1A2332;background:var(--white);cursor:pointer;">
           ${monthOptions}
         </select>
       </div>
       <div style="width:90px;">
         <label style="font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#6B7C8F;display:block;margin-bottom:5px;">Year</label>
-        <select id="pick-year" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid #E8EDF2;font-family:'Outfit',sans-serif;font-size:13px;color:#1A2332;background:white;cursor:pointer;">
+        <select id="pick-year" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid #E8EDF2;font-family:'Outfit',sans-serif;font-size:13px;color:#1A2332;background:var(--white);cursor:pointer;">
           ${yearOptions}
         </select>
       </div>
@@ -4807,7 +4807,7 @@ function showCopyModal(keys, newKey) {
     </div>
 
     <div style="display:flex;flex-direction:column;gap:10px;">
-      <button id="copy-fresh-btn" style="padding:12px;border-radius:8px;border:1.5px solid #E8EDF2;background:white;cursor:pointer;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:#1A2332;text-align:left;transition:border-color 0.15s;">
+      <button id="copy-fresh-btn" style="padding:12px;border-radius:8px;border:1.5px solid #E8EDF2;background:var(--white);cursor:pointer;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:#1A2332;text-align:left;transition:border-color 0.15s;">
         ✦ Start fresh
         <div style="font-size:11px;font-weight:400;color:#6B7C8F;margin-top:2px;">Blank tracker — fill in from scratch</div>
       </button>
@@ -4816,7 +4816,7 @@ function showCopyModal(keys, newKey) {
           ⟳ Copy from previous month
           <div style="font-size:11px;font-weight:400;color:#4A7A50;margin-top:2px;">Copies labels + budget amounts · clears actuals & dates</div>
         </button>
-        ${keys.length > 1 ? `<div style="margin-top:8px;"><label style="font-size:11px;color:var(--steel);display:block;margin-bottom:4px;">Or copy from:</label><select id="copy-source-select" style="width:100%;padding:8px;border-radius:6px;border:1px solid #E8EDF2;font-family:'Outfit',sans-serif;font-size:12px;color:#1A2332;background:white;">${keys.map(k => `<option value="${k}">${monthLabel(k)}</option>`).join('')}</select></div>` : ''}
+        ${keys.length > 1 ? `<div style="margin-top:8px;"><label style="font-size:11px;color:var(--steel);display:block;margin-bottom:4px;">Or copy from:</label><select id="copy-source-select" style="width:100%;padding:8px;border-radius:6px;border:1px solid #E8EDF2;font-family:'Outfit',sans-serif;font-size:12px;color:#1A2332;background:var(--white);">${keys.map(k => `<option value="${k}">${monthLabel(k)}</option>`).join('')}</select></div>` : ''}
       </div>
     </div>
     <button id="copy-cancel-btn" style="margin-top:16px;width:100%;padding:10px;border-radius:8px;border:none;background:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:12px;color:var(--steel);">Cancel</button>
@@ -4889,7 +4889,7 @@ function showCopySectionModal(section) {
     '</div></div>' +
     '<div id="copy-sec-error" style="font-size:12px;color:#C0736A;margin-bottom:12px;display:none;"></div>' +
     '<div style="display:flex;gap:10px;">' +
-    '<button id="copy-sec-cancel" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid #E8EDF2;background:white;font-family:\'Outfit\',sans-serif;font-size:13px;font-weight:600;color:#6B7C8F;cursor:pointer;">Cancel</button>' +
+    '<button id="copy-sec-cancel" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid #E8EDF2;background:var(--white);font-family:\'Outfit\',sans-serif;font-size:13px;font-weight:600;color:#6B7C8F;cursor:pointer;">Cancel</button>' +
     '<button id="copy-sec-confirm" style="flex:1;padding:10px;border-radius:8px;border:none;background:#6B9E70;font-family:\'Outfit\',sans-serif;font-size:13px;font-weight:600;color:white;cursor:pointer;">Copy rows</button>' +
     '</div>';
 
@@ -5125,7 +5125,7 @@ function deleteMonth(e, key) {
     <h3 style="margin:0 0 8px;font-size:16px;color:var(--ink);">Delete ${label}?</h3>
     <p style="margin:0 0 20px;font-size:13px;color:var(--steel);">This cannot be undone.</p>
     <div style="display:flex;gap:10px;">
-      <button id="del-cancel" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid #E8EDF2;background:white;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:#6B7C8F;cursor:pointer;">Cancel</button>
+      <button id="del-cancel" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid #E8EDF2;background:var(--white);font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:#6B7C8F;cursor:pointer;">Cancel</button>
       <button id="del-confirm" style="flex:1;padding:10px;border-radius:8px;border:none;background:#C0736A;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:white;cursor:pointer;">Delete</button>
     </div>
   `;
@@ -5541,7 +5541,7 @@ function confirmClearSection(section) {
     '<h3 style="margin:0 0 8px;font-size:16px;color:var(--ink);">Clear all rows?</h3>' +
     '<p style="margin:0 0 20px;font-size:13px;color:var(--steel);">This will remove all rows in this section. You can undo immediately after.</p>' +
     '<div style="display:flex;gap:10px;">' +
-    '<button id="ccs-cancel" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid #E8EDF2;background:white;font-family:\'Outfit\',sans-serif;font-size:13px;font-weight:600;color:#6B7C8F;cursor:pointer;">Cancel</button>' +
+    '<button id="ccs-cancel" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid #E8EDF2;background:var(--white);font-family:\'Outfit\',sans-serif;font-size:13px;font-weight:600;color:#6B7C8F;cursor:pointer;">Cancel</button>' +
     '<button id="ccs-confirm" style="flex:1;padding:10px;border-radius:8px;border:none;background:#C0736A;font-family:\'Outfit\',sans-serif;font-size:13px;font-weight:600;color:white;cursor:pointer;">Clear</button>' +
     '</div>';
   overlay.appendChild(modal);
@@ -5881,12 +5881,12 @@ function showBulkColorPicker(section) {
     '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
     '<input type="color" id="bcp-color-input" value="#6B9E70" style="width:40px;height:40px;border-radius:8px;border:1.5px solid #E8EDF2;cursor:pointer;padding:2px;">' +
     '<div id="bcp-swatches" style="display:flex;gap:6px;flex-wrap:wrap;"></div>' +
-    '<button id="bcp-clear-btn" style="padding:6px 10px;border-radius:8px;border:1.5px solid #E8EDF2;background:white;font-family:\'Outfit\',sans-serif;font-size:11px;color:var(--steel);cursor:pointer;">Clear</button>' +
+    '<button id="bcp-clear-btn" style="padding:6px 10px;border-radius:8px;border:1.5px solid #E8EDF2;background:var(--white);font-family:\'Outfit\',sans-serif;font-size:11px;color:var(--steel);cursor:pointer;">Clear</button>' +
     '</div></div>' +
 
     // Buttons
     '<div style="display:flex;gap:10px;">' +
-    '<button id="bcp-cancel" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid #E8EDF2;background:white;font-family:\'Outfit\',sans-serif;font-size:13px;font-weight:600;color:#6B7C8F;cursor:pointer;">Cancel</button>' +
+    '<button id="bcp-cancel" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid #E8EDF2;background:var(--white);font-family:\'Outfit\',sans-serif;font-size:13px;font-weight:600;color:#6B7C8F;cursor:pointer;">Cancel</button>' +
     '<button id="bcp-apply" style="flex:1;padding:10px;border-radius:8px;border:none;background:#6B9E70;font-family:\'Outfit\',sans-serif;font-size:13px;font-weight:600;color:white;cursor:pointer;">Apply</button>' +
     '</div>';
 
@@ -9721,7 +9721,7 @@ function showManageAccount() {
   modal.id = 'manage-account-modal';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;';
   modal.innerHTML = `
-    <div style="background:white;border-radius:16px;padding:32px;width:100%;max-width:380px;margin:16px;font-family:'Outfit',sans-serif;">
+    <div style="background:var(--white);border-radius:16px;padding:32px;width:100%;max-width:380px;margin:16px;font-family:'Outfit',sans-serif;">
       <div style="font-size:20px;font-weight:700;color:#1A2332;margin-bottom:4px;">Manage account</div>
       <div style="font-size:13px;color:#8A9AB5;margin-bottom:24px;">${email}</div>
       <button onclick="signOut();document.getElementById('manage-account-modal').remove();" style="width:100%;padding:12px;background:#F0F3F7;border:none;border-radius:10px;font-size:14px;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;color:#1A2332;margin-bottom:10px;text-align:left;">
@@ -9818,7 +9818,7 @@ function hideChecklist() {
 function loadDemo() {
   var overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;';
-  overlay.innerHTML = '<div style="background:white;border-radius:16px;padding:28px;width:100%;max-width:360px;margin:16px;font-family:Outfit,sans-serif;">' +
+  overlay.innerHTML = '<div style="background:var(--white);border-radius:16px;padding:28px;width:100%;max-width:360px;margin:16px;font-family:Outfit,sans-serif;">' +
     '<div style="font-size:18px;font-weight:700;color:var(--ink);margin-bottom:8px;">▶ Try demo</div>' +
     '<div style="font-size:14px;color:var(--slate);line-height:1.6;margin-bottom:20px;">This loads a sample month with color-coded rows, card tracking, and templates pre-filled.<br><br>Your real data is completely untouched — you can delete the demo anytime.</div>' +
     '<div style="display:flex;gap:10px;justify-content:flex-end;">' +
@@ -9933,7 +9933,7 @@ function _runLoadDemo() {
 function confirmDeleteDemo() {
   var overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;';
-  overlay.innerHTML = '<div style="background:white;border-radius:16px;padding:28px;width:100%;max-width:340px;margin:16px;font-family:Outfit,sans-serif;">' +
+  overlay.innerHTML = '<div style="background:var(--white);border-radius:16px;padding:28px;width:100%;max-width:340px;margin:16px;font-family:Outfit,sans-serif;">' +
     '<div style="font-size:17px;font-weight:700;color:var(--ink);margin-bottom:8px;">Remove demo month?</div>' +
     '<div style="font-size:14px;color:var(--slate);line-height:1.6;margin-bottom:20px;">This will delete all demo data. Your real months are untouched.</div>' +
     '<div style="display:flex;gap:10px;justify-content:flex-end;">' +
@@ -12079,7 +12079,7 @@ window.addEventListener('load', function() {
 </script>
 <!-- Auth Modal -->
 <div id="auth-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;align-items:center;justify-content:center;">
-  <div style="background:white;border-radius:16px;padding:36px;width:100%;max-width:400px;margin:16px;font-family:'Outfit',sans-serif;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+  <div style="background:var(--white);border-radius:16px;padding:36px;width:100%;max-width:400px;margin:16px;font-family:'Outfit',sans-serif;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
     <div style="text-align:center;margin-bottom:28px;">
       <div style="font-family:'Playfair Display',serif;font-size:28px;color:#1A2332;margin-bottom:4px;">Jet<span style="color:#6B9E70;font-style:italic;">tana</span></div>
       <div style="font-size:12px;color:#8A9AB5;letter-spacing:1.5px;">BUDGET · TRACK · GROW</div>
