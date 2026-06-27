@@ -7074,8 +7074,10 @@ function toggleNote(section, id) {
   if (!wrap) return;
   var opening = !wrap.classList.contains('open');
 
-  // Close any other open notes first
+  // Close other UI elements when opening a note
   if (opening) {
+    hideColorToolbar();
+    hideCtxMenu();
     document.querySelectorAll('.note-row.open').forEach(function(n) {
       if (n !== wrap) n.classList.remove('open');
     });
@@ -8358,6 +8360,8 @@ function showCtxMenuBtn(e, section, id) {
 
 function showCtxMenu(e, section, id) {
   e.preventDefault();
+  // Close color toolbar if open
+  hideColorToolbar();
   ctxSection = section;
   ctxId = id;
 
@@ -11587,6 +11591,8 @@ function updateLegendSwatches() {
 }
 
 function showColorToolbar(section, id, anchorEl) {
+  // Close ctx menu if open
+  hideCtxMenu();
   _tbSection = section;
   _tbId = id;
   var toolbar = document.getElementById('color-toolbar');
