@@ -88,26 +88,15 @@ body {
 
 .month-nav {
   padding: 18px 16px 10px;
-  border-bottom: 1px solid rgba(0,0,0,0.06);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
 }
 .month-nav .label {
   font-size: 11px;
   letter-spacing: 1px;
   text-transform: uppercase;
-  color: rgba(0,0,0,0.3);
+  color: rgba(255,255,255,0.4);
   margin-bottom: 10px;
 }
-/* White months panel */
-.sidebar-months-wrap {
-  flex: 1;
-  background: #F8F7F4;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-.dark .sidebar-months-wrap { background: #131C26; }
-.dark .month-nav { border-bottom-color: rgba(255,255,255,0.06); }
-.dark .month-nav .label { color: rgba(255,255,255,0.35); }
 .month-list { display: flex; flex-direction: column; gap: 2px; }
 
 /* Year groups */
@@ -127,26 +116,22 @@ body {
   border-left-color: var(--sage);
 }
 .year-header.active-year .year-header-label {
-  color: var(--ink);
+  color: white;
   font-weight: 700;
 }
 .year-header-label {
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.5px;
-  color: rgba(0,0,0,0.4);
+  color: rgba(255,255,255,0.6);
   flex: 1;
 }
-.year-header:hover .year-header-label { color: rgba(0,0,0,0.75); }
+.year-header:hover .year-header-label { color: rgba(255,255,255,0.9); }
 .year-toggle {
   font-size: 10px;
-  color: rgba(0,0,0,0.25);
+  color: rgba(255,255,255,0.3);
   transition: transform 0.2s;
 }
-.dark .year-header-label { color: rgba(255,255,255,0.5); }
-.dark .year-header:hover .year-header-label { color: rgba(255,255,255,0.9); }
-.dark .year-toggle { color: rgba(255,255,255,0.3); }
-.dark .year-header.active-year .year-header-label { color: white; }
 .year-group.collapsed .year-toggle { transform: rotate(-90deg); }
 .year-months { overflow: hidden; transition: max-height 0.25s ease; }
 .year-group.collapsed .year-months { max-height: 0 !important; }
@@ -158,59 +143,51 @@ body {
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.15s;
-  color: rgba(0,0,0,0.55);
+  color: rgba(255,255,255,0.65);
   font-size: 15px;
   font-weight: 500;
 }
-.month-item:hover { background: rgba(0,0,0,0.05); color: rgba(0,0,0,0.85); }
+.month-item:hover { background: rgba(255,255,255,0.07); color: white; }
 .month-item.active {
-  background: linear-gradient(to right, white 55%, var(--sage) 55%);
+  background: var(--sage);
   color: white;
   font-weight: 600;
-  border: 1px solid rgba(107,158,112,0.3);
 }
-.month-item.active .month-label { color: var(--ink) !important; }
+.month-item.active .month-label { color: white !important; }
 .month-item.active .dot { opacity: 1; background: white; }
-.dark .month-item.active {
-  background: linear-gradient(to right, #1E2A38 55%, var(--sage) 55%);
-  border-color: rgba(107,158,112,0.3);
-}
-.dark .month-item.active .month-label { color: var(--ink) !important; }
 .dark .month-item { color: rgba(255,255,255,0.55); }
 .dark .month-item:hover { background: rgba(255,255,255,0.07); color: white; }
 .month-item .dot {
   width: 6px; height: 6px;
   border-radius: 50%;
-  background: var(--sage);
+  background: white;
   flex-shrink: 0;
   opacity: 0;
   margin-left: 4px;
 }
-.month-item.active .dot { opacity: 1; background: white; }
+.month-item.active .dot { opacity: 1; }
 
 .add-month-btn {
   margin: 10px 16px 0;
   width: calc(100% - 32px);
   padding: 8px;
   border-radius: var(--radius-sm);
-  background: rgba(0,0,0,0.04);
-  border: 1px dashed rgba(0,0,0,0.15);
-  color: rgba(0,0,0,0.4);
+  background: rgba(255,255,255,0.06);
+  border: 1px dashed rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.4);
   font-size: 12px;
   font-family: 'Outfit', sans-serif;
   cursor: pointer;
   transition: all 0.15s;
 }
-.add-month-btn:hover { background: rgba(0,0,0,0.07); color: rgba(0,0,0,0.7); border-color: rgba(0,0,0,0.25); }
-.dark .add-month-btn { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.4); }
-.dark .add-month-btn:hover { background: rgba(255,255,255,0.1); color: white; border-color: rgba(255,255,255,0.3); }
+.add-month-btn:hover { background: rgba(255,255,255,0.1); color: white; border-color: rgba(255,255,255,0.3); }
 
 .month-del-btn {
   opacity: 0;
   background: none;
   border: none;
   cursor: pointer;
-  color: rgba(0,0,0,0.35);
+  color: rgba(255,255,255,0.5);
   font-size: 10px;
   padding: 2px 4px;
   border-radius: 4px;
@@ -224,7 +201,7 @@ body {
   background: none;
   border: none;
   cursor: pointer;
-  color: rgba(0,0,0,0.35);
+  color: rgba(255,255,255,0.5);
   font-size: 11px;
   padding: 2px 4px;
   border-radius: 4px;
@@ -232,7 +209,6 @@ body {
   flex-shrink: 0;
   line-height: 1;
 }
-.dark .month-del-btn, .dark .month-edit-btn { color: rgba(255,255,255,0.5); }
 .month-item:hover .month-del-btn,
 .month-item:hover .month-edit-btn { opacity: 1; }
 .month-del-btn:hover { color: white; background: rgba(255,255,255,0.15); }
@@ -3184,7 +3160,6 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <div class="tagline">Budget · Track · Grow</div>
     </div>
 
-    <div class="sidebar-months-wrap">
     <div class="month-nav">
       <div class="label">Your Months</div>
       <div class="month-list" id="month-list"></div>
@@ -3194,7 +3169,6 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
         <strong>Start fresh</strong> — blank month<br>
         <strong>Copy from previous</strong> — carry over your rows
       </div>
-    </div>
     </div>
     </div>
 
@@ -5181,13 +5155,20 @@ function renderSidebar() {
       var parts = key.split('-');
       var label = new Date(+parts[0], +parts[1]-1, 1).toLocaleDateString('en-US', { month: 'short' });
       if (key === 'demo-month') label = '✦ Demo';
-      // Apply title color only on inactive months — active always shows white
       var allData = loadAll();
       var titleColor = (allData[key] && allData[key]._titleColor) || '';
       var monthEmoji = (allData[key] && allData[key]._emoji) || '';
       var isActive = key === currentMonthKey;
+
+      // Apply split gradient for active month with custom color
+      if (isActive && titleColor) {
+        var leftColor = darkModeColor(titleColor);
+        div.style.background = 'linear-gradient(to right, ' + leftColor + '22 55%, var(--sage) 55%)';
+        div.style.border = '1px solid ' + leftColor + '44';
+      }
+
       div.innerHTML =
-        '<span class="month-label" ' + (!isActive && titleColor ? 'style="color:' + titleColor + '"' : '') + '>' + label + (monthEmoji ? ' ' + monthEmoji : '') + '</span>' +
+        '<span class="month-label" style="color:' + (isActive && titleColor ? darkModeColor(titleColor) : (isActive ? 'white' : (titleColor || ''))) + '">' + label + (monthEmoji ? ' ' + monthEmoji : '') + '</span>' +
         '<span class="dot"></span>' +
         '<button class="month-edit-btn" title="Rename month" id="edit-' + key + '">✎</button>' +
         '<button class="month-del-btn" title="Delete month" id="del-' + key + '">✕</button>';
