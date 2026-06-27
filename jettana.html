@@ -1101,38 +1101,25 @@ body {
   display: flex;
   position: fixed;
   top: 14px;
-  left: 14px;
+  left: 180px;
   z-index: 300;
   background: rgba(255,255,255,0.12);
   border: 1px solid rgba(255,255,255,0.15);
   border-radius: var(--radius-sm);
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   cursor: pointer;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 5px;
   padding: 0;
-  transition: background 0.15s;
+  transition: background 0.15s, left 0.25s ease;
 }
 .hamburger-btn:hover { background: rgba(255,255,255,0.22); }
-/* When sidebar is collapsed, button floats over main content */
-body.sidebar-collapsed .hamburger-btn {
-  background: var(--ink);
-  border-color: transparent;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-}
-.dark body.sidebar-collapsed .hamburger-btn,
-.dark .hamburger-btn {
-  background: rgba(255,255,255,0.1);
-  border-color: rgba(255,255,255,0.12);
-}
-.dark body.sidebar-collapsed .hamburger-btn {
-  background: #263545;
-  border-color: #2A3A4A;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-}
+.hamburger-btn:focus { outline: none; }
+/* When sidebar collapsed, move button to left edge */
+body.sidebar-collapsed .hamburger-btn { left: 14px; }
 .hamburger-btn span {
   display: block;
   width: 18px;
@@ -1165,7 +1152,7 @@ body.sidebar-collapsed .hamburger-btn {
 }
 
 @media (max-width: 900px) {
-  .hamburger-btn { display: flex; }
+  .hamburger-btn { left: 14px !important; display: flex; }
   .sidebar {
     transform: translateX(-100%);
     transition: transform 0.25s ease;
