@@ -7775,11 +7775,23 @@ function saveAlloc(section, id, val) {
 // ── Dark Mode ─────────────────────────────────────────────────
 function applyDark(dark) {
   document.documentElement.classList.toggle('dark', dark);
+  document.body.classList.toggle('dark', dark);
   var btn = document.getElementById('dark-toggle');
   if (btn) btn.textContent = dark ? '☀️' : '🌙';
   try { localStorage.setItem('intentra_dark', dark ? '1' : '0'); } catch(e) {}
   // Refresh intention color so dark/light flip applies
   loadIntention();
+  // Re-apply all row colors so dark↔light inversion kicks in
+  setTimeout(function() {
+    var all = loadAll();
+    var monthData = all[currentMonthKey] || {};
+    SECTIONS.forEach(function(sec) {
+      (monthData[sec] || []).forEach(function(row) {
+        if (row.paidColor)   applyTextColor(row.id, row.paidColor);
+        if (row.numColor)    applyNumColor(row.id, row.numColor);
+      });
+    });
+  }, 50);
 }
 
 function toggleDark() {
@@ -10126,11 +10138,27 @@ function applyRowColor(id, color) {
   }
 }
 
+// Returns white if color is too dark for dark mode background
+function darkModeColor(color) {
+  if (!color) return color;
+  if (!document.body.classList.contains('dark')) return color;
+  var tmp = document.createElement('div');
+  tmp.style.color = color;
+  document.body.appendChild(tmp);
+  var rgb = getComputedStyle(tmp).color.match(/\d+/g);
+  document.body.removeChild(tmp);
+  if (rgb) {
+    var lum = (parseInt(rgb[0]) * 299 + parseInt(rgb[1]) * 587 + parseInt(rgb[2]) * 114) / 1000;
+    if (lum < 80) return '#FFFFFF';
+  }
+  return color;
+}
+
 function applyTextColor(id, color) {
   var erow = document.querySelector('[data-id="' + id + '"]');
   if (erow) {
     var label = erow.querySelector('.erow-label-input');
-    if (label) label.style.color = color || '';
+    if (label) label.style.color = darkModeColor(color) || '';
   }
 }
 
@@ -11234,15 +11262,14 @@ function applyNumColor(id, color) {
   var erow = document.querySelector('[data-id="' + id + '"]');
   if (erow) {
     var section = erow.dataset.section;
-    // Savings: col 1 is actual, col 2 is gains — color both
-    // All others: col 2 is actual/received — color col 2 only
+    var displayColor = darkModeColor(color);
     if (section === 'savings') {
       erow.querySelectorAll('.erow-num-input').forEach(function(inp) {
-        inp.style.color = color || '';
+        inp.style.color = displayColor || '';
       });
     } else {
       var col2 = erow.querySelector('.erow-num-input[data-col="2"]');
-      if (col2) col2.style.color = color || '';
+      if (col2) col2.style.color = displayColor || '';
     }
   }
 }
