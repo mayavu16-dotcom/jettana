@@ -2488,7 +2488,7 @@ body.font-large.text-bold .erow-label-input {
   bottom: calc(100% + 8px);
   left: 50%;
   transform: translateX(-50%);
-  background: var(--ink);
+  background: #1A2332;
   color: white;
   font-family: 'Outfit', sans-serif;
   font-size: 11px;
@@ -2507,7 +2507,7 @@ body.font-large.text-bold .erow-label-input {
   left: 50%;
   transform: translateX(-50%);
   border: 5px solid transparent;
-  border-top-color: var(--ink);
+  border-top-color: #1A2332;
 }
 .new-month-wrap:hover .new-month-tooltip { display: block; }
 
@@ -4825,19 +4825,19 @@ function showCopyModal(keys, newKey) {
     `<option value="${y}" ${y===sugY?'selected':''}>${y}</option>`).join('');
 
   modal.innerHTML = `
-    <h3 style="margin:0 0 6px;font-family:'Playfair Display',serif;font-size:18px;color:#1A2332;">New Month</h3>
+    <h3 style="margin:0 0 6px;font-family:'Playfair Display',serif;font-size:18px;color:var(--ink);">New Month</h3>
     <p style="margin:0 0 14px;font-size:13px;color:var(--steel);">Choose a month and year, then pick a starting option.</p>
 
     <div style="display:flex;gap:8px;margin-bottom:16px;">
       <div style="flex:1;">
-        <label style="font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#6B7C8F;display:block;margin-bottom:5px;">Month</label>
-        <select id="pick-month" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid #E8EDF2;font-family:'Outfit',sans-serif;font-size:13px;color:#1A2332;background:var(--white);cursor:pointer;">
+        <label style="font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--steel);display:block;margin-bottom:5px;">Month</label>
+        <select id="pick-month" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--mist);font-family:'Outfit',sans-serif;font-size:13px;color:var(--ink);background:var(--white);cursor:pointer;">
           ${monthOptions}
         </select>
       </div>
       <div style="width:90px;">
-        <label style="font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#6B7C8F;display:block;margin-bottom:5px;">Year</label>
-        <select id="pick-year" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid #E8EDF2;font-family:'Outfit',sans-serif;font-size:13px;color:#1A2332;background:var(--white);cursor:pointer;">
+        <label style="font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--steel);display:block;margin-bottom:5px;">Year</label>
+        <select id="pick-year" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--mist);font-family:'Outfit',sans-serif;font-size:13px;color:var(--ink);background:var(--white);cursor:pointer;">
           ${yearOptions}
         </select>
       </div>
@@ -4848,16 +4848,16 @@ function showCopyModal(keys, newKey) {
     </div>
 
     <div style="display:flex;flex-direction:column;gap:10px;">
-      <button id="copy-fresh-btn" style="padding:12px;border-radius:8px;border:1.5px solid #E8EDF2;background:var(--white);cursor:pointer;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:#1A2332;text-align:left;transition:border-color 0.15s;">
+      <button id="copy-fresh-btn" style="padding:12px;border-radius:8px;border:1.5px solid #E8EDF2;background:var(--white);cursor:pointer;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--ink);text-align:left;transition:border-color 0.15s;">
         ✦ Start fresh
-        <div style="font-size:11px;font-weight:400;color:#6B7C8F;margin-top:2px;">Blank tracker — fill in from scratch</div>
+        <div style="font-size:11px;font-weight:400;color:var(--steel);margin-top:2px;">Blank tracker — fill in from scratch</div>
       </button>
       <div style="position:relative;">
-        <button id="copy-prev-btn" style="width:100%;padding:12px;border-radius:8px;border:1.5px solid #6B9E70;background:#F0F7F1;cursor:pointer;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:#1A2332;text-align:left;transition:all 0.15s;">
+        <button id="copy-prev-btn" style="width:100%;padding:12px;border-radius:8px;border:1.5px solid #6B9E70;background:#F0F7F1;cursor:pointer;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--ink);text-align:left;transition:all 0.15s;">
           ⟳ Copy from previous month
           <div style="font-size:11px;font-weight:400;color:#4A7A50;margin-top:2px;">Copies labels + budget amounts · clears actuals & dates</div>
         </button>
-        ${keys.length > 1 ? `<div style="margin-top:8px;"><label style="font-size:11px;color:var(--steel);display:block;margin-bottom:4px;">Or copy from:</label><select id="copy-source-select" style="width:100%;padding:8px;border-radius:6px;border:1px solid #E8EDF2;font-family:'Outfit',sans-serif;font-size:12px;color:#1A2332;background:var(--white);">${keys.map(k => `<option value="${k}">${monthLabel(k)}</option>`).join('')}</select></div>` : ''}
+        ${keys.length > 1 ? `<div style="margin-top:8px;"><label style="font-size:11px;color:var(--steel);display:block;margin-bottom:4px;">Or copy from:</label><select id="copy-source-select" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--mist);font-family:'Outfit',sans-serif;font-size:12px;color:var(--ink);background:var(--white);">${keys.map(k => `<option value="${k}">${monthLabel(k)}</option>`).join('')}</select></div>` : ''}
       </div>
     </div>
     <button id="copy-cancel-btn" style="margin-top:16px;width:100%;padding:10px;border-radius:8px;border:none;background:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:12px;color:var(--steel);">Cancel</button>
@@ -5134,8 +5134,11 @@ function renderSidebar() {
       var parts = key.split('-');
       var label = new Date(+parts[0], +parts[1]-1, 1).toLocaleDateString('en-US', { month: 'short' });
       if (key === 'demo-month') label = '✦ Demo';
+      // Apply title color if set
+      var allData = loadAll();
+      var titleColor = (allData[key] && allData[key]._titleColor) || '';
       div.innerHTML =
-        '<span class="month-label">' + label + '</span>' +
+        '<span class="month-label" ' + (titleColor ? 'style="color:' + titleColor + '"' : '') + '>' + label + '</span>' +
         '<span class="dot"></span>' +
         '<button class="month-edit-btn" title="Rename month" id="edit-' + key + '">✎</button>' +
         '<button class="month-del-btn" title="Delete month" id="del-' + key + '">✕</button>';
