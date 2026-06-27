@@ -1368,7 +1368,21 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
-.note-indicator.has-note { pointer-events: all; cursor: pointer; }
+.note-indicator.has-note {
+  pointer-events: all;
+  cursor: pointer;
+}
+/* Large invisible tap target around the tiny dot */
+.note-indicator.has-note::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
 .erow:hover .note-indicator.has-note { opacity: 1; }
 @media (pointer: coarse) {
   .erow .note-indicator.has-note { opacity: 1; }
@@ -5327,7 +5341,7 @@ function renderRowEl(section, row, animate = false) {
         onkeydown="labelKeyDown(event,this); acKeyDown(event,this,'${section}')"
         onblur="setTimeout(hideAutocomplete, 150)"
         >
-      <span class="note-indicator ${(row.note || row.alloc) ? 'has-note' : ''}" id="note-dot-${row.id}" title="Has note" onclick="event.stopPropagation();toggleNote('${section}','${row.id}')" ontouchstart="event.stopPropagation();event.preventDefault();toggleNote('${section}','${row.id}')"></span>
+      <span class="note-indicator ${(row.note || row.alloc) ? 'has-note' : ''}" id="note-dot-${row.id}" title="Has note" onclick="event.stopPropagation();event.preventDefault();toggleNote('${section}','${row.id}')" ontouchstart="event.stopPropagation();event.preventDefault();toggleNote('${section}','${row.id}')" ontouchend="event.stopPropagation();event.preventDefault()"></span>
       <span class="exempt-badge" id="exempt-badge-${row.id}" title="Exempt — not included in totals">exempt</span>
 
 
