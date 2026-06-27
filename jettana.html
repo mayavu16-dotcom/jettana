@@ -108,6 +108,16 @@ body {
   padding: 6px 10px 4px;
   cursor: pointer;
   user-select: none;
+  border-left: 2px solid transparent;
+  transition: border-color 0.2s;
+  border-radius: 0 4px 4px 0;
+}
+.year-header.active-year {
+  border-left-color: var(--sage);
+}
+.year-header.active-year .year-header-label {
+  color: white;
+  font-weight: 700;
 }
 .year-header-label {
   font-size: 14px;
@@ -5110,7 +5120,9 @@ function renderSidebar() {
 
     // Year header
     var header = document.createElement('div');
-    header.className = 'year-header';
+    var currentYear = currentMonthKey ? currentMonthKey.split('-')[0] : null;
+    var isActiveYear = String(year) === String(currentYear);
+    header.className = 'year-header' + (isActiveYear ? ' active-year' : '');
     header.innerHTML = '<span class="year-header-label">' + year + '</span><span class="year-toggle">▾</span>';
     header.onclick = function() {
       var isNowCollapsed = group.classList.toggle('collapsed');
