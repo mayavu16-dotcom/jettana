@@ -3175,9 +3175,9 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
     <div class="topbar">
       <div class="topbar-left">
-        <div style="display:flex;align-items:center;gap:8px;">
+        <div style="display:flex;align-items:center;gap:10px;">
           <h2 id="topbar-title">Loading…</h2>
-          <span id="month-emoji-display" onclick="toggleMonthEmojiPicker(event)" title="Add emoji" style="font-size:22px;cursor:pointer;opacity:0;transition:opacity 0.15s,transform 0.15s;flex-shrink:0;line-height:1;"></span>
+          <span id="month-emoji-display" onclick="toggleMonthEmojiPicker(event)" title="Add emoji" style="font-size:28px;cursor:pointer;opacity:0;transition:opacity 0.15s,transform 0.15s;flex-shrink:0;line-height:1;display:flex;align-items:center;"></span>
           <div id="month-color-btn" onclick="toggleMonthColorPicker(event)" title="Color this month's title" style="width:12px;height:12px;border-radius:50%;background:var(--mist);cursor:pointer;flex-shrink:0;opacity:0;transition:opacity 0.15s;border:1.5px solid rgba(0,0,0,0.1);"></div>
         </div>
         <div class="sub" id="topbar-sub"></div>
@@ -10193,12 +10193,20 @@ function applyRowColor(id, color) {
 
 // Returns white if color is too dark for dark mode background
 // ── Month Emoji ───────────────────────────────────────────────
+// ── Month Emoji ───────────────────────────────────────────────
 var MONTH_EMOJIS = [
-  '🎄','🎃','🎆','🌸','☀️','🍂','❄️','🌊','🌙','⭐',
-  '💸','💰','💳','📈','📉','🏦','💵','🪙','💎','🎯',
-  '💪','🏃','🧘','🌱','🌿','🍀','🌺','🦋','🌈','✨',
-  '🎉','🥂','🎂','🎁','❤️','💚','💙','💜','🔥','⚡',
-  '😊','😅','😤','😴','🤩','🥳','😭','🫶','🙏','✌️'
+  // Seasonal
+  '🎄','🎃','🎆','🎇','🌸','☀️','🌊','🍂','❄️','🌨️',
+  '🌙','⭐','🌟','✨','🌈','🌺','🌻','🌷','🍀','🌿',
+  // Money & Finance
+  '💸','💰','💳','📈','📉','🏦','💵','🪙','💎','🤑',
+  '🏧','💹','📊','🧾','💼','🏆','🎯','🪄','🔑','🗝️',
+  // Mood & Vibe
+  '😊','😅','😤','😴','🤩','🥳','😭','🫶','🙏','✌️',
+  '💪','🧘','🏃','🎉','🥂','🎂','🎁','❤️','💚','💙',
+  // Activities
+  '✈️','🏖️','🏕️','🎵','🎸','📚','🍕','🍜','☕','🧁',
+  '🐶','🐱','🌍','🚀','⚽','🎮','🧩','🪴','🫧','🦋'
 ];
 
 function toggleMonthEmojiPicker(e) {
@@ -10211,44 +10219,64 @@ function toggleMonthEmojiPicker(e) {
 
   var popup = document.createElement('div');
   popup.id = 'month-emoji-popup';
-  popup.style.cssText = 'position:fixed;z-index:2000;background:var(--white);border:1px solid var(--mist);border-radius:14px;padding:14px;box-shadow:0 8px 30px rgba(0,0,0,0.2);font-family:Outfit,sans-serif;width:260px;';
+  popup.style.cssText = 'position:fixed;z-index:2000;background:var(--white);border:1px solid var(--mist);border-radius:14px;padding:14px;box-shadow:0 8px 30px rgba(0,0,0,0.2);font-family:Outfit,sans-serif;width:280px;';
 
   var btn = document.getElementById('month-emoji-display');
   var rect = btn.getBoundingClientRect();
-  popup.style.top = (rect.bottom + 8) + 'px';
-  popup.style.left = Math.min(rect.left, window.innerWidth - 276) + 'px';
+  var top = rect.bottom + 8;
+  var left = Math.min(rect.left, window.innerWidth - 296);
+  if (top + 340 > window.innerHeight) top = rect.top - 348;
+  popup.style.top = top + 'px';
+  popup.style.left = left + 'px';
 
   popup.innerHTML =
     '<div style="font-size:11px;font-weight:700;color:var(--steel);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Month emoji</div>' +
-    '<div style="display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin-bottom:12px;" id="emoji-grid"></div>' +
-    '<div style="display:flex;align-items:center;gap:8px;">' +
-    '<input id="emoji-custom-input" type="text" placeholder="Or type any emoji…" maxlength="4" style="flex:1;padding:7px 10px;border-radius:8px;border:1.5px solid var(--mist);font-size:16px;font-family:Outfit,sans-serif;color:var(--ink);background:var(--white);outline:none;">' +
-    '<button onclick="setMonthEmoji(document.getElementById(\'emoji-custom-input\').value.trim());document.getElementById(\'month-emoji-popup\').remove();" style="padding:7px 12px;border-radius:8px;border:none;background:var(--sage);color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:Outfit,sans-serif;">Set</button>' +
+    '<input id="emoji-search" type="text" placeholder="🔍 Search emojis…" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--mist);font-size:13px;font-family:Outfit,sans-serif;color:var(--ink);background:var(--white);outline:none;box-sizing:border-box;margin-bottom:10px;">' +
+    '<div id="emoji-grid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:2px;max-height:180px;overflow-y:auto;margin-bottom:10px;"></div>' +
+    '<div style="display:flex;gap:8px;">' +
+    '<input id="emoji-custom-input" type="text" placeholder="Paste any emoji…" maxlength="8" style="flex:1;padding:7px 10px;border-radius:8px;border:1.5px solid var(--mist);font-size:16px;font-family:Outfit,sans-serif;color:var(--ink);background:var(--white);outline:none;">' +
+    '<button id="emoji-set-btn" style="padding:7px 12px;border-radius:8px;border:none;background:var(--sage);color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:Outfit,sans-serif;">Set</button>' +
     '</div>' +
     '<button onclick="setMonthEmoji(\'\');document.getElementById(\'month-emoji-popup\').remove();" style="margin-top:8px;width:100%;padding:6px;border-radius:8px;border:1px solid var(--mist);background:none;font-size:12px;color:var(--steel);cursor:pointer;font-family:Outfit,sans-serif;">Clear emoji</button>';
 
   document.body.appendChild(popup);
 
-  // Populate grid
-  var grid = popup.querySelector('#emoji-grid');
-  MONTH_EMOJIS.forEach(function(em) {
-    var cell = document.createElement('button');
-    cell.textContent = em;
-    cell.style.cssText = 'background:' + (em === currentEmoji ? 'var(--sage-light)' : 'none') + ';border:none;border-radius:6px;font-size:18px;cursor:pointer;padding:2px;line-height:1;transition:background 0.1s;';
-    cell.onmouseenter = function() { this.style.background = 'var(--mist-light)'; };
-    cell.onmouseleave = function() { this.style.background = em === currentEmoji ? 'var(--sage-light)' : 'none'; };
-    cell.onclick = function() { setMonthEmoji(em); popup.remove(); };
-    grid.appendChild(cell);
-  });
-
-  // Pre-fill custom input if custom emoji
-  if (currentEmoji && !MONTH_EMOJIS.includes(currentEmoji)) {
-    popup.querySelector('#emoji-custom-input').value = currentEmoji;
+  function renderGrid(filter) {
+    var grid = document.getElementById('emoji-grid');
+    grid.innerHTML = '';
+    var list = filter ? MONTH_EMOJIS.filter(function(em) {
+      return em.includes(filter);
+    }) : MONTH_EMOJIS;
+    if (!list.length) {
+      grid.innerHTML = '<div style="grid-column:span 8;text-align:center;padding:12px;font-size:12px;color:var(--steel);">No matches — paste it below</div>';
+      return;
+    }
+    list.forEach(function(em) {
+      var cell = document.createElement('button');
+      cell.textContent = em;
+      cell.style.cssText = 'background:' + (em === currentEmoji ? 'var(--sage-light)' : 'none') + ';border:none;border-radius:6px;font-size:22px;cursor:pointer;padding:4px;line-height:1;transition:background 0.1s;aspect-ratio:1;';
+      cell.onmouseenter = function() { this.style.background = 'var(--mist-light)'; };
+      cell.onmouseleave = function() { this.style.background = em === currentEmoji ? 'var(--sage-light)' : 'none'; };
+      cell.onclick = function() { setMonthEmoji(em); popup.remove(); };
+      grid.appendChild(cell);
+    });
   }
+
+  renderGrid('');
+
+  document.getElementById('emoji-search').oninput = function() {
+    renderGrid(this.value.trim());
+  };
+  document.getElementById('emoji-search').focus();
+
+  document.getElementById('emoji-set-btn').onclick = function() {
+    var val = document.getElementById('emoji-custom-input').value.trim();
+    if (val) { setMonthEmoji(val); popup.remove(); }
+  };
 
   setTimeout(function() {
     document.addEventListener('click', function handler(e) {
-      if (!popup.contains(e.target)) { popup.remove(); document.removeEventListener('click', handler); }
+      if (!popup.contains(e.target) && e.target !== btn) { popup.remove(); document.removeEventListener('click', handler); }
     });
   }, 50);
 }
