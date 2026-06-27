@@ -1098,13 +1098,13 @@ body {
 }
 
 .hamburger-btn {
-  display: none;
+  display: flex;
   position: fixed;
   top: 14px;
   left: 14px;
   z-index: 300;
-  background: var(--ink);
-  border: none;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.15);
   border-radius: var(--radius-sm);
   width: 38px;
   height: 38px;
@@ -1114,6 +1114,24 @@ body {
   justify-content: center;
   gap: 5px;
   padding: 0;
+  transition: background 0.15s;
+}
+.hamburger-btn:hover { background: rgba(255,255,255,0.22); }
+/* When sidebar is collapsed, button floats over main content */
+body.sidebar-collapsed .hamburger-btn {
+  background: var(--ink);
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.dark body.sidebar-collapsed .hamburger-btn,
+.dark .hamburger-btn {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.12);
+}
+.dark body.sidebar-collapsed .hamburger-btn {
+  background: #263545;
+  border-color: #2A3A4A;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
 }
 .hamburger-btn span {
   display: block;
@@ -1131,6 +1149,20 @@ body {
   z-index: 150;
 }
 .sidebar-overlay.visible { display: block; }
+
+@media (min-width: 901px) {
+  body.sidebar-collapsed .sidebar {
+    transform: translateX(-220px);
+    transition: transform 0.25s ease;
+  }
+  body.sidebar-collapsed .main-content {
+    margin-left: 0 !important;
+    transition: margin-left 0.25s ease;
+  }
+  .main-content { transition: margin-left 0.25s ease; }
+  body.sidebar-collapsed #calc-fab  { left: 16px !important; }
+  body.sidebar-collapsed #calc-panel { left: 16px !important; }
+}
 
 @media (max-width: 900px) {
   .hamburger-btn { display: flex; }
@@ -6543,13 +6575,25 @@ function saveDate2(section, id, dateVal) {
 }
 
 document.getElementById('hamburger-btn').addEventListener('click', () => {
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('sidebar-overlay').classList.toggle('visible');
+  var isDesktop = window.innerWidth > 900;
+  if (isDesktop) {
+    document.body.classList.toggle('sidebar-collapsed');
+    try { localStorage.setItem('intentra_sidebar_collapsed', document.body.classList.contains('sidebar-collapsed') ? '1' : '0'); } catch(e) {}
+  } else {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebar-overlay').classList.toggle('visible');
+  }
 });
 function closeSidebar() {
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('sidebar-overlay').classList.remove('visible');
 }
+// Restore desktop sidebar state on load
+try {
+  if (localStorage.getItem('intentra_sidebar_collapsed') === '1' && window.innerWidth > 900) {
+    document.body.classList.add('sidebar-collapsed');
+  }
+} catch(e) {}
 
 function nwGoalFocus(el) {
   const raw = el.dataset.raw || '';
