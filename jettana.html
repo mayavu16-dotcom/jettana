@@ -5163,12 +5163,12 @@ function renderSidebar() {
       // Apply split gradient for active month with custom color
       if (isActive && titleColor) {
         var leftColor = darkModeColor(titleColor);
-        div.style.background = 'linear-gradient(to right, ' + leftColor + '22 55%, var(--sage) 55%)';
-        div.style.border = '1px solid ' + leftColor + '44';
+        div.style.background = 'linear-gradient(to right, ' + leftColor + ' 55%, var(--sage) 55%)';
+        div.style.border = 'none';
       }
 
       div.innerHTML =
-        '<span class="month-label" style="color:' + (isActive && titleColor ? darkModeColor(titleColor) : (isActive ? 'white' : (titleColor || ''))) + '">' + label + (monthEmoji ? ' ' + monthEmoji : '') + '</span>' +
+        '<span class="month-label" style="color:' + (isActive && titleColor ? 'white' : (isActive ? 'white' : (titleColor || ''))) + '">' + label + (monthEmoji ? ' ' + monthEmoji : '') + '</span>' +
         '<span class="dot"></span>' +
         '<button class="month-edit-btn" title="Rename month" id="edit-' + key + '">✎</button>' +
         '<button class="month-del-btn" title="Delete month" id="del-' + key + '">✕</button>';
