@@ -1458,6 +1458,8 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
   box-shadow: 0 1px 4px rgba(0,0,0,0.4);
 }
 .topbar-left:hover #month-color-btn { opacity: 1; }
+.topbar-left:hover #month-emoji-display { opacity: 1; }
+#month-emoji-display.has-emoji { opacity: 1; }
 #month-color-btn:hover { transform: scale(1.3); }
 .dark .topbar-left .sub { color: var(--steel); }
 
@@ -3174,6 +3176,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <div class="topbar-left">
         <div style="display:flex;align-items:center;gap:8px;">
           <h2 id="topbar-title">Loading…</h2>
+          <span id="month-emoji-display" onclick="toggleMonthEmojiPicker(event)" title="Add emoji" style="font-size:18px;cursor:pointer;opacity:0;transition:opacity 0.15s;flex-shrink:0;line-height:1;"></span>
           <div id="month-color-btn" onclick="toggleMonthColorPicker(event)" title="Color this month's title" style="width:12px;height:12px;border-radius:50%;background:var(--mist);cursor:pointer;flex-shrink:0;opacity:0;transition:opacity 0.15s;border:1.5px solid rgba(0,0,0,0.1);"></div>
         </div>
         <div class="sub" id="topbar-sub"></div>
@@ -5072,6 +5075,7 @@ function switchMonth(key) {
   applyFtHighlights();
   applySectionNames();
   applyMonthTitleColor();
+  applyMonthEmoji();
   if (_bulkSection) cancelBulk(_bulkSection);
   // Close section popover if open
   if (_secPopover) { _secPopover.remove(); _secPopover = null; }
@@ -5151,9 +5155,10 @@ function renderSidebar() {
       // Apply title color only on inactive months — active always shows white
       var allData = loadAll();
       var titleColor = (allData[key] && allData[key]._titleColor) || '';
+      var monthEmoji = (allData[key] && allData[key]._emoji) || '';
       var isActive = key === currentMonthKey;
       div.innerHTML =
-        '<span class="month-label" ' + (!isActive && titleColor ? 'style="color:' + titleColor + '"' : '') + '>' + label + '</span>' +
+        '<span class="month-label" ' + (!isActive && titleColor ? 'style="color:' + titleColor + '"' : '') + '>' + label + (monthEmoji ? ' ' + monthEmoji : '') + '</span>' +
         '<span class="dot"></span>' +
         '<button class="month-edit-btn" title="Rename month" id="edit-' + key + '">✎</button>' +
         '<button class="month-del-btn" title="Delete month" id="del-' + key + '">✕</button>';
@@ -10186,6 +10191,93 @@ function applyRowColor(id, color) {
 }
 
 // Returns white if color is too dark for dark mode background
+// ── Month Emoji ───────────────────────────────────────────────
+var MONTH_EMOJIS = [
+  '🎄','🎃','🎆','🌸','☀️','🍂','❄️','🌊','🌙','⭐',
+  '💸','💰','💳','📈','📉','🏦','💵','🪙','💎','🎯',
+  '💪','🏃','🧘','🌱','🌿','🍀','🌺','🦋','🌈','✨',
+  '🎉','🥂','🎂','🎁','❤️','💚','💙','💜','🔥','⚡',
+  '😊','😅','😤','😴','🤩','🥳','😭','🫶','🙏','✌️'
+];
+
+function toggleMonthEmojiPicker(e) {
+  e.stopPropagation();
+  var existing = document.getElementById('month-emoji-popup');
+  if (existing) { existing.remove(); return; }
+
+  var all = loadAll();
+  var currentEmoji = (all[currentMonthKey] && all[currentMonthKey]._emoji) || '';
+
+  var popup = document.createElement('div');
+  popup.id = 'month-emoji-popup';
+  popup.style.cssText = 'position:fixed;z-index:2000;background:var(--white);border:1px solid var(--mist);border-radius:14px;padding:14px;box-shadow:0 8px 30px rgba(0,0,0,0.2);font-family:Outfit,sans-serif;width:260px;';
+
+  var btn = document.getElementById('month-emoji-display');
+  var rect = btn.getBoundingClientRect();
+  popup.style.top = (rect.bottom + 8) + 'px';
+  popup.style.left = Math.min(rect.left, window.innerWidth - 276) + 'px';
+
+  popup.innerHTML =
+    '<div style="font-size:11px;font-weight:700;color:var(--steel);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Month emoji</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin-bottom:12px;" id="emoji-grid"></div>' +
+    '<div style="display:flex;align-items:center;gap:8px;">' +
+    '<input id="emoji-custom-input" type="text" placeholder="Or type any emoji…" maxlength="4" style="flex:1;padding:7px 10px;border-radius:8px;border:1.5px solid var(--mist);font-size:16px;font-family:Outfit,sans-serif;color:var(--ink);background:var(--white);outline:none;">' +
+    '<button onclick="setMonthEmoji(document.getElementById(\'emoji-custom-input\').value.trim());document.getElementById(\'month-emoji-popup\').remove();" style="padding:7px 12px;border-radius:8px;border:none;background:var(--sage);color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:Outfit,sans-serif;">Set</button>' +
+    '</div>' +
+    '<button onclick="setMonthEmoji(\'\');document.getElementById(\'month-emoji-popup\').remove();" style="margin-top:8px;width:100%;padding:6px;border-radius:8px;border:1px solid var(--mist);background:none;font-size:12px;color:var(--steel);cursor:pointer;font-family:Outfit,sans-serif;">Clear emoji</button>';
+
+  document.body.appendChild(popup);
+
+  // Populate grid
+  var grid = popup.querySelector('#emoji-grid');
+  MONTH_EMOJIS.forEach(function(em) {
+    var cell = document.createElement('button');
+    cell.textContent = em;
+    cell.style.cssText = 'background:' + (em === currentEmoji ? 'var(--sage-light)' : 'none') + ';border:none;border-radius:6px;font-size:18px;cursor:pointer;padding:2px;line-height:1;transition:background 0.1s;';
+    cell.onmouseenter = function() { this.style.background = 'var(--mist-light)'; };
+    cell.onmouseleave = function() { this.style.background = em === currentEmoji ? 'var(--sage-light)' : 'none'; };
+    cell.onclick = function() { setMonthEmoji(em); popup.remove(); };
+    grid.appendChild(cell);
+  });
+
+  // Pre-fill custom input if custom emoji
+  if (currentEmoji && !MONTH_EMOJIS.includes(currentEmoji)) {
+    popup.querySelector('#emoji-custom-input').value = currentEmoji;
+  }
+
+  setTimeout(function() {
+    document.addEventListener('click', function handler(e) {
+      if (!popup.contains(e.target)) { popup.remove(); document.removeEventListener('click', handler); }
+    });
+  }, 50);
+}
+
+function setMonthEmoji(emoji) {
+  var all = loadAll();
+  if (!all[currentMonthKey]) all[currentMonthKey] = {};
+  if (emoji) all[currentMonthKey]._emoji = emoji;
+  else delete all[currentMonthKey]._emoji;
+  saveAll(all);
+  applyMonthEmoji();
+  renderSidebar();
+}
+
+function applyMonthEmoji() {
+  var all = loadAll();
+  var emoji = (all[currentMonthKey] && all[currentMonthKey]._emoji) || '';
+  var btn = document.getElementById('month-emoji-display');
+  if (!btn) return;
+  if (emoji) {
+    btn.textContent = emoji;
+    btn.classList.add('has-emoji');
+    btn.title = 'Change emoji';
+  } else {
+    btn.textContent = '😊';
+    btn.classList.remove('has-emoji');
+    btn.title = 'Add emoji';
+  }
+}
+
 // ── Month Title Color ─────────────────────────────────────────
 function toggleMonthColorPicker(e) {
   e.stopPropagation();
