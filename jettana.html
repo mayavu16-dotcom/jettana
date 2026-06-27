@@ -10194,19 +10194,121 @@ function applyRowColor(id, color) {
 // Returns white if color is too dark for dark mode background
 // ── Month Emoji ───────────────────────────────────────────────
 // ── Month Emoji ───────────────────────────────────────────────
-var MONTH_EMOJIS = [
-  // Seasonal
-  '🎄','🎃','🎆','🎇','🌸','☀️','🌊','🍂','❄️','🌨️',
-  '🌙','⭐','🌟','✨','🌈','🌺','🌻','🌷','🍀','🌿',
+var EMOJI_DATA = [
+  // Seasonal & Weather
+  {e:'🎄',k:'christmas winter holiday december tree'},
+  {e:'🎃',k:'halloween october spooky pumpkin'},
+  {e:'🎆',k:'fireworks new year celebration'},
+  {e:'🎇',k:'sparkler new year celebration'},
+  {e:'❄️',k:'snow winter cold ice'},
+  {e:'☃️',k:'snowman winter cold'},
+  {e:'🌨️',k:'snow winter cold'},
+  {e:'🌸',k:'spring cherry blossom april flower'},
+  {e:'🌺',k:'flower spring bloom hibiscus'},
+  {e:'🌻',k:'sunflower summer flower'},
+  {e:'🌷',k:'tulip spring flower'},
+  {e:'☀️',k:'sun summer sunny hot'},
+  {e:'🌊',k:'wave ocean summer beach water'},
+  {e:'🏖️',k:'beach summer vacation sun'},
+  {e:'🍂',k:'autumn fall leaves october'},
+  {e:'🍁',k:'autumn fall maple leaf canada'},
+  {e:'🌈',k:'rainbow colorful happy'},
+  {e:'⛈️',k:'storm thunder rain'},
+  {e:'🌙',k:'moon night dark'},
+  {e:'⭐',k:'star night wish'},
+  {e:'🌟',k:'star glowing bright'},
+  {e:'✨',k:'sparkle shine magic'},
+  {e:'🔥',k:'fire hot streak'},
+  {e:'⚡',k:'lightning bolt energy fast'},
   // Money & Finance
-  '💸','💰','💳','📈','📉','🏦','💵','🪙','💎','🤑',
-  '🏧','💹','📊','🧾','💼','🏆','🎯','🪄','🔑','🗝️',
-  // Mood & Vibe
-  '😊','😅','😤','😴','🤩','🥳','😭','🫶','🙏','✌️',
-  '💪','🧘','🏃','🎉','🥂','🎂','🎁','❤️','💚','💙',
-  // Activities
-  '✈️','🏖️','🏕️','🎵','🎸','📚','🍕','🍜','☕','🧁',
-  '🐶','🐱','🌍','🚀','⚽','🎮','🧩','🪴','🫧','🦋'
+  {e:'💸',k:'money spending cash flying'},
+  {e:'💰',k:'money bag savings rich'},
+  {e:'💳',k:'card credit debit payment'},
+  {e:'📈',k:'growth chart up profit gains'},
+  {e:'📉',k:'down chart loss decline'},
+  {e:'🏦',k:'bank savings institution'},
+  {e:'💵',k:'dollar cash money bill'},
+  {e:'🪙',k:'coin gold money savings'},
+  {e:'💎',k:'diamond gem precious valuable'},
+  {e:'🤑',k:'rich money greedy cash'},
+  {e:'💹',k:'chart yen growth finance'},
+  {e:'📊',k:'chart bar stats graph'},
+  {e:'🧾',k:'receipt bill tax expenses'},
+  {e:'💼',k:'briefcase work business'},
+  {e:'🏧',k:'atm cash machine withdraw'},
+  {e:'🎯',k:'target goal aim focus'},
+  {e:'🏆',k:'trophy win achievement goal'},
+  {e:'🥇',k:'gold medal first place win'},
+  // Mood & Feelings
+  {e:'😊',k:'happy smile good mood'},
+  {e:'😅',k:'sweat nervous anxious'},
+  {e:'😤',k:'frustrated angry tough'},
+  {e:'😴',k:'tired sleep rest'},
+  {e:'🤩',k:'excited star eyes amazing'},
+  {e:'🥳',k:'party celebrate birthday'},
+  {e:'😭',k:'cry sad tears hard'},
+  {e:'🫶',k:'love heart care support'},
+  {e:'🙏',k:'grateful thankful pray'},
+  {e:'✌️',k:'peace victory chill'},
+  {e:'🫠',k:'melting stressed overwhelmed'},
+  {e:'😬',k:'nervous uncomfortable yikes'},
+  {e:'🥹',k:'touched emotional grateful'},
+  {e:'😎',k:'cool confident sunglasses'},
+  {e:'🤔',k:'thinking planning hmm'},
+  // Health & Wellness
+  {e:'💪',k:'strong gym workout fitness'},
+  {e:'🧘',k:'meditation yoga calm peace'},
+  {e:'🏃',k:'running exercise fitness active'},
+  {e:'🥗',k:'healthy eating salad diet'},
+  {e:'🍎',k:'healthy apple diet nutrition'},
+  {e:'💊',k:'medicine health pills'},
+  {e:'🏥',k:'hospital medical health'},
+  {e:'😷',k:'sick mask illness health'},
+  {e:'🧠',k:'brain mental health smart'},
+  {e:'❤️',k:'love heart health red'},
+  // Celebration & Events
+  {e:'🎉',k:'party celebrate confetti fun'},
+  {e:'🥂',k:'champagne toast celebrate drinks'},
+  {e:'🎂',k:'birthday cake celebrate'},
+  {e:'🎁',k:'gift present birthday holiday'},
+  {e:'🎊',k:'confetti celebrate party'},
+  {e:'💍',k:'ring engagement wedding love'},
+  {e:'👶',k:'baby newborn birth family'},
+  {e:'🎓',k:'graduation school study diploma'},
+  {e:'🏠',k:'house home moving new'},
+  {e:'✈️',k:'travel vacation flight trip'},
+  {e:'🚗',k:'car drive road trip'},
+  {e:'🌍',k:'world travel earth globe'},
+  // Food & Drink
+  {e:'☕',k:'coffee morning work cafe'},
+  {e:'🍕',k:'pizza food dinner'},
+  {e:'🍜',k:'noodles food asian dinner'},
+  {e:'🧁',k:'cupcake baking sweet dessert'},
+  {e:'🍷',k:'wine drink evening'},
+  {e:'🍺',k:'beer drink happy hour'},
+  {e:'🥑',k:'avocado healthy food'},
+  {e:'🍔',k:'burger food treat'},
+  // Nature & Animals
+  {e:'🌿',k:'nature green plant fresh'},
+  {e:'🍀',k:'lucky clover green good luck'},
+  {e:'🌱',k:'seedling growth new start spring'},
+  {e:'🦋',k:'butterfly change transformation'},
+  {e:'🐶',k:'dog pet love cute'},
+  {e:'🐱',k:'cat pet cute'},
+  {e:'🌴',k:'palm tree tropical vacation'},
+  {e:'🪴',k:'plant indoor home'},
+  {e:'🍃',k:'leaf nature green fresh'},
+  // Work & Goals
+  {e:'📚',k:'books study learning reading'},
+  {e:'✍️',k:'writing journal notes'},
+  {e:'📝',k:'notes memo list planning'},
+  {e:'🗓️',k:'calendar planning schedule'},
+  {e:'⏰',k:'alarm clock time deadline'},
+  {e:'🔑',k:'key unlock new chapter'},
+  {e:'🚀',k:'launch start new rocket'},
+  {e:'💡',k:'idea inspiration creative'},
+  {e:'🎵',k:'music song happy vibe'},
+  {e:'🎮',k:'gaming fun weekend play'},
 ];
 
 function toggleMonthEmojiPicker(e) {
@@ -10219,20 +10321,20 @@ function toggleMonthEmojiPicker(e) {
 
   var popup = document.createElement('div');
   popup.id = 'month-emoji-popup';
-  popup.style.cssText = 'position:fixed;z-index:2000;background:var(--white);border:1px solid var(--mist);border-radius:14px;padding:14px;box-shadow:0 8px 30px rgba(0,0,0,0.2);font-family:Outfit,sans-serif;width:280px;';
+  popup.style.cssText = 'position:fixed;z-index:2000;background:var(--white);border:1px solid var(--mist);border-radius:14px;padding:14px;box-shadow:0 8px 30px rgba(0,0,0,0.2);font-family:Outfit,sans-serif;width:300px;';
 
   var btn = document.getElementById('month-emoji-display');
   var rect = btn.getBoundingClientRect();
   var top = rect.bottom + 8;
-  var left = Math.min(rect.left, window.innerWidth - 296);
-  if (top + 340 > window.innerHeight) top = rect.top - 348;
+  var left = Math.min(rect.left, window.innerWidth - 316);
+  if (top + 380 > window.innerHeight) top = rect.top - 388;
   popup.style.top = top + 'px';
   popup.style.left = left + 'px';
 
   popup.innerHTML =
     '<div style="font-size:11px;font-weight:700;color:var(--steel);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Month emoji</div>' +
-    '<input id="emoji-search" type="text" placeholder="🔍 Search emojis…" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--mist);font-size:13px;font-family:Outfit,sans-serif;color:var(--ink);background:var(--white);outline:none;box-sizing:border-box;margin-bottom:10px;">' +
-    '<div id="emoji-grid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:2px;max-height:180px;overflow-y:auto;margin-bottom:10px;"></div>' +
+    '<input id="emoji-search" type="text" placeholder="Search: christmas, money, happy…" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--mist);font-size:13px;font-family:Outfit,sans-serif;color:var(--ink);background:var(--white);outline:none;box-sizing:border-box;margin-bottom:10px;">' +
+    '<div id="emoji-grid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:2px;max-height:200px;overflow-y:auto;margin-bottom:10px;"></div>' +
     '<div style="display:flex;gap:8px;">' +
     '<input id="emoji-custom-input" type="text" placeholder="Paste any emoji…" maxlength="8" style="flex:1;padding:7px 10px;border-radius:8px;border:1.5px solid var(--mist);font-size:16px;font-family:Outfit,sans-serif;color:var(--ink);background:var(--white);outline:none;">' +
     '<button id="emoji-set-btn" style="padding:7px 12px;border-radius:8px;border:none;background:var(--sage);color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:Outfit,sans-serif;">Set</button>' +
@@ -10241,33 +10343,32 @@ function toggleMonthEmojiPicker(e) {
 
   document.body.appendChild(popup);
 
-  function renderGrid(filter) {
+  function renderGrid(query) {
     var grid = document.getElementById('emoji-grid');
     grid.innerHTML = '';
-    var list = filter ? MONTH_EMOJIS.filter(function(em) {
-      return em.includes(filter);
-    }) : MONTH_EMOJIS;
+    var q = query.toLowerCase().trim();
+    var list = q ? EMOJI_DATA.filter(function(d) { return d.k.includes(q) || d.e.includes(q); }) : EMOJI_DATA;
     if (!list.length) {
-      grid.innerHTML = '<div style="grid-column:span 8;text-align:center;padding:12px;font-size:12px;color:var(--steel);">No matches — paste it below</div>';
+      grid.innerHTML = '<div style="grid-column:span 8;text-align:center;padding:16px;font-size:12px;color:var(--steel);">No matches — paste it below ↓</div>';
       return;
     }
-    list.forEach(function(em) {
+    list.forEach(function(d) {
       var cell = document.createElement('button');
-      cell.textContent = em;
-      cell.style.cssText = 'background:' + (em === currentEmoji ? 'var(--sage-light)' : 'none') + ';border:none;border-radius:6px;font-size:22px;cursor:pointer;padding:4px;line-height:1;transition:background 0.1s;aspect-ratio:1;';
+      cell.textContent = d.e;
+      cell.title = d.k.split(' ')[0];
+      cell.style.cssText = 'background:' + (d.e === currentEmoji ? 'var(--sage-light)' : 'none') + ';border:none;border-radius:6px;font-size:22px;cursor:pointer;padding:4px;line-height:1;transition:background 0.1s;aspect-ratio:1;width:100%;';
       cell.onmouseenter = function() { this.style.background = 'var(--mist-light)'; };
-      cell.onmouseleave = function() { this.style.background = em === currentEmoji ? 'var(--sage-light)' : 'none'; };
-      cell.onclick = function() { setMonthEmoji(em); popup.remove(); };
+      cell.onmouseleave = function() { this.style.background = d.e === currentEmoji ? 'var(--sage-light)' : 'none'; };
+      cell.onclick = function() { setMonthEmoji(d.e); popup.remove(); };
       grid.appendChild(cell);
     });
   }
 
   renderGrid('');
 
-  document.getElementById('emoji-search').oninput = function() {
-    renderGrid(this.value.trim());
-  };
-  document.getElementById('emoji-search').focus();
+  var searchEl = document.getElementById('emoji-search');
+  searchEl.oninput = function() { renderGrid(this.value); };
+  searchEl.focus();
 
   document.getElementById('emoji-set-btn').onclick = function() {
     var val = document.getElementById('emoji-custom-input').value.trim();
