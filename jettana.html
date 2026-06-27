@@ -5207,12 +5207,14 @@ function deleteMonth(e, key) {
 }
 
 function addRow(section, data = {}, animate = true) {
+  if (!CONFIGS[section]) return;
   const id = Date.now() + '_' + Math.random().toString(36).slice(2);
   const row = { id, label: '', [CONFIGS[section].k1]: '', [CONFIGS[section].k2]: '', paid: false, date: '', note: '', recurring: false, ...data };
   // Apply default colors to new rows (not to rows being seeded from data)
   if (animate && !data.paidColor && _defaultTextColor) row.paidColor = _defaultTextColor;
   if (animate && !data.numColor  && _defaultNumColor)  row.numColor  = _defaultNumColor;
   const all = loadAll();
+  if (!all[currentMonthKey]) all[currentMonthKey] = {};
   if (!all[currentMonthKey][section]) all[currentMonthKey][section] = [];
   all[currentMonthKey][section].push(row);
   saveAll(all);
@@ -5223,6 +5225,7 @@ function addRow(section, data = {}, animate = true) {
 function renderRowEl(section, row, animate = false) {
   const cfg = CONFIGS[section];
   const container = document.getElementById(`rows-${section}`);
+  if (!container) return; // section not in DOM yet
   const div = document.createElement('div');
   div.className = `erow${animate ? ' erow-new' : ''}`;
   div.dataset.id = row.id;
@@ -9727,6 +9730,7 @@ function numKeyDown(e, el) {
     if (nextInput) { nextInput.focus(); nextInput.select(); }
   } else {
     // Last row — create a new one and focus its label
+    if (!CONFIGS[section]) return; // section doesn't support rows
     addRow(section);
     setTimeout(function() {
       var updatedRows = Array.from(document.querySelectorAll('#rows-' + section + ' .erow'));
@@ -9756,15 +9760,27 @@ function labelKeyDown(e, el) {
       if (nextLabel) { nextLabel.focus(); }
     } else {
       // Last row — create a new one and focus its label
+      if (!CONFIGS[section]) return; // section doesn't support rows
       addRow(section);
       setTimeout(function() {
         var updatedRows = Array.from(document.querySelectorAll('#rows-' + section + ' .erow'));
         var newRow = updatedRows[updatedRows.length - 1];
         if (newRow) {
           var newLabel = newRow.querySelector('.erow-label-input');
-          if (newLabel) newLabel.focus();
+          if (newLabel) { newLabel.focus(); newLabel.click(); }
+        } else {
+          // Container may not have been ready — re-render and retry
+          switchMonth(currentMonthKey);
+          setTimeout(function() {
+            var retryRows = Array.from(document.querySelectorAll('#rows-' + section + ' .erow'));
+            var retryRow = retryRows[retryRows.length - 1];
+            if (retryRow) {
+              var retryLabel = retryRow.querySelector('.erow-label-input');
+              if (retryLabel) retryLabel.focus();
+            }
+          }, 200);
         }
-      }, 50);
+      }, 100);
     }
   }
 }
