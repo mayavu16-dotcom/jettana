@@ -164,22 +164,29 @@ body {
 }
 .month-item:hover { background: rgba(0,0,0,0.05); color: rgba(0,0,0,0.85); }
 .month-item.active {
-  background: var(--sage);
+  background: linear-gradient(to right, white 55%, var(--sage) 55%);
   color: white;
   font-weight: 600;
+  border: 1px solid rgba(107,158,112,0.3);
 }
-.month-item.active .month-label { color: white !important; }
+.month-item.active .month-label { color: var(--ink) !important; }
+.month-item.active .dot { opacity: 1; background: white; }
+.dark .month-item.active {
+  background: linear-gradient(to right, #1E2A38 55%, var(--sage) 55%);
+  border-color: rgba(107,158,112,0.3);
+}
+.dark .month-item.active .month-label { color: var(--ink) !important; }
 .dark .month-item { color: rgba(255,255,255,0.55); }
 .dark .month-item:hover { background: rgba(255,255,255,0.07); color: white; }
 .month-item .dot {
   width: 6px; height: 6px;
   border-radius: 50%;
-  background: white;
+  background: var(--sage);
   flex-shrink: 0;
   opacity: 0;
   margin-left: 4px;
 }
-.month-item.active .dot { opacity: 1; }
+.month-item.active .dot { opacity: 1; background: white; }
 
 .add-month-btn {
   margin: 10px 16px 0;
