@@ -1459,7 +1459,8 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
 }
 .topbar-left:hover #month-color-btn { opacity: 1; }
 .topbar-left:hover #month-emoji-display { opacity: 1; }
-#month-emoji-display.has-emoji { opacity: 1; }
+#month-emoji-display.has-emoji { opacity: 1 !important; font-size: 22px; }
+#month-emoji-display:hover { transform: scale(1.2); }
 #month-color-btn:hover { transform: scale(1.3); }
 .dark .topbar-left .sub { color: var(--steel); }
 
@@ -3176,7 +3177,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <div class="topbar-left">
         <div style="display:flex;align-items:center;gap:8px;">
           <h2 id="topbar-title">Loading…</h2>
-          <span id="month-emoji-display" onclick="toggleMonthEmojiPicker(event)" title="Add emoji" style="font-size:18px;cursor:pointer;opacity:0;transition:opacity 0.15s;flex-shrink:0;line-height:1;"></span>
+          <span id="month-emoji-display" onclick="toggleMonthEmojiPicker(event)" title="Add emoji" style="font-size:22px;cursor:pointer;opacity:0;transition:opacity 0.15s,transform 0.15s;flex-shrink:0;line-height:1;"></span>
           <div id="month-color-btn" onclick="toggleMonthColorPicker(event)" title="Color this month's title" style="width:12px;height:12px;border-radius:50%;background:var(--mist);cursor:pointer;flex-shrink:0;opacity:0;transition:opacity 0.15s;border:1.5px solid rgba(0,0,0,0.1);"></div>
         </div>
         <div class="sub" id="topbar-sub"></div>
@@ -10270,11 +10271,15 @@ function applyMonthEmoji() {
   if (emoji) {
     btn.textContent = emoji;
     btn.classList.add('has-emoji');
+    btn.style.opacity = '1';
     btn.title = 'Change emoji';
   } else {
-    btn.textContent = '😊';
+    btn.textContent = '✦';
     btn.classList.remove('has-emoji');
+    btn.style.opacity = '';
     btn.title = 'Add emoji';
+    btn.style.fontSize = '14px';
+    btn.style.color = 'var(--mist)';
   }
 }
 
