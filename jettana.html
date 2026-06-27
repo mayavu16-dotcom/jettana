@@ -1703,7 +1703,7 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
 
 /* Dark mode */
 .dark .intention-trigger               { color: #3A4A5A; }
-.dark .intention-trigger.has-content   { color: var(--white); }
+/* has-content color handled by applyIntentionColor JS to support dark mode inversion */
 .dark .page-body:hover .intention-trigger { opacity: 1; }
 .dark .intention-input                 { color: var(--slate); border-bottom-color: var(--mist); }
 .dark .intention-input:focus           { color: var(--ink); border-bottom-color: var(--sage); }
@@ -8085,25 +8085,16 @@ function applyIntentionColor(forceColor) {
   var inp     = document.getElementById('intention-input');
 
   // In dark mode, flip near-black colors to white so they're readable
-  var displayColor = color;
-  if (color && document.documentElement.classList.contains('dark')) {
-    var tmp = document.createElement('div');
-    tmp.style.color = color;
-    document.body.appendChild(tmp);
-    var rgb = getComputedStyle(tmp).color.match(/\d+/g);
-    document.body.removeChild(tmp);
-    if (rgb) {
-      var lum = (parseInt(rgb[0]) * 299 + parseInt(rgb[1]) * 587 + parseInt(rgb[2]) * 114) / 1000;
-      if (lum < 80) displayColor = '#FFFFFF';
-    }
-  }
+  var displayColor = darkModeColor(color);
 
   if (displayColor) {
     if (trigger && trigger.classList.contains('has-content')) trigger.style.color = displayColor;
     if (inp) inp.style.color = displayColor;
   } else {
-    if (trigger) trigger.style.color = '';
-    if (inp) inp.style.color = '';
+    // No color set — in dark mode use white, in light mode use default
+    var fallback = document.body.classList.contains('dark') ? '#FFFFFF' : '';
+    if (trigger) trigger.style.color = fallback;
+    if (inp) inp.style.color = fallback;
   }
   // Mark active swatch
   document.querySelectorAll('.swatch').forEach(function(s) {
