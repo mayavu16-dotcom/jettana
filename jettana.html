@@ -110,7 +110,7 @@ body {
   user-select: none;
 }
 .year-header-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -119,7 +119,7 @@ body {
 }
 .year-header:hover .year-header-label { color: rgba(255,255,255,0.6); }
 .year-toggle {
-  font-size: 9px;
+  font-size: 10px;
   color: rgba(255,255,255,0.3);
   transition: transform 0.2s;
 }
@@ -130,12 +130,12 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 10px;
+  padding: 9px 10px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.15s;
   color: rgba(255,255,255,0.65);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
 }
 .month-item:hover { background: rgba(255,255,255,0.07); color: white; }
@@ -4824,6 +4824,8 @@ function showCopyModal(keys, newKey) {
   const yearOptions = Array.from({length: 10}, (_,i) => currentYear - 4 + i).map(y =>
     `<option value="${y}" ${y===sugY?'selected':''}>${y}</option>`).join('');
 
+  const isDark = document.body.classList.contains('dark');
+
   modal.innerHTML = `
     <h3 style="margin:0 0 6px;font-family:'Playfair Display',serif;font-size:18px;color:var(--ink);">New Month</h3>
     <p style="margin:0 0 14px;font-size:13px;color:var(--steel);">Choose a month and year, then pick a starting option.</p>
@@ -4848,14 +4850,14 @@ function showCopyModal(keys, newKey) {
     </div>
 
     <div style="display:flex;flex-direction:column;gap:10px;">
-      <button id="copy-fresh-btn" style="padding:12px;border-radius:8px;border:1.5px solid #E8EDF2;background:var(--white);cursor:pointer;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--ink);text-align:left;transition:border-color 0.15s;">
+      <button id="copy-fresh-btn" style="padding:12px;border-radius:8px;border:1.5px solid var(--mist);background:var(--white);cursor:pointer;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--ink);text-align:left;transition:border-color 0.15s;">
         ✦ Start fresh
         <div style="font-size:11px;font-weight:400;color:var(--steel);margin-top:2px;">Blank tracker — fill in from scratch</div>
       </button>
       <div style="position:relative;">
-        <button id="copy-prev-btn" style="width:100%;padding:12px;border-radius:8px;border:1.5px solid #6B9E70;background:#F0F7F1;cursor:pointer;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--ink);text-align:left;transition:all 0.15s;">
+        <button id="copy-prev-btn" style="width:100%;padding:12px;border-radius:8px;border:1.5px solid #6B9E70;background:${isDark ? '#1A3A20' : '#F0F7F1'};cursor:pointer;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:${isDark ? 'white' : '#1A4A20'};text-align:left;transition:all 0.15s;">
           ⟳ Copy from previous month
-          <div style="font-size:11px;font-weight:400;color:#4A7A50;margin-top:2px;">Copies labels + budget amounts · clears actuals & dates</div>
+          <div style="font-size:11px;font-weight:400;color:${isDark ? '#8FC49A' : '#4A7A50'};margin-top:2px;">Copies labels + budget amounts · clears actuals & dates</div>
         </button>
         ${keys.length > 1 ? `<div style="margin-top:8px;"><label style="font-size:11px;color:var(--steel);display:block;margin-bottom:4px;">Or copy from:</label><select id="copy-source-select" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--mist);font-family:'Outfit',sans-serif;font-size:12px;color:var(--ink);background:var(--white);">${keys.map(k => `<option value="${k}">${monthLabel(k)}</option>`).join('')}</select></div>` : ''}
       </div>
