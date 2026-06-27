@@ -1760,7 +1760,11 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
 }
 .dark .calc-grid { background: #2A3A4A; }
 .dark #calc-panel { background: #1A2635 !important; }
-.dark #calc-panel > div:first-child { background: #0F1923 !important; }
+#calc-panel > div:first-child {
+  cursor: grab;
+  user-select: none;
+}
+#calc-panel > div:first-child:active { cursor: grabbing; }
 .calc-btn {
   background: white;
   border: none;
@@ -9501,6 +9505,100 @@ document.addEventListener('keydown', function(e) {
     e.preventDefault();
   }
 });
+
+// ── Draggable Calculator ─────────────────────────────────────
+(function() {
+  var panel, fab, dragging = false, startX, startY, origLeft, origTop;
+
+  function initCalcDrag() {
+    panel = document.getElementById('calc-panel');
+    fab = document.getElementById('calc-fab');
+    if (!panel || !fab) return;
+
+    // Add drag handle to display area
+    var display = panel.querySelector('div:first-child');
+    if (display) {
+      display.style.cursor = 'grab';
+      display.title = 'Drag to move';
+      display.addEventListener('mousedown', startDrag);
+      display.addEventListener('touchstart', startDragTouch, { passive: false });
+    }
+  }
+
+  function startDrag(e) {
+    if (e.target.tagName === 'BUTTON') return;
+    e.preventDefault();
+    dragging = true;
+    var rect = panel.getBoundingClientRect();
+    startX = e.clientX - rect.left;
+    startY = e.clientY - rect.top;
+    panel.style.transition = 'none';
+    panel.style.cursor = 'grabbing';
+    document.addEventListener('mousemove', onDrag);
+    document.addEventListener('mouseup', stopDrag);
+  }
+
+  function startDragTouch(e) {
+    if (e.target.tagName === 'BUTTON') return;
+    e.preventDefault();
+    dragging = true;
+    var touch = e.touches[0];
+    var rect = panel.getBoundingClientRect();
+    startX = touch.clientX - rect.left;
+    startY = touch.clientY - rect.top;
+    panel.style.transition = 'none';
+    document.addEventListener('touchmove', onDragTouch, { passive: false });
+    document.addEventListener('touchend', stopDragTouch);
+  }
+
+  function onDrag(e) {
+    if (!dragging) return;
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var pw = panel.offsetWidth, ph = panel.offsetHeight;
+    var left = Math.max(0, Math.min(vw - pw, e.clientX - startX));
+    var top  = Math.max(0, Math.min(vh - ph, e.clientY - startY));
+    panel.style.left = left + 'px';
+    panel.style.top  = top + 'px';
+    panel.style.bottom = 'auto';
+    // Move FAB too — keep it near panel bottom
+    fab.style.left = (left + pw / 2 - 22) + 'px';
+    fab.style.top  = (top + ph + 8) + 'px';
+    fab.style.bottom = 'auto';
+  }
+
+  function onDragTouch(e) {
+    if (!dragging) return;
+    e.preventDefault();
+    var touch = e.touches[0];
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var pw = panel.offsetWidth, ph = panel.offsetHeight;
+    var left = Math.max(0, Math.min(vw - pw, touch.clientX - startX));
+    var top  = Math.max(0, Math.min(vh - ph, touch.clientY - startY));
+    panel.style.left = left + 'px';
+    panel.style.top  = top + 'px';
+    panel.style.bottom = 'auto';
+    fab.style.left = (left + pw / 2 - 22) + 'px';
+    fab.style.top  = (top + ph + 8) + 'px';
+    fab.style.bottom = 'auto';
+  }
+
+  function stopDrag() {
+    dragging = false;
+    panel.style.cursor = '';
+    document.removeEventListener('mousemove', onDrag);
+    document.removeEventListener('mouseup', stopDrag);
+  }
+
+  function stopDragTouch() {
+    dragging = false;
+    document.removeEventListener('touchmove', onDragTouch);
+    document.removeEventListener('touchend', stopDragTouch);
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(initCalcDrag, 500);
+  });
+})();
 
 function toggleMoreExpand() {
   var expanded = document.getElementById('more-expanded');
