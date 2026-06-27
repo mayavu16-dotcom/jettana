@@ -91,10 +91,10 @@ body {
   border-bottom: 1px solid rgba(255,255,255,0.07);
 }
 .month-nav .label {
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 1px;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.3);
+  color: rgba(255,255,255,0.4);
   margin-bottom: 10px;
 }
 .month-list { display: flex; flex-direction: column; gap: 2px; }
@@ -110,9 +110,9 @@ body {
   user-select: none;
 }
 .year-header-label {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
   color: rgba(255,255,255,0.35);
   flex: 1;
@@ -144,6 +144,7 @@ body {
   color: white;
   font-weight: 600;
 }
+.month-item.active .month-label { color: white !important; }
 .month-item .dot {
   width: 6px; height: 6px;
   border-radius: 50%;
@@ -5136,11 +5137,12 @@ function renderSidebar() {
       var parts = key.split('-');
       var label = new Date(+parts[0], +parts[1]-1, 1).toLocaleDateString('en-US', { month: 'short' });
       if (key === 'demo-month') label = '✦ Demo';
-      // Apply title color if set
+      // Apply title color only on inactive months — active always shows white
       var allData = loadAll();
       var titleColor = (allData[key] && allData[key]._titleColor) || '';
+      var isActive = key === currentMonthKey;
       div.innerHTML =
-        '<span class="month-label" ' + (titleColor ? 'style="color:' + titleColor + '"' : '') + '>' + label + '</span>' +
+        '<span class="month-label" ' + (!isActive && titleColor ? 'style="color:' + titleColor + '"' : '') + '>' + label + '</span>' +
         '<span class="dot"></span>' +
         '<button class="month-edit-btn" title="Rename month" id="edit-' + key + '">✎</button>' +
         '<button class="month-del-btn" title="Delete month" id="del-' + key + '">✕</button>';
