@@ -6788,21 +6788,26 @@ function saveDate2(section, id, dateVal) {
   scheduleSave();
 }
 
-// Permanent ctx-date listener — set once at init
-document.addEventListener('DOMContentLoaded', function() {
-  var ctxDateEl = document.getElementById('ctx-date');
-  if (ctxDateEl) {
-    ctxDateEl.addEventListener('click', function() {
+// Permanent ctx-date listener — wire up once
+(function() {
+  function wireDateCtx() {
+    var ctxDateEl = document.getElementById('ctx-date');
+    if (!ctxDateEl) return;
+    ctxDateEl.onclick = function() {
       var id = ctxId;
-      var sec = ctxSection;
       hideCtxMenu();
       if (!id) return;
       var input = document.getElementById('date-input-' + id) ||
                   document.getElementById('date-input-' + id + '-2');
       showMobileDatePicker(id, input);
-    });
+    };
   }
-});
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', wireDateCtx);
+  } else {
+    wireDateCtx();
+  }
+})();
 
 document.getElementById('hamburger-btn').addEventListener('click', () => {
   var isDesktop = window.innerWidth > 900;
