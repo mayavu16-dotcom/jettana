@@ -6557,39 +6557,47 @@ function formatDateLabel(dateStr) {
 function toggleDateInput(rowId) {
   const input = document.getElementById(`date-input-${rowId}`);
   if (!input) return;
-  if (input.style.display === 'block') {
-    input.style.display = 'none';
+
+  var isMobile = 'ontouchstart' in window;
+
+  // Close if already open
+  if (input.dataset.open === '1') {
+    input.dataset.open = '0';
+    if (!isMobile) input.style.display = 'none';
     var clearBtn = document.getElementById('date-clear-' + rowId);
     if (clearBtn) clearBtn.remove();
     return;
   }
 
-  input.style.display = 'block';
+  input.dataset.open = '1';
 
-  // If no date set, pre-fill with first of current month so calendar
-  // opens on the right month — but track that it's a placeholder
+  // On mobile: keep invisible, just trigger native picker
+  if (isMobile) {
+    input.style.cssText = 'display:block;position:fixed;opacity:0;pointer-events:none;top:0;left:0;width:1px;height:1px;';
+  } else {
+    input.style.display = 'block';
+  }
+
+  // Pre-fill with 1st of current month if no value so picker opens there
   var hadValue = !!input.value;
   if (!hadValue) {
     var parts = currentMonthKey.split('-');
     if (parts.length >= 2) {
       input.value = parts[0] + '-' + parts[1].padStart(2,'0') + '-01';
-      input.dataset.placeholder = '1'; // flag as placeholder
+      input.dataset.placeholder = '1';
     }
-    input.min = '';
-    input.max = '';
   } else {
     delete input.dataset.placeholder;
   }
 
-  // Open the picker
   if (input.showPicker) {
-    try { input.showPicker(); } catch(e) {}
+    try { input.showPicker(); } catch(e) { input.focus(); }
   } else {
     input.focus();
   }
 
-  // Only show clear button if a real date was already set
-  if ('ontouchstart' in window && hadValue) {
+  // Clear button on mobile only when real date already set
+  if (isMobile && hadValue) {
     var existing = document.getElementById('date-clear-' + rowId);
     if (!existing) {
       var clearBtn = document.createElement('button');
@@ -6603,7 +6611,7 @@ function toggleDateInput(rowId) {
         if (isDate2) saveDate2(section, baseId, '');
         else saveDate(section, rowId, '');
         clearBtn.remove();
-        input.style.display = 'none';
+        input.dataset.open = '0';
       };
       input.parentNode.insertBefore(clearBtn, input.nextSibling);
     }
@@ -6614,17 +6622,18 @@ function hideDateInput(rowId) {
   setTimeout(() => {
     const input = document.getElementById(`date-input-${rowId}`);
     if (input) {
-      // If it was a placeholder and user didn't pick, clear the value
       if (input.dataset.placeholder) {
         input.value = '';
         delete input.dataset.placeholder;
       }
+      input.dataset.open = '0';
       input.style.display = 'none';
     }
     const clearBtn = document.getElementById('date-clear-' + rowId);
     if (clearBtn) clearBtn.remove();
   }, 200);
 }
+
 
 function saveDate(section, id, dateVal) {
   const all = loadAll();
