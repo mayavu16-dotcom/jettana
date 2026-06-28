@@ -1388,11 +1388,13 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
   right: 42px;
 }
 @media (pointer: coarse) {
-  .note-indicator { right: 58px; }
-  transform: translateY(-50%);
-  pointer-events: none;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
+  .note-indicator {
+    right: 58px;
+    transform: translateY(-50%);
+    pointer-events: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 .note-indicator.has-note {
   pointer-events: all;
@@ -2313,7 +2315,7 @@ body.theme-custom .mom-hdr      { background: var(--custom-accent-dark, #2A4A7A)
   touch-action: manipulation;
 }
 @media (pointer: coarse) {
-  .paid-color-wrap { margin-right: 40px; }
+  .paid-color-wrap { margin-right: 58px; }
 }
 
 .paid-color-picker-popup {
