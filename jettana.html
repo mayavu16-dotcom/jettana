@@ -760,7 +760,7 @@ body {
   border-radius: 4px;
   padding: 2px 4px;
   color: var(--slate);
-  background: white;
+  background: var(--white);
   outline: none;
   display: none;
   width: 110px;
@@ -6696,7 +6696,7 @@ function showDateConfirmBar(section, id, dateVal, isDate2) {
   var formatted = formatDateLabel(dateVal);
   var bar = document.createElement('div');
   bar.id = 'date-confirm-bar-' + id + (isDate2 ? '-2' : '');
-  bar.style.cssText = 'position:absolute;bottom:-36px;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:0 8px;pointer-events:all;';
+  bar.style.cssText = 'position:absolute;bottom:-40px;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:6px 8px;pointer-events:all;background:var(--white);border:1px solid var(--mist);border-radius:0 0 8px 8px;box-shadow:0 4px 10px rgba(0,0,0,0.15);';
   bar.innerHTML =
     '<span style="font-size:11px;color:var(--steel);font-family:Outfit,sans-serif;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + formatted + ' — tap to change</span>' +
     '<button id="dcb-save" style="background:var(--sage);color:white;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-family:Outfit,sans-serif;font-weight:600;cursor:pointer;touch-action:manipulation;">Save</button>' +
