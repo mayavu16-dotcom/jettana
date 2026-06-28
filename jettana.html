@@ -4195,6 +4195,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 <!-- Right-click context menu -->
 <div class="ctx-menu" id="ctx-menu" style="display:none;" role="menu" aria-label="Row options">
   <button class="ctx-item" id="ctx-note"><span class="ctx-icon">✎</span><span id="ctx-note-label">Add note</span></button>
+  <button class="ctx-item" id="ctx-due" style="display:none;"><span class="ctx-icon">📋</span>Set due date</button>
   <button class="ctx-item" id="ctx-date"><span class="ctx-icon">📅</span><span id="ctx-date-label">Add date</span></button>
   <button class="ctx-item" id="ctx-color"><span class="ctx-icon">🎨</span>Color</button>
   <div class="ctx-divider" id="ctx-color-divider" style="display:none;"></div>
@@ -8439,6 +8440,12 @@ function showCtxMenu(e, section, id) {
     noteLabel.textContent = row.note ? 'Edit note' : 'Add note';
   }
 
+  // Due date quick-fill — housing section only
+  var ctxDueBtn = document.getElementById('ctx-due');
+  if (ctxDueBtn) {
+    ctxDueBtn.style.display = (section === 'housing') ? 'flex' : 'none';
+  }
+
   // Date button — show on mobile only
   var ctxDateBtn = document.getElementById('ctx-date');
   if (ctxDateBtn) {
@@ -8539,6 +8546,28 @@ window.addEventListener('load', function() {
     if (ctxSection && ctxId) toggleNote(ctxSection, ctxId);
     hideCtxMenu();
   });
+
+  var ctxDue = document.getElementById('ctx-due');
+  if (ctxDue && !ctxDue._wired) {
+    ctxDue._wired = true;
+    ctxDue.addEventListener('click', function() {
+      var sec = ctxSection, id = ctxId;
+      hideCtxMenu();
+      if (!sec || !id) return;
+      // Open note and pre-fill with "Due: " if not already set
+      toggleNote(sec, id);
+      setTimeout(function() {
+        var textarea = document.getElementById('note-text-' + id);
+        if (textarea && !textarea.value.includes('Due:')) {
+          textarea.value = (textarea.value ? textarea.value + '\n' : '') + 'Due: ';
+          textarea.focus();
+          textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+          // Trigger save
+          textarea.dispatchEvent(new Event('input'));
+        }
+      }, 150);
+    });
+  }
 
   var ctxDateItem = document.getElementById('ctx-date');
   if (ctxDateItem && !ctxDateItem._wired) {
