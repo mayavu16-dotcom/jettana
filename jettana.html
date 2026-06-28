@@ -3754,7 +3754,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 </div>
 
 <!-- Floating Calculator -->
-<div id="calc-fab" onclick="toggleCalc()" title="Calculator">
+<div id="calc-fab" title="Calculator">
   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
     <rect x="3" y="2" width="14" height="16" rx="2" stroke="white" stroke-width="1.5"/>
     <rect x="5.5" y="4.5" width="9" height="3" rx="0.75" fill="white" opacity="0.9"/>
@@ -9653,9 +9653,87 @@ document.addEventListener('keydown', function(e) {
     panel.addEventListener('mousedown', startDrag);
     panel.addEventListener('touchstart', startDragTouch, { passive: false });
 
+    // Make FAB draggable too
+    fab.addEventListener('mousedown', startFabDrag);
+    fab.addEventListener('touchstart', startFabDragTouch, { passive: false });
+
     // Display area also shows grab cursor
     var display = panel.querySelector('div:first-child');
     if (display) display.style.cursor = 'grab';
+  }
+
+  // FAB drag state
+  var fabDragging = false, fabMoved = false;
+  var fabStartX, fabStartY;
+
+  function startFabDrag(e) {
+    fabDragging = false; fabMoved = false;
+    var initX = e.clientX, initY = e.clientY;
+    var rect = fab.getBoundingClientRect();
+    fabStartX = e.clientX - rect.left;
+    fabStartY = e.clientY - rect.top;
+
+    function onFabMove(ev) {
+      if (Math.abs(ev.clientX - initX) > 4 || Math.abs(ev.clientY - initY) > 4) {
+        fabDragging = true; fabMoved = true;
+        fab.style.cursor = 'grabbing';
+        moveFab(ev.clientX, ev.clientY);
+      }
+    }
+    function onFabUp(ev) {
+      fab.style.cursor = '';
+      document.removeEventListener('mousemove', onFabMove);
+      document.removeEventListener('mouseup', onFabUp);
+      if (!fabMoved) toggleCalc(); // treat as click if didn't move
+    }
+    document.addEventListener('mousemove', onFabMove);
+    document.addEventListener('mouseup', onFabUp);
+    e.preventDefault();
+  }
+
+  function startFabDragTouch(e) {
+    fabMoved = false;
+    var touch = e.touches[0];
+    var initX = touch.clientX, initY = touch.clientY;
+    var rect = fab.getBoundingClientRect();
+    fabStartX = touch.clientX - rect.left;
+    fabStartY = touch.clientY - rect.top;
+
+    function onFabTouchMove(ev) {
+      ev.preventDefault();
+      var t = ev.touches[0];
+      if (Math.abs(t.clientX - initX) > 6 || Math.abs(t.clientY - initY) > 6) {
+        fabMoved = true;
+        moveFab(t.clientX, t.clientY);
+      }
+    }
+    function onFabTouchEnd(ev) {
+      document.removeEventListener('touchmove', onFabTouchMove);
+      document.removeEventListener('touchend', onFabTouchEnd);
+      if (!fabMoved) toggleCalc();
+    }
+    document.addEventListener('touchmove', onFabTouchMove, { passive: false });
+    document.addEventListener('touchend', onFabTouchEnd);
+  }
+
+  function moveFab(clientX, clientY) {
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var size = 44;
+    var left = Math.max(0, Math.min(vw - size, clientX - fabStartX));
+    var top  = Math.max(0, Math.min(vh - size, clientY - fabStartY));
+    fab.style.left = left + 'px';
+    fab.style.top  = top + 'px';
+    fab.style.bottom = 'auto';
+    // Keep panel near FAB if open
+    if (panel.style.display !== 'none') {
+      var pw = panel.offsetWidth, ph = panel.offsetHeight;
+      var pLeft = Math.max(0, Math.min(vw - pw, left));
+      var pTop  = top - ph - 8;
+      if (pTop < 0) pTop = top + size + 8;
+      panel.style.left = pLeft + 'px';
+      panel.style.top  = pTop + 'px';
+      panel.style.bottom = 'auto';
+    }
   }
 
   function startDrag(e) {
