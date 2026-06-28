@@ -6788,6 +6788,22 @@ function saveDate2(section, id, dateVal) {
   scheduleSave();
 }
 
+// Permanent ctx-date listener — set once at init
+document.addEventListener('DOMContentLoaded', function() {
+  var ctxDateEl = document.getElementById('ctx-date');
+  if (ctxDateEl) {
+    ctxDateEl.addEventListener('click', function() {
+      var id = ctxId;
+      var sec = ctxSection;
+      hideCtxMenu();
+      if (!id) return;
+      var input = document.getElementById('date-input-' + id) ||
+                  document.getElementById('date-input-' + id + '-2');
+      showMobileDatePicker(id, input);
+    });
+  }
+});
+
 document.getElementById('hamburger-btn').addEventListener('click', () => {
   var isDesktop = window.innerWidth > 900;
   if (isDesktop) {
@@ -8683,20 +8699,6 @@ window.addEventListener('load', function() {
     hideCtxMenu();
   });
 
-  // Date button — only show on mobile for rows that support dates
-  var ctxDate = document.getElementById('ctx-date');
-  if (ctxDate && !ctxDate._dateListenerSet) {
-    ctxDate._dateListenerSet = true;
-    ctxDate.addEventListener('click', function() {
-      var id = ctxId, sec = ctxSection;
-      hideCtxMenu();
-      if (!id) return;
-      // Try date input on col1 first, then col2
-      var input = document.getElementById('date-input-' + id) ||
-                  document.getElementById('date-input-' + id + '-2');
-      showMobileDatePicker(id, input);
-    });
-  }
   var ctxColor = document.getElementById('ctx-color');
   if (ctxColor) ctxColor.addEventListener('click', function() {
     var sec = ctxSection, id = ctxId;
