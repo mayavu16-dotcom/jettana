@@ -6564,14 +6564,29 @@ function toggleDateInput(rowId) {
     return;
   }
   input.style.display = 'block';
+  // If no value set, pre-fill 1st of current month so iOS opens there
+  // Track it as placeholder so we can clear if user doesn't pick
+  if (!input.value) {
+    var parts = currentMonthKey.split('-');
+    if (parts.length >= 2) {
+      input.value = parts[0] + '-' + parts[1].padStart(2,'0') + '-01';
+      input.dataset.placeholder = '1';
+    }
+  }
   input.focus();
 }
 
 function hideDateInput(rowId) {
   setTimeout(() => {
     const input = document.getElementById(`date-input-${rowId}`);
-    if (input) input.style.display = 'none';
-  }, 200);
+    if (input) {
+      if (input.dataset.placeholder) {
+        input.value = '';
+        delete input.dataset.placeholder;
+      }
+      input.style.display = 'none';
+    }
+  }, 300);
 }
 
 function saveDate(section, id, dateVal) {
