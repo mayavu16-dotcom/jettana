@@ -712,6 +712,28 @@ body {
   justify-content: flex-end;
 }
 .row-date-wrap button { pointer-events: all; }
+@media (pointer: coarse) {
+  .row-date-wrap {
+    position: static;
+    display: flex;
+    justify-content: center;
+    pointer-events: all;
+    padding: 2px 0;
+  }
+  .row-date-btn {
+    opacity: 1 !important;
+    font-size: 11px !important;
+    padding: 6px 10px !important;
+    background: var(--mist-light) !important;
+    border-radius: 6px !important;
+    min-height: 32px;
+    min-width: 64px;
+  }
+  .row-date-btn.has-date {
+    background: var(--sage-light) !important;
+    color: var(--sage-dark) !important;
+  }
+}
 
 .erow.row-has-date { }
 .row-date-btn {
