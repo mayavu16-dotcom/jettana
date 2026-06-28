@@ -3755,7 +3755,16 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
 <!-- Floating Calculator -->
 <div id="calc-fab" onclick="toggleCalc()" title="Calculator">
-  <span style="font-size:18px;color:white;line-height:1;">🧮</span>
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3" y="2" width="14" height="16" rx="2" stroke="white" stroke-width="1.5"/>
+    <rect x="5.5" y="4.5" width="9" height="3" rx="0.75" fill="white" opacity="0.9"/>
+    <circle cx="6.5" cy="11" r="1" fill="white" opacity="0.8"/>
+    <circle cx="10" cy="11" r="1" fill="white" opacity="0.8"/>
+    <circle cx="13.5" cy="11" r="1" fill="white" opacity="0.8"/>
+    <circle cx="6.5" cy="14.5" r="1" fill="white" opacity="0.8"/>
+    <circle cx="10" cy="14.5" r="1" fill="white" opacity="0.8"/>
+    <rect x="12.5" y="13.5" width="2" height="2" rx="0.5" fill="white" opacity="0.9"/>
+  </svg>
 </div>
 
 <div id="calc-panel" style="display:none;width:220px;background:var(--white);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.2);z-index:1500;overflow:hidden;font-family:'Outfit',sans-serif;">
@@ -9639,18 +9648,18 @@ document.addEventListener('keydown', function(e) {
     fab = document.getElementById('calc-fab');
     if (!panel || !fab) return;
 
-    // Add drag handle to display area
+    // Make entire panel draggable, but not buttons
+    panel.style.cursor = 'grab';
+    panel.addEventListener('mousedown', startDrag);
+    panel.addEventListener('touchstart', startDragTouch, { passive: false });
+
+    // Display area also shows grab cursor
     var display = panel.querySelector('div:first-child');
-    if (display) {
-      display.style.cursor = 'grab';
-      display.title = 'Drag to move';
-      display.addEventListener('mousedown', startDrag);
-      display.addEventListener('touchstart', startDragTouch, { passive: false });
-    }
+    if (display) display.style.cursor = 'grab';
   }
 
   function startDrag(e) {
-    if (e.target.tagName === 'BUTTON') return;
+    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
     e.preventDefault();
     dragging = true;
     var rect = panel.getBoundingClientRect();
@@ -9663,7 +9672,7 @@ document.addEventListener('keydown', function(e) {
   }
 
   function startDragTouch(e) {
-    if (e.target.tagName === 'BUTTON') return;
+    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
     e.preventDefault();
     dragging = true;
     var touch = e.touches[0];
