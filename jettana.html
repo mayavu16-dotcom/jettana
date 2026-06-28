@@ -5407,7 +5407,7 @@ function renderRowEl(section, row, animate = false) {
         onfocus="numFocus(this)" onblur="numBlur(this)" oninput="numInput(this)" onkeydown="numKeyDown(event,this)">
       ${(allowDate && section === 'savings') || section === 'income' || section === 'checking' || section === 'debt' ? `
       <div class="row-date-wrap">
-        <button class="row-date-btn ${row.date ? 'has-date' : ''}" onclick="toggleDateInput('${row.id}')" id="date-btn-${row.id}">${row.date ? formatDateLabel(row.date) : '+ date'}</button>
+        <button class="row-date-btn ${row.date ? 'has-date' : ''}" ontouchstart="event.preventDefault();toggleDateInput('${row.id}')" onclick="if(!('ontouchstart' in window))toggleDateInput('${row.id}')" id="date-btn-${row.id}">${row.date ? formatDateLabel(row.date) : '+ date'}</button>
         <input type="date" class="row-date-input" id="date-input-${row.id}" value="${row.date || ''}" onchange="saveDate('${section}','${row.id}',this.value)" onblur="hideDateInput('${row.id}')">
       </div>` : ''}
     </div>
@@ -5419,7 +5419,7 @@ function renderRowEl(section, row, animate = false) {
         onfocus="numFocus(this)" onblur="numBlur(this)" oninput="numInput(this)" onkeydown="numKeyDown(event,this)">
       ${allowDate ? `
       <div class="row-date-wrap">
-        <button class="row-date-btn ${row.date2 ? 'has-date' : ''}" onclick="toggleDateInput('${row.id}-2')" id="date-btn-${row.id}-2">${row.date2 ? formatDateLabel(row.date2) : '+ date'}</button>
+        <button class="row-date-btn ${row.date2 ? 'has-date' : ''}" ontouchstart="event.preventDefault();toggleDateInput('${row.id}-2')" onclick="if(!('ontouchstart' in window))toggleDateInput('${row.id}-2')" id="date-btn-${row.id}-2">${row.date2 ? formatDateLabel(row.date2) : '+ date'}</button>
         <input type="date" class="row-date-input" id="date-input-${row.id}-2" value="${row.date2 || ''}" onchange="saveDate2('${section}','${row.id}',this.value)" onblur="hideDateInput('${row.id}-2')">
       </div>` : ''}
     </div>
@@ -6571,10 +6571,19 @@ function toggleDateInput(rowId) {
 
   input.dataset.open = '1';
 
-  // On mobile: position off-screen so it's focusable but not visible
-  // iOS Safari requires opacity > 0 and visible size to trigger focus/picker
   if (isMobile) {
-    input.style.cssText = 'display:block;position:fixed;top:-100px;left:0;width:1px;height:1px;opacity:0.01;pointer-events:none;border:none;background:transparent;';
+    // iOS requires focus() to be called synchronously in the touch event
+    // Position off-screen so no white box shows
+    input.style.position = 'fixed';
+    input.style.top = '-200px';
+    input.style.left = '0';
+    input.style.width = '100px';
+    input.style.height = '20px';
+    input.style.opacity = '0.01';
+    input.style.display = 'block';
+    input.style.pointerEvents = 'none';
+    input.focus();
+    input.click();
   } else {
     input.style.display = 'block';
   }
@@ -6591,13 +6600,12 @@ function toggleDateInput(rowId) {
     delete input.dataset.placeholder;
   }
 
-  if (isMobile) {
-    // iOS Safari: just focus, it opens the native picker automatically
-    input.focus();
-  } else if (input.showPicker) {
-    try { input.showPicker(); } catch(e) { input.focus(); }
-  } else {
-    input.focus();
+  if (!isMobile) {
+    if (input.showPicker) {
+      try { input.showPicker(); } catch(e) { input.focus(); }
+    } else {
+      input.focus();
+    }
   }
 
   // Clear button on mobile only when real date already set
