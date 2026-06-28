@@ -723,6 +723,10 @@ body {
 }
 
 .erow.row-has-date { }
+/* Date confirm bar — mobile only */
+[id^="date-confirm-bar-"] {
+  height: 32px;
+}
 .row-date-btn {
   opacity: 0;
   background: none;
@@ -6610,7 +6614,7 @@ function hideDateInput(rowId) {
   }, 300);
 }
 
-function saveDate(section, id, dateVal) {
+function commitDate(section, id, dateVal) {
   const all = loadAll();
   const rows = all[currentMonthKey][section] || [];
   const row = rows.find(r => r.id === id);
@@ -6618,14 +6622,13 @@ function saveDate(section, id, dateVal) {
   row.date = dateVal;
   delete row._datePlaceholder;
   saveAll(all);
-  const btn = document.getElementById(`date-btn-${id}`);
+  const btn = document.getElementById('date-btn-' + id);
   if (btn) {
     btn.textContent = dateVal ? formatDateLabel(dateVal) : '+ date';
     btn.classList.toggle('has-date', !!dateVal);
     const erow = btn.closest('.erow');
     if (erow) erow.classList.toggle('row-has-date', !!(dateVal || row.date2));
   }
-  // Close input on all platforms
   const inp = document.getElementById('date-input-' + id);
   if (inp) {
     delete inp.dataset.placeholder;
@@ -6635,26 +6638,85 @@ function saveDate(section, id, dateVal) {
     const wrap = inp.closest('.row-date-wrap');
     if (wrap) wrap.style.display = '';
   }
-  const clearBtn = document.getElementById('date-clear-' + id);
-  if (clearBtn) clearBtn.remove();
+  const bar = document.getElementById('date-confirm-bar-' + id);
+  if (bar) bar.remove();
   scheduleSave();
 }
 
-function saveDate2(section, id, dateVal) {
+function saveDate(section, id, dateVal) {
+  if (!dateVal) return;
+  // On mobile: show a confirm bar so user can re-open picker to change the date
+  if ('ontouchstart' in window) {
+    showDateConfirmBar(section, id, dateVal, false);
+    return;
+  }
+  commitDate(section, id, dateVal);
+}
+
+function showDateConfirmBar(section, id, dateVal, isDate2) {
+  // Remove any existing bar for this row
+  var existingBar = document.getElementById('date-confirm-bar-' + id + (isDate2 ? '-2' : ''));
+  if (existingBar) existingBar.remove();
+
+  var inp = document.getElementById('date-input-' + id + (isDate2 ? '-2' : ''));
+  var wrap = inp ? inp.closest('.row-date-wrap') : null;
+  var erow = inp ? inp.closest('.erow') : null;
+  if (!erow) return;
+
+  var formatted = formatDateLabel(dateVal);
+  var bar = document.createElement('div');
+  bar.id = 'date-confirm-bar-' + id + (isDate2 ? '-2' : '');
+  bar.style.cssText = 'position:absolute;bottom:-36px;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:0 8px;pointer-events:all;';
+  bar.innerHTML =
+    '<span style="font-size:11px;color:var(--steel);font-family:Outfit,sans-serif;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + formatted + ' — tap to change</span>' +
+    '<button style="background:var(--sage);color:white;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-family:Outfit,sans-serif;font-weight:600;cursor:pointer;touch-action:manipulation;">Save</button>' +
+    '<button style="background:none;color:var(--steel);border:none;border-radius:6px;padding:4px 6px;font-size:13px;font-family:Outfit,sans-serif;cursor:pointer;touch-action:manipulation;">✕</button>';
+
+  // Save button
+  bar.querySelector('button:first-of-type').addEventListener('click', function(e) {
+    e.stopPropagation();
+    if (isDate2) commitDate2(section, id, dateVal);
+    else commitDate(section, id, dateVal);
+  });
+  // Cancel button
+  bar.querySelector('button:last-of-type').addEventListener('click', function(e) {
+    e.stopPropagation();
+    bar.remove();
+    if (inp) { inp.style.display = 'none'; inp.value = ''; }
+    if (wrap) wrap.style.display = '';
+  });
+
+  // Tapping the label reopens the picker to change
+  bar.querySelector('span').addEventListener('click', function(e) {
+    e.stopPropagation();
+    bar.remove();
+    if (inp) {
+      inp.value = dateVal;
+      if (wrap) wrap.style.display = 'flex';
+      inp.style.display = 'block';
+      inp.focus();
+      setTimeout(function() { inp.click(); }, 50);
+    }
+  });
+
+  erow.style.position = 'relative';
+  erow.appendChild(bar);
+}
+
+function commitDate2(section, id, dateVal) {
   const all = loadAll();
   const rows = all[currentMonthKey][section] || [];
   const row = rows.find(r => r.id === id);
   if (!row) return;
   row.date2 = dateVal;
   saveAll(all);
-  const btn = document.getElementById(`date-btn-${id}-2`);
+  const btn = document.getElementById('date-btn-' + id + '-2');
   if (btn) {
     btn.textContent = dateVal ? formatDateLabel(dateVal) : '+ date';
     btn.classList.toggle('has-date', !!dateVal);
     const erow = btn.closest('.erow');
     if (erow) erow.classList.toggle('row-has-date', !!(row.date || dateVal));
   }
-  // Close input on all platforms
   const inp2 = document.getElementById('date-input-' + id + '-2');
   if (inp2) {
     delete inp2.dataset.placeholder;
@@ -6664,9 +6726,18 @@ function saveDate2(section, id, dateVal) {
     const wrap2 = inp2.closest('.row-date-wrap');
     if (wrap2) wrap2.style.display = '';
   }
-  const clearBtn2 = document.getElementById('date-clear-' + id + '-2');
-  if (clearBtn2) clearBtn2.remove();
+  const bar2 = document.getElementById('date-confirm-bar-' + id + '-2');
+  if (bar2) bar2.remove();
   scheduleSave();
+}
+
+function saveDate2(section, id, dateVal) {
+  if (!dateVal) return;
+  if ('ontouchstart' in window) {
+    showDateConfirmBar(section, id, dateVal, true);
+    return;
+  }
+  commitDate2(section, id, dateVal);
 }
 
 
