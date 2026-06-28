@@ -5408,7 +5408,7 @@ function renderRowEl(section, row, animate = false) {
       ${(allowDate && section === 'savings') || section === 'income' || section === 'checking' || section === 'debt' ? `
       <div class="row-date-wrap">
         <button class="row-date-btn ${row.date ? 'has-date' : ''}" ontouchstart="event.preventDefault();toggleDateInput('${row.id}')" onclick="if(!('ontouchstart' in window))toggleDateInput('${row.id}')" id="date-btn-${row.id}">${row.date ? formatDateLabel(row.date) : '+ date'}</button>
-        <input type="date" class="row-date-input" id="date-input-${row.id}" value="${row.date || ''}" onchange="saveDate('${section}','${row.id}',this.value)" onblur="hideDateInput('${row.id}')">
+        <input type="date" class="row-date-input" id="date-input-${row.id}" value="${row.date || ''}" onchange="saveDate('${section}','${row.id}',this.value)" ${typeof ontouchstart !== 'undefined' ? '' : 'onblur="hideDateInput(\'' + row.id + '\')"'}>
       </div>` : ''}
     </div>
     <div class="num-col-wrap">
@@ -6631,15 +6631,24 @@ function toggleDateInput(rowId) {
 }
 
 function hideDateInput(rowId) {
+  var input = document.getElementById('date-input-' + rowId);
+  if (!input) return;
+  var isMobile = 'ontouchstart' in window;
+  // On mobile, onblur fires when native picker opens — ignore it
+  // Only hide when onchange has fired (value changed) or user explicitly closes
+  if (isMobile) {
+    // Don't hide on blur — let onchange handle saving and closing
+    return;
+  }
   setTimeout(() => {
-    const input = document.getElementById(`date-input-${rowId}`);
-    if (input) {
-      if (input.dataset.placeholder) {
-        input.value = '';
-        delete input.dataset.placeholder;
+    const inp = document.getElementById(`date-input-${rowId}`);
+    if (inp) {
+      if (inp.dataset.placeholder) {
+        inp.value = '';
+        delete inp.dataset.placeholder;
       }
-      input.dataset.open = '0';
-      input.style.display = 'none';
+      inp.dataset.open = '0';
+      inp.style.display = 'none';
     }
     const clearBtn = document.getElementById('date-clear-' + rowId);
     if (clearBtn) clearBtn.remove();
@@ -6653,6 +6662,7 @@ function saveDate(section, id, dateVal) {
   const row = rows.find(r => r.id === id);
   if (!row) return;
   row.date = dateVal;
+  delete row._datePlaceholder;
   saveAll(all);
   const btn = document.getElementById(`date-btn-${id}`);
   if (btn) {
@@ -6661,7 +6671,16 @@ function saveDate(section, id, dateVal) {
     const erow = btn.closest('.erow');
     if (erow) erow.classList.toggle('row-has-date', !!(dateVal || row.date2));
   }
-  hideDateInput(id);
+  // Close input on all platforms
+  const inp = document.getElementById('date-input-' + id);
+  if (inp) {
+    delete inp.dataset.placeholder;
+    inp.dataset.open = '0';
+    inp.style.display = 'none';
+    inp.blur();
+  }
+  const clearBtn = document.getElementById('date-clear-' + id);
+  if (clearBtn) clearBtn.remove();
   scheduleSave();
 }
 
@@ -6679,7 +6698,16 @@ function saveDate2(section, id, dateVal) {
     const erow = btn.closest('.erow');
     if (erow) erow.classList.toggle('row-has-date', !!(row.date || dateVal));
   }
-  hideDateInput(`${id}-2`);
+  // Close input on all platforms
+  const inp2 = document.getElementById('date-input-' + id + '-2');
+  if (inp2) {
+    delete inp2.dataset.placeholder;
+    inp2.dataset.open = '0';
+    inp2.style.display = 'none';
+    inp2.blur();
+  }
+  const clearBtn2 = document.getElementById('date-clear-' + id + '-2');
+  if (clearBtn2) clearBtn2.remove();
   scheduleSave();
 }
 
