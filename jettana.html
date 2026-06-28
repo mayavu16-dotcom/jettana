@@ -6644,12 +6644,13 @@ function commitDate(section, id, dateVal) {
 }
 
 function saveDate(section, id, dateVal) {
-  if (!dateVal) return;
-  // On mobile: show a confirm bar so user can re-open picker to change the date
+  // On mobile: empty means the picker was dismissed without a selection — ignore
   if ('ontouchstart' in window) {
+    if (!dateVal) return;
     showDateConfirmBar(section, id, dateVal, false);
     return;
   }
+  // Desktop: allow empty string to clear the date
   commitDate(section, id, dateVal);
 }
 
@@ -6669,17 +6670,24 @@ function showDateConfirmBar(section, id, dateVal, isDate2) {
   bar.style.cssText = 'position:absolute;bottom:-36px;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:0 8px;pointer-events:all;';
   bar.innerHTML =
     '<span style="font-size:11px;color:var(--steel);font-family:Outfit,sans-serif;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + formatted + ' — tap to change</span>' +
-    '<button style="background:var(--sage);color:white;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-family:Outfit,sans-serif;font-weight:600;cursor:pointer;touch-action:manipulation;">Save</button>' +
-    '<button style="background:none;color:var(--steel);border:none;border-radius:6px;padding:4px 6px;font-size:13px;font-family:Outfit,sans-serif;cursor:pointer;touch-action:manipulation;">✕</button>';
+    '<button id="dcb-remove" style="background:none;color:var(--blush);border:1px solid var(--blush);border-radius:6px;padding:4px 8px;font-size:11px;font-family:Outfit,sans-serif;cursor:pointer;touch-action:manipulation;">Remove</button>' +
+    '<button id="dcb-save" style="background:var(--sage);color:white;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-family:Outfit,sans-serif;font-weight:600;cursor:pointer;touch-action:manipulation;">Save</button>' +
+    '<button id="dcb-cancel" style="background:none;color:var(--steel);border:none;border-radius:6px;padding:4px 6px;font-size:13px;font-family:Outfit,sans-serif;cursor:pointer;touch-action:manipulation;">✕</button>';
 
   // Save button
-  bar.querySelector('button:first-of-type').addEventListener('click', function(e) {
+  bar.querySelector('#dcb-save').addEventListener('click', function(e) {
     e.stopPropagation();
     if (isDate2) commitDate2(section, id, dateVal);
     else commitDate(section, id, dateVal);
   });
-  // Cancel button
-  bar.querySelector('button:last-of-type').addEventListener('click', function(e) {
+  // Remove button — clears the date
+  bar.querySelector('#dcb-remove').addEventListener('click', function(e) {
+    e.stopPropagation();
+    if (isDate2) commitDate2(section, id, '');
+    else commitDate(section, id, '');
+  });
+  // Cancel button — discards the pending pick, restores prior state
+  bar.querySelector('#dcb-cancel').addEventListener('click', function(e) {
     e.stopPropagation();
     bar.remove();
     if (inp) { inp.style.display = 'none'; inp.value = ''; }
@@ -6732,8 +6740,8 @@ function commitDate2(section, id, dateVal) {
 }
 
 function saveDate2(section, id, dateVal) {
-  if (!dateVal) return;
   if ('ontouchstart' in window) {
+    if (!dateVal) return;
     showDateConfirmBar(section, id, dateVal, true);
     return;
   }
