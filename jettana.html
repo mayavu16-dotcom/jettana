@@ -6572,8 +6572,6 @@ function toggleDateInput(rowId) {
   input.dataset.open = '1';
 
   if (isMobile) {
-    // iOS requires focus() to be called synchronously in the touch event
-    // Position off-screen so no white box shows
     input.style.position = 'fixed';
     input.style.top = '-200px';
     input.style.left = '0';
@@ -6582,15 +6580,16 @@ function toggleDateInput(rowId) {
     input.style.opacity = '0.01';
     input.style.display = 'block';
     input.style.pointerEvents = 'none';
+    // Don't pre-fill — let the picker open blank so user must choose
     input.focus();
     input.click();
   } else {
     input.style.display = 'block';
   }
 
-  // Pre-fill with 1st of current month if no value so picker opens there
   var hadValue = !!input.value;
-  if (!hadValue) {
+  // Desktop only: pre-fill with first of month so calendar opens there
+  if (!isMobile && !hadValue) {
     var parts = currentMonthKey.split('-');
     if (parts.length >= 2) {
       input.value = parts[0] + '-' + parts[1].padStart(2,'0') + '-01';
@@ -7946,23 +7945,15 @@ function toggleDark() {
   applyDark(!document.documentElement.classList.contains('dark'));
 }
 
-// Init: check localStorage override, else follow system preference
+// Init: check localStorage override, else default to light mode
 (function() {
   var stored = null;
   try { stored = localStorage.getItem('intentra_dark'); } catch(e) {}
   if (stored !== null) {
     applyDark(stored === '1');
   } else {
-    var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    applyDark(prefersDark);
-  }
-  // Listen for system preference changes (only if user hasn't overridden)
-  if (window.matchMedia) {
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-      var stored = null;
-      try { stored = localStorage.getItem('intentra_dark'); } catch(ex) {}
-      if (stored === null) applyDark(e.matches);
-    });
+    // New users always start in light mode regardless of system preference
+    applyDark(false);
   }
 })();
 
@@ -12665,8 +12656,8 @@ window.addEventListener('load', function() {
 <div id="auth-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;align-items:center;justify-content:center;">
   <div style="background:var(--white);border-radius:16px;padding:36px;width:100%;max-width:400px;margin:16px;font-family:'Outfit',sans-serif;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
     <div style="text-align:center;margin-bottom:28px;">
-      <div style="font-family:'Playfair Display',serif;font-size:28px;color:#1A2332;margin-bottom:4px;">Jet<span style="color:#6B9E70;font-style:italic;">tana</span></div>
-      <div style="font-size:12px;color:#8A9AB5;letter-spacing:1.5px;">BUDGET · TRACK · GROW</div>
+      <div style="font-family:'Playfair Display',serif;font-size:28px;color:white;margin-bottom:4px;">Jet<span style="color:#6B9E70;font-style:italic;">tana</span></div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.5);letter-spacing:1.5px;">BUDGET · TRACK · GROW</div>
     </div>
     <div id="auth-tabs" style="display:flex;gap:0;margin-bottom:24px;border-bottom:1px solid #E8EDF2;">
       <button onclick="showAuthTab('login')" id="tab-login" style="flex:1;background:none;border:none;padding:10px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;color:#1A2332;border-bottom:2px solid #6B9E70;cursor:pointer;">Sign in</button>
