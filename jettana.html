@@ -1861,7 +1861,8 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
 .dark .about-modal { background: #1E2A38 !important; }
 .dark .about-modal p { color: var(--slate) !important; }
 
-#calc-fab { position:fixed;bottom:24px;left:236px;width:44px;height:44px;background:var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:1500;box-shadow:0 4px 16px rgba(0,0,0,0.25);transition:transform 0.2s,box-shadow 0.2s;user-select:none; }
+#calc-fab { position:fixed;bottom:24px;left:236px;width:44px;height:44px;background:var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:1500;box-shadow:0 4px 16px rgba(0,0,0,0.25);transition:transform 0.2s,box-shadow 0.2s;user-select:none;color:white; }
+.dark #calc-fab { color:#1A2332; }
 #calc-panel { position:fixed;bottom:80px;left:236px; }
 @media (max-width: 767px) {
   #calc-fab  { left: 16px; }
@@ -3812,14 +3813,14 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 <!-- Floating Calculator -->
 <div id="calc-fab" title="Calculator">
   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="3" y="2" width="14" height="16" rx="2" stroke="white" stroke-width="1.5"/>
-    <rect x="5.5" y="4.5" width="9" height="3" rx="0.75" fill="white" opacity="0.9"/>
-    <circle cx="6.5" cy="11" r="1" fill="white" opacity="0.8"/>
-    <circle cx="10" cy="11" r="1" fill="white" opacity="0.8"/>
-    <circle cx="13.5" cy="11" r="1" fill="white" opacity="0.8"/>
-    <circle cx="6.5" cy="14.5" r="1" fill="white" opacity="0.8"/>
-    <circle cx="10" cy="14.5" r="1" fill="white" opacity="0.8"/>
-    <rect x="12.5" y="13.5" width="2" height="2" rx="0.5" fill="white" opacity="0.9"/>
+    <rect x="3" y="2" width="14" height="16" rx="2" stroke="currentColor" stroke-width="1.5"/>
+    <rect x="5.5" y="4.5" width="9" height="3" rx="0.75" fill="currentColor" opacity="0.9"/>
+    <circle cx="6.5" cy="11" r="1" fill="currentColor" opacity="0.8"/>
+    <circle cx="10" cy="11" r="1" fill="currentColor" opacity="0.8"/>
+    <circle cx="13.5" cy="11" r="1" fill="currentColor" opacity="0.8"/>
+    <circle cx="6.5" cy="14.5" r="1" fill="currentColor" opacity="0.8"/>
+    <circle cx="10" cy="14.5" r="1" fill="currentColor" opacity="0.8"/>
+    <rect x="12.5" y="13.5" width="2" height="2" rx="0.5" fill="currentColor" opacity="0.9"/>
   </svg>
 </div>
 
