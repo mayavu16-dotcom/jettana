@@ -8578,14 +8578,11 @@ function showCtxMenu(e, section, id) {
   // Show date option in ctx menu on mobile only
   var ctxDateBtn = document.getElementById('ctx-date');
   if (ctxDateBtn) {
-    var hasDateInput = !!document.getElementById('date-input-' + ctxId) || !!document.getElementById('date-input-' + ctxId + '-2');
-    ctxDateBtn.style.display = ('ontouchstart' in window) && hasDateInput ? 'flex' : 'none';
-    if (ctxDateBtn.style.display !== 'none') {
-      var dateLabel = document.getElementById('ctx-date-label');
-      if (dateLabel) {
-        var existingDate = row && (row.date || row.date2);
-        dateLabel.textContent = existingDate ? 'Edit date' : 'Add date';
-      }
+    ctxDateBtn.style.display = ('ontouchstart' in window) ? 'flex' : 'none';
+    var dateLabel = document.getElementById('ctx-date-label');
+    if (dateLabel) {
+      var existingDate = row && (row.date || row.date2);
+      dateLabel.textContent = existingDate ? 'Edit date' : 'Add date';
     }
   }
   var clearColorBtn = document.getElementById('ctx-clear-color');
