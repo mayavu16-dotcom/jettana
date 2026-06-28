@@ -4195,7 +4195,6 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 <!-- Right-click context menu -->
 <div class="ctx-menu" id="ctx-menu" style="display:none;" role="menu" aria-label="Row options">
   <button class="ctx-item" id="ctx-note"><span class="ctx-icon">✎</span><span id="ctx-note-label">Add note</span></button>
-  <button class="ctx-item" id="ctx-due" style="display:none;"><span class="ctx-icon">📋</span>Set due date</button>
   <button class="ctx-item" id="ctx-date"><span class="ctx-icon">📅</span><span id="ctx-date-label">Add date</span></button>
   <button class="ctx-item" id="ctx-color"><span class="ctx-icon">🎨</span>Color</button>
   <div class="ctx-divider" id="ctx-color-divider" style="display:none;"></div>
@@ -7155,7 +7154,7 @@ function toggleNote(section, id) {
   if (opening) {
     // Snapshot before the user edits anything in this note
     pushUndo('Edit note/template');
-    if (section === 'savings' || section === 'income' || section === 'debt' || section === 'transport' || section === 'subscriptions' || section === 'checking') {
+    if (section === 'savings' || section === 'income' || section === 'debt' || section === 'transport' || section === 'subscriptions' || section === 'checking' || section === 'housing') {
       var noteInner = wrap.querySelector('.note-inner');
       if (noteInner && !noteInner.querySelector('.savings-template')) {
         var all = loadAll();
@@ -7167,6 +7166,9 @@ function toggleNote(section, id) {
         if (section === 'income') {
           templates = ['general', 'paycheck'];
           templateLabels = { general: 'General', paycheck: 'Paycheck' };
+        } else if (section === 'housing') {
+          templates = ['general', 'due'];
+          templateLabels = { general: 'General', due: '📋 Due date' };
         } else if (section === 'debt') {
           templates = ['general', 'payment'];
           templateLabels = { general: 'General', payment: 'Payment' };
@@ -7284,7 +7286,7 @@ function renderAllEntries(section, id, template, entries, skipTotal) {
   if (!container) return;
   container.innerHTML = '';
 
-  var TYPE_LABELS = { contribution: 'Contribution', transfer: 'Transfer', investment: 'Investment', interest: 'Interest', performance: 'Performance', payment: 'Payment', paycheck: 'Paycheck', transaction: 'Transaction', fuel: 'Fuel', manage: 'Manage' };
+  var TYPE_LABELS = { contribution: 'Contribution', transfer: 'Transfer', investment: 'Investment', interest: 'Interest', performance: 'Performance', payment: 'Payment', paycheck: 'Paycheck', transaction: 'Transaction', fuel: 'Fuel', manage: 'Manage', due: 'Due date' };
   var TYPE_COLORS = {
     contribution: 'var(--sage-dark)',
     investment:   'var(--sage-dark)',
@@ -7296,6 +7298,7 @@ function renderAllEntries(section, id, template, entries, skipTotal) {
     transaction:  '#4A85A0',
     fuel:         '#7B72AA',
     manage:       'var(--steel)',
+    due:          '#C0736A',
   };
 
   entries.forEach(function(entry, idx) {
@@ -7321,6 +7324,15 @@ function renderEntryFields(section, id, template, entry, idx) {
   var labelStyle = 'font-size:10px;color:var(--steel);display:block;margin-bottom:2px;';
   var fieldStyle = 'flex:1;min-width:90px;';
   var cb = 'saveEntry(\'' + section + '\',\'' + id + '\',' + idx + ')';
+
+  if (template === 'due') {
+    return '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Due day</label>' +
+      '<input type="text" data-key="day" value="' + (entry.day || '') + '" placeholder="e.g. 1st, 15th" style="' + inputStyle + '" oninput="this.dataset.key=\'day\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Note (optional)</label>' +
+      '<input type="text" data-key="note" value="' + (entry.note || '') + '" placeholder="e.g. autopay" style="' + inputStyle + '" oninput="this.dataset.key=\'note\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '</div>';
+  }
 
   if (template === 'payment') {
     var blurCb = 'templateMoneyBlur(this,\'' + section + '\',\'' + id + '\',\'' + template + '\')';
@@ -8440,11 +8452,6 @@ function showCtxMenu(e, section, id) {
     noteLabel.textContent = row.note ? 'Edit note' : 'Add note';
   }
 
-  // Due date quick-fill — housing section only
-  var ctxDueBtn = document.getElementById('ctx-due');
-  if (ctxDueBtn) {
-    ctxDueBtn.style.display = (section === 'housing') ? 'flex' : 'none';
-  }
 
   // Date button — show on mobile only
   var ctxDateBtn = document.getElementById('ctx-date');
@@ -8546,31 +8553,6 @@ window.addEventListener('load', function() {
     if (ctxSection && ctxId) toggleNote(ctxSection, ctxId);
     hideCtxMenu();
   });
-
-  var ctxDue = document.getElementById('ctx-due');
-  if (ctxDue && !ctxDue._wired) {
-    ctxDue._wired = true;
-    ctxDue.addEventListener('click', function() {
-      var sec = ctxSection, id = ctxId;
-      hideCtxMenu();
-      if (!sec || !id) return;
-      toggleNote(sec, id);
-      setTimeout(function() {
-        var textarea = document.getElementById('note-ta-' + id);
-        if (textarea) {
-          textarea.placeholder = 'e.g. Due: 1st, Due: 15th…';
-          if (!textarea.value.includes('Due:')) {
-            textarea.value = (textarea.value ? textarea.value + '\n' : '') + 'Due: ';
-            textarea.focus();
-            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-            textarea.dispatchEvent(new Event('input'));
-          } else {
-            textarea.focus();
-          }
-        }
-      }, 150);
-    });
-  }
 
   var ctxDateItem = document.getElementById('ctx-date');
   if (ctxDateItem && !ctxDateItem._wired) {
