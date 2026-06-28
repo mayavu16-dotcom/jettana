@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Jettana — Monthly Budget Tracker</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Outfit:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@700;800&family=Cormorant+Garamond:ital,wght@1,400;1,500;1,600&family=Lora:ital,wght@0,400;0,600;1,400;1,600&family=Dancing+Script:wght@400;600&family=Merriweather:ital,wght@0,400;0,700;1,400&family=DM+Serif+Display:ital@0;1&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Crimson+Text:ital,wght@0,400;1,400;1,600&display=swap" rel="stylesheet">
@@ -1184,7 +1184,16 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
 }
 
 @media (max-width: 900px) {
-  .hamburger-btn { left: 14px !important; display: flex; }
+  .hamburger-btn {
+    left: 14px !important;
+    display: flex;
+    background: rgba(0,0,0,0.07);
+    border-color: rgba(0,0,0,0.12);
+  }
+  .hamburger-btn span { background: var(--ink); }
+  .hamburger-btn:hover { background: rgba(0,0,0,0.13); }
+  body.sidebar-open .hamburger-btn { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.2); }
+  body.sidebar-open .hamburger-btn span { background: white; }
   .sidebar {
     transform: translateX(-100%);
     transition: transform 0.25s ease;
@@ -6670,8 +6679,8 @@ function showDateConfirmBar(section, id, dateVal, isDate2) {
   bar.style.cssText = 'position:absolute;bottom:-36px;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:0 8px;pointer-events:all;';
   bar.innerHTML =
     '<span style="font-size:11px;color:var(--steel);font-family:Outfit,sans-serif;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + formatted + ' — tap to change</span>' +
-    '<button id="dcb-remove" style="background:none;color:var(--blush);border:1px solid var(--blush);border-radius:6px;padding:4px 8px;font-size:11px;font-family:Outfit,sans-serif;cursor:pointer;touch-action:manipulation;">Remove</button>' +
     '<button id="dcb-save" style="background:var(--sage);color:white;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-family:Outfit,sans-serif;font-weight:600;cursor:pointer;touch-action:manipulation;">Save</button>' +
+    '<button id="dcb-remove" style="background:none;color:var(--blush);border:1px solid var(--blush);border-radius:6px;padding:4px 8px;font-size:11px;font-family:Outfit,sans-serif;cursor:pointer;touch-action:manipulation;">Remove</button>' +
     '<button id="dcb-cancel" style="background:none;color:var(--steel);border:none;border-radius:6px;padding:4px 6px;font-size:13px;font-family:Outfit,sans-serif;cursor:pointer;touch-action:manipulation;">✕</button>';
 
   // Save button
@@ -6757,11 +6766,13 @@ document.getElementById('hamburger-btn').addEventListener('click', () => {
   } else {
     document.getElementById('sidebar').classList.toggle('open');
     document.getElementById('sidebar-overlay').classList.toggle('visible');
+    document.body.classList.toggle('sidebar-open');
   }
 });
 function closeSidebar() {
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('sidebar-overlay').classList.remove('visible');
+  document.body.classList.remove('sidebar-open');
 }
 // Restore desktop sidebar state on load
 try {
