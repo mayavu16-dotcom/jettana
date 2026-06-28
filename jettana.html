@@ -6576,10 +6576,14 @@ function formatDateLabel(dateStr) {
 function toggleDateInput(rowId) {
   const input = document.getElementById(`date-input-${rowId}`);
   if (!input) return;
+  // On mobile, row-date-wrap is hidden via CSS; show it so the input is visible
+  const wrap = input.closest('.row-date-wrap');
   if (input.style.display === 'block') {
     input.style.display = 'none';
+    if (wrap) wrap.style.display = '';
     return;
   }
+  if (wrap) wrap.style.display = 'flex';
   input.style.display = 'block';
   // If no value set, pre-fill 1st of current month so iOS opens there
   // Track it as placeholder so we can clear if user doesn't pick
@@ -6594,6 +6598,8 @@ function toggleDateInput(rowId) {
 }
 
 function hideDateInput(rowId) {
+  // On mobile, blur fires immediately and would close before the user picks a date — skip it
+  if ('ontouchstart' in window) return;
   setTimeout(() => {
     const input = document.getElementById(`date-input-${rowId}`);
     if (input) {
@@ -6602,6 +6608,8 @@ function hideDateInput(rowId) {
         delete input.dataset.placeholder;
       }
       input.style.display = 'none';
+      const wrap = input.closest('.row-date-wrap');
+      if (wrap) wrap.style.display = '';
     }
   }, 300);
 }
@@ -6628,6 +6636,8 @@ function saveDate(section, id, dateVal) {
     inp.dataset.open = '0';
     inp.style.display = 'none';
     inp.blur();
+    const wrap = inp.closest('.row-date-wrap');
+    if (wrap) wrap.style.display = '';
   }
   const clearBtn = document.getElementById('date-clear-' + id);
   if (clearBtn) clearBtn.remove();
@@ -6655,6 +6665,8 @@ function saveDate2(section, id, dateVal) {
     inp2.dataset.open = '0';
     inp2.style.display = 'none';
     inp2.blur();
+    const wrap2 = inp2.closest('.row-date-wrap');
+    if (wrap2) wrap2.style.display = '';
   }
   const clearBtn2 = document.getElementById('date-clear-' + id + '-2');
   if (clearBtn2) clearBtn2.remove();
