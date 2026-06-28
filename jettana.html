@@ -4195,7 +4195,6 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 <!-- Right-click context menu -->
 <div class="ctx-menu" id="ctx-menu" style="display:none;" role="menu" aria-label="Row options">
   <button class="ctx-item" id="ctx-note"><span class="ctx-icon">✎</span><span id="ctx-note-label">Add note</span></button>
-  <button class="ctx-item" id="ctx-date" style="display:none;" onclick="var id=ctxId;hideCtxMenu();if(id){var inp=document.getElementById('date-input-'+id)||document.getElementById('date-input-'+id+'-2');showMobileDatePicker(id,inp);}"><span class="ctx-icon">📅</span><span id="ctx-date-label">Add date</span></button>
   <button class="ctx-item" id="ctx-color"><span class="ctx-icon">🎨</span>Color</button>
   <div class="ctx-divider" id="ctx-color-divider" style="display:none;"></div>
   <div class="ctx-submenu-wrap" id="ctx-paste-wrap" style="display:none;">
@@ -6560,171 +6559,20 @@ function formatDateLabel(dateStr) {
 function toggleDateInput(rowId) {
   const input = document.getElementById(`date-input-${rowId}`);
   if (!input) return;
-
-  var isMobile = 'ontouchstart' in window;
-
-  if (isMobile) {
-    // On mobile use custom picker to avoid iOS autofill-today bug
-    showMobileDatePicker(rowId, input);
-    return;
-  }
-
-  // Desktop: native date input
   if (input.style.display === 'block') {
     input.style.display = 'none';
     return;
   }
   input.style.display = 'block';
-  var hadValue = !!input.value;
-  if (!hadValue) {
-    var parts = currentMonthKey.split('-');
-    if (parts.length >= 2) {
-      input.value = parts[0] + '-' + parts[1].padStart(2,'0') + '-01';
-      input.dataset.placeholder = '1';
-    }
-  } else {
-    delete input.dataset.placeholder;
-  }
-  if (input.showPicker) {
-    try { input.showPicker(); } catch(e) { input.focus(); }
-  } else {
-    input.focus();
-  }
-}
-
-function showMobileDatePicker(rowId, input) {
-  var existing = document.getElementById('mobile-date-picker');
-  if (existing) existing.remove();
-
-  // Get section from the erow element
-  var isDate2 = rowId ? rowId.endsWith('-2') : false;
-  var baseId = isDate2 ? rowId.slice(0, -2) : rowId;
-  var erow = document.querySelector('[data-id="' + baseId + '"]');
-  var section = erow ? erow.dataset.section : ctxSection;
-  if (!section) { alert('Date picker: could not find section'); return; }
-
-  var currentVal = input ? input.value : '';
-  var monthParts = currentMonthKey.split('-');
-  var initYear  = currentVal ? parseInt(currentVal.split('-')[0]) : parseInt(monthParts[0]);
-  var initMonth = currentVal ? parseInt(currentVal.split('-')[1]) : parseInt(monthParts[1]);
-  var initDay   = currentVal ? parseInt(currentVal.split('-')[2]) : 0;
-
-  var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  var selYear = initYear, selMonth = initMonth, selDay = initDay;
-
-  function daysInMonth(m, y) { return new Date(y, m, 0).getDate(); }
-
-  var overlay = document.createElement('div');
-  overlay.id = 'mobile-date-picker';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);display:flex;align-items:flex-end;';
-
-  var sheet = document.createElement('div');
-  sheet.style.cssText = 'width:100%;background:var(--white);border-radius:20px 20px 0 0;padding:20px 16px 32px;font-family:Outfit,sans-serif;box-sizing:border-box;';
-
-  function renderSheet() {
-    var days = daysInMonth(selMonth, selYear);
-
-    // Build day grid
-    var dayGrid = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:16px;">';
-    var dayNames = ['Su','Mo','Tu','We','Th','Fr','Sa'];
-    dayNames.forEach(function(d) {
-      dayGrid += '<div style="text-align:center;font-size:11px;color:var(--steel);padding:4px 0;">' + d + '</div>';
-    });
-    var firstDay = new Date(selYear, selMonth-1, 1).getDay();
-    for (var i = 0; i < firstDay; i++) dayGrid += '<div></div>';
-    for (var d = 1; d <= days; d++) {
-      var isSelected = d === selDay;
-      var isToday = (new Date().getFullYear() === selYear && new Date().getMonth()+1 === selMonth && new Date().getDate() === d);
-      dayGrid += '<button data-day="' + d + '" style="' +
-        'text-align:center;padding:8px 0;border:none;border-radius:8px;font-family:Outfit,sans-serif;font-size:15px;cursor:pointer;' +
-        (isSelected ? 'background:var(--sage);color:white;font-weight:700;' :
-         isToday ? 'background:var(--sage-light);color:var(--sage-dark);font-weight:600;' :
-         'background:none;color:var(--ink);') +
-        '">' + d + '</button>';
-    }
-    dayGrid += '</div>';
-
-    sheet.innerHTML =
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
-        '<button id="mdp-cancel" style="background:none;border:none;font-family:Outfit,sans-serif;font-size:15px;color:var(--steel);cursor:pointer;padding:4px 8px;touch-action:manipulation;">Cancel</button>' +
-        '<div style="display:flex;align-items:center;gap:12px;">' +
-          '<button id="mdp-prev" style="background:none;border:none;font-size:20px;color:var(--steel);cursor:pointer;padding:4px 8px;touch-action:manipulation;">‹</button>' +
-          '<span id="mdp-title" style="font-size:16px;font-weight:700;color:var(--ink);min-width:140px;text-align:center;">' + MONTHS[selMonth-1] + ' ' + selYear + '</span>' +
-          '<button id="mdp-next" style="background:none;border:none;font-size:20px;color:var(--steel);cursor:pointer;padding:4px 8px;touch-action:manipulation;">›</button>' +
-        '</div>' +
-        '<button id="mdp-done" style="background:var(--sage);border:none;font-family:Outfit,sans-serif;font-size:15px;font-weight:700;color:white;cursor:pointer;padding:6px 14px;border-radius:8px;touch-action:manipulation;">' + (selDay ? 'Done' : 'Skip') + '</button>' +
-      '</div>' +
-      dayGrid +
-      (currentVal ? '<button id="mdp-clear" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--mist);background:none;font-family:Outfit,sans-serif;font-size:13px;color:var(--steel);cursor:pointer;touch-action:manipulation;">Clear date</button>' : '');
-
-    // Day button clicks
-    sheet.querySelectorAll('[data-day]').forEach(function(btn) {
-      btn.onclick = function() {
-        selDay = parseInt(this.dataset.day);
-        renderSheet();
-      };
-    });
-
-    document.getElementById('mdp-prev').onclick = function() {
-      selMonth--; if (selMonth < 1) { selMonth = 12; selYear--; }
-      if (selDay > daysInMonth(selMonth, selYear)) selDay = 0;
-      renderSheet();
-    };
-    document.getElementById('mdp-next').onclick = function() {
-      selMonth++; if (selMonth > 12) { selMonth = 1; selYear++; }
-      if (selDay > daysInMonth(selMonth, selYear)) selDay = 0;
-      renderSheet();
-    };
-    document.getElementById('mdp-cancel').onclick = function() { overlay.remove(); };
-    document.getElementById('mdp-done').onclick = function() {
-      if (selDay) {
-        var mm = String(selMonth).padStart(2,'0');
-        var dd = String(selDay).padStart(2,'0');
-        var dateVal = selYear + '-' + mm + '-' + dd;
-        if (isDate2) saveDate2(section, baseId, dateVal);
-        else saveDate(section, rowId, dateVal);
-      }
-      overlay.remove();
-    };
-    var clr = document.getElementById('mdp-clear');
-    if (clr) clr.onclick = function() {
-      if (isDate2) saveDate2(section, baseId, '');
-      else saveDate(section, rowId, '');
-      overlay.remove();
-    };
-  }
-
-  renderSheet();
-  overlay.appendChild(sheet);
-  document.body.appendChild(overlay);
-  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+  input.focus();
 }
 
 function hideDateInput(rowId) {
-  var input = document.getElementById('date-input-' + rowId);
-  if (!input) return;
-  var isMobile = 'ontouchstart' in window;
-  // On mobile, onblur fires when native picker opens — ignore it
-  // Only hide when onchange has fired (value changed) or user explicitly closes
-  if (isMobile) {
-    // Don't hide on blur — let onchange handle saving and closing
-    return;
-  }
   setTimeout(() => {
-    const inp = document.getElementById(`date-input-${rowId}`);
-    if (inp) {
-      if (inp.dataset.placeholder) {
-        inp.value = '';
-        delete inp.dataset.placeholder;
-      }
-      inp.dataset.open = '0';
-      inp.style.display = 'none';
-    }
-    const clearBtn = document.getElementById('date-clear-' + rowId);
-    if (clearBtn) clearBtn.remove();
+    const input = document.getElementById(`date-input-${rowId}`);
+    if (input) input.style.display = 'none';
   }, 200);
 }
-
 
 function saveDate(section, id, dateVal) {
   const all = loadAll();
@@ -6781,7 +6629,6 @@ function saveDate2(section, id, dateVal) {
   scheduleSave();
 }
 
-// ctx-date is wired via inline onclick in HTML
 
 document.getElementById('hamburger-btn').addEventListener('click', () => {
   var isDesktop = window.innerWidth > 900;
@@ -8575,16 +8422,7 @@ function showCtxMenu(e, section, id) {
   if (noteLabel && row) {
     noteLabel.textContent = row.note ? 'Edit note' : 'Add note';
   }
-  // Show date option in ctx menu on mobile only
-  var ctxDateBtn = document.getElementById('ctx-date');
-  if (ctxDateBtn) {
-    ctxDateBtn.style.display = ('ontouchstart' in window) ? 'flex' : 'none';
-    var dateLabel = document.getElementById('ctx-date-label');
-    if (dateLabel) {
-      var existingDate = row && (row.date || row.date2);
-      dateLabel.textContent = existingDate ? 'Edit date' : 'Add date';
-    }
-  }
+
   var clearColorBtn = document.getElementById('ctx-clear-color');
   if (clearColorBtn && row) {
     clearColorBtn.style.display = row.paidColor ? 'flex' : 'none';
