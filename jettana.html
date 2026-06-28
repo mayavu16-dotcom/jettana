@@ -6601,7 +6601,14 @@ function showMobileDatePicker(rowId, input) {
   var baseId = isDate2 ? rowId.slice(0, -2) : rowId;
   var erow = document.querySelector('[data-id="' + baseId + '"]');
   var section = erow ? erow.dataset.section : null;
-  if (!section) return;
+  if (!section) {
+    // Try finding section from the input element itself
+    if (input) {
+      var parentErow = input.closest('[data-section]');
+      section = parentErow ? parentErow.dataset.section : null;
+    }
+  }
+  if (!section) { console.warn('showMobileDatePicker: no section found for', rowId); return; }
 
   var currentVal = input ? input.value : '';
   var monthParts = currentMonthKey.split('-');
@@ -8678,13 +8685,16 @@ window.addEventListener('load', function() {
 
   // Date button — only show on mobile for rows that support dates
   var ctxDate = document.getElementById('ctx-date');
-  if (ctxDate) {
+  if (ctxDate && !ctxDate._dateListenerSet) {
+    ctxDate._dateListenerSet = true;
     ctxDate.addEventListener('click', function() {
       var id = ctxId, sec = ctxSection;
       hideCtxMenu();
       if (!id) return;
-      var input = document.getElementById('date-input-' + id) || document.getElementById('date-input-' + id + '-2');
-      if (input) showMobileDatePicker(id, input);
+      // Try date input on col1 first, then col2
+      var input = document.getElementById('date-input-' + id) ||
+                  document.getElementById('date-input-' + id + '-2');
+      showMobileDatePicker(id, input);
     });
   }
   var ctxColor = document.getElementById('ctx-color');
