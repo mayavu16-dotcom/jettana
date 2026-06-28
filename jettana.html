@@ -4195,6 +4195,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 <!-- Right-click context menu -->
 <div class="ctx-menu" id="ctx-menu" style="display:none;" role="menu" aria-label="Row options">
   <button class="ctx-item" id="ctx-note"><span class="ctx-icon">✎</span><span id="ctx-note-label">Add note</span></button>
+  <button class="ctx-item" id="ctx-date"><span class="ctx-icon">📅</span><span id="ctx-date-label">Add date</span></button>
   <button class="ctx-item" id="ctx-color"><span class="ctx-icon">🎨</span>Color</button>
   <div class="ctx-divider" id="ctx-color-divider" style="display:none;"></div>
   <div class="ctx-submenu-wrap" id="ctx-paste-wrap" style="display:none;">
@@ -8438,6 +8439,17 @@ function showCtxMenu(e, section, id) {
     noteLabel.textContent = row.note ? 'Edit note' : 'Add note';
   }
 
+  // Date button — show on mobile only
+  var ctxDateBtn = document.getElementById('ctx-date');
+  if (ctxDateBtn) {
+    ctxDateBtn.style.display = ('ontouchstart' in window) ? 'flex' : 'none';
+    var ctxDateLabel = document.getElementById('ctx-date-label');
+    if (ctxDateLabel) {
+      var hasAnyDate = row && (row.date || row.date2);
+      ctxDateLabel.textContent = hasAnyDate ? 'Edit date' : 'Add date';
+    }
+  }
+
   var clearColorBtn = document.getElementById('ctx-clear-color');
   if (clearColorBtn && row) {
     clearColorBtn.style.display = row.paidColor ? 'flex' : 'none';
@@ -8527,6 +8539,42 @@ window.addEventListener('load', function() {
     if (ctxSection && ctxId) toggleNote(ctxSection, ctxId);
     hideCtxMenu();
   });
+
+  var ctxDateItem = document.getElementById('ctx-date');
+  if (ctxDateItem && !ctxDateItem._wired) {
+    ctxDateItem._wired = true;
+    ctxDateItem.addEventListener('click', function() {
+      var id = ctxId, sec = ctxSection;
+      hideCtxMenu();
+      if (!id || !sec) return;
+      var cfg = CONFIGS[sec];
+      var hasCol1Date = !!(document.getElementById('date-input-' + id));
+      var hasCol2Date = !!(document.getElementById('date-input-' + id + '-2'));
+      if (hasCol1Date && hasCol2Date) {
+        // Show column picker
+        var col1Label = cfg ? (cfg.k1.charAt(0).toUpperCase() + cfg.k1.slice(1)) : 'Column 1';
+        var col2Label = cfg ? (cfg.k2.charAt(0).toUpperCase() + cfg.k2.slice(1)) : 'Column 2';
+        var sheet = document.createElement('div');
+        sheet.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);display:flex;align-items:flex-end;';
+        sheet.innerHTML =
+          '<div style="width:100%;background:var(--white);border-radius:20px 20px 0 0;padding:20px 16px 32px;font-family:Outfit,sans-serif;box-sizing:border-box;">' +
+          '<p style="text-align:center;font-size:15px;font-weight:600;color:var(--ink);margin:0 0 16px;">Which column?</p>' +
+          '<button id="mdp-col1" style="display:block;width:100%;padding:14px;margin-bottom:10px;border-radius:10px;border:1.5px solid var(--mist);background:var(--white);font-family:Outfit,sans-serif;font-size:15px;color:var(--ink);cursor:pointer;">' + col1Label + '</button>' +
+          '<button id="mdp-col2" style="display:block;width:100%;padding:14px;margin-bottom:10px;border-radius:10px;border:1.5px solid var(--mist);background:var(--white);font-family:Outfit,sans-serif;font-size:15px;color:var(--ink);cursor:pointer;">' + col2Label + '</button>' +
+          '<button id="mdp-colcancel" style="display:block;width:100%;padding:12px;border-radius:10px;border:none;background:none;font-family:Outfit,sans-serif;font-size:14px;color:var(--steel);cursor:pointer;">Cancel</button>' +
+          '</div>';
+        document.body.appendChild(sheet);
+        sheet.querySelector('#mdp-col1').onclick = function() { sheet.remove(); toggleDateInput(id); };
+        sheet.querySelector('#mdp-col2').onclick = function() { sheet.remove(); toggleDateInput(id + '-2'); };
+        sheet.querySelector('#mdp-colcancel').onclick = function() { sheet.remove(); };
+        sheet.onclick = function(e) { if (e.target === sheet) sheet.remove(); };
+      } else if (hasCol2Date) {
+        toggleDateInput(id + '-2');
+      } else {
+        toggleDateInput(id);
+      }
+    });
+  }
 
   var ctxColor = document.getElementById('ctx-color');
   if (ctxColor) ctxColor.addEventListener('click', function() {
