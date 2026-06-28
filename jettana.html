@@ -6595,82 +6595,105 @@ function showMobileDatePicker(rowId, input) {
   var existing = document.getElementById('mobile-date-picker');
   if (existing) existing.remove();
 
-  var currentVal = input.value; // e.g. "2026-06-15"
+  // Get section from the erow element
+  var isDate2 = rowId.endsWith('-2');
+  var baseId = isDate2 ? rowId.slice(0, -2) : rowId;
+  var erow = document.querySelector('[data-id="' + baseId + '"]');
+  var section = erow ? erow.dataset.section : null;
+  if (!section) return;
+
+  var currentVal = input ? input.value : '';
   var monthParts = currentMonthKey.split('-');
   var initYear  = currentVal ? parseInt(currentVal.split('-')[0]) : parseInt(monthParts[0]);
   var initMonth = currentVal ? parseInt(currentVal.split('-')[1]) : parseInt(monthParts[1]);
-  var initDay   = currentVal ? parseInt(currentVal.split('-')[2]) : 0; // 0 = no selection
+  var initDay   = currentVal ? parseInt(currentVal.split('-')[2]) : 0;
 
-  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  var years = [];
-  for (var y = initYear - 2; y <= initYear + 2; y++) years.push(y);
-
+  var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   var selYear = initYear, selMonth = initMonth, selDay = initDay;
 
   function daysInMonth(m, y) { return new Date(y, m, 0).getDate(); }
 
   var overlay = document.createElement('div');
   overlay.id = 'mobile-date-picker';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.4);display:flex;align-items:flex-end;';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);display:flex;align-items:flex-end;';
 
   var sheet = document.createElement('div');
-  sheet.style.cssText = 'width:100%;background:var(--white);border-radius:20px 20px 0 0;padding:16px;font-family:Outfit,sans-serif;box-sizing:border-box;';
+  sheet.style.cssText = 'width:100%;background:var(--white);border-radius:20px 20px 0 0;padding:20px 16px 32px;font-family:Outfit,sans-serif;box-sizing:border-box;';
 
-  function render() {
+  function renderSheet() {
     var days = daysInMonth(selMonth, selYear);
-    var dayOpts = '<option value="0" ' + (!selDay ? 'selected' : '') + ' disabled>Day</option>';
-    for (var d = 1; d <= days; d++) dayOpts += '<option value="' + d + '" ' + (d === selDay ? 'selected' : '') + '>' + d + '</option>';
-    var monthOpts = months.map(function(m,i) {
-      return '<option value="' + (i+1) + '" ' + ((i+1) === selMonth ? 'selected' : '') + '>' + m + '</option>';
-    }).join('');
-    var yearOpts = years.map(function(yy) {
-      return '<option value="' + yy + '" ' + (yy === selYear ? 'selected' : '') + '>' + yy + '</option>';
-    }).join('');
 
-    var selectStyle = 'flex:1;padding:10px 6px;border:1.5px solid var(--mist);border-radius:8px;font-family:Outfit,sans-serif;font-size:15px;color:var(--ink);background:var(--white);outline:none;appearance:none;text-align:center;';
+    // Build day grid
+    var dayGrid = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:16px;">';
+    var dayNames = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+    dayNames.forEach(function(d) {
+      dayGrid += '<div style="text-align:center;font-size:11px;color:var(--steel);padding:4px 0;">' + d + '</div>';
+    });
+    var firstDay = new Date(selYear, selMonth-1, 1).getDay();
+    for (var i = 0; i < firstDay; i++) dayGrid += '<div></div>';
+    for (var d = 1; d <= days; d++) {
+      var isSelected = d === selDay;
+      var isToday = (new Date().getFullYear() === selYear && new Date().getMonth()+1 === selMonth && new Date().getDate() === d);
+      dayGrid += '<button data-day="' + d + '" style="' +
+        'text-align:center;padding:8px 0;border:none;border-radius:8px;font-family:Outfit,sans-serif;font-size:15px;cursor:pointer;' +
+        (isSelected ? 'background:var(--sage);color:white;font-weight:700;' :
+         isToday ? 'background:var(--sage-light);color:var(--sage-dark);font-weight:600;' :
+         'background:none;color:var(--ink);') +
+        '">' + d + '</button>';
+    }
+    dayGrid += '</div>';
 
     sheet.innerHTML =
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">' +
-        '<button id="mdp-cancel" style="background:none;border:none;font-family:Outfit,sans-serif;font-size:14px;color:var(--steel);cursor:pointer;padding:4px 8px;">Cancel</button>' +
-        '<span style="font-size:14px;font-weight:600;color:var(--ink);">Select date</span>' +
-        '<button id="mdp-done" style="background:none;border:none;font-family:Outfit,sans-serif;font-size:14px;font-weight:700;color:var(--sage-dark);cursor:pointer;padding:4px 8px;">Done</button>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
+        '<button id="mdp-cancel" style="background:none;border:none;font-family:Outfit,sans-serif;font-size:15px;color:var(--steel);cursor:pointer;padding:4px 8px;touch-action:manipulation;">Cancel</button>' +
+        '<div style="display:flex;align-items:center;gap:12px;">' +
+          '<button id="mdp-prev" style="background:none;border:none;font-size:20px;color:var(--steel);cursor:pointer;padding:4px 8px;touch-action:manipulation;">‹</button>' +
+          '<span id="mdp-title" style="font-size:16px;font-weight:700;color:var(--ink);min-width:140px;text-align:center;">' + MONTHS[selMonth-1] + ' ' + selYear + '</span>' +
+          '<button id="mdp-next" style="background:none;border:none;font-size:20px;color:var(--steel);cursor:pointer;padding:4px 8px;touch-action:manipulation;">›</button>' +
+        '</div>' +
+        '<button id="mdp-done" style="background:var(--sage);border:none;font-family:Outfit,sans-serif;font-size:15px;font-weight:700;color:white;cursor:pointer;padding:6px 14px;border-radius:8px;touch-action:manipulation;">' + (selDay ? 'Done' : 'Skip') + '</button>' +
       '</div>' +
-      '<div style="display:flex;gap:8px;margin-bottom:12px;">' +
-        '<select id="mdp-month" style="' + selectStyle + 'flex:1.4;">' + monthOpts + '</select>' +
-        '<select id="mdp-day" style="' + selectStyle + '">' + dayOpts + '</select>' +
-        '<select id="mdp-year" style="' + selectStyle + '">' + yearOpts + '</select>' +
-      '</div>' +
-      (currentVal ? '<button id="mdp-clear" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--mist);background:none;font-family:Outfit,sans-serif;font-size:13px;color:var(--steel);cursor:pointer;">Clear date</button>' : '');
+      dayGrid +
+      (currentVal ? '<button id="mdp-clear" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--mist);background:none;font-family:Outfit,sans-serif;font-size:13px;color:var(--steel);cursor:pointer;touch-action:manipulation;">Clear date</button>' : '');
 
-    document.getElementById('mdp-month').onchange = function() { selMonth = parseInt(this.value); render(); };
-    document.getElementById('mdp-day').onchange   = function() { selDay   = parseInt(this.value); };
-    document.getElementById('mdp-year').onchange  = function() { selYear  = parseInt(this.value); render(); };
+    // Day button clicks
+    sheet.querySelectorAll('[data-day]').forEach(function(btn) {
+      btn.onclick = function() {
+        selDay = parseInt(this.dataset.day);
+        renderSheet();
+      };
+    });
 
+    document.getElementById('mdp-prev').onclick = function() {
+      selMonth--; if (selMonth < 1) { selMonth = 12; selYear--; }
+      if (selDay > daysInMonth(selMonth, selYear)) selDay = 0;
+      renderSheet();
+    };
+    document.getElementById('mdp-next').onclick = function() {
+      selMonth++; if (selMonth > 12) { selMonth = 1; selYear++; }
+      if (selDay > daysInMonth(selMonth, selYear)) selDay = 0;
+      renderSheet();
+    };
     document.getElementById('mdp-cancel').onclick = function() { overlay.remove(); };
     document.getElementById('mdp-done').onclick = function() {
-      if (!selDay) { overlay.remove(); return; } // no day selected = no date
-      var mm = String(selMonth).padStart(2,'0');
-      var dd = String(selDay).padStart(2,'0');
-      var dateVal = selYear + '-' + mm + '-' + dd;
-      var section = input.closest('[data-section]') && input.closest('[data-section]').dataset.section;
-      var isDate2 = rowId.endsWith('-2');
-      var baseId = isDate2 ? rowId.slice(0, -2) : rowId;
-      if (isDate2) saveDate2(section, baseId, dateVal);
-      else saveDate(section, rowId, dateVal);
+      if (selDay) {
+        var mm = String(selMonth).padStart(2,'0');
+        var dd = String(selDay).padStart(2,'0');
+        var dateVal = selYear + '-' + mm + '-' + dd;
+        if (isDate2) saveDate2(section, baseId, dateVal);
+        else saveDate(section, rowId, dateVal);
+      }
       overlay.remove();
     };
-    var clearBtn = document.getElementById('mdp-clear');
-    if (clearBtn) clearBtn.onclick = function() {
-      var section = input.closest('[data-section]') && input.closest('[data-section]').dataset.section;
-      var isDate2 = rowId.endsWith('-2');
-      var baseId = isDate2 ? rowId.slice(0, -2) : rowId;
+    var clr = document.getElementById('mdp-clear');
+    if (clr) clr.onclick = function() {
       if (isDate2) saveDate2(section, baseId, '');
       else saveDate(section, rowId, '');
       overlay.remove();
     };
   }
 
-  render();
+  renderSheet();
   overlay.appendChild(sheet);
   document.body.appendChild(overlay);
   overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
