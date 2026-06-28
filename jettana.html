@@ -6571,9 +6571,10 @@ function toggleDateInput(rowId) {
 
   input.dataset.open = '1';
 
-  // On mobile: keep invisible, just trigger native picker
+  // On mobile: position off-screen so it's focusable but not visible
+  // iOS Safari requires opacity > 0 and visible size to trigger focus/picker
   if (isMobile) {
-    input.style.cssText = 'display:block;position:fixed;opacity:0;pointer-events:none;top:0;left:0;width:1px;height:1px;';
+    input.style.cssText = 'display:block;position:fixed;top:-100px;left:0;width:1px;height:1px;opacity:0.01;pointer-events:none;border:none;background:transparent;';
   } else {
     input.style.display = 'block';
   }
@@ -6590,7 +6591,10 @@ function toggleDateInput(rowId) {
     delete input.dataset.placeholder;
   }
 
-  if (input.showPicker) {
+  if (isMobile) {
+    // iOS Safari: just focus, it opens the native picker automatically
+    input.focus();
+  } else if (input.showPicker) {
     try { input.showPicker(); } catch(e) { input.focus(); }
   } else {
     input.focus();
