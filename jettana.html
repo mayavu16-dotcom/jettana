@@ -712,28 +712,6 @@ body {
   justify-content: flex-end;
 }
 .row-date-wrap button { pointer-events: all; }
-@media (pointer: coarse) {
-  .row-date-wrap {
-    position: static;
-    display: flex;
-    justify-content: center;
-    pointer-events: all;
-    padding: 2px 0;
-  }
-  .row-date-btn {
-    opacity: 1 !important;
-    font-size: 11px !important;
-    padding: 6px 10px !important;
-    background: var(--mist-light) !important;
-    border-radius: 6px !important;
-    min-height: 32px;
-    min-width: 64px;
-  }
-  .row-date-btn.has-date {
-    background: var(--sage-light) !important;
-    color: var(--sage-dark) !important;
-  }
-}
 
 .erow.row-has-date { }
 .row-date-btn {
@@ -4217,6 +4195,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 <!-- Right-click context menu -->
 <div class="ctx-menu" id="ctx-menu" style="display:none;" role="menu" aria-label="Row options">
   <button class="ctx-item" id="ctx-note"><span class="ctx-icon">✎</span><span id="ctx-note-label">Add note</span></button>
+  <button class="ctx-item" id="ctx-date" style="display:none;"><span class="ctx-icon">📅</span><span id="ctx-date-label">Add date</span></button>
   <button class="ctx-item" id="ctx-color"><span class="ctx-icon">🎨</span>Color</button>
   <div class="ctx-divider" id="ctx-color-divider" style="display:none;"></div>
   <div class="ctx-submenu-wrap" id="ctx-paste-wrap" style="display:none;">
@@ -8594,6 +8573,19 @@ function showCtxMenu(e, section, id) {
   if (noteLabel && row) {
     noteLabel.textContent = row.note ? 'Edit note' : 'Add note';
   }
+  // Show date option in ctx menu on mobile only
+  var ctxDateBtn = document.getElementById('ctx-date');
+  if (ctxDateBtn) {
+    var hasDateInput = !!document.getElementById('date-input-' + ctxId) || !!document.getElementById('date-input-' + ctxId + '-2');
+    ctxDateBtn.style.display = ('ontouchstart' in window) && hasDateInput ? 'flex' : 'none';
+    if (ctxDateBtn.style.display !== 'none') {
+      var dateLabel = document.getElementById('ctx-date-label');
+      if (dateLabel) {
+        var existingDate = row && (row.date || row.date2);
+        dateLabel.textContent = existingDate ? 'Edit date' : 'Add date';
+      }
+    }
+  }
   var clearColorBtn = document.getElementById('ctx-clear-color');
   if (clearColorBtn && row) {
     clearColorBtn.style.display = row.paidColor ? 'flex' : 'none';
@@ -8683,6 +8675,18 @@ window.addEventListener('load', function() {
     if (ctxSection && ctxId) toggleNote(ctxSection, ctxId);
     hideCtxMenu();
   });
+
+  // Date button — only show on mobile for rows that support dates
+  var ctxDate = document.getElementById('ctx-date');
+  if (ctxDate) {
+    ctxDate.addEventListener('click', function() {
+      var id = ctxId, sec = ctxSection;
+      hideCtxMenu();
+      if (!id) return;
+      var input = document.getElementById('date-input-' + id) || document.getElementById('date-input-' + id + '-2');
+      if (input) showMobileDatePicker(id, input);
+    });
+  }
   var ctxColor = document.getElementById('ctx-color');
   if (ctxColor) ctxColor.addEventListener('click', function() {
     var sec = ctxSection, id = ctxId;
