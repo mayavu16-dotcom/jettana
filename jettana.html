@@ -728,6 +728,8 @@ body {
   line-height: 1;
   display: block;
   pointer-events: all;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 .erow:hover .row-date-btn { opacity: 1; }
 .row-date-btn.has-date {
@@ -5407,8 +5409,8 @@ function renderRowEl(section, row, animate = false) {
         onfocus="numFocus(this)" onblur="numBlur(this)" oninput="numInput(this)" onkeydown="numKeyDown(event,this)">
       ${(allowDate && section === 'savings') || section === 'income' || section === 'checking' || section === 'debt' ? `
       <div class="row-date-wrap">
-        <button class="row-date-btn ${row.date ? 'has-date' : ''}" ontouchstart="event.preventDefault();toggleDateInput('${row.id}')" onclick="if(!('ontouchstart' in window))toggleDateInput('${row.id}')" id="date-btn-${row.id}">${row.date ? formatDateLabel(row.date) : '+ date'}</button>
-        <input type="date" class="row-date-input" id="date-input-${row.id}" value="${row.date || ''}" onchange="saveDate('${section}','${row.id}',this.value)" ${typeof ontouchstart !== 'undefined' ? '' : 'onblur="hideDateInput(\'' + row.id + '\')"'}>
+        <button class="row-date-btn ${row.date ? 'has-date' : ''}" onclick="toggleDateInput('${row.id}')" id="date-btn-${row.id}">${row.date ? formatDateLabel(row.date) : '+ date'}</button>
+        <input type="date" class="row-date-input" id="date-input-${row.id}" value="${row.date || ''}" onchange="saveDate('${section}','${row.id}',this.value)" onblur="hideDateInput('${row.id}')">
       </div>` : ''}
     </div>
     <div class="num-col-wrap">
@@ -5419,7 +5421,7 @@ function renderRowEl(section, row, animate = false) {
         onfocus="numFocus(this)" onblur="numBlur(this)" oninput="numInput(this)" onkeydown="numKeyDown(event,this)">
       ${allowDate ? `
       <div class="row-date-wrap">
-        <button class="row-date-btn ${row.date2 ? 'has-date' : ''}" ontouchstart="event.preventDefault();toggleDateInput('${row.id}-2')" onclick="if(!('ontouchstart' in window))toggleDateInput('${row.id}-2')" id="date-btn-${row.id}-2">${row.date2 ? formatDateLabel(row.date2) : '+ date'}</button>
+        <button class="row-date-btn ${row.date2 ? 'has-date' : ''}" onclick="toggleDateInput('${row.id}-2')" id="date-btn-${row.id}-2">${row.date2 ? formatDateLabel(row.date2) : '+ date'}</button>
         <input type="date" class="row-date-input" id="date-input-${row.id}-2" value="${row.date2 || ''}" onchange="saveDate2('${section}','${row.id}',this.value)" onblur="hideDateInput('${row.id}-2')">
       </div>` : ''}
     </div>
