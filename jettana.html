@@ -6586,18 +6586,24 @@ function toggleDateInput(rowId) {
   }
   if (wrap) wrap.style.display = 'flex';
   input.style.display = 'block';
-  // If no value set, pre-fill 1st of current month so iOS opens there
-  // Track it as placeholder so we can clear if user doesn't pick
+  // Pre-fill today's date if no value set, so picker opens at the right spot
+  // Mark as placeholder so we can clear it if user dismisses without picking
   if (!input.value) {
-    var parts = currentMonthKey.split('-');
-    if (parts.length >= 2) {
-      input.value = parts[0] + '-' + parts[1].padStart(2,'0') + '-01';
-      input.dataset.placeholder = '1';
-    }
+    var today = new Date();
+    var yyyy = today.getFullYear();
+    var mm = String(today.getMonth() + 1).padStart(2, '0');
+    var dd = String(today.getDate()).padStart(2, '0');
+    input.dataset.placeholder = '1';
+    input.focus();
+    // Set value after click so iOS date wheel opens at the right date
+    setTimeout(function() {
+      input.value = yyyy + '-' + mm + '-' + dd;
+      input.click();
+    }, 50);
+  } else {
+    input.focus();
+    setTimeout(function() { input.click(); }, 50);
   }
-  input.focus();
-  // On iOS, focus alone doesn't open the date picker — .click() is required
-  setTimeout(function() { input.click(); }, 50);
 }
 
 function hideDateInput(rowId) {
