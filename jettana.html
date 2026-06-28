@@ -4195,7 +4195,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 <!-- Right-click context menu -->
 <div class="ctx-menu" id="ctx-menu" style="display:none;" role="menu" aria-label="Row options">
   <button class="ctx-item" id="ctx-note"><span class="ctx-icon">✎</span><span id="ctx-note-label">Add note</span></button>
-  <button class="ctx-item" id="ctx-date" style="display:none;"><span class="ctx-icon">📅</span><span id="ctx-date-label">Add date</span></button>
+  <button class="ctx-item" id="ctx-date" style="display:none;" onclick="var id=ctxId;hideCtxMenu();if(id){var inp=document.getElementById('date-input-'+id)||document.getElementById('date-input-'+id+'-2');showMobileDatePicker(id,inp);}"><span class="ctx-icon">📅</span><span id="ctx-date-label">Add date</span></button>
   <button class="ctx-item" id="ctx-color"><span class="ctx-icon">🎨</span>Color</button>
   <div class="ctx-divider" id="ctx-color-divider" style="display:none;"></div>
   <div class="ctx-submenu-wrap" id="ctx-paste-wrap" style="display:none;">
@@ -6597,18 +6597,11 @@ function showMobileDatePicker(rowId, input) {
   if (existing) existing.remove();
 
   // Get section from the erow element
-  var isDate2 = rowId.endsWith('-2');
+  var isDate2 = rowId ? rowId.endsWith('-2') : false;
   var baseId = isDate2 ? rowId.slice(0, -2) : rowId;
   var erow = document.querySelector('[data-id="' + baseId + '"]');
-  var section = erow ? erow.dataset.section : null;
-  if (!section) {
-    // Try finding section from the input element itself
-    if (input) {
-      var parentErow = input.closest('[data-section]');
-      section = parentErow ? parentErow.dataset.section : null;
-    }
-  }
-  if (!section) { console.warn('showMobileDatePicker: no section found for', rowId); return; }
+  var section = erow ? erow.dataset.section : ctxSection;
+  if (!section) { alert('Date picker: could not find section'); return; }
 
   var currentVal = input ? input.value : '';
   var monthParts = currentMonthKey.split('-');
@@ -6788,26 +6781,7 @@ function saveDate2(section, id, dateVal) {
   scheduleSave();
 }
 
-// Permanent ctx-date listener — wire up once
-(function() {
-  function wireDateCtx() {
-    var ctxDateEl = document.getElementById('ctx-date');
-    if (!ctxDateEl) return;
-    ctxDateEl.onclick = function() {
-      var id = ctxId;
-      hideCtxMenu();
-      if (!id) return;
-      var input = document.getElementById('date-input-' + id) ||
-                  document.getElementById('date-input-' + id + '-2');
-      showMobileDatePicker(id, input);
-    };
-  }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', wireDateCtx);
-  } else {
-    wireDateCtx();
-  }
-})();
+// ctx-date is wired via inline onclick in HTML
 
 document.getElementById('hamburger-btn').addEventListener('click', () => {
   var isDesktop = window.innerWidth > 900;
