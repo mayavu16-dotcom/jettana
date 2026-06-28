@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Jettana — Monthly Budget Tracker</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Outfit:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@700;800&family=Cormorant+Garamond:ital,wght@1,400;1,500;1,600&family=Lora:ital,wght@0,400;0,600;1,400;1,600&family=Dancing+Script:wght@400;600&family=Merriweather:ital,wght@0,400;0,700;1,400&family=DM+Serif+Display:ital@0;1&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Crimson+Text:ital,wght@0,400;1,400;1,600&display=swap" rel="stylesheet">
@@ -1184,8 +1184,7 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
 }
 
 @media (max-width: 900px) {
-  /* Topbar: hide export, shrink search, prevent overflow */
-  .export-wrap { display: none !important; }
+  /* Topbar: shrink search, prevent overflow */
   .search-input { width: 120px; }
   .search-input:focus { width: 150px; }
   .topbar { padding: 10px 12px 10px 58px; }
