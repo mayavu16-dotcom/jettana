@@ -44,11 +44,13 @@ body {
   color: var(--ink);
   min-height: 100vh;
   font-size: 14px;
+  overflow-x: hidden;
 }
 
 .app-shell {
   display: flex;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 .sidebar {
@@ -1194,6 +1196,11 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
   .hamburger-btn:hover { background: rgba(0,0,0,0.13); }
   body.sidebar-open .hamburger-btn { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.2); }
   body.sidebar-open .hamburger-btn span { background: white; }
+  .export-wrap { display: none; }
+  .search-input { width: 110px; font-size: 13px; }
+  .search-input:focus { width: 140px; }
+  .topbar { padding: 10px 12px 10px 56px; overflow: visible; }
+  .topbar-right { gap: 4px; flex-shrink: 0; }
   .sidebar {
     transform: translateX(-100%);
     transition: transform 0.25s ease;
