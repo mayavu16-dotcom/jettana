@@ -627,7 +627,13 @@ body {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
-.erow:hover .paid-checkbox { opacity: 1; }
+@media (pointer: coarse) {
+  .paid-checkbox {
+    width: 22px;
+    height: 22px;
+    font-size: 11px;
+  }
+}
 .erow.paid .paid-checkbox {
   opacity: 1;
   background: var(--paid-color, var(--sage));
@@ -647,7 +653,9 @@ body {
   position: relative;
   border-bottom: 0.5px solid var(--mist);
 }
-.erow:last-of-type { border-bottom: none; }
+@media (max-width: 480px) {
+  .erow { grid-template-columns: 1fr 80px 80px; }
+}
 .erow:nth-child(even) { background: var(--mist-light); }
 .erow:hover { background: #e8edf2; }
 
@@ -711,7 +719,9 @@ body {
   display: flex;
   justify-content: flex-end;
 }
-.row-date-wrap button { pointer-events: all; }
+@media (pointer: coarse) {
+  .row-date-wrap { display: none !important; }
+}
 
 .erow.row-has-date { }
 .row-date-btn {
@@ -2300,6 +2310,9 @@ body.theme-custom .mom-hdr      { background: var(--custom-accent-dark, #2A4A7A)
   align-items: center;
   margin-right: 8px;
   touch-action: manipulation;
+}
+@media (pointer: coarse) {
+  .paid-color-wrap { margin-right: 14px; }
 }
 
 .paid-color-picker-popup {
