@@ -665,7 +665,7 @@ body {
   width: 100%;
   border-left: 0.5px solid var(--mist);
   padding: 0 4px;
-  overflow: hidden;
+  overflow: visible;
 }
 .num-col-wrap .erow-num-input {
   width: 100%;
@@ -718,7 +718,8 @@ body {
   justify-content: flex-end;
 }
 @media (pointer: coarse) {
-  .row-date-wrap { display: none !important; }
+  .row-date-wrap { display: none; }
+  .row-date-wrap:has(.row-date-btn.has-date) { display: flex; }
 }
 
 .erow.row-has-date { }
@@ -6595,6 +6596,8 @@ function toggleDateInput(rowId) {
     }
   }
   input.focus();
+  // On iOS, focus alone doesn't open the date picker — .click() is required
+  setTimeout(function() { input.click(); }, 50);
 }
 
 function hideDateInput(rowId) {
