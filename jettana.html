@@ -1179,7 +1179,7 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
     transition: margin-left 0.25s ease;
   }
   .main-content { transition: margin-left 0.25s ease; }
-  body.sidebar-collapsed #calc-fab  { left: 16px !important; }
+  body.sidebar-collapsed #calc-fab  { left: 16px; }
   body.sidebar-collapsed #calc-panel { left: 16px !important; }
 }
 
@@ -6822,6 +6822,11 @@ document.getElementById('hamburger-btn').addEventListener('click', () => {
   if (isDesktop) {
     document.body.classList.toggle('sidebar-collapsed');
     try { localStorage.setItem('intentra_sidebar_collapsed', document.body.classList.contains('sidebar-collapsed') ? '1' : '0'); } catch(e) {}
+    // Update calc-fab position via inline style so drag can override it
+    var fabEl = document.getElementById('calc-fab');
+    if (fabEl && !fabEl.dataset.dragged) {
+      fabEl.style.left = document.body.classList.contains('sidebar-collapsed') ? '16px' : '236px';
+    }
   } else {
     document.getElementById('sidebar').classList.toggle('open');
     document.getElementById('sidebar-overlay').classList.toggle('visible');
@@ -10072,6 +10077,7 @@ document.addEventListener('keydown', function(e) {
       if (Math.abs(ev.clientX - initX) > 4 || Math.abs(ev.clientY - initY) > 4) {
         fabDragging = true; fabMoved = true;
         fab.style.cursor = 'grabbing';
+        fab.dataset.dragged = '1';
         moveFab(ev.clientX, ev.clientY);
       }
     }
