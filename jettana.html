@@ -6436,6 +6436,7 @@ function autoCalcDebtFromCards() {
         // Match on numColor only — must be non-empty and match the linked card color
         var numColor = (row.numColor || '').toLowerCase();
         if (!numColor || numColor !== linkedColor) return;
+        if (row.exempt) return;
         // Actual column only — never use budget
         var actual = parseAmt(row[cfg.k2]);
         if (actual <= 0) return;
