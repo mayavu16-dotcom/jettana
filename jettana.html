@@ -7769,25 +7769,41 @@ function reapplyAutoGrowth(id) {
   if (!row) return;
   var growthInput = document.querySelector('input[data-id="' + id + '"][data-col="2"]');
   if (!growthInput) return;
-  // Only auto-fill if gains is truly empty
+  // Only restore if gains is truly empty
   if (row.gains && row.gains !== '' && row.gains !== 0 && row.gains !== '0') return;
-  var prevKeys = allMonthKeys().filter(function(k) { return k < currentMonthKey; });
-  if (!prevKeys.length) return;
-  var prevKey = prevKeys[0];
-  var prevRows = (all[prevKey] && all[prevKey].savings) || [];
-  var prevRow = prevRows.find(function(r) {
-    return r.label && row.label && r.label.trim().toLowerCase() === row.label.trim().toLowerCase();
-  });
-  if (!prevRow || !prevRow.actual || !row.actual) return;
-  var prevActual = parseFloat(prevRow.actual) || 0;
-  var curActual = parseFloat(row.actual) || 0;
-  if (prevActual === 0 || curActual === 0) return;
-  var autoGrowth = curActual - prevActual;
+
+  var autoGrowth = null;
+
+  // First try: restore from cached pre-template value (e.g. demo hardcoded gains)
+  if (row._gainsBeforeTemplate !== undefined && row._gainsBeforeTemplate !== '') {
+    autoGrowth = parseFloat(row._gainsBeforeTemplate) || 0;
+    delete row._gainsBeforeTemplate;
+    saveAll(all);
+  }
+
+  // Second try: calculate from previous month
+  if (autoGrowth === null) {
+    var prevKeys = allMonthKeys().filter(function(k) { return k < currentMonthKey; });
+    if (prevKeys.length) {
+      var prevKey = prevKeys[0];
+      var prevRows = (all[prevKey] && all[prevKey].savings) || [];
+      var prevRow = prevRows.find(function(r) {
+        return r.label && row.label && r.label.trim().toLowerCase() === row.label.trim().toLowerCase();
+      });
+      if (prevRow && prevRow.actual && row.actual) {
+        var prevActual = parseFloat(prevRow.actual) || 0;
+        var curActual = parseFloat(row.actual) || 0;
+        if (prevActual !== 0 && curActual !== 0) autoGrowth = curActual - prevActual;
+      }
+    }
+  }
+
+  if (autoGrowth === null) return;
   var abs = Math.abs(autoGrowth);
   var sign = autoGrowth >= 0 ? '+' : '-';
   growthInput.value = sign + '$' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   growthInput.dataset.raw = String(autoGrowth);
-  growthInput.title = 'Auto-calculated from last month';
+  growthInput.title = autoGrowth === parseFloat(row._gainsBeforeTemplate) ? 'Original growth value' : 'Auto-calculated from last month';
   growthInput.classList.remove('growth-positive', 'growth-negative');
   growthInput.classList.add(autoGrowth >= 0 ? 'growth-positive' : 'growth-negative');
 }
@@ -7980,6 +7996,12 @@ function applyToColumn(section, id, amount, label) {
     return Object.values(e).some(function(v) { return v && v !== '' && v !== '0'; });
   });
   if (hasExisting && !hasFilledEntries) return;
+
+  // Cache the original gains value before the template overwrites it
+  // so we can restore it if the user deletes all template entries
+  if (section === 'savings' && hasExisting && !row._gainsBeforeTemplate) {
+    row._gainsBeforeTemplate = existingVal;
+  }
 
   row[cfg.k2] = amount;
   saveAll(all);
