@@ -3675,7 +3675,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
               <button onclick="insertNotesText('• ')" title="Bullet point" style="background:none;border:1px solid var(--mist);border-radius:4px;padding:3px 8px;font-size:12px;cursor:pointer;color:var(--ink);">• Bullet</button>
               <button onclick="insertNotesText('☐ ')" title="Add checkbox" style="background:none;border:1px solid var(--mist);border-radius:4px;padding:3px 8px;font-size:12px;cursor:pointer;color:var(--ink);">☐ Todo</button>
             </div>
-            <textarea id="notes-textarea" placeholder="Jot down financial reminders, goals, or anything on your mind this month…" oninput="saveNotes()" onclick="handleNoteClick(event)" style="width:100%;flex:1;min-height:140px;border:none;outline:none;resize:none;font-family:'Outfit',sans-serif;font-size:13.5px;line-height:1.6;color:var(--ink);background:transparent;padding:12px 16px;box-sizing:border-box;"></textarea>
+            <textarea id="notes-textarea" placeholder="Jot down financial reminders, goals, or anything on your mind this month…" oninput="saveNotes()" onclick="handleNoteClick(event)" onkeydown="notesKeydown(event)" style="width:100%;flex:1;min-height:140px;border:none;outline:none;resize:none;font-family:'Outfit',sans-serif;font-size:13.5px;line-height:1.6;color:var(--ink);background:transparent;padding:12px 16px;box-sizing:border-box;"></textarea>
           </div>
         </div>
 
@@ -8289,6 +8289,34 @@ function insertNotesText(prefix) {
   var newText = text.substring(0, lineStart) + prefix + text.substring(lineStart);
   ta.value = newText;
   ta.selectionStart = ta.selectionEnd = lineStart + prefix.length + (start - lineStart);
+  saveNotes();
+}
+
+function notesKeydown(e) {
+  if (e.key !== 'Enter') return;
+  var ta = document.getElementById('notes-textarea');
+  if (!ta) return;
+  var start = ta.selectionStart;
+  var text = ta.value;
+  var lineStart = text.lastIndexOf('\n', start - 1) + 1;
+  var line = text.substring(lineStart, start);
+
+  var prefix = null;
+  if (line.startsWith('• ')) prefix = '• ';
+  else if (line.startsWith('☐ ') || line.startsWith('☑ ')) prefix = '☐ ';
+
+  if (!prefix) return;
+  e.preventDefault();
+
+  // If the current line is just the prefix with nothing after, exit the list
+  if (line === prefix || line === '☑ ') {
+    ta.value = text.substring(0, lineStart) + text.substring(start);
+    ta.selectionStart = ta.selectionEnd = lineStart;
+  } else {
+    var insert = '\n' + prefix;
+    ta.value = text.substring(0, start) + insert + text.substring(start);
+    ta.selectionStart = ta.selectionEnd = start + insert.length;
+  }
   saveNotes();
 }
 
