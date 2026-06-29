@@ -7803,7 +7803,7 @@ function reapplyAutoGrowth(id) {
   var sign = autoGrowth >= 0 ? '+' : '-';
   growthInput.value = sign + '$' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   growthInput.dataset.raw = String(autoGrowth);
-  growthInput.title = autoGrowth === parseFloat(row._gainsBeforeTemplate) ? 'Original growth value' : 'Auto-calculated from last month';
+  growthInput.title = 'Auto-calculated from last month';
   growthInput.classList.remove('growth-positive', 'growth-negative');
   growthInput.classList.add(autoGrowth >= 0 ? 'growth-positive' : 'growth-negative');
 }
@@ -7967,14 +7967,13 @@ function updateEntryTotal(section, id, template) {
         var rows0 = (all0[currentMonthKey] && all0[currentMonthKey][section]) || [];
         var row0 = rows0.find(function(r) { return r.id === id; });
         if (row0) {
-          // Don't clear gains for savings — auto-growth recalculates on render when empty
-          if (section !== 'savings') {
-            row0[cfg0.k2] = '';
-            saveAll(all0);
-            var inp2c = document.querySelector('input[data-id="' + id + '"][data-col="2"]');
-            if (inp2c) { inp2c.value = ''; inp2c.dataset.raw = ''; inp2c.classList.remove('growth-positive','growth-negative'); }
-          }
+          row0[cfg0.k2] = '';
+          saveAll(all0);
+          var inp2c = document.querySelector('input[data-id="' + id + '"][data-col="2"]');
+          if (inp2c) { inp2c.value = ''; inp2c.dataset.raw = ''; inp2c.classList.remove('growth-positive','growth-negative'); }
           recalc();
+          // For savings, restore auto-growth after clearing
+          if (section === 'savings') setTimeout(function() { reapplyAutoGrowth(id); }, 0);
         }
       }
     }
