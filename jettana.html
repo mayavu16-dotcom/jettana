@@ -1382,7 +1382,7 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
   background: var(--mist-light);
   border: 1px solid var(--mist);
   border-radius: 6px;
-  padding: 6px 10px;
+  padding: 6px 80px 6px 10px;
   width: 100%;
   resize: none;
   outline: none;
@@ -2273,10 +2273,33 @@ body.theme-custom .mom-hdr      { background: var(--custom-accent-dark, #2A4A7A)
   flex-direction: column;
   align-items: stretch;
 }
-.note-close {
+.note-actions {
   position: absolute;
   top: 6px;
   right: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.note-bullet-btn {
+  background: none;
+  border: 1px solid var(--mist);
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  color: var(--steel);
+  padding: 2px 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.note-bullet-btn:hover { border-color: var(--sage); color: var(--sage); }
+.note-bullet-btn.note-bullet-on { background: var(--sage-light); border-color: var(--sage); color: var(--sage-dark); }
+.dark .note-bullet-btn.note-bullet-on { background: #1A2E1C; border-color: var(--sage); color: #8FC49A; }
+.note-close {
   background: none;
   border: none;
   cursor: pointer;
@@ -2295,9 +2318,8 @@ body.theme-custom .mom-hdr      { background: var(--custom-accent-dark, #2A4A7A)
   .note-close {
     font-size: 18px;
     padding: 0;
-    top: 4px;
-    right: 4px;
     opacity: 0.8;
+    position: relative;
   }
   .note-close::after {
     content: '';
@@ -5507,7 +5529,14 @@ function renderRowEl(section, row, animate = false) {
       '<span style="font-size:10px;color:var(--steel);">Expenses before this date won\'t be deducted</span>' +
       '</div>';
   }
-  noteDiv.innerHTML = '<div class="note-inner">' + allocHtml + '<div style="position:relative;"><textarea class="note-textarea" id="note-ta-' + row.id + '" placeholder="Add a note… (e.g. split with roommate, one-time purchase)" oninput="saveNote(\'' + section + '\',\'' + row.id + '\',this.value)" onblur="noteBlur(\'' + section + '\',\'' + row.id + '\')" onclick="event.stopPropagation()">' + escHtml(row.note || '') + '</textarea><button class="note-close" onclick="closeNote(\'' + row.id + '\')" title="Close">×</button></div></div>';
+  var isBullet = !!(row._noteBullet);
+  var bulletActive = isBullet ? 'note-bullet-on' : '';
+  var bulletTitle = isBullet ? 'Turn off bullet list' : 'Toggle bullet list';
+  noteDiv.innerHTML = '<div class="note-inner">' + allocHtml + '<div style="position:relative;"><textarea class="note-textarea" id="note-ta-' + row.id + '" placeholder="Add a note… (e.g. split with roommate, one-time purchase)" oninput="saveNote(\'' + section + '\',\'' + row.id + '\',this.value)" onblur="noteBlur(\'' + section + '\',\'' + row.id + '\')" onclick="event.stopPropagation()" onkeydown="noteBulletKeydown(event,\'' + section + '\',\'' + row.id + '\')">' + escHtml(row.note || '') + '</textarea>' +
+    '<div class="note-actions">' +
+    '<button class="note-bullet-btn ' + bulletActive + '" id="bullet-btn-' + row.id + '" onclick="toggleBulletMode(\'' + section + '\',\'' + row.id + '\')" title="' + bulletTitle + '">• List</button>' +
+    '<button class="note-close" onclick="closeNote(\'' + row.id + '\')" title="Close">×</button>' +
+    '</div></div></div>';
   container.appendChild(noteDiv);
 
   const hasLabel = !!row.label;
@@ -7983,6 +8012,71 @@ function saveNote(section, id, val) {
   // Update dot indicator
   var dot = document.getElementById('note-dot-' + id);
   if (dot) dot.classList.toggle('has-note', val.trim().length > 0);
+}
+
+function toggleBulletMode(section, id) {
+  var all = loadAll();
+  var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
+  var row = rows.find(function(r) { return r.id === id; });
+  if (!row) return;
+  var ta = document.getElementById('note-ta-' + id);
+  var btn = document.getElementById('bullet-btn-' + id);
+  if (!ta) return;
+
+  var turningOn = !row._noteBullet;
+  row._noteBullet = turningOn ? 1 : 0;
+
+  if (turningOn) {
+    // Prefix each non-empty line with bullet
+    var lines = ta.value.split('\n');
+    ta.value = lines.map(function(l) {
+      if (l.trim() === '') return l;
+      return l.startsWith('• ') ? l : '• ' + l;
+    }).join('\n');
+    // If empty, seed with a bullet ready to type
+    if (ta.value.trim() === '') ta.value = '• ';
+    if (btn) { btn.classList.add('note-bullet-on'); btn.title = 'Turn off bullet list'; }
+  } else {
+    // Strip bullet prefixes
+    var lines = ta.value.split('\n');
+    ta.value = lines.map(function(l) {
+      return l.startsWith('• ') ? l.slice(2) : l;
+    }).join('\n');
+    if (btn) { btn.classList.remove('note-bullet-on'); btn.title = 'Toggle bullet list'; }
+  }
+
+  row.note = ta.value;
+  saveAll(all);
+  scheduleSave();
+  var dot = document.getElementById('note-dot-' + id);
+  if (dot) dot.classList.toggle('has-note', ta.value.trim().length > 0);
+  ta.focus();
+}
+
+function noteBulletKeydown(e, section, id) {
+  if (e.key !== 'Enter') return;
+  var all = loadAll();
+  var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
+  var row = rows.find(function(r) { return r.id === id; });
+  if (!row || !row._noteBullet) return;
+
+  e.preventDefault();
+  var ta = e.target;
+  var start = ta.selectionStart;
+  var val = ta.value;
+  var lineStart = val.lastIndexOf('\n', start - 1) + 1;
+  var currentLine = val.substring(lineStart, start);
+
+  // If current line is just a bullet with nothing after, exit bullet mode line
+  if (currentLine === '• ') {
+    ta.value = val.substring(0, lineStart) + val.substring(start);
+    ta.selectionStart = ta.selectionEnd = lineStart;
+  } else {
+    var insert = '\n• ';
+    ta.value = val.substring(0, start) + insert + val.substring(start);
+    ta.selectionStart = ta.selectionEnd = start + insert.length;
+  }
+  saveNote(section, id, ta.value);
 }
 
 function saveBeginDate(section, id, val) {
