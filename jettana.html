@@ -7775,28 +7775,18 @@ function removeEntry(section, id, idx) {
   if (allGone && row._template && row._template !== 'general') {
     var cfg = CONFIGS[section];
     if (cfg) {
-      // For savings rows, don't clear k2 (growth) — it may be auto-calculated
-      // from last month and should be restored by recalc. Only clear for performance
-      // template which explicitly writes both columns from user input.
-      if (row._template === 'performance') {
-        row[cfg.k2] = '';
-        row[cfg.k1] = '';
-      } else if (section !== 'savings') {
-        row[cfg.k2] = '';
-      }
+      row[cfg.k2] = '';
+      if (row._template === 'performance') row[cfg.k1] = '';
     }
   }
   saveAll(all);
   // Also clear the DOM inputs if all entries gone
   if (allGone) {
+    var inp2 = document.querySelector('input[data-id="' + id + '"][data-col="2"]');
+    if (inp2) { inp2.value = ''; inp2.dataset.raw = ''; inp2.classList.remove('growth-positive','growth-negative'); }
     if (row._template === 'performance') {
-      var inp2 = document.querySelector('input[data-id="' + id + '"][data-col="2"]');
-      if (inp2) { inp2.value = ''; inp2.dataset.raw = ''; inp2.classList.remove('growth-positive','growth-negative'); }
       var inp1 = document.querySelector('input[data-id="' + id + '"][data-col="1"]');
       if (inp1) { inp1.value = ''; inp1.dataset.raw = ''; }
-    } else if (section !== 'savings') {
-      var inp2 = document.querySelector('input[data-id="' + id + '"][data-col="2"]');
-      if (inp2) { inp2.value = ''; inp2.dataset.raw = ''; inp2.classList.remove('growth-positive','growth-negative'); }
     }
     recalc();
   }
@@ -7929,10 +7919,13 @@ function updateEntryTotal(section, id, template) {
         var rows0 = (all0[currentMonthKey] && all0[currentMonthKey][section]) || [];
         var row0 = rows0.find(function(r) { return r.id === id; });
         if (row0) {
-          row0[cfg0.k2] = '';
-          saveAll(all0);
-          var inp2c = document.querySelector('input[data-id="' + id + '"][data-col="2"]');
-          if (inp2c) { inp2c.value = ''; inp2c.dataset.raw = ''; inp2c.classList.remove('growth-positive','growth-negative'); }
+          // Don't clear gains for savings — auto-growth recalculates on render when empty
+          if (section !== 'savings') {
+            row0[cfg0.k2] = '';
+            saveAll(all0);
+            var inp2c = document.querySelector('input[data-id="' + id + '"][data-col="2"]');
+            if (inp2c) { inp2c.value = ''; inp2c.dataset.raw = ''; inp2c.classList.remove('growth-positive','growth-negative'); }
+          }
           recalc();
         }
       }
