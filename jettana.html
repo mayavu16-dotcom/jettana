@@ -7762,6 +7762,36 @@ function addEntry(section, id, template) {
   renderAllEntries(section, id, template, row._entries);
 }
 
+function reapplyAutoGrowth(id) {
+  var all = loadAll();
+  var rows = (all[currentMonthKey] && all[currentMonthKey].savings) || [];
+  var row = rows.find(function(r) { return r.id === id; });
+  if (!row) return;
+  var growthInput = document.querySelector('input[data-id="' + id + '"][data-col="2"]');
+  if (!growthInput) return;
+  // Only auto-fill if gains is truly empty
+  if (row.gains && row.gains !== '' && row.gains !== 0 && row.gains !== '0') return;
+  var prevKeys = allMonthKeys().filter(function(k) { return k < currentMonthKey; });
+  if (!prevKeys.length) return;
+  var prevKey = prevKeys[0];
+  var prevRows = (all[prevKey] && all[prevKey].savings) || [];
+  var prevRow = prevRows.find(function(r) {
+    return r.label && row.label && r.label.trim().toLowerCase() === row.label.trim().toLowerCase();
+  });
+  if (!prevRow || !prevRow.actual || !row.actual) return;
+  var prevActual = parseFloat(prevRow.actual) || 0;
+  var curActual = parseFloat(row.actual) || 0;
+  if (prevActual === 0 || curActual === 0) return;
+  var autoGrowth = curActual - prevActual;
+  var abs = Math.abs(autoGrowth);
+  var sign = autoGrowth >= 0 ? '+' : '-';
+  growthInput.value = sign + '$' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  growthInput.dataset.raw = String(autoGrowth);
+  growthInput.title = 'Auto-calculated from last month';
+  growthInput.classList.remove('growth-positive', 'growth-negative');
+  growthInput.classList.add(autoGrowth >= 0 ? 'growth-positive' : 'growth-negative');
+}
+
 function removeEntry(section, id, idx) {
   var all = loadAll();
   var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
@@ -7789,6 +7819,8 @@ function removeEntry(section, id, idx) {
       if (inp1) { inp1.value = ''; inp1.dataset.raw = ''; }
     }
     recalc();
+    // For savings rows, restore auto-growth from last month if applicable
+    if (section === 'savings') setTimeout(function() { reapplyAutoGrowth(id); }, 0);
   }
   var template = row._template || 'general';
   renderAllEntries(section, id, template, row._entries);
