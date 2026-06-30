@@ -9687,6 +9687,7 @@ var TOUR_STEPS = [
     title: 'Monthly Summary & Net Worth',
     desc: 'The Monthly Summary shows planned vs actual balance at a glance. Net Worth Overview tracks your total assets vs liabilities — click the Goal cell to set a target.',
     position: 'top',
+    align: 'left',
     scrollBlock: 'center'
   },
   {
@@ -9831,7 +9832,7 @@ function renderTourStep() {
         // If bottom goes off-screen, flip to top
         if (top + ttH > vh - 16) top = rect.top - ttH - pad - 12;
       } else if (step.position === 'top') {
-        left = rect.left + rect.width / 2 - ttW / 2;
+        left = step.align === 'left' ? rect.left + rect.width * 0.25 - ttW / 2 : rect.left + rect.width / 2 - ttW / 2;
         top = rect.top - ttH - pad - 12;
         // If top goes off-screen, flip to bottom
         if (top < 16) top = rect.bottom + pad + 12;
