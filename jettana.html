@@ -9541,7 +9541,7 @@ var TOUR_STEPS = [
     position: 'right',
     noBackdropAdvance: true,
     action: function() {
-      // Show the ≡ handle for 1.2s so user sees it, then open the menu
+      // Brief pause so user sees the ≡ handle highlighted, then open the menu
       setTimeout(function() {
         var row = document.querySelector('#rows-housing .erow:first-child');
         if (!row) return;
@@ -9555,14 +9555,15 @@ var TOUR_STEPS = [
           preventDefault: function() {}
         };
         showCtxMenu(fakeE, 'housing', row.dataset.id);
-        // After menu opens, shift highlight to cover it and move tooltip if needed
-        setTimeout(function() {
+        // Move highlight to the menu right away, in the same smooth motion
+        // used for normal step transitions — no extra delay or second snap
+        requestAnimationFrame(function() {
           var menu = document.getElementById('ctx-menu');
           if (menu && menu.style.display !== 'none') {
             var mr = menu.getBoundingClientRect();
             var hl = document.getElementById('tour-highlight');
             if (hl) {
-              hl.style.transition = 'all 0.4s ease';
+              hl.style.transition = 'all 0.3s ease';
               hl.style.left = (mr.left - 4) + 'px';
               hl.style.top = (mr.top - 4) + 'px';
               hl.style.width = (mr.width + 8) + 'px';
@@ -9594,8 +9595,8 @@ var TOUR_STEPS = [
               tt.style.left = Math.max(16, Math.min(vw - ttW - 16, newLeft)) + 'px';
             }
           }
-        }, 400);
-      }, 1200);
+        });
+      }, 500);
     },
     cleanup: function() { hideCtxMenu(); }
   },
@@ -9676,18 +9677,33 @@ var TOUR_STEPS = [
         if (!linked) return;
         var noteWrap = document.getElementById('note-wrap-' + linked.id);
         if (!noteWrap) return;
+        var card = document.querySelector('.sec-card[data-section-id="debt"]');
+        function growHighlightToCard() {
+          if (!card) return;
+          var cr = card.getBoundingClientRect();
+          var hl = document.getElementById('tour-highlight');
+          if (hl) {
+            hl.style.transition = 'all 0.3s ease';
+            hl.style.left = Math.max(0, cr.left - 8) + 'px';
+            hl.style.top = Math.max(0, cr.top - 8) + 'px';
+            hl.style.width = (cr.width + 16) + 'px';
+            hl.style.height = (cr.height + 16) + 'px';
+          }
+        }
         // Close if already open, then reopen
         if (noteWrap.classList.contains('open')) {
           noteWrap.classList.remove('open');
           setTimeout(function() {
             toggleNote('debt', linked.id);
-            setTimeout(function() { noteWrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 200);
-          }, 200);
+            requestAnimationFrame(growHighlightToCard);
+            setTimeout(function() { noteWrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 150);
+          }, 150);
         } else {
           toggleNote('debt', linked.id);
-          setTimeout(function() { noteWrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 200);
+          requestAnimationFrame(growHighlightToCard);
+          setTimeout(function() { noteWrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 150);
         }
-      }, 700);
+      }, 400);
     },
     cleanup: function() {
       var all = loadAll();
@@ -9780,15 +9796,16 @@ var TOUR_STEPS_PERSONALIZE = [
           var btn = document.getElementById('hamburger-btn');
           if (btn) btn.click();
         }
-        // Reposition highlight/tooltip to cover the sidebar once it's open
-        setTimeout(function() {
+        // Reposition highlight/tooltip to cover the sidebar in the same smooth
+        // motion as it opens, rather than a delayed second snap
+        requestAnimationFrame(function() {
           var sb = document.getElementById('sidebar');
           if (!sb) return;
           var sr = sb.getBoundingClientRect();
           if (sr.width === 0) return; // sidebar still hidden, leave highlight on hamburger
           var hl = document.getElementById('tour-highlight');
           if (hl) {
-            hl.style.transition = 'all 0.4s ease';
+            hl.style.transition = 'all 0.3s ease';
             hl.style.left = Math.max(0, sr.left - 4) + 'px';
             hl.style.top = Math.max(0, sr.top - 4) + 'px';
             hl.style.width = (sr.width + 8) + 'px';
@@ -9805,7 +9822,7 @@ var TOUR_STEPS_PERSONALIZE = [
             tt.style.left = Math.max(16, sr.right + 12) + 'px';
             tt.style.top = '80px';
           }
-        }, 400);
+        });
       }, 300);
     },
     cleanup: function() {
@@ -9836,14 +9853,16 @@ var TOUR_STEPS_PERSONALIZE = [
             toggleMoreMenu(fakeE);
           }
         }
-        setTimeout(function() {
+        // Move highlight onto the theme section in the same smooth motion
+        // as the menu opening, rather than a delayed second snap
+        requestAnimationFrame(function() {
           var section = document.querySelector('.theme-picker-title');
           section = section ? section.closest('.more-menu-section') : null;
           if (!section) return;
           var sr = section.getBoundingClientRect();
           var hl = document.getElementById('tour-highlight');
           if (hl) {
-            hl.style.transition = 'all 0.4s ease';
+            hl.style.transition = 'all 0.3s ease';
             hl.style.left = Math.max(0, sr.left - 4) + 'px';
             hl.style.top = Math.max(0, sr.top - 4) + 'px';
             hl.style.width = (sr.width + 8) + 'px';
@@ -9859,7 +9878,7 @@ var TOUR_STEPS_PERSONALIZE = [
             tt.style.left = left + 'px';
             tt.style.top = Math.max(16, Math.min(vh - ttH - 16, sr.top)) + 'px';
           }
-        }, 350);
+        });
       }, 300);
     },
     cleanup: function() { hideMoreMenu(); }
