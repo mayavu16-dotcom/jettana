@@ -2074,11 +2074,6 @@ body.theme-custom .balance-row  { background: var(--custom-accent-light, #6A8FC5
 body.theme-custom .networth-row { background: var(--custom-accent-mid, #5A7FB5); color: white; }
 body.theme-custom .mom-hdr      { background: var(--custom-accent-dark, #2A4A7A); }
 
-/* Per-section custom colors — each section card carries its own --sec-color var */
-body.theme-persection .sec-card[data-section-id] > .sec-hdr {
-  background: var(--sec-color, var(--sage));
-}
-
 /* ── Theme Picker ────────────────────────────────────────────── */
 .theme-wrap { position: relative; flex-shrink: 0; }
 .theme-picker {
@@ -2142,41 +2137,6 @@ body.theme-persection .sec-card[data-section-id] > .sec-hdr {
   background: none;
 }
 .dark .theme-picker { background: #1E2A38; border-color: #2A3A4A; }
-
-.persection-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 5px 12px;
-  gap: 8px;
-}
-.persection-row span {
-  font-size: 12px;
-  color: var(--ink);
-  font-family: 'Outfit', sans-serif;
-}
-.persection-row input[type="color"] {
-  width: 26px;
-  height: 22px;
-  border: 1px solid var(--mist);
-  border-radius: 5px;
-  padding: 0;
-  cursor: pointer;
-  background: none;
-}
-.persection-reset-btn {
-  font-size: 11px;
-  color: var(--steel);
-  background: none;
-  border: 1px solid var(--mist);
-  border-radius: 6px;
-  padding: 4px 10px;
-  margin: 6px 12px 4px;
-  cursor: pointer;
-  font-family: 'Outfit', sans-serif;
-}
-.persection-reset-btn:hover { border-color: var(--blush); color: var(--blush); }
-.dark .persection-row span { color: var(--ink); }
 .dark .theme-opt { color: var(--ink); }
 .dark .theme-opt:hover, .dark .theme-opt.active { background: #263545; }
 
@@ -3367,11 +3327,6 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
                 <span>Custom color</span>
                 <input type="color" id="custom-color" value="#4A6FA5" oninput="setCustomTheme(this.value)">
               </div>
-              <button class="theme-opt" data-theme="persection" onclick="setTheme(this,'persection')">
-                <span class="theme-swatch-row"><span style="background:#6B9E70"></span><span style="background:#A8823E"></span><span style="background:#C0736A"></span><span style="background:#4A85A0"></span></span>
-                Per-section colors
-              </button>
-              <div id="persection-panel" style="display:none;"></div>
             </div>
 
             <!-- Actions -->
@@ -6947,7 +6902,6 @@ function init() {
     switchMonth(key);
   }
   renderSidebar();
-  loadTheme();
 }
 
 let dragSrc = null;
@@ -9445,86 +9399,15 @@ function toggleThemePicker(e) {
 
 function setTheme(btn, theme) {
   // Remove all theme classes
-  document.body.classList.remove('theme-minimal','theme-mono','theme-warm','theme-custom','theme-persection');
+  document.body.classList.remove('theme-minimal','theme-mono','theme-warm','theme-custom');
   if (theme) document.body.classList.add('theme-' + theme);
   // Update active state
   document.querySelectorAll('.theme-opt').forEach(function(b) { b.classList.remove('active'); });
   if (btn) btn.classList.add('active');
   // Save to localStorage
   localStorage.setItem('intentra_theme', theme);
-  // Show/hide per-section panel
-  var panel = document.getElementById('persection-panel');
-  if (panel) {
-    if (theme === 'persection') {
-      renderPerSectionPanel();
-      panel.style.display = 'block';
-    } else {
-      panel.style.display = 'none';
-    }
-  }
-  // Close more menu after selecting theme (unless opening per-section panel)
-  if (theme !== 'persection') hideMoreMenu();
-}
-
-var SECTION_DEFAULT_COLORS = {
-  income: '#6B9E70', savings: '#A8823E', housing: '#C0736A', checking: '#4A85A0',
-  transport: '#C0736A', debt: '#C07040', food: '#C0736A', health: '#7B72AA',
-  subscriptions: '#4A85A0', gifts: '#3A7A4A', misc: '#6B7C8F'
-};
-var SECTION_LABELS = {
-  income: 'Income', savings: 'Savings & Investments', housing: 'Housing & Utilities',
-  checking: 'Checking', transport: 'Transportation', debt: 'Debt', food: 'Food & Dining',
-  health: 'Health', subscriptions: 'Subscriptions', gifts: 'Gifts', misc: 'Miscellaneous'
-};
-
-function renderPerSectionPanel() {
-  var panel = document.getElementById('persection-panel');
-  if (!panel) return;
-  var saved = {};
-  try { saved = JSON.parse(localStorage.getItem('intentra_section_colors') || '{}'); } catch(e) {}
-  var html = '<div class="theme-picker-title" style="padding:8px 12px 4px;">Section colors</div>';
-  Object.keys(SECTION_DEFAULT_COLORS).forEach(function(secId) {
-    var label = (_sectionNames && _sectionNames[secId]) || SECTION_LABELS[secId] || secId;
-    var color = saved[secId] || SECTION_DEFAULT_COLORS[secId];
-    html += '<div class="persection-row">' +
-      '<span>' + label + '</span>' +
-      '<input type="color" value="' + color + '" oninput="setSectionColor(\'' + secId + '\',this.value)">' +
-      '</div>';
-  });
-  html += '<button class="persection-reset-btn" onclick="resetSectionColors()">Reset to defaults</button>';
-  panel.innerHTML = html;
-}
-
-function setSectionColor(secId, color) {
-  var saved = {};
-  try { saved = JSON.parse(localStorage.getItem('intentra_section_colors') || '{}'); } catch(e) {}
-  saved[secId] = color;
-  localStorage.setItem('intentra_section_colors', JSON.stringify(saved));
-  applySectionColor(secId, color);
-}
-
-function applySectionColor(secId, color) {
-  var card = document.querySelector('.sec-card[data-section-id="' + secId + '"]');
-  if (!card) return;
-  card.style.setProperty('--sec-color', color);
-}
-
-function applyAllSectionColors() {
-  var saved = {};
-  try { saved = JSON.parse(localStorage.getItem('intentra_section_colors') || '{}'); } catch(e) {}
-  Object.keys(SECTION_DEFAULT_COLORS).forEach(function(secId) {
-    var color = saved[secId] || SECTION_DEFAULT_COLORS[secId];
-    applySectionColor(secId, color);
-  });
-}
-
-function resetSectionColors() {
-  localStorage.removeItem('intentra_section_colors');
-  Object.keys(SECTION_DEFAULT_COLORS).forEach(function(secId) {
-    var card = document.querySelector('.sec-card[data-section-id="' + secId + '"]');
-    if (card) card.style.removeProperty('--sec-color');
-  });
-  renderPerSectionPanel();
+  // Close more menu after selecting theme
+  hideMoreMenu();
 }
 
 function setCustomTheme(color) {
@@ -9558,9 +9441,6 @@ function loadTheme() {
     document.getElementById('custom-color').value = color;
     setCustomTheme(color);
   }
-  // Always apply saved per-section colors so they persist even if a different
-  // theme is currently selected and user switches back later
-  applyAllSectionColors();
 }
 
 // Close picker on outside click
