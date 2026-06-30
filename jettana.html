@@ -3684,7 +3684,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <!-- Bottom Summary -->
       <div class="bottom-card">
         <div class="bottom-grid">
-          <div>
+          <div id="monthly-summary-col">
             <div class="bs-hdr bg-ink">Monthly Summary</div>
             <div class="bs-col-row"><span>Category</span><span>Planned</span><span>Actual</span></div>
             <div class="bs-data-row"><span>Income <span class="plus-sign">(+)</span></span><span id="bs-inc-p">$0</span><span id="bs-inc-a">$0</span></div>
@@ -3693,7 +3693,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
               <span>Balance</span><span id="bs-bal-p">$0</span><span id="bs-bal-a">$0</span>
             </div>
           </div>
-          <div>
+          <div id="networth-col">
             <div class="bs-hdr bg-nw">Net Worth Overview</div>
             <div class="bs-col-row"><span>Category</span><span>Goal</span><span>Actual</span></div>
             <div class="bs-data-row"><span>Total Assets <span class="plus-sign">(+)</span></span><span></span><span id="bs-assets">$0</span></div>
@@ -9683,11 +9683,17 @@ var TOUR_STEPS = [
     position: 'left'
   },
   {
-    target: '.bottom-card',
-    title: 'Monthly Summary & Net Worth',
-    desc: 'The Monthly Summary shows planned vs actual balance at a glance. Net Worth Overview tracks your total assets vs liabilities — click the Goal cell to set a target.',
+    target: '#monthly-summary-col',
+    title: 'Monthly Summary',
+    desc: 'See your planned vs actual balance at a glance — Income, Spent, and the bottom-line Balance for the month.',
     position: 'top',
-    align: 'left',
+    scrollBlock: 'center'
+  },
+  {
+    target: '#networth-col',
+    title: 'Net Worth Overview',
+    desc: 'Tracks your total assets vs liabilities. Click the Goal cell to set a target and watch your progress bar fill in.',
+    position: 'top',
     scrollBlock: 'center'
   },
   {
@@ -9832,7 +9838,7 @@ function renderTourStep() {
         // If bottom goes off-screen, flip to top
         if (top + ttH > vh - 16) top = rect.top - ttH - pad - 12;
       } else if (step.position === 'top') {
-        left = step.align === 'left' ? rect.left + rect.width * 0.25 - ttW / 2 : rect.left + rect.width / 2 - ttW / 2;
+        left = rect.left + rect.width / 2 - ttW / 2;
         top = rect.top - ttH - pad - 12;
         // If top goes off-screen, flip to bottom
         if (top < 16) top = rect.bottom + pad + 12;
