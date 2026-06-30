@@ -3929,7 +3929,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 <!-- Tour Overlay -->
 <div id="tour-overlay" style="display:none;position:fixed;inset:0;z-index:9000;pointer-events:none;">
   <!-- Highlight ring — box-shadow creates the cutout dim effect -->
-  <div id="tour-highlight" style="position:fixed;border-radius:10px;transition:all 0.3s ease;z-index:9001;pointer-events:none;box-shadow:0 0 0 3px #F0C060,0 0 0 9999px rgba(0,0,0,0.6);"></div>
+  <div id="tour-highlight" style="position:fixed;top:-9999px;left:-9999px;width:0;height:0;border-radius:10px;transition:all 0.3s ease, opacity 0.25s ease;z-index:9001;pointer-events:none;box-shadow:0 0 0 3px #F0C060,0 0 0 9999px rgba(0,0,0,0.6);opacity:0;"></div>
   <!-- Tooltip bubble -->
   <div id="tour-tooltip" style="position:fixed;background:var(--white);border-radius:14px;padding:18px 20px;width:300px;box-shadow:0 8px 40px rgba(0,0,0,0.3);z-index:9002;pointer-events:all;font-family:Outfit,sans-serif;transition:left 0.3s ease,top 0.3s ease;">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
@@ -9734,6 +9734,8 @@ function endTour() {
   _tourActive = false;
   document.getElementById('tour-overlay').style.display = 'none';
   document.getElementById('tour-overlay').style.pointerEvents = 'none';
+  var hl = document.getElementById('tour-highlight');
+  if (hl) { hl.style.opacity = '0'; hl.style.top = '-9999px'; hl.style.left = '-9999px'; }
   showToast('Tour ended — explore freely! Restart anytime from ⋯', false);
 }
 
@@ -9803,6 +9805,7 @@ function renderTourStep() {
     // Highlight
     var hl = document.getElementById('tour-highlight');
     hl.style.transition = 'all 0.3s ease';
+    hl.style.opacity = '1';
     hl.style.left = Math.max(0, rect.left - pad) + 'px';
     hl.style.top = Math.max(0, rect.top - pad) + 'px';
     hl.style.width = (rect.width + pad * 2) + 'px';
