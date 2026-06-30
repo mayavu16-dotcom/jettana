@@ -3354,6 +3354,9 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
             <button class="more-menu-item" id="restart-tour-btn" onclick="startTour(); hideMoreMenu()" style="display:none;">
               <span>🗺</span> Restart tour
             </button>
+            <button class="more-menu-item" id="restart-personalize-tour-btn" onclick="startPersonalizeTour(); hideMoreMenu()" style="display:none;">
+              <span>🎨</span> Personalize tour
+            </button>
 
             <!-- More (power features) -->
             <div class="more-divider"></div>
@@ -3942,6 +3945,18 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <button id="tour-prev" onclick="tourStep(-1)" style="font-size:12px;color:var(--steel);background:none;border:1px solid #E8EDF2;border-radius:8px;padding:6px 12px;cursor:pointer;font-family:Outfit,sans-serif;">← Back</button>
       <div id="tour-dots" style="display:flex;gap:5px;"></div>
       <button id="tour-next" onclick="tourStep(1)" style="font-size:13px;font-weight:600;color:white;background:#6B9E70;border:none;border-radius:8px;padding:7px 16px;cursor:pointer;font-family:Outfit,sans-serif;">Next →</button>
+    </div>
+  </div>
+</div>
+
+<div id="personalize-offer" style="display:none;position:fixed;inset:0;z-index:9100;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);">
+  <div style="background:var(--white);border-radius:16px;padding:26px 28px;max-width:340px;width:90%;box-shadow:0 12px 50px rgba(0,0,0,0.3);font-family:Outfit,sans-serif;text-align:center;">
+    <div style="font-size:32px;margin-bottom:8px;">🎨</div>
+    <div style="font-size:17px;font-weight:700;color:var(--ink);margin-bottom:8px;">Want to make it yours?</div>
+    <div style="font-size:13.5px;color:var(--steel);line-height:1.5;margin-bottom:18px;">There's a quick optional tour covering intentions, month colors, emoji, and color themes — the fun personalization stuff.</div>
+    <div style="display:flex;gap:8px;justify-content:center;">
+      <button onclick="dismissPersonalizeOffer()" style="font-size:13px;font-weight:600;color:var(--steel);background:none;border:1px solid var(--mist);border-radius:8px;padding:8px 16px;cursor:pointer;font-family:Outfit,sans-serif;">Maybe later</button>
+      <button onclick="dismissPersonalizeOffer();startPersonalizeTour();" style="font-size:13px;font-weight:600;color:white;background:#6B9E70;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;font-family:Outfit,sans-serif;">Show me →</button>
     </div>
   </div>
 </div>
@@ -9096,7 +9111,7 @@ window.addEventListener('load', function() {
     // Don't close ctx menu if clicking inside the tour tooltip
     if (tourTooltip && tourTooltip.contains(e.target)) return;
     // Don't close ctx menu if tour is active and showing it (noBackdropAdvance step)
-    var step = TOUR_STEPS[_tourStep];
+    var step = (_activeTourSteps || TOUR_STEPS)[_tourStep];
     if (_tourActive && step && step.noBackdropAdvance) return;
     if (menu && !menu.contains(e.target)) hideCtxMenu();
   });
@@ -9496,6 +9511,9 @@ function toggleMoreMenu(e) {
 // ── Guided Tour ───────────────────────────────────────────────
 var _tourStep = 0;
 var _tourActive = false;
+var _activeTourSteps = null; // points at TOUR_STEPS or TOUR_STEPS_PERSONALIZE while running
+var _tourEndMessage = null;
+var _tourOnEnd = null;
 
 var TOUR_STEPS = [
   {
@@ -9712,11 +9730,181 @@ var TOUR_STEPS = [
   }
 ];
 
-function startTour() {
+var TOUR_STEPS_PERSONALIZE = [
+  {
+    target: '.intention-wrap',
+    title: 'Set a monthly intention',
+    desc: 'Click "Add intention" to write a quote, goal, or reminder for the month. Pick a color, font and size to make it yours.',
+    position: 'bottom'
+  },
+  {
+    target: '#topbar-title',
+    title: 'Color your month title',
+    desc: 'Click the month name to give it a custom color — it carries over to the sidebar too, so each month can have its own look.',
+    position: 'bottom'
+  },
+  {
+    target: '#month-emoji-display',
+    title: 'Add a month emoji',
+    desc: 'Click here to pick an emoji for the month — great for marking holidays, trips, or anything memorable. It shows next to the title and in the sidebar.',
+    position: 'bottom',
+    action: function() {
+      var el = document.getElementById('month-emoji-display');
+      if (el) { el.style.opacity = '1'; el.dataset.tourForced = '1'; }
+    },
+    cleanup: function() {
+      var el = document.getElementById('month-emoji-display');
+      if (el && el.dataset.tourForced) { el.style.opacity = ''; delete el.dataset.tourForced; }
+    }
+  },
+  {
+    target: '#hamburger-btn',
+    title: 'Browse months & years',
+    desc: 'Tap the menu icon to open the sidebar — jump between months, expand years, and see your whole budget history at a glance.',
+    position: 'right',
+    noBackdropAdvance: true,
+    action: function() {
+      setTimeout(function() {
+        var isMobile = window.innerWidth <= 900;
+        var sidebar = document.getElementById('sidebar');
+        var alreadyOpen = isMobile ? (sidebar && sidebar.classList.contains('open')) : !document.body.classList.contains('sidebar-collapsed');
+        if (!alreadyOpen) {
+          var btn = document.getElementById('hamburger-btn');
+          if (btn) btn.click();
+        }
+        // Reposition highlight/tooltip to cover the sidebar once it's open
+        setTimeout(function() {
+          var sb = document.getElementById('sidebar');
+          if (!sb) return;
+          var sr = sb.getBoundingClientRect();
+          if (sr.width === 0) return; // sidebar still hidden, leave highlight on hamburger
+          var hl = document.getElementById('tour-highlight');
+          if (hl) {
+            hl.style.transition = 'all 0.4s ease';
+            hl.style.left = Math.max(0, sr.left - 4) + 'px';
+            hl.style.top = Math.max(0, sr.top - 4) + 'px';
+            hl.style.width = (sr.width + 8) + 'px';
+            hl.style.height = (sr.height + 8) + 'px';
+          }
+          var tt = document.getElementById('tour-tooltip');
+          if (tt) {
+            var ttW = tt.offsetWidth || 300;
+            tt.style.left = Math.max(16, sr.right + 12) + 'px';
+            tt.style.top = '80px';
+          }
+        }, 400);
+      }, 300);
+    },
+    cleanup: function() {
+      var isMobile = window.innerWidth <= 900;
+      if (isMobile) {
+        var sidebar = document.getElementById('sidebar');
+        if (sidebar && sidebar.classList.contains('open')) {
+          var btn = document.getElementById('hamburger-btn');
+          if (btn) btn.click();
+        }
+      }
+    }
+  },
+  {
+    target: '#more-btn',
+    title: 'Find the color theme picker',
+    desc: 'Tap ⋯ then look for "Color theme" — choose Classic, Minimal, Monochrome, or pick your own custom accent color.',
+    position: 'bottom',
+    noBackdropAdvance: true,
+    action: function() {
+      setTimeout(function() {
+        var menu = document.getElementById('more-menu');
+        var isOpen = menu && menu.style.display === 'block';
+        if (!isOpen) {
+          var btn = document.getElementById('more-btn');
+          if (btn) {
+            var fakeE = { stopPropagation: function() {} };
+            toggleMoreMenu(fakeE);
+          }
+        }
+        setTimeout(function() {
+          var section = document.querySelector('.theme-picker-title');
+          section = section ? section.closest('.more-menu-section') : null;
+          if (!section) return;
+          var sr = section.getBoundingClientRect();
+          var hl = document.getElementById('tour-highlight');
+          if (hl) {
+            hl.style.transition = 'all 0.4s ease';
+            hl.style.left = Math.max(0, sr.left - 4) + 'px';
+            hl.style.top = Math.max(0, sr.top - 4) + 'px';
+            hl.style.width = (sr.width + 8) + 'px';
+            hl.style.height = (sr.height + 8) + 'px';
+          }
+          var tt = document.getElementById('tour-tooltip');
+          if (tt) {
+            var vw = window.innerWidth, vh = window.innerHeight;
+            var ttW = tt.offsetWidth || 300;
+            var ttH = tt.offsetHeight || 200;
+            var left = Math.max(16, Math.min(vw - ttW - 16, sr.left - ttW - 12));
+            if (left < 240) left = Math.max(16, Math.min(vw - ttW - 16, sr.right + 12));
+            tt.style.left = left + 'px';
+            tt.style.top = Math.max(16, Math.min(vh - ttH - 16, sr.top)) + 'px';
+          }
+        }, 350);
+      }, 300);
+    },
+    cleanup: function() { hideMoreMenu(); }
+  },
+  {
+    target: '#rows-savings .erow:first-child',
+    title: 'Templates inside notes',
+    desc: 'Open a note on Savings, Checking, Debt, or other tracked sections and you\'ll see "+ Add" template pills — Contribution, Interest, Transfer and more — for quick structured entries.',
+    position: 'bottom',
+    action: function() {
+      setTimeout(function() {
+        var row = document.querySelector('#rows-savings .erow:first-child');
+        if (!row) return;
+        var id = row.dataset.id;
+        var wrap = document.getElementById('note-wrap-' + id);
+        if (wrap && !wrap.classList.contains('open')) {
+          toggleNote('savings', id);
+        }
+        setTimeout(function() {
+          var pillRow = wrap ? wrap.querySelector('.savings-template') : null;
+          if (!pillRow) return;
+          var pr = pillRow.getBoundingClientRect();
+          var hl = document.getElementById('tour-highlight');
+          if (hl) {
+            hl.style.transition = 'all 0.4s ease';
+            hl.style.left = Math.max(0, pr.left - 4) + 'px';
+            hl.style.top = Math.max(0, pr.top - 4) + 'px';
+            hl.style.width = (pr.width + 8) + 'px';
+            hl.style.height = (pr.height + 8) + 'px';
+          }
+        }, 350);
+      }, 300);
+    },
+    cleanup: function() {
+      var row = document.querySelector('#rows-savings .erow:first-child');
+      if (!row) return;
+      var id = row.dataset.id;
+      var wrap = document.getElementById('note-wrap-' + id);
+      if (wrap && wrap.classList.contains('open')) toggleNote('savings', id);
+    }
+  },
+  {
+    target: '#more-btn',
+    title: 'Make it yours',
+    desc: 'That\'s the personalization layer — intentions, colors, emoji, and templates. Mix and match to make Jettana feel like home. Restart either tour anytime from ⋯.',
+    position: 'bottom',
+    last: true
+  }
+];
+
+function startTour(stepsArray, opts) {
   if (currentMonthKey !== 'demo-month') {
     showToast('The tour is only available in the demo month', false);
     return;
   }
+  _activeTourSteps = stepsArray || TOUR_STEPS;
+  _tourEndMessage = (opts && opts.endMessage) || 'Tour ended — explore freely! Restart anytime from ⋯';
+  _tourOnEnd = (opts && opts.onEnd) || null;
   _tourStep = 0;
   _tourActive = true;
   document.getElementById('tour-overlay').style.display = 'block';
@@ -9724,37 +9912,72 @@ function startTour() {
   // Show restart tour button in menu
   var restartBtn = document.getElementById('restart-tour-btn');
   if (restartBtn) restartBtn.style.display = 'flex';
+  var personalizeBtn = document.getElementById('restart-personalize-tour-btn');
+  if (personalizeBtn) personalizeBtn.style.display = 'flex';
   renderTourStep();
+}
+
+function dismissPersonalizeOffer() {
+  var el = document.getElementById('personalize-offer');
+  if (el) el.style.display = 'none';
+  try { localStorage.setItem('intentra_personalize_offer_seen', '1'); } catch(e) {}
+}
+
+function startPersonalizeTour() {
+  startTour(TOUR_STEPS_PERSONALIZE, {
+    endMessage: 'Personalize tour ended — make Jettana yours! Restart anytime from ⋯',
+  });
 }
 
 function endTour() {
   // Run cleanup for current step
-  var step = TOUR_STEPS[_tourStep];
+  var steps = _activeTourSteps || TOUR_STEPS;
+  var step = steps[_tourStep];
   if (step && step.cleanup) { try { step.cleanup(); } catch(e) {} }
+  var finishedMainTourNaturally = (steps === TOUR_STEPS) && (_tourStep === steps.length - 1);
   _tourActive = false;
   document.getElementById('tour-overlay').style.display = 'none';
   document.getElementById('tour-overlay').style.pointerEvents = 'none';
   var hl = document.getElementById('tour-highlight');
   if (hl) { hl.style.opacity = '0'; hl.style.top = '-9999px'; hl.style.left = '-9999px'; }
-  showToast('Tour ended — explore freely! Restart anytime from ⋯', false);
+  var msg = _tourEndMessage || 'Tour ended — explore freely! Restart anytime from ⋯';
+  var cb = _tourOnEnd;
+  _tourEndMessage = null;
+  _tourOnEnd = null;
+  _activeTourSteps = null;
+  showToast(msg, false);
+  if (cb) { try { cb(); } catch(e) {} }
+  // Offer the optional Personalize tour after finishing the main tour naturally
+  if (finishedMainTourNaturally) {
+    var alreadySeen = false;
+    try { alreadySeen = !!localStorage.getItem('intentra_personalize_offer_seen'); } catch(e) {}
+    if (!alreadySeen) {
+      setTimeout(function() {
+        var el = document.getElementById('personalize-offer');
+        if (el) el.style.display = 'flex';
+      }, 600);
+    }
+  }
 }
 
 function tourStep(dir) {
-  _tourStep = Math.max(0, Math.min(TOUR_STEPS.length - 1, _tourStep + dir));
+  var steps = _activeTourSteps || TOUR_STEPS;
+  _tourStep = Math.max(0, Math.min(steps.length - 1, _tourStep + dir));
   renderTourStep();
 }
 
 function renderTourStep() {
-  var step = TOUR_STEPS[_tourStep];
+  var steps = _activeTourSteps || TOUR_STEPS;
+  var step = steps[_tourStep];
   if (!step) return;
 
   // Run cleanup for previous step
-  var prevStep = TOUR_STEPS[_tourStep - 1];
+  var prevStep = steps[_tourStep - 1];
   if (prevStep && prevStep.cleanup) { try { prevStep.cleanup(); } catch(e) {} }
 
   var target = document.querySelector(step.target);
   if (!target) {
-    if (_tourStep < TOUR_STEPS.length - 1) { _tourStep++; renderTourStep(); }
+    if (_tourStep < steps.length - 1) { _tourStep++; renderTourStep(); }
     else endTour();
     return;
   }
@@ -9785,16 +10008,16 @@ function renderTourStep() {
     var pad = 8;
 
     // Update content first so offsetHeight is accurate
-    document.getElementById('tour-step-label').textContent = 'Step ' + (_tourStep + 1) + ' of ' + TOUR_STEPS.length;
+    document.getElementById('tour-step-label').textContent = 'Step ' + (_tourStep + 1) + ' of ' + steps.length;
     document.getElementById('tour-title').textContent = step.title;
     document.getElementById('tour-desc').textContent = step.desc;
     var dotsEl = document.getElementById('tour-dots');
-    dotsEl.innerHTML = TOUR_STEPS.map(function(_, i) {
+    dotsEl.innerHTML = steps.map(function(_, i) {
       return '<div style="width:6px;height:6px;border-radius:50%;background:' + (i === _tourStep ? '#6B9E70' : '#E8EDF2') + ';"></div>';
     }).join('');
     document.getElementById('tour-prev').style.visibility = _tourStep === 0 ? 'hidden' : 'visible';
     var nextBtn = document.getElementById('tour-next');
-    if (_tourStep === TOUR_STEPS.length - 1) {
+    if (_tourStep === steps.length - 1) {
       nextBtn.textContent = 'Done ✓';
       nextBtn.onclick = endTour;
     } else {
@@ -9878,7 +10101,7 @@ function renderTourStep() {
 // Allow clicking backdrop to skip to next step (unless step has noBackdropAdvance)
 document.addEventListener('click', function(e) {
   if (!_tourActive) return;
-  var step = TOUR_STEPS[_tourStep];
+  var step = (_activeTourSteps || TOUR_STEPS)[_tourStep];
   if (step && step.noBackdropAdvance) return;
   var overlay = document.getElementById('tour-overlay');
   var tooltip = document.getElementById('tour-tooltip');
