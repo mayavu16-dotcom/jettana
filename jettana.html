@@ -9568,18 +9568,26 @@ var TOUR_STEPS = [
               hl.style.width = (mr.width + 8) + 'px';
               hl.style.height = (mr.height + 8) + 'px';
             }
-            // Reposition tooltip to not overlap menu
+            // Menu is position:fixed and doesn't move on page scroll; clear any
+            // leftover tracking so the generic listener doesn't fight this custom layout
+            _tourScrollTarget = null;
+            _tourScrollStep = null;
+            // Reposition tooltip to not overlap menu, with extra clearance
             var tt = document.getElementById('tour-tooltip');
             if (tt) {
               var vw = window.innerWidth;
               var vh = window.innerHeight;
               var ttH = tt.offsetHeight || 200;
               var ttW = tt.offsetWidth || 300;
-              // Put tooltip above menu if it fits, otherwise below
-              if (mr.top > ttH + 20) {
-                tt.style.top = (mr.top - ttH - 12) + 'px';
+              var clearance = 20;
+              // Put tooltip above menu if it fits, otherwise below, with real clearance
+              if (mr.top > ttH + clearance + 16) {
+                tt.style.top = Math.max(16, mr.top - ttH - clearance) + 'px';
+              } else if (vh - mr.bottom > ttH + clearance + 16) {
+                tt.style.top = (mr.bottom + clearance) + 'px';
               } else {
-                tt.style.top = (mr.bottom + 12) + 'px';
+                // Not enough room above or below — place beside the menu instead
+                tt.style.top = Math.max(16, Math.min(vh - ttH - 16, mr.top)) + 'px';
               }
               // Center horizontally on menu
               var newLeft = mr.left + mr.width / 2 - ttW / 2;
@@ -9786,6 +9794,11 @@ var TOUR_STEPS_PERSONALIZE = [
             hl.style.width = (sr.width + 8) + 'px';
             hl.style.height = (sr.height + 8) + 'px';
           }
+          // Sidebar is position:fixed and doesn't move on page scroll, so no
+          // scroll-tracking needed here — only clear any leftover tracking
+          // from a previous step so the generic listener doesn't fight this custom layout
+          _tourScrollTarget = null;
+          _tourScrollStep = null;
           var tt = document.getElementById('tour-tooltip');
           if (tt) {
             var ttW = tt.offsetWidth || 300;
@@ -9877,6 +9890,9 @@ var TOUR_STEPS_PERSONALIZE = [
             hl.style.width = (pr.width + 8) + 'px';
             hl.style.height = (pr.height + 8) + 'px';
           }
+          // Pills are in normal page flow and scroll with content — track them
+          _tourScrollTarget = pillRow;
+          _tourScrollStep = { position: 'bottom' };
         }, 350);
       }, 300);
     },
@@ -9936,6 +9952,8 @@ function endTour() {
   if (step && step.cleanup) { try { step.cleanup(); } catch(e) {} }
   var finishedMainTourNaturally = (steps === TOUR_STEPS) && (_tourStep === steps.length - 1);
   _tourActive = false;
+  _tourScrollTarget = null;
+  _tourScrollStep = null;
   document.getElementById('tour-overlay').style.display = 'none';
   document.getElementById('tour-overlay').style.pointerEvents = 'none';
   var hl = document.getElementById('tour-highlight');
@@ -9965,6 +9983,94 @@ function tourStep(dir) {
   _tourStep = Math.max(0, Math.min(steps.length - 1, _tourStep + dir));
   renderTourStep();
 }
+
+function repositionTourOverlay(target, step) {
+  if (!target || !document.body.contains(target)) return;
+  var rect = target.getBoundingClientRect();
+  var vw = window.innerWidth;
+  var vh = window.innerHeight;
+  var isMobile = vw < 768;
+  var pad = 8;
+
+  // Highlight
+  var hl = document.getElementById('tour-highlight');
+  hl.style.left = Math.max(0, rect.left - pad) + 'px';
+  hl.style.top = Math.max(0, rect.top - pad) + 'px';
+  hl.style.width = (rect.width + pad * 2) + 'px';
+  hl.style.height = (rect.height + pad * 2) + 'px';
+
+  // Tooltip
+  var tt = document.getElementById('tour-tooltip');
+  var ttW = isMobile ? Math.min(vw - 32, 300) : 300;
+  tt.style.width = ttW + 'px';
+  var ttH = tt.offsetHeight || 200;
+  var left, top;
+
+  if (isMobile) {
+    // Center horizontally
+    left = Math.max(16, vw / 2 - ttW / 2);
+    // Try below target first, then above, then near bottom if neither fits
+    var spaceBelow = vh - (rect.bottom + pad + 12);
+    var spaceAbove = rect.top - pad - 12;
+    if (spaceBelow >= ttH + 16) {
+      top = rect.bottom + pad + 12;
+    } else if (spaceAbove >= ttH + 16) {
+      top = rect.top - ttH - pad - 12;
+    } else {
+      // Not enough room either side — put below target but clamp
+      top = Math.min(rect.bottom + pad + 8, vh - ttH - 16);
+    }
+  } else {
+    // Desktop: smart positioning that avoids sidebar (220px) and off-screen edges
+    var sidebarW = 220;
+    if (step.position === 'bottom') {
+      left = rect.left + rect.width / 2 - ttW / 2;
+      top = rect.bottom + pad + 12;
+      // If bottom goes off-screen, flip to top
+      if (top + ttH > vh - 16) top = rect.top - ttH - pad - 12;
+    } else if (step.position === 'top') {
+      left = rect.left + rect.width / 2 - ttW / 2;
+      top = rect.top - ttH - pad - 12;
+      // If top goes off-screen, flip to bottom
+      if (top < 16) top = rect.bottom + pad + 12;
+    } else if (step.position === 'right') {
+      left = rect.right + pad + 12;
+      top = rect.top + rect.height / 2 - ttH / 2;
+      // If right goes off-screen, fall back to bottom
+      if (left + ttW > vw - 16) {
+        left = rect.left + rect.width / 2 - ttW / 2;
+        top = rect.bottom + pad + 12;
+      }
+    } else { // left
+      left = rect.left - ttW - pad - 12;
+      top = rect.top + rect.height / 2 - ttH / 2;
+      // If left goes into sidebar, fall back to bottom
+      if (left < sidebarW + 16) {
+        left = rect.left + rect.width / 2 - ttW / 2;
+        top = rect.bottom + pad + 12;
+      }
+    }
+    left = Math.max(sidebarW + 16, Math.min(vw - ttW - 16, left));
+    top = Math.max(16, Math.min(vh - ttH - 16, top));
+  }
+
+  tt.style.left = left + 'px';
+  tt.style.top = top + 'px';
+}
+
+var _tourScrollTarget = null;
+var _tourScrollStep = null;
+var _tourScrollRaf = null;
+function onTourScrollOrResize() {
+  if (!_tourActive || !_tourScrollTarget) return;
+  if (_tourScrollRaf) return;
+  _tourScrollRaf = requestAnimationFrame(function() {
+    _tourScrollRaf = null;
+    repositionTourOverlay(_tourScrollTarget, _tourScrollStep);
+  });
+}
+window.addEventListener('scroll', onTourScrollOrResize, true);
+window.addEventListener('resize', onTourScrollOrResize);
 
 function renderTourStep() {
   var steps = _activeTourSteps || TOUR_STEPS;
@@ -10002,10 +10108,7 @@ function renderTourStep() {
 
   setTimeout(function() {
     var rect = target.getBoundingClientRect();
-    var vw = window.innerWidth;
-    var vh = window.innerHeight;
-    isMobile = vw < 768;
-    var pad = 8;
+    isMobile = window.innerWidth < 768;
 
     // Update content first so offsetHeight is accurate
     document.getElementById('tour-step-label').textContent = 'Step ' + (_tourStep + 1) + ' of ' + steps.length;
@@ -10025,72 +10128,15 @@ function renderTourStep() {
       nextBtn.onclick = function() { tourStep(1); };
     }
 
-    // Highlight
+    // Highlight fade-in
     var hl = document.getElementById('tour-highlight');
-    hl.style.transition = 'all 0.3s ease';
+    hl.style.transition = 'all 0.3s ease, opacity 0.25s ease';
     hl.style.opacity = '1';
-    hl.style.left = Math.max(0, rect.left - pad) + 'px';
-    hl.style.top = Math.max(0, rect.top - pad) + 'px';
-    hl.style.width = (rect.width + pad * 2) + 'px';
-    hl.style.height = (rect.height + pad * 2) + 'px';
 
-    // Tooltip
-    var tt = document.getElementById('tour-tooltip');
-    var ttW = isMobile ? Math.min(vw - 32, 300) : 300;
-    tt.style.width = ttW + 'px';
-    var ttH = tt.offsetHeight || 200;
-    var left, top;
-
-    if (isMobile) {
-      // Center horizontally
-      left = Math.max(16, vw / 2 - ttW / 2);
-      // Try below target first, then above, then near bottom if neither fits
-      var spaceBelow = vh - (rect.bottom + pad + 12);
-      var spaceAbove = rect.top - pad - 12;
-      if (spaceBelow >= ttH + 16) {
-        top = rect.bottom + pad + 12;
-      } else if (spaceAbove >= ttH + 16) {
-        top = rect.top - ttH - pad - 12;
-      } else {
-        // Not enough room either side — put below target but clamp
-        top = Math.min(rect.bottom + pad + 8, vh - ttH - 16);
-      }
-    } else {
-      // Desktop: smart positioning that avoids sidebar (220px) and off-screen edges
-      var sidebarW = 220;
-      if (step.position === 'bottom') {
-        left = rect.left + rect.width / 2 - ttW / 2;
-        top = rect.bottom + pad + 12;
-        // If bottom goes off-screen, flip to top
-        if (top + ttH > vh - 16) top = rect.top - ttH - pad - 12;
-      } else if (step.position === 'top') {
-        left = rect.left + rect.width / 2 - ttW / 2;
-        top = rect.top - ttH - pad - 12;
-        // If top goes off-screen, flip to bottom
-        if (top < 16) top = rect.bottom + pad + 12;
-      } else if (step.position === 'right') {
-        left = rect.right + pad + 12;
-        top = rect.top + rect.height / 2 - ttH / 2;
-        // If right goes off-screen, fall back to bottom
-        if (left + ttW > vw - 16) {
-          left = rect.left + rect.width / 2 - ttW / 2;
-          top = rect.bottom + pad + 12;
-        }
-      } else { // left
-        left = rect.left - ttW - pad - 12;
-        top = rect.top + rect.height / 2 - ttH / 2;
-        // If left goes into sidebar, fall back to bottom
-        if (left < sidebarW + 16) {
-          left = rect.left + rect.width / 2 - ttW / 2;
-          top = rect.bottom + pad + 12;
-        }
-      }
-      left = Math.max(sidebarW + 16, Math.min(vw - ttW - 16, left));
-      top = Math.max(16, Math.min(vh - ttH - 16, top));
-    }
-
-    tt.style.left = left + 'px';
-    tt.style.top = top + 'px';
+    // Position highlight + tooltip, and keep tracking the target on scroll/resize
+    _tourScrollTarget = target;
+    _tourScrollStep = step;
+    repositionTourOverlay(target, step);
 
     // Run action
     if (step.action) {
