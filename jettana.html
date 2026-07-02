@@ -5110,6 +5110,21 @@ function showCopySectionModal(section) {
       });
     }
 
+    // For checking section: carry Ending from source month → Beginning in new rows
+    if (section === 'checking') {
+      newRows.forEach(function(newRow) {
+        var srcRow = sourceRows.find(function(r) {
+          return r.label && newRow.label && r.label.trim().toLowerCase() === newRow.label.trim().toLowerCase();
+        });
+        if (srcRow) {
+          var ending = parseFloat(srcRow.ending);
+          if (ending && ending > 0 && (!newRow.beginning || newRow.beginning === '')) {
+            newRow.beginning = String(ending);
+          }
+        }
+      });
+    }
+
     if (!all[currentMonthKey][section]) all[currentMonthKey][section] = [];
     if (mode === 'replace') all[currentMonthKey][section] = newRows;
     else all[currentMonthKey][section] = all[currentMonthKey][section].concat(newRows);
@@ -5174,6 +5189,21 @@ function copyMonthData(sourceKey, newKey) {
     });
     if (newRow && (!newRow.current || newRow.current === '')) {
       newRow.current = String(remaining);
+    }
+  });
+
+  // Auto-carry checking Ending from source month → Beginning in new month
+  var sourceChecking = source['checking'] || [];
+  var newChecking = all[newKey]['checking'] || [];
+  sourceChecking.forEach(function(srcRow) {
+    if (!srcRow.label) return;
+    var ending = parseFloat(srcRow.ending);
+    if (!ending || ending <= 0) return;
+    var newRow = newChecking.find(function(r) {
+      return r.label && r.label.trim().toLowerCase() === srcRow.label.trim().toLowerCase();
+    });
+    if (newRow && (!newRow.beginning || newRow.beginning === '')) {
+      newRow.beginning = String(ending);
     }
   });
 
