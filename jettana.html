@@ -5095,6 +5095,21 @@ function showCopySectionModal(section) {
       };
     });
 
+    // For debt section: carry Remaining from source month → Current in new rows
+    if (section === 'debt') {
+      newRows.forEach(function(newRow) {
+        var srcRow = sourceRows.find(function(r) {
+          return r.label && newRow.label && r.label.trim().toLowerCase() === newRow.label.trim().toLowerCase();
+        });
+        if (srcRow) {
+          var remaining = parseFloat(srcRow.remaining);
+          if (remaining && remaining > 0 && (!newRow.current || newRow.current === '')) {
+            newRow.current = String(remaining);
+          }
+        }
+      });
+    }
+
     if (!all[currentMonthKey][section]) all[currentMonthKey][section] = [];
     if (mode === 'replace') all[currentMonthKey][section] = newRows;
     else all[currentMonthKey][section] = all[currentMonthKey][section].concat(newRows);
@@ -5146,6 +5161,22 @@ function copyMonthData(sourceKey, newKey) {
       _cardLink: row._cardLink || '',
     }));
   });
+  // Auto-carry debt Remaining from source month → Current in new month
+  // Only fills rows where current is empty (freshly cleared by copy)
+  var sourceDebt = source['debt'] || [];
+  var newDebt = all[newKey]['debt'] || [];
+  sourceDebt.forEach(function(srcRow) {
+    if (!srcRow.label) return;
+    var remaining = parseFloat(srcRow.remaining);
+    if (!remaining || remaining <= 0) return;
+    var newRow = newDebt.find(function(r) {
+      return r.label && r.label.trim().toLowerCase() === srcRow.label.trim().toLowerCase();
+    });
+    if (newRow && (!newRow.current || newRow.current === '')) {
+      newRow.current = String(remaining);
+    }
+  });
+
   // Copy footer highlights and budget overrides from source month
   if (source._highlights) {
     all[newKey]._highlights = JSON.parse(JSON.stringify(source._highlights));
@@ -5647,6 +5678,23 @@ function numInput(el) {
   el.dataset.raw = el.value;
   const clean = el.value.replace(/[$,]/g, '');
   const n = parseFloat(clean);
+  // If user manually edits Ending (col-2) in checking, flag it so auto-calc doesn't overwrite it
+  if (el.dataset.section === 'checking' && el.dataset.col === '2') {
+    const all = loadAll();
+    const rows = (all[currentMonthKey] && all[currentMonthKey]['checking']) || [];
+    const row = rows.find(r => r.id === el.dataset.id);
+    if (row) {
+      if (!isNaN(n)) {
+        row._endingOverride = true;
+        row[el.dataset.key] = n;
+      } else {
+        // Empty field — clear override so auto-calc resumes
+        delete row._endingOverride;
+        row[el.dataset.key] = '';
+      }
+      saveAll(all); scheduleSave(); recalc(); return;
+    }
+  }
   if (!isNaN(n)) updateRow(el.dataset.section, el.dataset.id, el.dataset.key, n);
 }
 
@@ -6614,6 +6662,8 @@ function recalcCheckingBalances() {
   var changed = false;
 
   checkingRows.forEach(function(acctRow) {
+    // Skip if user has manually overridden the ending balance
+    if (acctRow._endingOverride) return;
     var acctColor = (acctRow.numColor || acctRow.paidColor || '').toLowerCase();
     if (!acctColor) return;
 
