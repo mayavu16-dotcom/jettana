@@ -5095,21 +5095,6 @@ function showCopySectionModal(section) {
       };
     });
 
-    // For debt section: carry Remaining from source month → Current in new rows
-    if (section === 'debt') {
-      newRows.forEach(function(newRow) {
-        var srcRow = sourceRows.find(function(r) {
-          return r.label && newRow.label && r.label.trim().toLowerCase() === newRow.label.trim().toLowerCase();
-        });
-        if (srcRow) {
-          var remaining = parseFloat(srcRow.remaining);
-          if (remaining && remaining > 0 && (!newRow.current || newRow.current === '')) {
-            newRow.current = String(remaining);
-          }
-        }
-      });
-    }
-
     // For checking section: carry Ending from source month → Beginning in new rows
     if (section === 'checking') {
       newRows.forEach(function(newRow) {
@@ -5176,22 +5161,6 @@ function copyMonthData(sourceKey, newKey) {
       _cardLink: row._cardLink || '',
     }));
   });
-  // Auto-carry debt Remaining from source month → Current in new month
-  // Only fills rows where current is empty (freshly cleared by copy)
-  var sourceDebt = source['debt'] || [];
-  var newDebt = all[newKey]['debt'] || [];
-  sourceDebt.forEach(function(srcRow) {
-    if (!srcRow.label) return;
-    var remaining = parseFloat(srcRow.remaining);
-    if (!remaining || remaining <= 0) return;
-    var newRow = newDebt.find(function(r) {
-      return r.label && r.label.trim().toLowerCase() === srcRow.label.trim().toLowerCase();
-    });
-    if (newRow && (!newRow.current || newRow.current === '')) {
-      newRow.current = String(remaining);
-    }
-  });
-
   // Auto-carry checking Ending from source month → Beginning in new month
   var sourceChecking = source['checking'] || [];
   var newChecking = all[newKey]['checking'] || [];
@@ -6540,7 +6509,7 @@ function autoCalcDebtFromCards() {
 
     var remaining = Math.max(0, totalAll - totalPaid);
 
-    // If there are payment template entries, add those payments to the remaining calculation
+    // If there are payment template entries marked to apply to remaining, subtract them
     var paymentTotal = 0;
     if (debtRow._entries && debtRow._entries.length > 0) {
       debtRow._entries.forEach(function(e) {
@@ -6553,14 +6522,17 @@ function autoCalcDebtFromCards() {
       });
     }
 
-    // Remaining = carried balance (Current) + unpaid new charges - explicit payments
-    // Current stays as the user-entered/carried-over balance — never overwrite it
-    var carriedBalance = parseAmt(debtRow['current']) || 0;
-    var finalRemaining = Math.max(0, carriedBalance + remaining - paymentTotal);
+    var finalRemaining = Math.max(0, remaining - paymentTotal);
 
-    // Do NOT overwrite Current — it holds the carried balance from last month
+    // Write Current = total charges on this card this month
+    debtRow['current'] = totalAll || '';
+    var inp1 = document.querySelector('input[data-id="' + debtRow.id + '"][data-col="1"]');
+    if (inp1) {
+      inp1.value = totalAll ? '$' + totalAll.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
+      inp1.dataset.raw = totalAll ? String(totalAll) : '';
+    }
 
-    // Write Remaining = carried balance + unpaid card charges - logged payments
+    // Write Remaining = unpaid charges minus any applied payments
     debtRow['remaining'] = finalRemaining || '';
     var inp2 = document.querySelector('input[data-id="' + debtRow.id + '"][data-col="2"]');
     if (inp2) {
