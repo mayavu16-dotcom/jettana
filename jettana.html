@@ -5695,22 +5695,6 @@ function numInput(el) {
       saveAll(all); scheduleSave(); recalc(); return;
     }
   }
-  // If user manually edits Current (col-1) in debt, flag it so autoCalcDebtFromCards doesn't overwrite it
-  if (el.dataset.section === 'debt' && el.dataset.col === '1') {
-    const all = loadAll();
-    const rows = (all[currentMonthKey] && all[currentMonthKey]['debt']) || [];
-    const row = rows.find(r => r.id === el.dataset.id);
-    if (row) {
-      if (!isNaN(n)) {
-        row._currentOverride = true;
-        row[el.dataset.key] = n;
-      } else {
-        delete row._currentOverride;
-        row[el.dataset.key] = '';
-      }
-      saveAll(all); scheduleSave(); recalc(); return;
-    }
-  }
   if (!isNaN(n)) updateRow(el.dataset.section, el.dataset.id, el.dataset.key, n);
 }
 
@@ -6503,8 +6487,6 @@ function autoCalcDebtFromCards() {
 
   debtRows.forEach(function(debtRow) {
     if (!debtRow._cardLink) return;
-    // Skip if user has manually overridden the current balance
-    if (debtRow._currentOverride) return;
     var linkedColor = debtRow._cardLink.toLowerCase();
 
     var totalAll = 0;  // sum of actual values on all color-matched rows → Current
@@ -6533,7 +6515,7 @@ function autoCalcDebtFromCards() {
     if (debtRow._entries && debtRow._entries.length > 0) {
       debtRow._entries.forEach(function(e) {
         var type = e._type || debtRow._template;
-        if (type === 'payment') {
+        if (type === 'payment' && e.applyToRemaining === '1') {
           var paid = parseAmt(e.amt) || 0;
           var interest = parseAmt(e.interest) || 0;
           paymentTotal += Math.max(0, paid - interest);
@@ -6541,17 +6523,14 @@ function autoCalcDebtFromCards() {
       });
     }
 
-    var finalRemaining = Math.max(0, remaining - paymentTotal);
+    // Remaining = carried balance (Current) + unpaid new charges - explicit payments
+    // Current stays as the user-entered/carried-over balance — never overwrite it
+    var carriedBalance = parseAmt(debtRow['current']) || 0;
+    var finalRemaining = Math.max(0, carriedBalance + remaining - paymentTotal);
 
-    // Write Current (col 1)
-    debtRow['current'] = totalAll || '';
-    var inp1 = document.querySelector('input[data-id="' + debtRow.id + '"][data-col="1"]');
-    if (inp1) {
-      inp1.value = totalAll ? '$' + totalAll.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
-      inp1.dataset.raw = totalAll ? String(totalAll) : '';
-    }
+    // Do NOT overwrite Current — it holds the carried balance from last month
 
-    // Write Remaining = unpaid card charges minus any logged payments
+    // Write Remaining = carried balance + unpaid card charges - logged payments
     debtRow['remaining'] = finalRemaining || '';
     var inp2 = document.querySelector('input[data-id="' + debtRow.id + '"][data-col="2"]');
     if (inp2) {
@@ -7612,6 +7591,10 @@ function renderEntryFields(section, id, template, entry, idx) {
       '<input type="text" data-key="interest" value="' + (entry.interest ? '$' + parseFloat(String(entry.interest).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'interest\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Due date</label>' +
       '<input type="date" data-key="due" value="' + (entry.due || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'due\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<div style="width:100%;display:flex;align-items:center;gap:8px;padding:6px 2px 2px;" onclick="event.stopPropagation()">' +
+      '<input type="checkbox" data-key="applyToRemaining" id="atr-' + id + '-' + idx + '"' + (entry.applyToRemaining === '1' ? ' checked' : '') + ' style="width:15px;height:15px;accent-color:var(--sage);cursor:pointer;flex-shrink:0;" oninput="this.dataset.key=\'applyToRemaining\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()">' +
+      '<label for="atr-' + id + '-' + idx + '" style="font-size:11px;font-weight:600;color:var(--steel);cursor:pointer;user-select:none;">Apply to remaining balance <span style="font-weight:400;color:var(--steel);">(check for prior-month payments)</span></label>' +
+      '</div>' +
       '</div>';
   }
 
@@ -7817,7 +7800,12 @@ function saveEntry(section, id, idx) {
   if (!entryDivs[idx]) return;
   var inputs = entryDivs[idx].querySelectorAll('input, select');
   inputs.forEach(function(inp) {
-    if (inp.dataset.key) row._entries[idx][inp.dataset.key] = inp.value;
+    if (!inp.dataset.key) return;
+    if (inp.type === 'checkbox') {
+      row._entries[idx][inp.dataset.key] = inp.checked ? '1' : '';
+    } else {
+      row._entries[idx][inp.dataset.key] = inp.value;
+    }
   });
   saveAll(all);
   scheduleSave();
@@ -7948,7 +7936,12 @@ function updateEntryTotal(section, id, template) {
     var vals = {};
     entryDiv.querySelectorAll('input[data-key], select[data-key]').forEach(function(inp) {
       var key = inp.dataset.key || inp.getAttribute('data-key');
-      if (key) vals[key] = inp.value;
+      if (!key) return;
+      if (inp.type === 'checkbox') {
+        vals[key] = inp.checked ? '1' : '';
+      } else {
+        vals[key] = inp.value;
+      }
     });
 
     // Use per-entry type if available, fall back to row template
@@ -8018,9 +8011,14 @@ function updateEntryTotal(section, id, template) {
       applyToColumn(section, id, grandTotal, 'Auto-calculated from entries');
     } else if (template === 'payment' || storedEntries.some(function(e) { return e._type === 'payment'; })) {
       totalEl.style.color = 'var(--sage)';
-      totalEl.textContent = 'Paid: $' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      // Check if this entry applies to remaining
+      var currentEntryApplies = false;
+      entryDivs.forEach(function(d) {
+        var cb = d.querySelector('input[data-key="applyToRemaining"]');
+        if (cb && cb.checked) currentEntryApplies = true;
+      });
+      totalEl.textContent = 'Paid: $' + abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + (currentEntryApplies ? ' · applied to remaining' : ' · not applied');
       // Let autoCalcDebtFromCards handle the full remaining calculation
-      // (it now combines struck expenses + payment entries)
       recalc();
     } else if (template === 'transaction') {
       var txSign = grandTotal >= 0 ? '+' : '-';
