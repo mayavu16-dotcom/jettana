@@ -5110,6 +5110,19 @@ function showCopySectionModal(section) {
       });
     }
 
+    // For debt section: carry Remaining → _carriedBalance (separate from auto-calc current)
+    if (section === 'debt') {
+      newRows.forEach(function(newRow) {
+        var srcRow = sourceRows.find(function(r) {
+          return r.label && newRow.label && r.label.trim().toLowerCase() === newRow.label.trim().toLowerCase();
+        });
+        if (srcRow) {
+          var remaining = parseFloat(srcRow.remaining);
+          if (remaining && remaining > 0) newRow._carriedBalance = String(remaining);
+        }
+      });
+    }
+
     if (!all[currentMonthKey][section]) all[currentMonthKey][section] = [];
     if (mode === 'replace') all[currentMonthKey][section] = newRows;
     else all[currentMonthKey][section] = all[currentMonthKey][section].concat(newRows);
@@ -5174,6 +5187,20 @@ function copyMonthData(sourceKey, newKey) {
     if (newRow && (!newRow.beginning || newRow.beginning === '')) {
       newRow.beginning = String(ending);
     }
+  });
+
+  // Auto-carry debt Remaining from source month → _carriedBalance in new month
+  // Stored separately so auto-calc can still write to current without conflict
+  var sourceDebt = source['debt'] || [];
+  var newDebt = all[newKey]['debt'] || [];
+  sourceDebt.forEach(function(srcRow) {
+    if (!srcRow.label) return;
+    var remaining = parseFloat(srcRow.remaining);
+    if (!remaining || remaining <= 0) return;
+    var newRow = newDebt.find(function(r) {
+      return r.label && r.label.trim().toLowerCase() === srcRow.label.trim().toLowerCase();
+    });
+    if (newRow) newRow._carriedBalance = String(remaining);
   });
 
   // Copy footer highlights and budget overrides from source month
@@ -6524,7 +6551,11 @@ function autoCalcDebtFromCards() {
 
     var finalRemaining = Math.max(0, remaining - paymentTotal);
 
-    // Write Current = total charges on this card this month
+    // Add any carried balance from last month's remaining
+    var carriedBalance = parseAmt(debtRow['_carriedBalance']) || 0;
+    if (carriedBalance > 0) finalRemaining = Math.max(0, carriedBalance + remaining - paymentTotal);
+
+    // Write Current = total charges on this card this month (auto-calc, never user-entered)
     debtRow['current'] = totalAll || '';
     var inp1 = document.querySelector('input[data-id="' + debtRow.id + '"][data-col="1"]');
     if (inp1) {
