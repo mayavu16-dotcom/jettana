@@ -6704,7 +6704,10 @@ function recalcCheckingBalances() {
       rows.forEach(function(row) {
         if (!row.paid) return;
         var strikeColor = (row.strikeColor || '').toLowerCase();
-        if (strikeColor !== acctColor) return;
+        var numColor = (row.numColor || '').toLowerCase();
+        // Match on strikeColor first, fall back to numColor
+        var matchColor = strikeColor || numColor;
+        if (matchColor !== acctColor) return;
         // Skip if expense dated before beginning balance date
         var expenseDate = row.date || row.date2 || '';
         if (beginDate && expenseDate && expenseDate < beginDate) return;
