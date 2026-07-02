@@ -5695,6 +5695,22 @@ function numInput(el) {
       saveAll(all); scheduleSave(); recalc(); return;
     }
   }
+  // If user manually edits Current (col-1) in debt, flag it so autoCalcDebtFromCards doesn't overwrite it
+  if (el.dataset.section === 'debt' && el.dataset.col === '1') {
+    const all = loadAll();
+    const rows = (all[currentMonthKey] && all[currentMonthKey]['debt']) || [];
+    const row = rows.find(r => r.id === el.dataset.id);
+    if (row) {
+      if (!isNaN(n)) {
+        row._currentOverride = true;
+        row[el.dataset.key] = n;
+      } else {
+        delete row._currentOverride;
+        row[el.dataset.key] = '';
+      }
+      saveAll(all); scheduleSave(); recalc(); return;
+    }
+  }
   if (!isNaN(n)) updateRow(el.dataset.section, el.dataset.id, el.dataset.key, n);
 }
 
@@ -6487,6 +6503,8 @@ function autoCalcDebtFromCards() {
 
   debtRows.forEach(function(debtRow) {
     if (!debtRow._cardLink) return;
+    // Skip if user has manually overridden the current balance
+    if (debtRow._currentOverride) return;
     var linkedColor = debtRow._cardLink.toLowerCase();
 
     var totalAll = 0;  // sum of actual values on all color-matched rows → Current
