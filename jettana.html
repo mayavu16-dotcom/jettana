@@ -6563,12 +6563,6 @@ function autoCalcDebtFromCards() {
       inp1.value = totalCurrent ? '$' + totalCurrent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
       inp1.dataset.raw = totalCurrent ? String(totalCurrent) : '';
     }
-    debtRow['current'] = totalAll || '';
-    var inp1 = document.querySelector('input[data-id="' + debtRow.id + '"][data-col="1"]');
-    if (inp1) {
-      inp1.value = totalAll ? '$' + totalAll.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
-      inp1.dataset.raw = totalAll ? String(totalAll) : '';
-    }
 
     // Write Remaining = unpaid charges minus any applied payments
     debtRow['remaining'] = finalRemaining || '';
