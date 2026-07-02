@@ -6553,9 +6553,16 @@ function autoCalcDebtFromCards() {
 
     // Add any carried balance from last month's remaining
     var carriedBalance = parseAmt(debtRow['_carriedBalance']) || 0;
+    var totalCurrent = totalAll + carriedBalance;
     if (carriedBalance > 0) finalRemaining = Math.max(0, carriedBalance + remaining - paymentTotal);
 
-    // Write Current = total charges on this card this month (auto-calc, never user-entered)
+    // Write Current = this month's charges + any carried balance from last month
+    debtRow['current'] = totalCurrent || '';
+    var inp1 = document.querySelector('input[data-id="' + debtRow.id + '"][data-col="1"]');
+    if (inp1) {
+      inp1.value = totalCurrent ? '$' + totalCurrent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
+      inp1.dataset.raw = totalCurrent ? String(totalCurrent) : '';
+    }
     debtRow['current'] = totalAll || '';
     var inp1 = document.querySelector('input[data-id="' + debtRow.id + '"][data-col="1"]');
     if (inp1) {
@@ -6570,6 +6577,19 @@ function autoCalcDebtFromCards() {
       inp2.value = finalRemaining ? '$' + finalRemaining.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
       inp2.dataset.raw = finalRemaining ? String(finalRemaining) : '';
     }
+  });
+
+  // For debt rows without a _cardLink, still apply _carriedBalance to current
+  debtRows.forEach(function(debtRow) {
+    if (debtRow._cardLink) return; // already handled above
+    var carried = parseAmt(debtRow['_carriedBalance']) || 0;
+    if (!carried) return;
+    debtRow['current'] = String(carried);
+    debtRow['remaining'] = String(carried);
+    var inp1 = document.querySelector('input[data-id="' + debtRow.id + '"][data-col="1"]');
+    if (inp1) { inp1.value = '$' + carried.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); inp1.dataset.raw = String(carried); }
+    var inp2 = document.querySelector('input[data-id="' + debtRow.id + '"][data-col="2"]');
+    if (inp2) { inp2.value = '$' + carried.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); inp2.dataset.raw = String(carried); }
   });
 
   saveAll(all);
