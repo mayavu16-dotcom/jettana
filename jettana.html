@@ -6691,7 +6691,7 @@ function recalcCheckingBalances() {
   checkingRows.forEach(function(acctRow) {
     // Skip if user has manually overridden the ending balance
     if (acctRow._endingOverride) return;
-    var acctColor = (acctRow.numColor || acctRow.paidColor || '').toLowerCase();
+    var acctColor = (acctRow.paidColor || acctRow.numColor || '').toLowerCase();
     if (!acctColor) return;
 
     var beginning = parseAmt(acctRow['beginning']) || 0;
@@ -6703,11 +6703,10 @@ function recalcCheckingBalances() {
       var rows = monthData[sec] || [];
       rows.forEach(function(row) {
         if (!row.paid) return;
-        var strikeColor = (row.strikeColor || '').toLowerCase();
-        var numColor = (row.numColor || '').toLowerCase();
-        // Match on strikeColor first, fall back to numColor
-        var matchColor = strikeColor || numColor;
-        if (matchColor !== acctColor) return;
+        // Match: expense numColor must equal the checking account's text color (paidColor)
+        // The strike/cross-out color on the expense is visual only — irrelevant to calculation
+        var expenseNumColor = (row.numColor || '').toLowerCase();
+        if (!expenseNumColor || expenseNumColor !== acctColor) return;
         // Skip if expense dated before beginning balance date
         var expenseDate = row.date || row.date2 || '';
         if (beginDate && expenseDate && expenseDate < beginDate) return;
