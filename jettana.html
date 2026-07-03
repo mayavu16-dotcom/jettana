@@ -2850,10 +2850,6 @@ body.font-large.text-bold .erow-label-input {
   min-width: 480px;
   border-collapse: collapse;
   font-size: 12px;
-  margin-bottom: 16px;
-  max-height: 280px;
-  overflow-y: auto;
-  display: block;
 }
 .import-preview-table th {
   background: var(--mist-light);
@@ -2866,6 +2862,7 @@ body.font-large.text-bold .erow-label-input {
   color: var(--steel);
   position: sticky;
   top: 0;
+  z-index: 1;
 }
 .import-preview-table td {
   padding: 7px 10px;
@@ -3882,7 +3879,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <button class="import-bulk-apply" onclick="bulkReassign()">Apply</button>
           <button class="import-bulk-deselect" onclick="bulkDeselect()">Deselect all</button>
         </div>
-        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%;">
+        <div style="overflow:auto;max-height:280px;width:100%;-webkit-overflow-scrolling:touch;margin-bottom:16px;">
         <table class="import-preview-table" id="import-table">
           <thead>
             <tr>
