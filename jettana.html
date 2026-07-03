@@ -13950,7 +13950,9 @@ function calGetDaySpend() {
   }
 
   function parseAmt(v) {
-    return parseFloat(String(v == null ? '' : v).replace(/[$,+]/g,'')) || 0;
+    if (v == null || v === '') return 0;
+    var n = parseFloat(String(v).replace(/[$,+\s]/g, ''));
+    return isNaN(n) ? 0 : Math.abs(n);
   }
 
   SECTIONS_ALL.forEach(function(sec) {
@@ -14033,13 +14035,14 @@ function renderCalendar() {
         var entries = spendMap[ds] || [];
         var dayTotal = entries.reduce(function(t,e) { return t + e.amount; }, 0);
         weekTotal += dayTotal;
-        cell.className = 'cal-day' + (ds === todayStr ? ' today' : '') + (dayTotal > 0 ? ' has-spend' : '');
+        cell.className = 'cal-day' + (ds === todayStr ? ' today' : '') + (dayTotal !== 0 ? ' has-spend' : '');
         cell.dataset.datekey = ds;
         var numEl = document.createElement('div'); numEl.className = 'cal-day-num'; numEl.textContent = dayNum;
         cell.appendChild(numEl);
-        if (dayTotal > 0) {
+        if (dayTotal !== 0) {
+          var displayTotal = Math.abs(dayTotal);
           var amtEl = document.createElement('div'); amtEl.className = 'cal-day-amount';
-          amtEl.textContent = '$' + dayTotal.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+          amtEl.textContent = '$' + displayTotal.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
           cell.appendChild(amtEl);
           cell.addEventListener('click', (function(dateStr, ents) {
             return function(e) { showCalPopover(e, dateStr, ents); };
