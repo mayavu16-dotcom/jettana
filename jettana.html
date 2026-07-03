@@ -6085,7 +6085,6 @@ function clearSection(section, btnEl) {
 var _bulkSection = null;
 var _bulkSelected = new Set();
 var _bulkMode = 'delete'; // 'delete' | 'paid' | 'color' | 'move'
-var _bulkDragging = false;
 
 function enterBulkMode(section, mode) {
   if (_bulkSection && _bulkSection !== section) cancelBulk(_bulkSection);
@@ -7212,10 +7211,9 @@ function initEntryListDrop(container, section) {
     container.style.outline = '';
     if (!dragSrc || dragSrc.dataset.section === section) return;
     const srcSection = dragSrc.dataset.section;
-    // Bulk drag — move all selected rows together
-    if (_bulkDragging && _bulkSection === srcSection && _bulkSelected.size > 0) {
+    // Bulk move — if in move mode with rows selected from this section
+    if (_bulkMode === 'move' && _bulkSection === srcSection && _bulkSelected.size > 0 && _bulkSelected.has(dragSrc.dataset.id)) {
       moveSelectedBulk(srcSection, section);
-      _bulkDragging = false;
       return;
     }
     // Single row move
@@ -7252,8 +7250,6 @@ function initRowDrag(div, section) {
     div.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', div.dataset.id);
-    // If this row is bulk-selected in move mode, flag a bulk drag
-    _bulkDragging = (_bulkMode === 'move' && _bulkSection === section && _bulkSelected.has(div.dataset.id));
     // Make sure parent sec-card is NOT draggable
     var card = div.closest('.sec-card');
     if (card) card.draggable = false;
@@ -7268,7 +7264,6 @@ function initRowDrag(div, section) {
   div.addEventListener('dragend', () => {
     document.querySelectorAll('.erow.drag-over').forEach(el => el.classList.remove('drag-over'));
     dragSrc = null;
-    _bulkDragging = false;
   });
   div.addEventListener('dragover', e => {
     e.preventDefault();
@@ -7303,11 +7298,9 @@ function initRowDrag(div, section) {
       const [removed] = rows.splice(srcIdx, 1);
       rows.splice(tgtIdx, 0, removed);
     } else {
-      // Cross-section — check for bulk drag first
-      if (_bulkDragging && _bulkSection === srcSection && _bulkSelected.size > 0) {
-        saveAll(all); // release lock before moveSelectedBulk loads
+      // Cross-section — check for bulk move first
+      if (_bulkMode === 'move' && _bulkSection === srcSection && _bulkSelected.size > 0 && _bulkSelected.has(srcId)) {
         moveSelectedBulk(srcSection, tgtSection);
-        _bulkDragging = false;
         return;
       }
       // Single row move
