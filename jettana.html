@@ -6191,6 +6191,7 @@ function updateBulkBarButtons(section) {
     };
     bar.appendChild(moveBtn);
   } else {
+    var deleteBtn = document.createElement('button');
     deleteBtn.className = 'bulk-bar-btn danger';
     deleteBtn.textContent = 'Delete selected';
     deleteBtn.onclick = function() { deleteSelectedBulk(section); };
