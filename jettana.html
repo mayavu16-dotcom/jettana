@@ -5363,7 +5363,7 @@ function renderSidebar() {
       }
 
       div.innerHTML =
-        '<span class="month-label" style="color:' + (isActive && titleColor ? 'white' : (isActive ? 'white' : (titleColor || ''))) + '">' + label + (monthEmoji ? ' ' + monthEmoji : '') + '</span>' +
+        '<span class="month-label" style="color:' + (isActive && titleColor ? 'white' : (isActive ? 'white' : (titleColor ? sidebarSafeColor(titleColor) : ''))) + '">' + label + (monthEmoji ? ' ' + monthEmoji : '') + '</span>' +
         '<span class="dot"></span>' +
         '<button class="month-edit-btn" title="Rename month" id="edit-' + key + '">✎</button>' +
         '<button class="month-del-btn" title="Delete month" id="del-' + key + '">✕</button>';
@@ -11500,6 +11500,21 @@ function applyMonthTitleColor() {
   var color = (all[currentMonthKey] && all[currentMonthKey]._titleColor) || '';
   var title = document.getElementById('topbar-title');
   if (title) title.style.color = color ? darkModeColor(color) : '';
+}
+
+// Sidebar is always dark — ensure any chosen color is readable against it
+function sidebarSafeColor(color) {
+  if (!color) return '';
+  var tmp = document.createElement('div');
+  tmp.style.color = color;
+  document.body.appendChild(tmp);
+  var rgb = getComputedStyle(tmp).color.match(/\d+/g);
+  document.body.removeChild(tmp);
+  if (rgb) {
+    var lum = (parseInt(rgb[0]) * 299 + parseInt(rgb[1]) * 587 + parseInt(rgb[2]) * 114) / 1000;
+    if (lum < 80) return 'white';
+  }
+  return color;
 }
 
 function darkModeColor(color) {
