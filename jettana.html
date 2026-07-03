@@ -7649,9 +7649,17 @@ function renderEntryFields(section, id, template, entry, idx) {
 
   if (template === 'paycheck') {
     var blurCb = 'templateMoneyBlur(this,\'' + section + '\',\'' + id + '\',\'' + template + '\')';
+    var payTypes = ['Regular','Overtime','FLSA Qualified Overtime','Holiday','Bonus','PTO','Sick Pay','Other'];
+    var payTypeOpts = payTypes.map(function(t) {
+      return '<option value="' + t + '"' + (entry.payType === t ? ' selected' : (!entry.payType && t === 'Regular' ? ' selected' : '')) + '>' + t + '</option>';
+    }).join('');
     return '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Pay date</label>' +
       '<input type="date" data-key="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Pay type</label>' +
+      '<select data-key="payType" style="' + inputStyle + 'appearance:none;-webkit-appearance:none;cursor:pointer;" oninput="this.dataset.key=\'payType\';' + cb + '" onclick="event.stopPropagation()">' +
+      payTypeOpts +
+      '</select></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Hours worked</label>' +
       '<input type="text" data-key="hours" value="' + (entry.hours || '') + '" placeholder="e.g. 80" style="' + inputStyle + '" oninput="this.dataset.key=\'hours\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Hourly rate</label>' +
