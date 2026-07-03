@@ -13943,32 +13943,39 @@ function calGetDaySpend() {
   var filter = (document.getElementById('cal-filter') || {}).value || 'all';
   var map = {};
   var SECTIONS_ALL = ['income','savings','housing','transport','debt','food','health','subscriptions','gifts','misc'];
+
+  function addEntry(dateKey, label, sec, amt) {
+    if (!dateKey || dateKey.length !== 10) return;
+    if (!dateKey.startsWith(mk)) return;
+    if (!amt) return;
+    if (!map[dateKey]) map[dateKey] = [];
+    map[dateKey].push({ label: label || '—', section: sec, amount: amt });
+  }
+
+  function parseAmt(v) {
+    return parseFloat(String(v == null ? '' : v).replace(/[$,+]/g,'')) || 0;
+  }
+
   SECTIONS_ALL.forEach(function(sec) {
     if (filter !== 'all' && filter !== sec) return;
+    var cfg = CONFIGS[sec];
+    if (!cfg) return;
     (d[sec] || []).forEach(function(row) {
-      if (!row.date) return;
-      var dateKey = row.date.length === 10 ? row.date : null;
-      if (!dateKey) return;
-      if (!dateKey.startsWith(mk)) return;
-
-      var amt = 0;
-      var cfg = CONFIGS[sec];
-      if (!cfg) return;
-
-      if (sec === 'savings') {
-        // k1='actual' (balance), k2='gains' — use actual balance
-        amt = parseFloat(String(row[cfg.k1] || '').replace(/[$,+]/g,'')) || 0;
-      } else {
-        // Use k2 (actual/received) if filled, else fall back to k1 (budget/planned)
-        var v2 = row[cfg.k2];
-        var v1 = row[cfg.k1];
-        var useV = (v2 !== '' && v2 !== null && v2 !== undefined) ? v2 : (v1 || '');
-        amt = parseFloat(String(useV).replace(/[$,+]/g,'')) || 0;
+      var label = row.label || '—';
+      // date → col 1 amount (k1: budget/planned/actual-for-savings)
+      if (row.date) {
+        var amt1 = sec === 'savings'
+          ? parseAmt(row[cfg.k1])                          // savings k1='actual'
+          : parseAmt(row[cfg.k2] || '' ) || parseAmt(row[cfg.k1] || ''); // actual first, budget fallback
+        addEntry(row.date, label, sec, amt1);
       }
-
-      if (!amt) return;
-      if (!map[dateKey]) map[dateKey] = [];
-      map[dateKey].push({ label: row.label || '—', section: sec, amount: amt });
+      // date2 → col 2 amount (k2: actual/received/gains)
+      if (row.date2) {
+        var amt2 = sec === 'savings'
+          ? parseAmt(row[cfg.k1])                          // savings: still use actual balance
+          : parseAmt(row[cfg.k2] || '');
+        addEntry(row.date2, label, sec, amt2);
+      }
     });
   });
   return map;
