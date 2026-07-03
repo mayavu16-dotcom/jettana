@@ -8162,6 +8162,9 @@ function applyToColumn(section, id, amount, label) {
   var cfg = CONFIGS[section];
   if (!cfg) return;
 
+  // Savings gains (k2) is always auto-calculated from previous month — templates never own it
+  if (section === 'savings') return;
+
   // Don't overwrite a manually-entered value unless the user has actively filled template fields
   var existingVal = row[cfg.k2];
   var hasExisting = existingVal !== '' && existingVal !== null && existingVal !== undefined && existingVal !== 0 && existingVal !== '0';
