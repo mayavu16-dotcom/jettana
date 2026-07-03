@@ -13942,11 +13942,15 @@ function calGetDaySpend() {
   var SECTIONS_ALL = ['housing','transport','food','health','subscriptions','gifts','misc'];
 
   function addEntry(dateKey, label, sec, amt) {
-    if (!dateKey || dateKey.length !== 10) return;
-    if (!dateKey.startsWith(mk)) return;
+    if (!dateKey) return;
+    // Normalize to YYYY-MM-DD with leading zeros regardless of how it was stored
+    var parts = String(dateKey).trim().split('-');
+    if (parts.length !== 3) return;
+    var normalized = parts[0] + '-' + String(parts[1]).padStart(2,'0') + '-' + String(parts[2]).padStart(2,'0');
+    if (!normalized.startsWith(mk)) return;
     if (!amt) return;
-    if (!map[dateKey]) map[dateKey] = [];
-    map[dateKey].push({ label: label || '—', section: sec, amount: amt });
+    if (!map[normalized]) map[normalized] = [];
+    map[normalized].push({ label: label || '—', section: sec, amount: amt });
   }
 
   function parseAmt(v) {
