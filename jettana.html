@@ -7302,7 +7302,14 @@ function initRowDrag(div, section) {
       const [removed] = rows.splice(srcIdx, 1);
       rows.splice(tgtIdx, 0, removed);
     } else {
-      // Cross-section — move to target section, no reorder
+      // Cross-section — check for bulk drag first
+      if (_bulkDragging && _bulkSection === srcSection && _bulkSelected.size > 0) {
+        saveAll(all); // release lock before moveSelectedBulk loads
+        moveSelectedBulk(srcSection, tgtSection);
+        _bulkDragging = false;
+        return;
+      }
+      // Single row move
       const srcRows = all[currentMonthKey][srcSection];
       const tgtRows = all[currentMonthKey][tgtSection] || [];
       const srcIdx = srcRows.findIndex(r => r.id === srcId);
