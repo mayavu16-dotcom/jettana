@@ -1388,8 +1388,14 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
   outline: none;
   line-height: 1.5;
   min-height: 52px;
-  transition: border-color 0.15s;
+  max-height: 80px;
+  overflow-y: auto;
+  transition: border-color 0.15s, max-height 0.25s ease;
   box-sizing: border-box;
+}
+.note-textarea.expanded {
+  max-height: 600px;
+  overflow-y: auto;
 }
 .note-textarea:focus { border-color: var(--sage); background: white; }
 .note-textarea::placeholder { color: var(--mist); font-style: italic; }
@@ -2299,6 +2305,25 @@ body.theme-custom .mom-hdr      { background: var(--custom-accent-dark, #2A4A7A)
 .note-bullet-btn:hover { border-color: var(--sage); color: var(--sage); }
 .note-bullet-btn.note-bullet-on { background: var(--sage-light); border-color: var(--sage); color: var(--sage-dark); }
 .dark .note-bullet-btn.note-bullet-on { background: #1A2E1C; border-color: var(--sage); color: #8FC49A; }
+.note-expand-btn {
+  background: none;
+  border: 1px solid var(--mist);
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  color: var(--steel);
+  padding: 2px 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  line-height: 1.4;
+}
+.note-expand-btn:hover { border-color: var(--sage); color: var(--sage); }
+.note-expand-btn.expanded { background: var(--sage-light); border-color: var(--sage); color: var(--sage-dark); }
+.dark .note-expand-btn.expanded { background: #1A2E1C; border-color: var(--sage); color: #8FC49A; }
 .note-close {
   background: none;
   border: none;
@@ -5607,6 +5632,7 @@ function renderRowEl(section, row, animate = false) {
   noteDiv.innerHTML = '<div class="note-inner">' + allocHtml + '<div style="position:relative;"><textarea class="note-textarea" id="note-ta-' + row.id + '" placeholder="Add a note… (e.g. split with roommate, one-time purchase)" oninput="saveNote(\'' + section + '\',\'' + row.id + '\',this.value)" onblur="noteBlur(\'' + section + '\',\'' + row.id + '\')" onclick="event.stopPropagation()" onkeydown="noteBulletKeydown(event,\'' + section + '\',\'' + row.id + '\')">' + escHtml(row.note || '') + '</textarea>' +
     '<div class="note-actions">' +
     '<button class="note-bullet-btn ' + bulletActive + '" id="bullet-btn-' + row.id + '" onclick="toggleBulletMode(\'' + section + '\',\'' + row.id + '\')" title="' + bulletTitle + '">• List</button>' +
+    '<button class="note-expand-btn" id="expand-btn-' + row.id + '" onclick="toggleNoteExpand(\'' + row.id + '\')" title="Expand / collapse note">↕</button>' +
     '<button class="note-close" onclick="closeNote(\'' + row.id + '\')" title="Close">×</button>' +
     '</div></div></div>';
   container.appendChild(noteDiv);
@@ -8212,6 +8238,16 @@ function saveNote(section, id, val) {
   // Update dot indicator
   var dot = document.getElementById('note-dot-' + id);
   if (dot) dot.classList.toggle('has-note', val.trim().length > 0);
+}
+
+function toggleNoteExpand(id) {
+  var ta = document.getElementById('note-ta-' + id);
+  var btn = document.getElementById('expand-btn-' + id);
+  if (!ta || !btn) return;
+  var isExpanded = ta.classList.toggle('expanded');
+  btn.classList.toggle('expanded', isExpanded);
+  btn.title = isExpanded ? 'Collapse note' : 'Expand / collapse note';
+  btn.textContent = isExpanded ? '↑' : '↕';
 }
 
 function toggleBulletMode(section, id) {
