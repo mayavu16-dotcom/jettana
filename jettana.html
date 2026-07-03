@@ -6329,7 +6329,8 @@ function set(id, val) {
 }
 
 function recalc() {
-  const d = loadAll()[currentMonthKey] || {};
+  const all = loadAll();
+  const d = all[currentMonthKey] || {};
 
   const incP = sum(d.income,    'planned');
   const incA = sum(d.income,    'received');
@@ -6340,7 +6341,28 @@ function recalc() {
   if (incEmptyState) incEmptyState.style.display = incIsEmpty ? 'block' : 'none';
   if (addIncomeBtn) addIncomeBtn.classList.toggle('nudge', incIsEmpty);
   const savA = sum(d.savings,   'actual');
-  const savG = sum(d.savings,   'gains');
+  // Growth: use stored gains if manually set, otherwise compute curActual - prevActual
+  var savG = (function() {
+    var prevKeys = allMonthKeys().filter(function(k) { return k < currentMonthKey; });
+    var prevSavRows = prevKeys.length ? ((all[prevKeys[0]] && all[prevKeys[0]].savings) || []) : [];
+    var total = 0;
+    (d.savings || []).forEach(function(row) {
+      var stored = parseFloat(row.gains);
+      if (row.gains !== '' && row.gains !== null && row.gains !== undefined && !isNaN(stored) && stored !== 0) {
+        total += stored;
+      } else {
+        var prevRow = prevSavRows.find(function(r) {
+          return r.label && row.label && r.label.trim().toLowerCase() === row.label.trim().toLowerCase();
+        });
+        if (prevRow && prevRow.actual && row.actual) {
+          var prevActual = parseFloat(prevRow.actual) || 0;
+          var curActual  = parseFloat(row.actual)  || 0;
+          if (prevActual !== 0 && curActual !== 0) total += curActual - prevActual;
+        }
+      }
+    });
+    return total;
+  })();
   const houB = sum(d.housing,   'budget');  const houA = sum(d.housing,   'actual');
   const chkB = sum(d.checking,  'beginning'); const chkE = sum(d.checking, 'ending');
   const traB = sum(d.transport, 'budget');  const traA = sum(d.transport, 'actual');
