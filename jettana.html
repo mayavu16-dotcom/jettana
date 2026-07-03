@@ -2770,7 +2770,6 @@ body.font-large.text-bold .erow-label-input {
   max-width: 95vw;
   max-height: 88vh;
   overflow-y: auto;
-  overflow-x: hidden;
   font-family: 'Outfit', sans-serif;
   box-shadow: 0 12px 48px rgba(0,0,0,0.25);
 }
@@ -2850,7 +2849,18 @@ body.font-large.text-bold .erow-label-input {
   min-width: 480px;
   border-collapse: collapse;
   font-size: 12px;
+  table-layout: fixed;
 }
+.import-preview-table th:nth-child(1),
+.import-preview-table td:nth-child(1) { width: 52px; }
+.import-preview-table th:nth-child(2),
+.import-preview-table td:nth-child(2) { width: 36%; }
+.import-preview-table th:nth-child(3),
+.import-preview-table td:nth-child(3) { width: 70px; }
+.import-preview-table th:nth-child(4),
+.import-preview-table td:nth-child(4) { width: 110px; }
+.import-preview-table th:nth-child(5),
+.import-preview-table td:nth-child(5) { width: 120px; }
 .import-preview-table th {
   background: var(--mist-light);
   padding: 6px 10px;
@@ -2869,6 +2879,9 @@ body.font-large.text-bold .erow-label-input {
   border-bottom: 0.5px solid var(--mist);
   color: var(--ink);
   vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .import-cat-select {
   font-family: 'Outfit', sans-serif;
