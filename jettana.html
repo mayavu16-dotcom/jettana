@@ -1394,8 +1394,8 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
   box-sizing: border-box;
 }
 .note-textarea.expanded {
-  max-height: 600px;
-  overflow-y: auto;
+  max-height: none;
+  overflow-y: hidden;
 }
 .note-textarea:focus { border-color: var(--sage); background: white; }
 .note-textarea::placeholder { color: var(--mist); font-style: italic; }
@@ -8238,6 +8238,12 @@ function saveNote(section, id, val) {
   // Update dot indicator
   var dot = document.getElementById('note-dot-' + id);
   if (dot) dot.classList.toggle('has-note', val.trim().length > 0);
+  // If textarea is expanded, grow it to fit new content
+  var ta = document.getElementById('note-ta-' + id);
+  if (ta && ta.classList.contains('expanded')) {
+    ta.style.height = 'auto';
+    ta.style.height = ta.scrollHeight + 'px';
+  }
 }
 
 function toggleNoteExpand(id) {
@@ -8248,6 +8254,14 @@ function toggleNoteExpand(id) {
   btn.classList.toggle('expanded', isExpanded);
   btn.title = isExpanded ? 'Collapse note' : 'Expand / collapse note';
   btn.textContent = isExpanded ? '↑' : '↕';
+  if (isExpanded) {
+    // Set height explicitly to full content height so nothing is hidden
+    ta.style.height = 'auto';
+    ta.style.height = ta.scrollHeight + 'px';
+  } else {
+    // Reset back to compact
+    ta.style.height = '';
+  }
 }
 
 function toggleBulletMode(section, id) {
