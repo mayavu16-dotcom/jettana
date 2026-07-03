@@ -11978,35 +11978,54 @@ function toggleLegendPanel() {
 
 function convertImportDate(dateStr) {
   if (!dateStr) return '';
+  var s = dateStr.trim();
+  var year, parts, dt;
   // Already YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
-  // MM/DD format - add current year
-  if (/^\d{1,2}\/\d{1,2}$/.test(dateStr)) {
-    var parts = dateStr.split('/');
-    var year = new Date().getFullYear();
-    var m = parts[0].padStart(2,'0');
-    var d = parts[1].padStart(2,'0');
-    return year + '-' + m + '-' + d;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // YYYY/MM/DD
+  if (/^\d{4}\/\d{2}\/\d{2}$/.test(s)) {
+    parts = s.split('/');
+    return parts[0] + '-' + parts[1] + '-' + parts[2];
   }
-  // MM/DD/YYYY format
-  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
-    var parts = dateStr.split('/');
+  // MM/DD/YYYY
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) {
+    parts = s.split('/');
     return parts[2] + '-' + parts[0].padStart(2,'0') + '-' + parts[1].padStart(2,'0');
   }
-  // MM/DD/YY format
-  if (/^\d{1,2}\/\d{1,2}\/\d{2}$/.test(dateStr)) {
-    var parts = dateStr.split('/');
-    var year = '20' + parts[2];
+  // MM/DD/YY
+  if (/^\d{1,2}\/\d{1,2}\/\d{2}$/.test(s)) {
+    parts = s.split('/');
+    return '20' + parts[2] + '-' + parts[0].padStart(2,'0') + '-' + parts[1].padStart(2,'0');
+  }
+  // MM/DD (no year)
+  if (/^\d{1,2}\/\d{1,2}$/.test(s)) {
+    parts = s.split('/');
+    year = new Date().getFullYear();
     return year + '-' + parts[0].padStart(2,'0') + '-' + parts[1].padStart(2,'0');
   }
-  // Try parsing naturally
-  var d = new Date(dateStr);
-  if (!isNaN(d.getTime())) {
-    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  // MM-DD-YYYY
+  if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(s)) {
+    parts = s.split('-');
+    return parts[2] + '-' + parts[0].padStart(2,'0') + '-' + parts[1].padStart(2,'0');
+  }
+  // MM-DD-YY
+  if (/^\d{1,2}-\d{1,2}-\d{2}$/.test(s)) {
+    parts = s.split('-');
+    return '20' + parts[2] + '-' + parts[0].padStart(2,'0') + '-' + parts[1].padStart(2,'0');
+  }
+  // MM-DD (no year)
+  if (/^\d{1,2}-\d{1,2}$/.test(s)) {
+    parts = s.split('-');
+    year = new Date().getFullYear();
+    return year + '-' + parts[0].padStart(2,'0') + '-' + parts[1].padStart(2,'0');
+  }
+  // Fallback: replace dashes with slashes so new Date() parses as local time, not UTC
+  dt = new Date(s.replace(/-/g, '/'));
+  if (!isNaN(dt.getTime())) {
+    return dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0');
   }
   return '';
 }
-
 function saveApiKey(val) {
   if (val) {
     localStorage.setItem('intentra_api_key', val);
