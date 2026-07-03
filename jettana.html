@@ -6270,7 +6270,7 @@ function moveSelectedBulk(fromSection, toSection) {
   var n = moved.length;
   cancelBulk(fromSection);
   recalc();
-  showToast(n + ' row' + (n !== 1 ? 's' : '') + ' moved to ' + toSection.charAt(0).toUpperCase() + toSection.slice(1));
+  showUndoToast(n + ' row' + (n !== 1 ? 's' : '') + ' moved to ' + toSection.charAt(0).toUpperCase() + toSection.slice(1));
 }
 
 function showBulkColorPicker(section) {
@@ -12240,7 +12240,7 @@ function resetImportModal() {
         }
       });
       updateImportCount();
-      updateBulkBar();
+      updateImportBulkBar();
     });
   });
 })();
@@ -12602,10 +12602,10 @@ function toggleImportRow(idx, checked) {
   if (row) row.className = checked ? '' : 'import-row-skip';
   importedTransactions[idx]._skip = !checked;
   updateImportCount();
-  updateBulkBar();
+  updateImportBulkBar();
 }
 
-function updateBulkBar() {
+function updateImportBulkBar() {
   var checked = importedTransactions.filter(function(t) { return !t._skip && t.category !== 'skip'; });
   var bar = document.getElementById('import-bulk-bar');
   var countEl = document.getElementById('import-bulk-count');
@@ -12638,7 +12638,7 @@ function bulkReassign() {
   });
   document.getElementById('import-bulk-cat').value = '';
   updateImportCount();
-  updateBulkBar();
+  updateImportBulkBar();
   showToast('Rows updated ✓', false);
 }
 
@@ -12653,7 +12653,7 @@ function bulkDeselect() {
     }
   });
   updateImportCount();
-  updateBulkBar();
+  updateImportBulkBar();
 }
 
 function updateImportCat(idx, cat) {
