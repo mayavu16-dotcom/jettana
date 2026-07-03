@@ -13941,16 +13941,15 @@ function calGetDaySpend() {
   var map = {};
   var SECTIONS_ALL = ['housing','transport','food','health','subscriptions','gifts','misc'];
 
-  function addEntry(dateKey, label, sec, amt) {
+  function addEntry(dateKey, label, sec, amt, exempt) {
     if (!dateKey) return;
-    // Normalize to YYYY-MM-DD with leading zeros regardless of how it was stored
     var parts = String(dateKey).trim().split('-');
     if (parts.length !== 3) return;
     var normalized = parts[0] + '-' + String(parts[1]).padStart(2,'0') + '-' + String(parts[2]).padStart(2,'0');
     if (!normalized.startsWith(mk)) return;
-    if (!amt) return;
+    if (!amt && !exempt) return;
     if (!map[normalized]) map[normalized] = [];
-    map[normalized].push({ label: label || '—', section: sec, amount: amt });
+    map[normalized].push({ label: label || '—', section: sec, amount: exempt ? 0 : amt, exempt: !!exempt });
   }
 
   function parseAmt(v) {
@@ -13968,15 +13967,13 @@ function calGetDaySpend() {
       // date → col 1 amount (mainly income/debt/savings/checking)
       if (row.date) {
         var amt1 = parseAmt(row[cfg.k2]) || parseAmt(row[cfg.k1]) || 0;
-        addEntry(row.date, label, sec, amt1);
+        addEntry(row.date, label, sec, amt1, row.exempt);
       }
       // date2 → col 2 actual date (the ONLY date column for expense sections)
-      // fall back to k1 (budget) if actual (k2) is empty
       if (row.date2) {
         var amt2 = parseAmt(row[cfg.k2]) || parseAmt(row[cfg.k1]) || 0;
-        // avoid double-counting if both dates are the same
         if (row.date2 !== row.date) {
-          addEntry(row.date2, label, sec, amt2);
+          addEntry(row.date2, label, sec, amt2, row.exempt);
         }
       }
     });
@@ -13993,7 +13990,7 @@ function renderCalendar() {
 
   // Month total
   var monthTotal = 0;
-  Object.values(spendMap).forEach(function(entries) { entries.forEach(function(e) { monthTotal += e.amount; }); });
+  Object.values(spendMap).forEach(function(entries) { entries.forEach(function(e) { if (!e.exempt) monthTotal += e.amount; }); });
   var totalEl = document.getElementById('cal-month-total-amt');
   if (totalEl) totalEl.textContent = '$' + monthTotal.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
 
@@ -14037,7 +14034,7 @@ function renderCalendar() {
       } else {
         var ds = _calYear + '-' + String(_calMonth+1).padStart(2,'0') + '-' + String(dayNum).padStart(2,'0');
         var entries = spendMap[ds] || [];
-        var dayTotal = entries.reduce(function(t,e) { return t + e.amount; }, 0);
+        var dayTotal = entries.reduce(function(t,e) { return e.exempt ? t : t + e.amount; }, 0);
         weekTotal += dayTotal;
         cell.className = 'cal-day' + (ds === todayStr ? ' today' : '') + (dayTotal !== 0 ? ' has-spend' : '');
         cell.dataset.datekey = ds;
@@ -14087,7 +14084,8 @@ function showCalPopover(e, dateStr, entries) {
     var labelEl = document.createElement('div'); labelEl.className = 'cal-popover-label'; labelEl.textContent = entry.label;
     var secEl = document.createElement('div'); secEl.className = 'cal-popover-section'; secEl.textContent = entry.section;
     var amtEl = document.createElement('div'); amtEl.className = 'cal-popover-amt';
-    amtEl.textContent = '$' + entry.amount.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+    amtEl.textContent = entry.exempt ? 'exempt' : '$' + entry.amount.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+    if (entry.exempt) amtEl.style.color = 'var(--steel)';
     row.appendChild(labelEl); row.appendChild(secEl); row.appendChild(amtEl);
     pop.appendChild(row);
   });
