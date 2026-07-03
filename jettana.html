@@ -5576,7 +5576,7 @@ function renderRowEl(section, row, animate = false) {
         onkeydown="labelKeyDown(event,this); acKeyDown(event,this,'${section}')"
         onblur="setTimeout(hideAutocomplete, 150)"
         >
-      <span class="note-indicator ${(row.note || row.alloc) ? 'has-note' : ''}" id="note-dot-${row.id}" title="Has note" onclick="event.stopPropagation();event.preventDefault();toggleNote('${section}','${row.id}')" ontouchstart="event.stopPropagation();event.preventDefault();toggleNote('${section}','${row.id}')" ontouchend="event.stopPropagation();event.preventDefault()"></span>
+      <span class="note-indicator ${(row.note || row.alloc || (row._template && row._template !== 'general')) ? 'has-note' : ''}" id="note-dot-${row.id}" title="Has note" onclick="event.stopPropagation();event.preventDefault();toggleNote('${section}','${row.id}')" ontouchstart="event.stopPropagation();event.preventDefault();toggleNote('${section}','${row.id}')" ontouchend="event.stopPropagation();event.preventDefault()"></span>
       <span class="exempt-badge" id="exempt-badge-${row.id}" title="Exempt — not included in totals">exempt</span>
 
 
@@ -7581,6 +7581,8 @@ function setSavingsTemplate(section, id, template) {
   var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
   var row = rows.find(function(r) { return r.id === id; });
   if (row) { row._template = template; saveAll(all); scheduleSave(); }
+  var dot = document.getElementById('note-dot-' + id);
+  if (dot) dot.classList.toggle('has-note', !!(template && template !== 'general') || !!(row && row.note) || !!(row && row.alloc && row.alloc.trim()));
   renderSavingsTemplateFields(section, id, template, row);
 }
 
@@ -8245,7 +8247,7 @@ function saveNote(section, id, val) {
   scheduleSave();
   // Update dot indicator
   var dot = document.getElementById('note-dot-' + id);
-  if (dot) dot.classList.toggle('has-note', val.trim().length > 0);
+  if (dot) dot.classList.toggle('has-note', val.trim().length > 0 || !!(row.alloc && row.alloc.trim()) || !!(row._template && row._template !== 'general'));
   // If textarea is expanded, grow it to fit new content
   var ta = document.getElementById('note-ta-' + id);
   if (ta && ta.classList.contains('expanded')) {
@@ -8307,7 +8309,7 @@ function toggleBulletMode(section, id) {
   saveAll(all);
   scheduleSave();
   var dot = document.getElementById('note-dot-' + id);
-  if (dot) dot.classList.toggle('has-note', ta.value.trim().length > 0);
+  if (dot) dot.classList.toggle('has-note', ta.value.trim().length > 0 || !!(row.alloc && row.alloc.trim()) || !!(row._template && row._template !== 'general'));
   ta.focus();
 }
 
@@ -8359,7 +8361,7 @@ function saveAlloc(section, id, val) {
   scheduleSave();
   // Show note dot when alloc is set
   var dot = document.getElementById('note-dot-' + id);
-  if (dot) dot.classList.toggle('has-note', !!(val.trim() || row.note));
+  if (dot) dot.classList.toggle('has-note', !!(val.trim() || row.note || (row._template && row._template !== 'general')));
 }
 
 
