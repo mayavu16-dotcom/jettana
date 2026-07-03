@@ -13942,25 +13942,30 @@ function calGetDaySpend() {
   var d   = (all[mk]) || {};
   var filter = (document.getElementById('cal-filter') || {}).value || 'all';
   var map = {};
-  var SECTIONS_ALL = ['income','savings','housing','checking','transport','debt','food','health','subscriptions','gifts','misc'];
+  var SECTIONS_ALL = ['income','savings','housing','transport','debt','food','health','subscriptions','gifts','misc'];
   SECTIONS_ALL.forEach(function(sec) {
     if (filter !== 'all' && filter !== sec) return;
     (d[sec] || []).forEach(function(row) {
       if (!row.date) return;
       var dateKey = row.date.length === 10 ? row.date : null;
       if (!dateKey) return;
-      // Only count if in this calendar month
       if (!dateKey.startsWith(mk)) return;
-      var amt = parseFloat(String(row.actual || row.received || row.k2 || '').replace(/[$,+]/g, '')) || 0;
-      // For income/savings use their actual/received col
-      if (sec === 'income')  amt = parseFloat(String(row.received || '').replace(/[$,+]/g,'')) || 0;
-      if (sec === 'savings') amt = parseFloat(String(row.actual   || '').replace(/[$,+]/g,'')) || 0;
-      // For expense sections use actual (k2 = budget col 2)
+
+      var amt = 0;
       var cfg = CONFIGS[sec];
-      if (cfg) {
-        var v = row[cfg.k2] !== undefined ? row[cfg.k2] : (row[cfg.k1] || '');
-        amt = parseFloat(String(v).replace(/[$,+]/g,'')) || 0;
+      if (!cfg) return;
+
+      if (sec === 'savings') {
+        // k1='actual' (balance), k2='gains' — use actual balance
+        amt = parseFloat(String(row[cfg.k1] || '').replace(/[$,+]/g,'')) || 0;
+      } else {
+        // Use k2 (actual/received) if filled, else fall back to k1 (budget/planned)
+        var v2 = row[cfg.k2];
+        var v1 = row[cfg.k1];
+        var useV = (v2 !== '' && v2 !== null && v2 !== undefined) ? v2 : (v1 || '');
+        amt = parseFloat(String(useV).replace(/[$,+]/g,'')) || 0;
       }
+
       if (!amt) return;
       if (!map[dateKey]) map[dateKey] = [];
       map[dateKey].push({ label: row.label || '—', section: sec, amount: amt });
