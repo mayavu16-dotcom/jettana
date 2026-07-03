@@ -2999,6 +2999,105 @@ body.font-large.text-bold .erow-label-input {
 .dark .import-preview-table th { background: #263545; }
 .dark .import-cat-select { background: #263545; border-color: #3A4A5A; color: var(--ink); }
 
+/* ── Spending Calendar ───────────────────────────────────── */
+.cal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  z-index: 99999; display: flex; align-items: center; justify-content: center;
+  padding: 16px; box-sizing: border-box;
+}
+.cal-modal {
+  background: var(--white); border-radius: var(--radius);
+  width: 100%; max-width: 560px; max-height: 90vh;
+  overflow-y: auto; font-family: 'Outfit', sans-serif;
+  box-shadow: 0 16px 56px rgba(0,0,0,0.22);
+  display: flex; flex-direction: column;
+}
+.cal-header {
+  padding: 18px 20px 14px; border-bottom: 1px solid var(--mist);
+  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+}
+.cal-header h3 { font-size: 15px; font-weight: 700; color: var(--ink); flex: 1; margin: 0; }
+.cal-nav-btn {
+  background: none; border: 1px solid var(--mist); border-radius: 6px;
+  width: 28px; height: 28px; cursor: pointer; font-size: 13px;
+  color: var(--steel); display: flex; align-items: center; justify-content: center;
+}
+.cal-nav-btn:hover { background: var(--mist-light); }
+.cal-close {
+  background: none; border: none; font-size: 20px; color: var(--steel);
+  cursor: pointer; padding: 0; line-height: 1; margin-left: 4px;
+}
+.cal-toolbar {
+  padding: 10px 20px; border-bottom: 1px solid var(--mist);
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex-shrink: 0;
+}
+.cal-filter-label { font-size: 11px; color: var(--steel); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+.cal-filter-select {
+  font-family: 'Outfit', sans-serif; font-size: 12px;
+  border: 1px solid var(--mist); border-radius: 6px; padding: 4px 8px;
+  background: var(--white); color: var(--ink); cursor: pointer;
+}
+.cal-month-total { margin-left: auto; font-size: 13px; font-weight: 700; color: var(--ink); }
+.cal-month-total span { color: var(--blush); }
+.cal-body { padding: 16px 20px 20px; }
+.cal-dow-row {
+  display: grid; grid-template-columns: repeat(7, 1fr) 72px;
+  gap: 3px; margin-bottom: 4px;
+}
+.cal-dow { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--steel); text-align: center; padding: 2px 0; }
+.cal-dow-weekly { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--steel); text-align: center; padding: 2px 0; }
+.cal-week-row { display: grid; grid-template-columns: repeat(7, 1fr) 72px; gap: 3px; margin-bottom: 3px; }
+.cal-day {
+  border: 1px solid var(--mist); border-radius: 7px; padding: 5px 6px;
+  min-height: 52px; cursor: pointer; transition: background 0.12s;
+  display: flex; flex-direction: column; gap: 2px; background: var(--white);
+}
+.cal-day:hover { background: var(--mist-light); }
+.cal-day.empty { background: transparent; border-color: transparent; cursor: default; pointer-events: none; }
+.cal-day.today { border-color: var(--sage); }
+.cal-day.has-spend { background: var(--blush-light); border-color: #E8A8A2; }
+.cal-day.has-spend:hover { background: #F5D8D5; }
+.cal-day-num { font-size: 10px; font-weight: 700; color: var(--steel); line-height: 1; }
+.cal-day.today .cal-day-num { color: var(--sage-dark); }
+.cal-day-amount { font-size: 11px; font-weight: 700; color: var(--blush); line-height: 1.2; margin-top: auto; }
+.cal-week-total {
+  border: 1px solid var(--mist); border-radius: 7px; padding: 5px 6px;
+  min-height: 52px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 2px; background: var(--mist-light);
+}
+.cal-week-total-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--steel); }
+.cal-week-total-amt { font-size: 11px; font-weight: 700; color: var(--ink); }
+.cal-popover {
+  position: fixed; z-index: 100001; background: var(--white);
+  border: 1px solid var(--mist); border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.18); padding: 12px 14px;
+  min-width: 200px; max-width: 260px; font-family: 'Outfit', sans-serif;
+}
+.cal-popover-title { font-size: 12px; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
+.cal-popover-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 4px 0; border-bottom: 0.5px solid var(--mist-light); font-size: 12px; }
+.cal-popover-row:last-child { border-bottom: none; }
+.cal-popover-label { color: var(--ink); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-popover-section { font-size: 10px; color: var(--steel); white-space: nowrap; }
+.cal-popover-amt { color: var(--blush); font-weight: 600; white-space: nowrap; }
+.cal-popover-close { position: absolute; top: 8px; right: 10px; background: none; border: none; color: var(--steel); cursor: pointer; font-size: 16px; padding: 0; line-height: 1; }
+.cal-empty-state { text-align: center; padding: 32px 20px; color: var(--steel); font-size: 13px; line-height: 1.6; }
+.dark .cal-modal { background: #182030; }
+.dark .cal-day { background: #1E2A38; border-color: #2A3A4A; }
+.dark .cal-day.has-spend { background: #2C1E1C; border-color: #6B3A35; }
+.dark .cal-day:hover { background: #263545; }
+.dark .cal-week-total { background: #263545; border-color: #2A3A4A; }
+.dark .cal-popover { background: #1E2A38; border-color: #2A3A4A; }
+.dark .cal-filter-select { background: #263545; border-color: #3A4A5A; color: var(--ink); }
+@media (max-width: 480px) {
+  .cal-body { padding: 10px 10px 16px; }
+  .cal-day { min-height: 42px; padding: 4px; }
+  .cal-day-num { font-size: 9px; }
+  .cal-day-amount { font-size: 10px; }
+  .cal-week-total { min-height: 42px; }
+  .cal-week-total-amt { font-size: 10px; }
+  .cal-dow-row, .cal-week-row { grid-template-columns: repeat(7, 1fr) 56px; }
+}
+
 /* ── Label autocomplete ──────────────────────────────────────── */
 .autocomplete-wrap {
   position: relative;
@@ -3439,6 +3538,9 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
             <div class="more-menu-title">Actions</div>
             <button class="more-menu-item" onclick="showImportModal(); hideMoreMenu()">
               <span>⬆</span> Import bank statement
+            </button>
+            <button class="more-menu-item" onclick="showCalendar(); hideMoreMenu()">
+              <span>📅</span> Spending calendar
             </button>
             <button class="more-menu-item" onclick="toggleLegendPanel(); hideMoreMenu()">
               <span>🃏</span> My Cards legend
@@ -3926,6 +4028,36 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <button class="import-btn-secondary" onclick="hideImportModal()">Cancel</button>
       <button class="import-btn-primary" id="import-confirm-btn" disabled onclick="confirmImport()">Add to tracker</button>
     </div>
+  </div>
+</div>
+
+<!-- Spending Calendar Modal -->
+<div class="cal-overlay" id="cal-overlay" style="display:none;" onclick="if(event.target===this)hideCalendar()">
+  <div class="cal-modal">
+    <div class="cal-header">
+      <button class="cal-nav-btn" onclick="calNavigate(-1)">‹</button>
+      <h3 id="cal-title">Spending Calendar</h3>
+      <button class="cal-nav-btn" onclick="calNavigate(1)">›</button>
+      <button class="cal-close" onclick="hideCalendar()">×</button>
+    </div>
+    <div class="cal-toolbar">
+      <span class="cal-filter-label">Section</span>
+      <select class="cal-filter-select" id="cal-filter" onchange="renderCalendar()">
+        <option value="all">All sections</option>
+        <option value="food">Food</option>
+        <option value="housing">Housing</option>
+        <option value="transport">Transport</option>
+        <option value="health">Health</option>
+        <option value="subscriptions">Subscriptions</option>
+        <option value="gifts">Gifts</option>
+        <option value="misc">Misc</option>
+        <option value="debt">Debt</option>
+        <option value="income">Income</option>
+        <option value="savings">Savings</option>
+      </select>
+      <div class="cal-month-total">Total: <span id="cal-month-total-amt">$0</span></div>
+    </div>
+    <div class="cal-body" id="cal-body"></div>
   </div>
 </div>
 
@@ -13771,6 +13903,199 @@ window.addEventListener('load', function() {
     }
   });
 });
+// ── Spending Calendar ─────────────────────────────────────────
+var _calYear = null;
+var _calMonth = null; // 0-indexed
+
+function showCalendar() {
+  var now = new Date();
+  _calYear  = now.getFullYear();
+  _calMonth = now.getMonth();
+  // Try to use current month key
+  if (currentMonthKey && /^\d{4}-\d{2}$/.test(currentMonthKey)) {
+    var parts = currentMonthKey.split('-');
+    _calYear  = parseInt(parts[0]);
+    _calMonth = parseInt(parts[1]) - 1;
+  }
+  var el = document.getElementById('cal-overlay');
+  if (el) el.style.display = 'flex';
+  renderCalendar();
+}
+
+function hideCalendar() {
+  var el = document.getElementById('cal-overlay');
+  if (el) el.style.display = 'none';
+  hideCalPopover();
+}
+
+function calNavigate(dir) {
+  _calMonth += dir;
+  if (_calMonth > 11) { _calMonth = 0;  _calYear++; }
+  if (_calMonth < 0)  { _calMonth = 11; _calYear--; }
+  renderCalendar();
+}
+
+function calGetDaySpend() {
+  // Returns { 'YYYY-MM-DD': [{label, section, amount}] }
+  var all = loadAll();
+  var mk  = _calYear + '-' + String(_calMonth + 1).padStart(2, '0');
+  var d   = (all[mk]) || {};
+  var filter = (document.getElementById('cal-filter') || {}).value || 'all';
+  var map = {};
+  var SECTIONS_ALL = ['income','savings','housing','checking','transport','debt','food','health','subscriptions','gifts','misc'];
+  SECTIONS_ALL.forEach(function(sec) {
+    if (filter !== 'all' && filter !== sec) return;
+    (d[sec] || []).forEach(function(row) {
+      if (!row.date) return;
+      var dateKey = row.date.length === 10 ? row.date : null;
+      if (!dateKey) return;
+      // Only count if in this calendar month
+      if (!dateKey.startsWith(mk)) return;
+      var amt = parseFloat(String(row.actual || row.received || row.k2 || '').replace(/[$,+]/g, '')) || 0;
+      // For income/savings use their actual/received col
+      if (sec === 'income')  amt = parseFloat(String(row.received || '').replace(/[$,+]/g,'')) || 0;
+      if (sec === 'savings') amt = parseFloat(String(row.actual   || '').replace(/[$,+]/g,'')) || 0;
+      // For expense sections use actual (k2 = budget col 2)
+      var cfg = CONFIGS[sec];
+      if (cfg) {
+        var v = row[cfg.k2] !== undefined ? row[cfg.k2] : (row[cfg.k1] || '');
+        amt = parseFloat(String(v).replace(/[$,+]/g,'')) || 0;
+      }
+      if (!amt) return;
+      if (!map[dateKey]) map[dateKey] = [];
+      map[dateKey].push({ label: row.label || '—', section: sec, amount: amt });
+    });
+  });
+  return map;
+}
+
+function renderCalendar() {
+  var MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var title = document.getElementById('cal-title');
+  if (title) title.textContent = MONTH_NAMES[_calMonth] + ' ' + _calYear;
+
+  var spendMap = calGetDaySpend();
+
+  // Month total
+  var monthTotal = 0;
+  Object.values(spendMap).forEach(function(entries) { entries.forEach(function(e) { monthTotal += e.amount; }); });
+  var totalEl = document.getElementById('cal-month-total-amt');
+  if (totalEl) totalEl.textContent = '$' + monthTotal.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+  var body = document.getElementById('cal-body');
+  if (!body) return;
+  body.innerHTML = '';
+
+  var today = new Date();
+  var todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+
+  // Empty state
+  if (Object.keys(spendMap).length === 0) {
+    body.innerHTML = '<div class="cal-empty-state">No dated transactions this month.<br>Add dates to your rows to see them here.</div>';
+    return;
+  }
+
+  // Day-of-week header
+  var dowRow = document.createElement('div');
+  dowRow.className = 'cal-dow-row';
+  ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(function(d) {
+    var el = document.createElement('div'); el.className = 'cal-dow'; el.textContent = d; dowRow.appendChild(el);
+  });
+  var weekLabel = document.createElement('div'); weekLabel.className = 'cal-dow-weekly'; weekLabel.textContent = 'Week'; dowRow.appendChild(weekLabel);
+  body.appendChild(dowRow);
+
+  // Build weeks
+  var firstDay = new Date(_calYear, _calMonth, 1).getDay();
+  var daysInMonth = new Date(_calYear, _calMonth + 1, 0).getDate();
+  var dayNum = 1;
+  var done = false;
+
+  while (!done) {
+    var weekRow = document.createElement('div');
+    weekRow.className = 'cal-week-row';
+    var weekTotal = 0;
+
+    for (var dow = 0; dow < 7; dow++) {
+      var cell = document.createElement('div');
+      if ((dayNum === 1 && dow < firstDay) || dayNum > daysInMonth) {
+        cell.className = 'cal-day empty';
+      } else {
+        var ds = _calYear + '-' + String(_calMonth+1).padStart(2,'0') + '-' + String(dayNum).padStart(2,'0');
+        var entries = spendMap[ds] || [];
+        var dayTotal = entries.reduce(function(t,e) { return t + e.amount; }, 0);
+        weekTotal += dayTotal;
+        cell.className = 'cal-day' + (ds === todayStr ? ' today' : '') + (dayTotal > 0 ? ' has-spend' : '');
+        cell.dataset.datekey = ds;
+        var numEl = document.createElement('div'); numEl.className = 'cal-day-num'; numEl.textContent = dayNum;
+        cell.appendChild(numEl);
+        if (dayTotal > 0) {
+          var amtEl = document.createElement('div'); amtEl.className = 'cal-day-amount';
+          amtEl.textContent = '$' + dayTotal.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+          cell.appendChild(amtEl);
+          cell.addEventListener('click', (function(dateStr, ents) {
+            return function(e) { showCalPopover(e, dateStr, ents); };
+          })(ds, entries));
+        }
+        dayNum++;
+        if (dayNum > daysInMonth) done = true;
+      }
+      weekRow.appendChild(cell);
+    }
+
+    // Weekly total cell
+    var wtCell = document.createElement('div'); wtCell.className = 'cal-week-total';
+    var wtLabel = document.createElement('div'); wtLabel.className = 'cal-week-total-label'; wtLabel.textContent = 'Week';
+    var wtAmt = document.createElement('div'); wtAmt.className = 'cal-week-total-amt';
+    wtAmt.textContent = weekTotal > 0 ? '$' + weekTotal.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) : '—';
+    wtCell.appendChild(wtLabel); wtCell.appendChild(wtAmt);
+    weekRow.appendChild(wtCell);
+    body.appendChild(weekRow);
+  }
+}
+
+function showCalPopover(e, dateStr, entries) {
+  hideCalPopover();
+  var pop = document.createElement('div');
+  pop.className = 'cal-popover'; pop.id = 'cal-popover';
+  var parts = dateStr.split('-');
+  var d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+  var DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var closeBtn = document.createElement('button'); closeBtn.className = 'cal-popover-close'; closeBtn.textContent = '×'; closeBtn.onclick = hideCalPopover;
+  pop.appendChild(closeBtn);
+  var titleEl = document.createElement('div'); titleEl.className = 'cal-popover-title';
+  titleEl.textContent = DAYS[d.getDay()] + ', ' + MONTHS[d.getMonth()] + ' ' + d.getDate();
+  pop.appendChild(titleEl);
+  entries.forEach(function(entry) {
+    var row = document.createElement('div'); row.className = 'cal-popover-row';
+    var labelEl = document.createElement('div'); labelEl.className = 'cal-popover-label'; labelEl.textContent = entry.label;
+    var secEl = document.createElement('div'); secEl.className = 'cal-popover-section'; secEl.textContent = entry.section;
+    var amtEl = document.createElement('div'); amtEl.className = 'cal-popover-amt';
+    amtEl.textContent = '$' + entry.amount.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+    row.appendChild(labelEl); row.appendChild(secEl); row.appendChild(amtEl);
+    pop.appendChild(row);
+  });
+  document.body.appendChild(pop);
+  // Position near click
+  var x = e.clientX, y = e.clientY;
+  var pw = 260, ph = pop.offsetHeight || 120;
+  if (x + pw + 10 > window.innerWidth) x = x - pw - 10;
+  if (y + ph + 10 > window.innerHeight) y = y - ph;
+  pop.style.left = Math.max(8, x + 8) + 'px';
+  pop.style.top  = Math.max(8, y) + 'px';
+  setTimeout(function() { document.addEventListener('click', hideCalPopoverOutside, true); }, 50);
+}
+
+function hideCalPopoverOutside(e) {
+  var pop = document.getElementById('cal-popover');
+  if (pop && !pop.contains(e.target)) { hideCalPopover(); }
+}
+
+function hideCalPopover() {
+  var pop = document.getElementById('cal-popover');
+  if (pop) pop.remove();
+  document.removeEventListener('click', hideCalPopoverOutside, true);
+}
 
 </script>
 <!-- Auth Modal -->
