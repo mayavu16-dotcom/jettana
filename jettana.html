@@ -2918,6 +2918,50 @@ body.font-large.text-bold .erow-label-input {
 .import-status.processing { color: var(--sage-dark); }
 .import-status.error { color: var(--blush); }
 .import-row-skip { opacity: 0.4; }
+.import-bulk-bar {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  background: var(--sage-light, #EAF3EB);
+  border: 1px solid var(--sage);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.import-bulk-bar.visible { display: flex; }
+.import-bulk-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sage-dark);
+  white-space: nowrap;
+}
+.import-bulk-apply {
+  background: var(--sage);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 4px 12px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.import-bulk-apply:hover { background: var(--sage-dark); }
+.import-bulk-deselect {
+  background: none;
+  border: none;
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  color: var(--steel);
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  margin-left: auto;
+}
+.dark .import-bulk-bar { background: #1A2E1C; border-color: var(--sage); }
+.dark .import-bulk-count { color: #8FC49A; }
 .dark .import-modal { background: #1E2A38; }
 .dark .import-drop-zone:hover, .dark .import-drop-zone.drag-over { background: #263545; }
 .dark .import-preview-table th { background: #263545; }
@@ -3810,6 +3854,25 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <label style="font-size:11px;color:var(--steel);font-weight:400;cursor:pointer;">
             <input type="checkbox" id="import-select-all" checked> Select all
           </label>
+        </div>
+        <div class="import-bulk-bar" id="import-bulk-bar">
+          <span class="import-bulk-count" id="import-bulk-count">0 selected</span>
+          <select id="import-bulk-cat" class="import-cat-select" style="font-size:12px;">
+            <option value="">Move to…</option>
+            <option value="income">Income</option>
+            <option value="savings">Savings</option>
+            <option value="housing">Housing</option>
+            <option value="transport">Transport</option>
+            <option value="debt">Debt</option>
+            <option value="food">Food</option>
+            <option value="health">Health</option>
+            <option value="subscriptions">Subscriptions</option>
+            <option value="gifts">Gifts</option>
+            <option value="misc">Misc</option>
+            <option value="skip">— Skip</option>
+          </select>
+          <button class="import-bulk-apply" onclick="bulkReassign()">Apply</button>
+          <button class="import-bulk-deselect" onclick="bulkDeselect()">Deselect all</button>
         </div>
         <table class="import-preview-table" id="import-table">
           <thead>
@@ -12092,7 +12155,17 @@ function resetImportModal() {
     });
     var selectAll = document.getElementById('import-select-all');
     if (selectAll) selectAll.addEventListener('change', function() {
-      document.querySelectorAll('.import-skip-cb').forEach(function(cb) { cb.checked = selectAll.checked; });
+      document.querySelectorAll('.import-skip-cb').forEach(function(cb, i) {
+        cb.checked = selectAll.checked;
+        var idx = parseInt(cb.dataset.idx);
+        if (!isNaN(idx) && importedTransactions[idx]) {
+          importedTransactions[idx]._skip = !selectAll.checked;
+          var row = document.getElementById('import-row-' + idx);
+          if (row) row.className = selectAll.checked ? '' : 'import-row-skip';
+        }
+      });
+      updateImportCount();
+      updateBulkBar();
     });
   });
 })();
@@ -12454,6 +12527,58 @@ function toggleImportRow(idx, checked) {
   if (row) row.className = checked ? '' : 'import-row-skip';
   importedTransactions[idx]._skip = !checked;
   updateImportCount();
+  updateBulkBar();
+}
+
+function updateBulkBar() {
+  var checked = importedTransactions.filter(function(t) { return !t._skip && t.category !== 'skip'; });
+  var bar = document.getElementById('import-bulk-bar');
+  var countEl = document.getElementById('import-bulk-count');
+  if (!bar) return;
+  if (checked.length >= 2) {
+    bar.classList.add('visible');
+    countEl.textContent = checked.length + ' rows selected';
+  } else {
+    bar.classList.remove('visible');
+    document.getElementById('import-bulk-cat').value = '';
+  }
+}
+
+function bulkReassign() {
+  var cat = document.getElementById('import-bulk-cat').value;
+  if (!cat) { showToast('Pick a category first', false); return; }
+  importedTransactions.forEach(function(t, i) {
+    if (t._skip || t.category === 'skip') return;
+    t.category = cat;
+    // Update the row's category dropdown in the table
+    var sel = document.querySelector('select[data-idx="' + i + '"]');
+    if (sel) sel.value = cat;
+    // If moved to skip, grey the row out
+    var row = document.getElementById('import-row-' + i);
+    if (row) row.className = cat === 'skip' ? 'import-row-skip' : '';
+    if (cat === 'skip') {
+      var cb = document.querySelector('.import-skip-cb[data-idx="' + i + '"]');
+      if (cb) { cb.checked = false; t._skip = true; }
+    }
+  });
+  document.getElementById('import-bulk-cat').value = '';
+  updateImportCount();
+  updateBulkBar();
+  showToast('Rows updated ✓', false);
+}
+
+function bulkDeselect() {
+  importedTransactions.forEach(function(t, i) {
+    if (!t._skip && t.category !== 'skip') {
+      t._skip = true;
+      var cb = document.querySelector('.import-skip-cb[data-idx="' + i + '"]');
+      if (cb) cb.checked = false;
+      var row = document.getElementById('import-row-' + i);
+      if (row) row.className = 'import-row-skip';
+    }
+  });
+  updateImportCount();
+  updateBulkBar();
 }
 
 function updateImportCat(idx, cat) {
