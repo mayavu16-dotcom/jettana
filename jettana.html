@@ -4043,17 +4043,14 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
     <div class="cal-toolbar">
       <span class="cal-filter-label">Section</span>
       <select class="cal-filter-select" id="cal-filter" onchange="renderCalendar()">
-        <option value="all">All sections</option>
-        <option value="food">Food</option>
+        <option value="all">All expenses</option>
         <option value="housing">Housing</option>
         <option value="transport">Transport</option>
+        <option value="food">Food</option>
         <option value="health">Health</option>
         <option value="subscriptions">Subscriptions</option>
         <option value="gifts">Gifts</option>
         <option value="misc">Misc</option>
-        <option value="debt">Debt</option>
-        <option value="income">Income</option>
-        <option value="savings">Savings</option>
       </select>
       <div class="cal-month-total">Total: <span id="cal-month-total-amt">$0</span></div>
     </div>
@@ -13942,7 +13939,7 @@ function calGetDaySpend() {
   var d   = (all[mk]) || {};
   var filter = (document.getElementById('cal-filter') || {}).value || 'all';
   var map = {};
-  var SECTIONS_ALL = ['income','savings','housing','transport','debt','food','health','subscriptions','gifts','misc'];
+  var SECTIONS_ALL = ['housing','transport','food','health','subscriptions','gifts','misc'];
 
   function addEntry(dateKey, label, sec, amt) {
     if (!dateKey || dateKey.length !== 10) return;
