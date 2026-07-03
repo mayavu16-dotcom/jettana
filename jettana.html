@@ -13959,19 +13959,19 @@ function calGetDaySpend() {
     if (!cfg) return;
     (d[sec] || []).forEach(function(row) {
       var label = row.label || '—';
-      // date → col 1 amount (k1: budget/planned/actual-for-savings)
+      // date → col 1 amount (mainly income/debt/savings/checking)
       if (row.date) {
-        var amt1 = sec === 'savings'
-          ? parseAmt(row[cfg.k1])                          // savings k1='actual'
-          : parseAmt(row[cfg.k2] || '' ) || parseAmt(row[cfg.k1] || ''); // actual first, budget fallback
+        var amt1 = parseAmt(row[cfg.k2]) || parseAmt(row[cfg.k1]) || 0;
         addEntry(row.date, label, sec, amt1);
       }
-      // date2 → col 2 amount (k2: actual/received/gains)
+      // date2 → col 2 actual date (the ONLY date column for expense sections)
+      // fall back to k1 (budget) if actual (k2) is empty
       if (row.date2) {
-        var amt2 = sec === 'savings'
-          ? parseAmt(row[cfg.k1])                          // savings: still use actual balance
-          : parseAmt(row[cfg.k2] || '');
-        addEntry(row.date2, label, sec, amt2);
+        var amt2 = parseAmt(row[cfg.k2]) || parseAmt(row[cfg.k1]) || 0;
+        // avoid double-counting if both dates are the same
+        if (row.date2 !== row.date) {
+          addEntry(row.date2, label, sec, amt2);
+        }
       }
     });
   });
