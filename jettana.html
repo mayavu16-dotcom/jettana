@@ -5962,9 +5962,20 @@ function clearSection(section, btnEl) {
     enterBulkMode(section, 'color');
   };
 
-  // Order: paid → color → delete → divider → clear budget → clear actual → divider → copy
+  const optSelectMove = document.createElement('button');
+  optSelectMove.textContent = '↔ Select rows to move';
+  optSelectMove.style.cssText = 'background:none;border:none;padding:8px 12px;text-align:left;font-size:13px;color:#2A6A7A;cursor:pointer;border-radius:5px;font-family:\'Outfit\',sans-serif;';
+  optSelectMove.onmouseenter = function() { this.style.background = 'var(--mist-light)'; };
+  optSelectMove.onmouseleave = function() { this.style.background = 'none'; };
+  optSelectMove.onclick = function() {
+    pop.remove(); _secPopover = null;
+    enterBulkMode(section, 'move');
+  };
+
+  // Order: paid → color → move → delete → divider → clear budget → clear actual → divider → copy
   pop.appendChild(optSelectPaid);
   pop.appendChild(optSelectColor);
+  pop.appendChild(optSelectMove);
   pop.appendChild(optSelect);
 
   // Divider
@@ -6073,7 +6084,8 @@ function clearSection(section, btnEl) {
 // ── Bulk select ───────────────────────────────────────────────
 var _bulkSection = null;
 var _bulkSelected = new Set();
-var _bulkMode = 'delete'; // 'delete' | 'paid'
+var _bulkMode = 'delete'; // 'delete' | 'paid' | 'color' | 'move'
+var _bulkDragging = false;
 
 function enterBulkMode(section, mode) {
   if (_bulkSection && _bulkSection !== section) cancelBulk(_bulkSection);
@@ -6152,8 +6164,33 @@ function updateBulkBarButtons(section) {
       showBulkColorPicker(section);
     };
     bar.appendChild(applyColorBtn);
+  } else if (_bulkMode === 'move') {
+    var moveSections = ['income','savings','housing','checking','transport','debt','food','health','subscriptions','gifts','misc'];
+    var moveSel = document.createElement('select');
+    moveSel.id = 'bulk-move-target-' + section;
+    moveSel.style.cssText = 'font-family:\'Outfit\',sans-serif;font-size:12px;border:1px solid rgba(255,255,255,0.3);border-radius:5px;padding:3px 6px;background:rgba(255,255,255,0.1);color:white;cursor:pointer;';
+    var defaultOpt = document.createElement('option');
+    defaultOpt.value = ''; defaultOpt.textContent = 'Move to…';
+    moveSel.appendChild(defaultOpt);
+    moveSections.filter(function(s) { return s !== section; }).forEach(function(s) {
+      var opt = document.createElement('option');
+      opt.value = s;
+      opt.textContent = s.charAt(0).toUpperCase() + s.slice(1);
+      moveSel.appendChild(opt);
+    });
+    bar.appendChild(moveSel);
+
+    var moveBtn = document.createElement('button');
+    moveBtn.className = 'bulk-bar-btn';
+    moveBtn.style.cssText = 'border-color:#5BAABF;color:#5BAABF;';
+    moveBtn.textContent = '↔ Move';
+    moveBtn.onclick = function() {
+      var target = document.getElementById('bulk-move-target-' + section);
+      if (!target || !target.value) { showToast('Pick a section first', false); return; }
+      moveSelectedBulk(section, target.value);
+    };
+    bar.appendChild(moveBtn);
   } else {
-    var deleteBtn = document.createElement('button');
     deleteBtn.className = 'bulk-bar-btn danger';
     deleteBtn.textContent = 'Delete selected';
     deleteBtn.onclick = function() { deleteSelectedBulk(section); };
@@ -6206,6 +6243,34 @@ function deleteSelectedBulk(section) {
   recalc();
   renderSidebar();
   showUndoToast(n + ' row' + (n !== 1 ? 's' : '') + ' deleted');
+}
+
+function moveSelectedBulk(fromSection, toSection) {
+  if (!_bulkSelected.size || !toSection) return;
+  pushUndo('Move ' + _bulkSelected.size + ' rows to ' + toSection);
+  var all = loadAll();
+  var ids = new Set(_bulkSelected);
+  var srcRows = all[currentMonthKey][fromSection] || [];
+  var tgtRows = all[currentMonthKey][toSection] || [];
+  var moved = [];
+  all[currentMonthKey][fromSection] = srcRows.filter(function(r) {
+    if (ids.has(r.id)) { moved.push(r); return false; }
+    return true;
+  });
+  moved.forEach(function(r) { tgtRows.push(r); });
+  all[currentMonthKey][toSection] = tgtRows;
+  saveAll(all);
+  // Re-render both sections
+  [fromSection, toSection].forEach(function(s) {
+    var c = document.getElementById('rows-' + s);
+    if (!c) return;
+    c.innerHTML = '';
+    (all[currentMonthKey][s] || []).forEach(function(row) { renderRowEl(s, row, false); });
+  });
+  var n = moved.length;
+  cancelBulk(fromSection);
+  recalc();
+  showToast(n + ' row' + (n !== 1 ? 's' : '') + ' moved to ' + toSection.charAt(0).toUpperCase() + toSection.slice(1));
 }
 
 function showBulkColorPicker(section) {
@@ -7145,8 +7210,15 @@ function initEntryListDrop(container, section) {
     e.preventDefault();
     container.style.outline = '';
     if (!dragSrc || dragSrc.dataset.section === section) return;
-    const srcId = dragSrc.dataset.id;
     const srcSection = dragSrc.dataset.section;
+    // Bulk drag — move all selected rows together
+    if (_bulkDragging && _bulkSection === srcSection && _bulkSelected.size > 0) {
+      moveSelectedBulk(srcSection, section);
+      _bulkDragging = false;
+      return;
+    }
+    // Single row move
+    const srcId = dragSrc.dataset.id;
     const all = loadAll();
     const srcRows = all[currentMonthKey][srcSection];
     const tgtRows = all[currentMonthKey][section] || [];
@@ -7179,6 +7251,8 @@ function initRowDrag(div, section) {
     div.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', div.dataset.id);
+    // If this row is bulk-selected in move mode, flag a bulk drag
+    _bulkDragging = (_bulkMode === 'move' && _bulkSection === section && _bulkSelected.has(div.dataset.id));
     // Make sure parent sec-card is NOT draggable
     var card = div.closest('.sec-card');
     if (card) card.draggable = false;
@@ -7193,6 +7267,7 @@ function initRowDrag(div, section) {
   div.addEventListener('dragend', () => {
     document.querySelectorAll('.erow.drag-over').forEach(el => el.classList.remove('drag-over'));
     dragSrc = null;
+    _bulkDragging = false;
   });
   div.addEventListener('dragover', e => {
     e.preventDefault();
