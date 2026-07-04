@@ -7848,6 +7848,12 @@ function doSearch(q) {
       countEl.className = 'search-result-count';
     }
   }
+
+  // Scroll to the first match so the user can see where it is
+  if (total > 0) {
+    var firstMatch = document.querySelector('.erow.s-match');
+    if (firstMatch) firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
 }
 
 function clearSearch() {
