@@ -9919,9 +9919,6 @@ function exportCSV() {
   var all  = loadAll();
   var rows = [];
 
-  // Header row
-  rows.push(['Month', 'Category', 'Item', 'Value 1', 'Value 2', 'Paid', 'Note']);
-
   // Section display names — use live names to reflect user renames
   var SECTION_NAMES = {};
   SECTIONS.forEach(function(s) { SECTION_NAMES[s] = getSectionName(s); });
@@ -9953,11 +9950,18 @@ function exportCSV() {
     SECTIONS.forEach(function(sec) {
       var secRows = monthData[sec] || [];
       var cfg = CONFIGS[sec];
-      var colLabels = COL_LABELS[sec];
+      var colLabels = COL_LABELS[sec] || ['Col 1', 'Col 2'];
       var secName = SECTION_NAMES[sec];
 
+      // Section sub-header row so columns are self-explanatory
+      var hasData = secRows.some(function(r) { return r.label || r[cfg.k1] || r[cfg.k2]; });
+      if (!hasData) return;
+      rows.push([mLabel, secName, 'Item', colLabels[0], colLabels[1], 'Paid', 'Note']);
+
       secRows.forEach(function(row) {
-        if (!row.label && !row[cfg.k1] && !row[cfg.k2]) return; // skip empty rows
+        if (!row.label && !row[cfg.k1] && !row[cfg.k2]) return;
+        // Strip template/bullet content from note — only export manually written text
+        var note = (row.note || '').replace(/^[•☐]\s?/gm, '').trim();
         rows.push([
           mLabel,
           secName,
@@ -9965,7 +9969,7 @@ function exportCSV() {
           row[cfg.k1] || '',
           row[cfg.k2] || '',
           row.paid ? 'Yes' : 'No',
-          row.note || '',
+          note,
         ]);
       });
     });
