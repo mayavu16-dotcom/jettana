@@ -14134,16 +14134,21 @@ function generateReport() {
 
   var fmt2 = function(n) { return '$' + Math.abs(n).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); };
   var pct  = function(a, b) { return b > 0 ? Math.min(Math.round(a / b * 100), 100) : (a > 0 ? 100 : 0); };
+  // Use footer override if set, otherwise sum row budgets
+  var getBudget = function(sec, rowSum) {
+    var ov = _footerBudgetOverrides[sec];
+    return (ov !== undefined && ov !== '') ? (parseFloat(ov) || 0) : rowSum;
+  };
 
   // Totals
   var incA = sum(d.income,        'received');
-  var houB = sum(d.housing,       'budget');   var houA = sum(d.housing,       'actual');
-  var traB = sum(d.transport,     'budget');   var traA = sum(d.transport,     'actual');
-  var fooB = sum(d.food,          'budget');   var fooA = sum(d.food,          'actual');
-  var hlhB = sum(d.health,        'budget');   var hlhA = sum(d.health,        'actual');
-  var subB = sum(d.subscriptions, 'budget');   var subA = sum(d.subscriptions, 'actual');
-  var gftB = sum(d.gifts,         'budget');   var gftA = sum(d.gifts,         'actual');
-  var mscB = sum(d.misc,          'budget');   var mscA = sum(d.misc,          'actual');
+  var houB = getBudget('housing',       sum(d.housing,       'budget'));   var houA = sum(d.housing,       'actual');
+  var traB = getBudget('transport',     sum(d.transport,     'budget'));   var traA = sum(d.transport,     'actual');
+  var fooB = getBudget('food',          sum(d.food,          'budget'));   var fooA = sum(d.food,          'actual');
+  var hlhB = getBudget('health',        sum(d.health,        'budget'));   var hlhA = sum(d.health,        'actual');
+  var subB = getBudget('subscriptions', sum(d.subscriptions, 'budget'));   var subA = sum(d.subscriptions, 'actual');
+  var gftB = getBudget('gifts',         sum(d.gifts,         'budget'));   var gftA = sum(d.gifts,         'actual');
+  var mscB = getBudget('misc',          sum(d.misc,          'budget'));   var mscA = sum(d.misc,          'actual');
   var totalExpA = houA + traA + fooA + hlhA + subA + gftA + mscA;
   var totalExpB = houB + traB + fooB + hlhB + subB + gftB + mscB;
   var net = incA - totalExpA;
