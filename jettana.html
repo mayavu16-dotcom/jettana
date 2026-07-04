@@ -9922,32 +9922,23 @@ function exportCSV() {
   // Header row
   rows.push(['Month', 'Category', 'Item', 'Value 1', 'Value 2', 'Paid', 'Note']);
 
-  // Section display names
-  var SECTION_NAMES = {
-    income:    'Income',
-    savings:   'Savings & Investments',
-    housing:   'Housing & Utilities',
-    checking:  'Checking Accounts',
-    transport: 'Transportation',
-    debt:      'Debt',
-    food:      'Food & Dining',
-    health:    'Health & Wellness',
-    gifts:     'Gifts & Donations',
-    misc:      'Miscellaneous',
-  };
+  // Section display names — use live names to reflect user renames
+  var SECTION_NAMES = {};
+  SECTIONS.forEach(function(s) { SECTION_NAMES[s] = getSectionName(s); });
 
   // Column label names from CONFIGS
   var COL_LABELS = {
-    income:    ['Planned', 'Received'],
-    savings:   ['Actual', 'Growth'],
-    housing:   ['Budget', 'Actual'],
-    checking:  ['Beginning', 'Ending'],
-    transport: ['Budget', 'Actual'],
-    debt:      ['Current', 'Remaining'],
-    food:      ['Budget', 'Actual'],
-    health:    ['Budget', 'Actual'],
-    gifts:     ['Budget', 'Actual'],
-    misc:      ['Budget', 'Actual'],
+    income:        ['Planned',   'Received'],
+    savings:       ['Actual',    'Growth'],
+    housing:       ['Budget',    'Actual'],
+    checking:      ['Beginning', 'Ending'],
+    transport:     ['Budget',    'Actual'],
+    debt:          ['Current',   'Remaining'],
+    food:          ['Budget',    'Actual'],
+    health:        ['Budget',    'Actual'],
+    gifts:         ['Budget',    'Actual'],
+    misc:          ['Budget',    'Actual'],
+    subscriptions: ['Budget',    'Actual'],
   };
 
   // Get all month keys sorted oldest first
