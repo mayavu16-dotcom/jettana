@@ -3724,6 +3724,34 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
               <span>🃏</span> My Cards legend
             </button>
 
+            <!-- Learn (merged with power features) -->
+            <div class="more-divider"></div>
+            <div class="more-menu-title">Learn</div>
+            <button class="more-menu-item" onclick="showAbout(); hideMoreMenu()">
+              <span>💚</span> About Jettana
+            </button>
+            <button class="more-menu-item" onclick="showWelcome(); hideMoreMenu()">
+              <span>👋</span> Getting started
+            </button>
+            <button class="more-menu-item" onclick="loadDemo(); hideMoreMenu()">
+              <span>▶</span> Try demo
+            </button>
+            <button class="more-menu-item" onclick="showChecklist(); hideMoreMenu()">
+              <span>✅</span> Setup checklist
+            </button>
+            <button class="more-menu-item" onclick="showFeatures(); hideMoreMenu()">
+              <span>✦</span> Features
+            </button>
+            <button class="more-menu-item" id="shortcuts-menu-item" onclick="showShortcuts(); hideMoreMenu()" style="display:none;">
+              <span>⌨</span> Keyboard shortcuts
+            </button>
+            <button class="more-menu-item" id="restart-tour-btn" onclick="startTour(); hideMoreMenu()" style="display:none;">
+              <span>🗺</span> Restart tour
+            </button>
+            <button class="more-menu-item" id="restart-personalize-tour-btn" onclick="startPersonalizeTour(); hideMoreMenu()" style="display:none;">
+              <span>🎨</span> Personalize tour
+            </button>
+
             <!-- Import / Export -->
             <div class="more-divider"></div>
             <div class="more-menu-title">Import / Export</div>
@@ -3754,42 +3782,6 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
             <button class="more-menu-item" onclick="showTrends(); hideMoreMenu()">
               <span>📊</span> Spending trends
             </button>
-
-            <!-- Learn -->
-            <div class="more-divider"></div>
-            <div class="more-menu-title">Learn</div>
-            <button class="more-menu-item" onclick="showAbout(); hideMoreMenu()">
-              <span>💚</span> About Jettana
-            </button>
-            <button class="more-menu-item" onclick="showWelcome(); hideMoreMenu()">
-              <span>👋</span> Getting started
-            </button>
-            <button class="more-menu-item" onclick="loadDemo(); hideMoreMenu()">
-              <span>▶</span> Try demo
-            </button>
-            <button class="more-menu-item" id="restart-tour-btn" onclick="startTour(); hideMoreMenu()" style="display:none;">
-              <span>🗺</span> Restart tour
-            </button>
-            <button class="more-menu-item" id="restart-personalize-tour-btn" onclick="startPersonalizeTour(); hideMoreMenu()" style="display:none;">
-              <span>🎨</span> Personalize tour
-            </button>
-
-            <!-- Power features -->
-            <div class="more-divider"></div>
-            <button class="more-menu-item" id="more-expand-btn" onclick="toggleMoreExpand()" style="color:var(--steel);">
-              <span>⚡</span> <span id="more-expand-label">Power features</span>
-            </button>
-            <div id="more-expanded" style="display:none;">
-              <button class="more-menu-item" onclick="showChecklist(); hideMoreMenu()" style="padding-left:24px;">
-                <span>✅</span> Setup checklist
-              </button>
-              <button class="more-menu-item" onclick="showFeatures(); hideMoreMenu()" style="padding-left:24px;">
-                <span>✦</span> Features
-              </button>
-              <button class="more-menu-item" onclick="showShortcuts(); hideMoreMenu()" id="shortcuts-menu-item" style="padding-left:24px;">
-                <span>⌨</span> Keyboard shortcuts
-              </button>
-            </div>
 
             <!-- Account -->
             <div class="more-divider"></div>
@@ -9253,10 +9245,10 @@ window.addEventListener('resize', function() {
   var body = document.getElementById('mom-body');
   if (body) fixMomBorders(body);
 });
-// Hide keyboard shortcuts on mobile
-if ('ontouchstart' in window) {
+// Show keyboard shortcuts on desktop only
+if (!('ontouchstart' in window)) {
   var shortcutsBtn = document.getElementById('shortcuts-menu-item');
-  if (shortcutsBtn) shortcutsBtn.style.display = 'none';
+  if (shortcutsBtn) shortcutsBtn.style.display = '';
 }
 
 // ── Notes ─────────────────────────────────────────────────────
