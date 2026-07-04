@@ -3112,15 +3112,12 @@ body.font-large.text-bold .erow-label-input {
   position: fixed; z-index: 99995; border-radius: 50%;
   border: 3px solid #F0C060;
   pointer-events: none;
-  box-shadow: 0 0 0 6px rgba(240,192,96,0.25);
+  box-shadow: 0 0 0 9999px rgba(0,0,0,0.45), 0 0 0 6px rgba(240,192,96,0.3);
   animation: dguide-pulse 1.4s ease-in-out infinite;
 }
 @keyframes dguide-pulse {
-  0%,100% { box-shadow: 0 0 0 6px rgba(240,192,96,0.25); }
-  50%      { box-shadow: 0 0 0 12px rgba(240,192,96,0.08); }
-}
-#dguide-canvas {
-  position: fixed; inset: 0; z-index: 99990; pointer-events: none;
+  0%,100% { box-shadow: 0 0 0 9999px rgba(0,0,0,0.45), 0 0 0 6px rgba(240,192,96,0.3); }
+  50%      { box-shadow: 0 0 0 9999px rgba(0,0,0,0.45), 0 0 0 12px rgba(240,192,96,0.1); }
 }
 .dguide-tooltip {
   position: fixed; z-index: 99996;
@@ -14480,94 +14477,59 @@ function _showDguideStep() {
 
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-  // Canvas backdrop — cuts transparent holes for each spotlit element
-  var canvas = document.createElement('canvas');
-  canvas.id = 'dguide-canvas';
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  document.body.appendChild(canvas);
-
-  // Primary ring
+  // Primary ring — box-shadow creates the spotlight
   var ring = document.createElement('div');
   ring.className = 'dguide-ring';
   ring.id = 'dguide-ring';
   document.body.appendChild(ring);
 
-  // Holes array: each entry is {el, pad}
-  var holes = [{ el: el, pad: 10 }];
-
-  function drawCanvas() {
-    var c = document.getElementById('dguide-canvas');
-    if (!c) return;
-    if (c.width !== window.innerWidth || c.height !== window.innerHeight) {
-      c.width = window.innerWidth; c.height = window.innerHeight;
-    }
-    var ctx = c.getContext('2d');
-    ctx.clearRect(0, 0, c.width, c.height);
-    ctx.fillStyle = 'rgba(0,0,0,0.45)';
-    ctx.fillRect(0, 0, c.width, c.height);
-    ctx.globalCompositeOperation = 'destination-out';
-    holes.forEach(function(h) {
-      if (!h.el) return;
-      try {
-        var r = h.el.getBoundingClientRect();
-        var pad = h.pad || 8;
-        var rx = Math.min(10, (r.height + pad * 2) / 2);
-        ctx.beginPath();
-        if (ctx.roundRect) {
-          ctx.roundRect(r.left - pad, r.top - pad, r.width + pad * 2, r.height + pad * 2, rx);
-        } else {
-          ctx.rect(r.left - pad, r.top - pad, r.width + pad * 2, r.height + pad * 2);
-        }
-        ctx.fill();
-      } catch(e) {}
-    });
-    ctx.globalCompositeOperation = 'source-over';
-  }
-
-  // Single rAF loop — tracks ring + detects popups + redraws canvas
+  // Live-track ring position so it follows layout shifts
   var tracking = true;
-  function trackAll() {
+  function trackRing() {
     if (!tracking) return;
-    var ringEl = document.getElementById('dguide-ring');
-    if (ringEl && el) {
-      var r = el.getBoundingClientRect();
-      var pad = 8;
-      ringEl.style.left        = (r.left - pad) + 'px';
-      ringEl.style.top         = (r.top  - pad) + 'px';
-      ringEl.style.width       = (r.width  + pad * 2) + 'px';
-      ringEl.style.height      = (r.height + pad * 2) + 'px';
-      ringEl.style.borderRadius = r.height > 40 ? '10px' : '50px';
-    }
-    var ctxMenu = document.getElementById('ctx-menu');
-    var popEl = document.getElementById('sec-popover')
-             || (ctxMenu && ctxMenu.style.display !== 'none' ? ctxMenu : null)
-             || document.querySelector('.bulk-bar.visible')
-             || document.querySelector('.note-wrap[style*="block"]');
-    var ring2El = document.getElementById('dguide-ring-2');
-    if (popEl) {
-      if (!ring2El) {
-        ring2El = document.createElement('div');
-        ring2El.id = 'dguide-ring-2';
-        ring2El.style.cssText = 'position:fixed;pointer-events:none;z-index:99996;border:2px solid #F0C060;border-radius:10px;';
-        document.body.appendChild(ring2El);
-        holes.push({ el: popEl, pad: 6 });
-      } else if (holes.length > 1) {
-        holes[1].el = popEl;
-      }
-      var pr = popEl.getBoundingClientRect();
-      ring2El.style.left   = (pr.left - 6) + 'px';
-      ring2El.style.top    = (pr.top  - 6) + 'px';
-      ring2El.style.width  = (pr.width  + 12) + 'px';
-      ring2El.style.height = (pr.height + 12) + 'px';
-    } else if (ring2El) {
-      ring2El.remove();
-      if (holes.length > 1) holes.splice(1);
-    }
-    drawCanvas();
-    requestAnimationFrame(trackAll);
+    var r = el.getBoundingClientRect();
+    var pad = 8;
+    ring.style.left        = (r.left - pad) + 'px';
+    ring.style.top         = (r.top  - pad) + 'px';
+    ring.style.width       = (r.width  + pad * 2) + 'px';
+    ring.style.height      = (r.height + pad * 2) + 'px';
+    ring.style.borderRadius = r.height > 40 ? '10px' : '50px';
+    requestAnimationFrame(trackRing);
   }
-  requestAnimationFrame(trackAll);
+  requestAnimationFrame(trackRing);
+
+  // Watch for popups/panels opening and add secondary ring around them
+  var _popWatcher = setInterval(function() {
+    var ctxMenu = document.getElementById('ctx-menu');
+    var pop = document.getElementById('sec-popover')
+           || (ctxMenu && ctxMenu.style.display !== 'none' ? ctxMenu : null)
+           || document.querySelector('.bulk-bar.visible')
+           || document.querySelector('.note-wrap[style*="block"]');
+    var existing = document.getElementById('dguide-ring-2');
+    if (pop && !existing) {
+      var r2 = document.createElement('div');
+      r2.id = 'dguide-ring-2';
+      r2.style.cssText = 'position:fixed;pointer-events:none;z-index:99996;border:2px solid #F0C060;border-radius:10px;';
+      document.body.appendChild(r2);
+      (function track2() {
+        var r2el = document.getElementById('dguide-ring-2');
+        var ctxEl = document.getElementById('ctx-menu');
+        var popEl = document.getElementById('sec-popover')
+                 || (ctxEl && ctxEl.style.display !== 'none' ? ctxEl : null)
+                 || document.querySelector('.bulk-bar.visible')
+                 || document.querySelector('.note-wrap[style*="block"]');
+        if (!r2el || !popEl) return;
+        var pr = popEl.getBoundingClientRect();
+        r2el.style.left   = (pr.left - 6) + 'px';
+        r2el.style.top    = (pr.top  - 6) + 'px';
+        r2el.style.width  = (pr.width  + 12) + 'px';
+        r2el.style.height = (pr.height + 12) + 'px';
+        requestAnimationFrame(track2);
+      })();
+    } else if (!pop && existing) {
+      existing.remove();
+    }
+  }, 150);
 
   // Tooltip — opposite quadrant from highlighted element
   var rect = el.getBoundingClientRect();
@@ -14594,12 +14556,12 @@ function _showDguideStep() {
     '</div>';
   document.body.appendChild(tip);
 
-  _dguideEl = { canvas: canvas, ring: ring, tip: tip, stopTracking: function() { tracking = false; } };
+  _dguideEl = { ring: ring, tip: tip, stopTracking: function() { tracking = false; clearInterval(_popWatcher); } };
 }
 
 function _clearDguide() {
   if (_dguideEl && _dguideEl.stopTracking) _dguideEl.stopTracking();
-  ['dguide-canvas','dguide-ring','dguide-ring-2','dguide-tip'].forEach(function(id) {
+  ['dguide-ring','dguide-ring-2','dguide-tip'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.remove();
   });
   _dguideEl = null;
