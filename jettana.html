@@ -3103,6 +3103,40 @@ body.font-large.text-bold .erow-label-input {
   .cal-dow-row, .cal-week-row { grid-template-columns: repeat(7, 1fr) 56px; }
 }
 
+/* ── Demo Guide ──────────────────────────────────────────── */
+.dguide-backdrop {
+  position: fixed; inset: 0; z-index: 99990;
+  background: rgba(0,0,0,0.45); pointer-events: none;
+}
+.dguide-ring {
+  position: fixed; z-index: 99995; border-radius: 50%;
+  border: 3px solid #F0C060; box-shadow: 0 0 0 4px rgba(240,192,96,0.35);
+  pointer-events: none;
+  animation: dguide-pulse 1.4s ease-in-out infinite;
+}
+@keyframes dguide-pulse {
+  0%,100% { box-shadow: 0 0 0 4px rgba(240,192,96,0.35); }
+  50%      { box-shadow: 0 0 0 10px rgba(240,192,96,0.1); }
+}
+.dguide-tooltip {
+  position: fixed; z-index: 99996;
+  background: var(--ink); color: white;
+  border-radius: 10px; padding: 12px 16px;
+  max-width: 240px; font-family: 'Outfit', sans-serif;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.3);
+}
+.dguide-tooltip::before {
+  content: ''; position: absolute;
+  border: 7px solid transparent;
+}
+.dguide-label { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+.dguide-desc  { font-size: 12px; opacity: 0.8; line-height: 1.5; margin-bottom: 12px; }
+.dguide-footer { display: flex; align-items: center; justify-content: space-between; }
+.dguide-step  { font-size: 11px; opacity: 0.55; }
+.dguide-btns  { display: flex; gap: 6px; }
+.dguide-skip  { font-size: 12px; color: rgba(255,255,255,0.55); background: none; border: none; cursor: pointer; font-family: 'Outfit',sans-serif; padding: 0; }
+.dguide-next  { font-size: 12px; font-weight: 700; color: #1A2332; background: #F0C060; border: none; border-radius: 6px; padding: 5px 14px; cursor: pointer; font-family: 'Outfit',sans-serif; }
+
 /* ── Ask Me ──────────────────────────────────────────────── */
 .askme-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.5);
@@ -3817,6 +3851,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           </div>
         </div>
         <div style="display:flex;gap:8px;flex-shrink:0;">
+          <button onclick="startDemoGuide()" style="font-size:12px;font-weight:600;color:white;background:#A07800;border:none;border-radius:6px;padding:5px 10px;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;">👆 Show me around</button>
           <button onclick="startTour()" style="font-size:12px;font-weight:600;color:white;background:#A07800;border:none;border-radius:6px;padding:5px 10px;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;">🗺 Take the tour</button>
           <button onclick="confirmDeleteDemo()" style="font-size:12px;font-weight:600;color:#A07800;background:rgba(240,192,96,0.2);border:1px solid #F0C060;border-radius:6px;padding:5px 10px;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;">Remove demo</button>
         </div>
@@ -14385,6 +14420,127 @@ window.addEventListener('load', function() {
     }
   });
 });
+// ── Demo Guide ────────────────────────────────────────────────
+var _dguideStep = 0;
+var _dguideEl = null;
+
+var DEMO_GUIDE_STEPS = [
+  {
+    target: function() { return document.querySelector('.sec-hdr .sec-more-btn, .sec-hdr [onclick*="secPop"], .sec-hdr button[title*="more"], .erow-section-more, [onclick*="showSecPopover"], .sec-more'); },
+    fallback: function() { return document.querySelector('.sec-hdr'); },
+    label: 'Section menu (⋯)',
+    desc: 'Tap the ⋯ in any section header to bulk-select rows, copy from another month, or clear values.',
+    arrow: 'bottom',
+  },
+  {
+    target: function() { return document.querySelector('.drag-handle, .erow-handle, [onclick*="showCtx"], .row-handle'); },
+    fallback: function() { return document.querySelector('.erow'); },
+    label: 'Row options (≡)',
+    desc: 'Tap the ≡ handle on any row to add notes, pick a template, change colors, or delete the row.',
+    arrow: 'bottom',
+  },
+  {
+    target: function() { return document.querySelector('#sidebar-toggle, .hamburger-btn, [onclick*="toggleSidebar"], .topbar-hamburger'); },
+    fallback: function() { return document.querySelector('.topbar-left'); },
+    label: 'Sidebar',
+    desc: 'Tap the menu icon to open the sidebar — navigate months, add a new month, or switch back to your real budget.',
+    arrow: 'top',
+  },
+  {
+    target: function() { return document.querySelector('#search-input, .search-input, input[placeholder*="Search"]'); },
+    fallback: function() { return document.querySelector('.topbar-right'); },
+    label: 'Search',
+    desc: 'Search any row by label or amount. The page scrolls straight to the first match.',
+    arrow: 'bottom',
+  },
+  {
+    target: function() { return document.querySelector('[onclick*="showAskMe"], .btn-sage'); },
+    fallback: function() { return document.querySelector('.topbar-right'); },
+    label: '💬 Ask me',
+    desc: 'Stuck on something? Tap Ask me for quick answers to common questions — card tracking, templates, importing and more.',
+    arrow: 'bottom',
+  },
+];
+
+function startDemoGuide() {
+  _dguideStep = 0;
+  _showDguideStep();
+}
+
+function _showDguideStep() {
+  _clearDguide();
+  if (_dguideStep >= DEMO_GUIDE_STEPS.length) { _clearDguide(); return; }
+  var step = DEMO_GUIDE_STEPS[_dguideStep];
+  var el = step.target() || step.fallback();
+  if (!el) { _dguideStep++; _showDguideStep(); return; }
+
+  // Backdrop
+  var backdrop = document.createElement('div');
+  backdrop.className = 'dguide-backdrop';
+  backdrop.id = 'dguide-backdrop';
+  document.body.appendChild(backdrop);
+
+  // Scroll element into view
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  setTimeout(function() {
+    var rect = el.getBoundingClientRect();
+    var pad = 8;
+
+    // Ring around element
+    var ring = document.createElement('div');
+    ring.className = 'dguide-ring';
+    ring.id = 'dguide-ring';
+    ring.style.left   = (rect.left - pad) + 'px';
+    ring.style.top    = (rect.top  - pad) + 'px';
+    ring.style.width  = (rect.width  + pad * 2) + 'px';
+    ring.style.height = (rect.height + pad * 2) + 'px';
+    ring.style.borderRadius = rect.height > 40 ? '10px' : '50px';
+    document.body.appendChild(ring);
+
+    // Tooltip
+    var tip = document.createElement('div');
+    tip.className = 'dguide-tooltip';
+    tip.id = 'dguide-tip';
+    tip.innerHTML =
+      '<div class="dguide-label">' + step.label + '</div>' +
+      '<div class="dguide-desc">'  + step.desc  + '</div>' +
+      '<div class="dguide-footer">' +
+        '<span class="dguide-step">' + (_dguideStep + 1) + ' of ' + DEMO_GUIDE_STEPS.length + '</span>' +
+        '<div class="dguide-btns">' +
+          '<button class="dguide-skip" onclick="_clearDguide()">Skip</button>' +
+          '<button class="dguide-next" onclick="_dguideStep++;_showDguideStep()">' +
+            (_dguideStep === DEMO_GUIDE_STEPS.length - 1 ? 'Done ✓' : 'Next →') +
+          '</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(tip);
+
+    // Position tooltip above or below element
+    var tipW = 240, tipH = 130;
+    var spaceBelow = window.innerHeight - rect.bottom;
+    var spaceAbove = rect.top;
+    var tipLeft = Math.max(8, Math.min(rect.left + rect.width / 2 - tipW / 2, window.innerWidth - tipW - 8));
+
+    if (spaceBelow > tipH + 20 || spaceBelow > spaceAbove) {
+      tip.style.top  = (rect.bottom + 14) + 'px';
+      tip.style.left = tipLeft + 'px';
+    } else {
+      tip.style.top  = (rect.top - tipH - 14) + 'px';
+      tip.style.left = tipLeft + 'px';
+    }
+
+    _dguideEl = { backdrop: backdrop, ring: ring, tip: tip };
+  }, 300);
+}
+
+function _clearDguide() {
+  ['dguide-backdrop','dguide-ring','dguide-tip'].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.remove();
+  });
+  _dguideEl = null;
+}
+
 // ── Ask Me ───────────────────────────────────────────────────
 function showAskMe() {
   var el = document.getElementById('askme-overlay');
