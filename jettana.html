@@ -14193,8 +14193,10 @@ function renderTrendsBreakdown(d) {
     if (!amt && d.total === 0) return;
     var pct = d.total > 0 ? Math.round(amt / d.total * 100) : 0;
     var barPct = maxSec > 0 ? (amt / maxSec * 100) : 0;
+    var secTitleEl = document.getElementById('sec-title-' + sec);
+    var secLabel = secTitleEl ? secTitleEl.textContent.trim() : getSectionName(sec);
     html += '<div class="trends-sec-row">'
-      + '<div class="trends-sec-label">' + getSectionName(sec) + '</div>'
+      + '<div class="trends-sec-label">' + secLabel + '</div>'
       + '<div class="trends-sec-bar-wrap"><div class="trends-sec-bar" style="width:' + barPct + '%;background:' + TREND_SEC_COLORS[sec] + '"></div></div>'
       + '<div class="trends-sec-amt">$' + amt.toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:2}) + '</div>'
       + '<div class="trends-sec-pct">' + pct + '%</div>'
