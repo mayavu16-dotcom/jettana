@@ -3119,7 +3119,9 @@ body.font-large.text-bold .erow-label-input {
 .trends-header {
   padding: 16px 20px; border-bottom: 1px solid var(--mist);
   display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  cursor: grab; user-select: none;
 }
+.trends-header.dragging { cursor: grabbing; }
 .trends-header h3 { font-size: 15px; font-weight: 700; color: var(--ink); flex: 1; margin: 0; }
 .trends-close {
   background: none; border: none; font-size: 20px; color: var(--steel);
@@ -4124,8 +4126,8 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
 <!-- Spending Trends Modal -->
 <div class="trends-overlay" id="trends-overlay" style="display:none;" onclick="if(event.target===this)hideTrends()">
-  <div class="trends-modal">
-    <div class="trends-header">
+  <div class="trends-modal" id="trends-modal">
+    <div class="trends-header" id="trends-header">
       <h3>📊 Spending Trends</h3>
       <button class="trends-close" onclick="hideTrends()">×</button>
     </div>
@@ -14004,7 +14006,53 @@ function showTrends() {
 function hideTrends() {
   var el = document.getElementById('trends-overlay');
   if (el) el.style.display = 'none';
+  // Reset drag state
+  var modal = document.getElementById('trends-modal');
+  if (modal) { modal.style.position = ''; modal.style.left = ''; modal.style.top = ''; modal.style.margin = ''; }
+  var overlay = document.getElementById('trends-overlay');
+  if (overlay) { overlay.style.background = ''; overlay.style.pointerEvents = ''; overlay.style.alignItems = ''; overlay.style.justifyContent = ''; }
 }
+
+(function() {
+  var dragging = false, offX = 0, offY = 0;
+  function startDrag(clientX, clientY) {
+    var modal = document.getElementById('trends-modal');
+    if (!modal) return;
+    var rect = modal.getBoundingClientRect();
+    modal.style.position = 'fixed';
+    modal.style.left = rect.left + 'px';
+    modal.style.top  = rect.top  + 'px';
+    modal.style.margin = '0';
+    var overlay = document.getElementById('trends-overlay');
+    if (overlay) { overlay.style.background = 'transparent'; overlay.style.pointerEvents = 'none'; overlay.style.alignItems = 'flex-start'; overlay.style.justifyContent = 'flex-start'; modal.style.pointerEvents = 'auto'; }
+    offX = clientX - rect.left; offY = clientY - rect.top;
+    dragging = true;
+    var hdr = document.getElementById('trends-header');
+    if (hdr) hdr.classList.add('dragging');
+  }
+  function onMove(clientX, clientY) {
+    if (!dragging) return;
+    var modal = document.getElementById('trends-modal');
+    if (!modal) return;
+    modal.style.left = Math.max(0, Math.min(clientX - offX, window.innerWidth  - modal.offsetWidth))  + 'px';
+    modal.style.top  = Math.max(0, Math.min(clientY - offY, window.innerHeight - 60)) + 'px';
+  }
+  function stopDrag() {
+    dragging = false;
+    var hdr = document.getElementById('trends-header');
+    if (hdr) hdr.classList.remove('dragging');
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    var hdr = document.getElementById('trends-header');
+    if (!hdr) return;
+    hdr.addEventListener('mousedown', function(e) { if (e.target.closest('button')) return; startDrag(e.clientX, e.clientY); e.preventDefault(); });
+    document.addEventListener('mousemove', function(e) { onMove(e.clientX, e.clientY); });
+    document.addEventListener('mouseup', stopDrag);
+    hdr.addEventListener('touchstart', function(e) { if (e.target.closest('button')) return; var t = e.touches[0]; startDrag(t.clientX, t.clientY); }, { passive: true });
+    hdr.addEventListener('touchmove', function(e) { if (!dragging) return; var t = e.touches[0]; onMove(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
+    document.addEventListener('touchend', stopDrag);
+  });
+})();
 
 function getTrendsData() {
   var all = loadAll();
@@ -14146,7 +14194,7 @@ function renderTrendsBreakdown(d) {
     var pct = d.total > 0 ? Math.round(amt / d.total * 100) : 0;
     var barPct = maxSec > 0 ? (amt / maxSec * 100) : 0;
     html += '<div class="trends-sec-row">'
-      + '<div class="trends-sec-label">' + TREND_SEC_LABELS[sec] + '</div>'
+      + '<div class="trends-sec-label">' + getSectionName(sec) + '</div>'
       + '<div class="trends-sec-bar-wrap"><div class="trends-sec-bar" style="width:' + barPct + '%;background:' + TREND_SEC_COLORS[sec] + '"></div></div>'
       + '<div class="trends-sec-amt">$' + amt.toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:2}) + '</div>'
       + '<div class="trends-sec-pct">' + pct + '%</div>'
