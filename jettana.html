@@ -14434,7 +14434,7 @@ var DEMO_GUIDE_STEPS = [
     tipSide: 'left',
   },
   {
-    target: function() { return document.querySelector('.drag-handle, .erow-handle, [onclick*="showCtx"], .row-handle'); },
+    target: function() { return document.querySelector('.drag-handle'); },
     fallback: function() { return document.querySelector('.erow'); },
     label: 'Row options (≡)',
     desc: 'Tap the ≡ handle on any row to add notes, pick a template, change colors, or delete the row.',
@@ -14513,13 +14513,13 @@ function _showDguideStep() {
 
   // Watch for any popup or resulting UI opening while this step is active
   var _popWatcher = setInterval(function() {
-    var pop = document.getElementById('sec-popover')                            // section ⋯ menu
-           || document.querySelector('.ctx-menu')                                // row ≡ context menu
-           || document.querySelector('.bulk-bar.visible')                        // after bulk action selected
-           || document.querySelector('.note-wrap[style*="block"]');              // after Add note clicked
+    var ctxMenu = document.getElementById('ctx-menu');
+    var pop = document.getElementById('sec-popover')                                              // section ⋯ menu (dynamic)
+           || (ctxMenu && ctxMenu.style.display !== 'none' ? ctxMenu : null)                     // row ≡ context menu (persistent, check visibility)
+           || document.querySelector('.bulk-bar.visible')                                          // after bulk action selected
+           || document.querySelector('.note-wrap[style*="block"]');                               // after Add note clicked
     var existing = document.getElementById('dguide-ring-2');
     if (pop && !existing) {
-      // Raise popup above the ring's box-shadow so it appears spotlit
       pop._origZ = pop.style.zIndex;
       pop.style.zIndex = '99996';
       var r2 = document.createElement('div');
@@ -14528,8 +14528,9 @@ function _showDguideStep() {
       document.body.appendChild(r2);
       (function track2() {
         var r2el = document.getElementById('dguide-ring-2');
+        var ctxEl = document.getElementById('ctx-menu');
         var popEl = document.getElementById('sec-popover')
-                 || document.querySelector('.ctx-menu')
+                 || (ctxEl && ctxEl.style.display !== 'none' ? ctxEl : null)
                  || document.querySelector('.bulk-bar.visible')
                  || document.querySelector('.note-wrap[style*="block"]');
         if (!r2el || !popEl) return;
@@ -14542,8 +14543,7 @@ function _showDguideStep() {
         requestAnimationFrame(track2);
       })();
     } else if (!pop && existing) {
-      // Restore z-index and remove ring
-      var prev = document.getElementById('sec-popover') || document.querySelector('.ctx-menu');
+      var prev = document.getElementById('sec-popover') || document.getElementById('ctx-menu');
       if (prev && prev._origZ !== undefined) prev.style.zIndex = prev._origZ;
       existing.remove();
     }
