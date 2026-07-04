@@ -4404,6 +4404,10 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       What's in this tracker
       <button class="shortcuts-close" onclick="hideFeatures()">×</button>
     </div>
+    <div style="padding:10px 16px;border-bottom:1px solid var(--mist);flex-shrink:0;">
+      <input id="features-search" type="text" placeholder="Search features…" oninput="filterFeatures(this.value)"
+        style="width:100%;box-sizing:border-box;font-family:'Outfit',sans-serif;font-size:13px;border:1px solid var(--mist);border-radius:6px;padding:7px 12px;background:var(--white);color:var(--ink);outline:none;">
+    </div>
 
     <div class="shortcuts-group">
       <div class="shortcuts-group-title">Tracking</div>
@@ -11557,6 +11561,23 @@ function showFeatures() {
 function hideFeatures() {
   var el = document.getElementById('features-overlay');
   if (el) el.style.display = 'none';
+  var s = document.getElementById('features-search');
+  if (s) { s.value = ''; filterFeatures(''); }
+}
+function filterFeatures(q) {
+  q = (q || '').trim().toLowerCase();
+  var groups = document.querySelectorAll('#features-overlay .shortcuts-group');
+  groups.forEach(function(group) {
+    var rows = group.querySelectorAll('.shortcut-row');
+    var groupHits = 0;
+    rows.forEach(function(row) {
+      var text = row.textContent.toLowerCase();
+      var match = !q || text.indexOf(q) !== -1;
+      row.style.display = match ? '' : 'none';
+      if (match) groupHits++;
+    });
+    group.style.display = groupHits > 0 ? '' : 'none';
+  });
 }
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') hideFeatures();
