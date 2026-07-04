@@ -4399,8 +4399,8 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
 <!-- Features Modal -->
 <div class="shortcuts-overlay" id="features-overlay" style="display:none;" onclick="hideFeatures()">
-  <div class="shortcuts-modal" style="width:520px;max-height:80vh;overflow-y:auto;" onclick="event.stopPropagation()">
-    <div class="shortcuts-title">
+  <div class="shortcuts-modal" id="features-modal" style="width:520px;max-height:80vh;overflow-y:auto;" onclick="event.stopPropagation()">
+    <div class="shortcuts-title" id="features-header" style="cursor:grab;user-select:none;">
       What's in this tracker
       <button class="shortcuts-close" onclick="hideFeatures()">×</button>
     </div>
@@ -11561,9 +11561,54 @@ function showFeatures() {
 function hideFeatures() {
   var el = document.getElementById('features-overlay');
   if (el) el.style.display = 'none';
+  var modal = document.getElementById('features-modal');
+  if (modal) { modal.style.position = ''; modal.style.left = ''; modal.style.top = ''; modal.style.margin = ''; }
+  var overlay = document.getElementById('features-overlay');
+  if (overlay) { overlay.style.background = ''; overlay.style.pointerEvents = ''; overlay.style.alignItems = ''; overlay.style.justifyContent = ''; }
   var s = document.getElementById('features-search');
   if (s) { s.value = ''; filterFeatures(''); }
 }
+
+(function() {
+  var dragging = false, offX = 0, offY = 0;
+  function startDrag(clientX, clientY) {
+    var modal = document.getElementById('features-modal');
+    if (!modal) return;
+    var rect = modal.getBoundingClientRect();
+    modal.style.position = 'fixed';
+    modal.style.left = rect.left + 'px';
+    modal.style.top  = rect.top  + 'px';
+    modal.style.margin = '0';
+    var overlay = document.getElementById('features-overlay');
+    if (overlay) { overlay.style.background = 'transparent'; overlay.style.pointerEvents = 'none'; overlay.style.alignItems = 'flex-start'; overlay.style.justifyContent = 'flex-start'; modal.style.pointerEvents = 'auto'; }
+    offX = clientX - rect.left; offY = clientY - rect.top;
+    dragging = true;
+    var hdr = document.getElementById('features-header');
+    if (hdr) hdr.style.cursor = 'grabbing';
+  }
+  function onMove(clientX, clientY) {
+    if (!dragging) return;
+    var modal = document.getElementById('features-modal');
+    if (!modal) return;
+    modal.style.left = Math.max(0, Math.min(clientX - offX, window.innerWidth  - modal.offsetWidth))  + 'px';
+    modal.style.top  = Math.max(0, Math.min(clientY - offY, window.innerHeight - 60)) + 'px';
+  }
+  function stopDrag() {
+    dragging = false;
+    var hdr = document.getElementById('features-header');
+    if (hdr) hdr.style.cursor = 'grab';
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    var hdr = document.getElementById('features-header');
+    if (!hdr) return;
+    hdr.addEventListener('mousedown', function(e) { if (e.target.closest('button')) return; startDrag(e.clientX, e.clientY); e.preventDefault(); });
+    document.addEventListener('mousemove', function(e) { onMove(e.clientX, e.clientY); });
+    document.addEventListener('mouseup', stopDrag);
+    hdr.addEventListener('touchstart', function(e) { if (e.target.closest('button')) return; var t = e.touches[0]; startDrag(t.clientX, t.clientY); }, { passive: true });
+    hdr.addEventListener('touchmove', function(e) { if (!dragging) return; var t = e.touches[0]; onMove(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
+    document.addEventListener('touchend', stopDrag);
+  });
+})();
 function filterFeatures(q) {
   q = (q || '').trim().toLowerCase();
   var groups = document.querySelectorAll('#features-overlay .shortcuts-group');
