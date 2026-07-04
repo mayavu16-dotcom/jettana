@@ -3103,6 +3103,60 @@ body.font-large.text-bold .erow-label-input {
   .cal-dow-row, .cal-week-row { grid-template-columns: repeat(7, 1fr) 56px; }
 }
 
+/* ── Ask Me ──────────────────────────────────────────────── */
+.askme-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  z-index: 99999; display: flex; align-items: center; justify-content: center;
+  padding: 16px; box-sizing: border-box;
+}
+.askme-modal {
+  background: var(--white); border-radius: var(--radius);
+  width: 100%; max-width: 520px; max-height: 88vh;
+  overflow: hidden; font-family: 'Outfit', sans-serif;
+  box-shadow: 0 16px 56px rgba(0,0,0,0.22);
+  display: flex; flex-direction: column;
+}
+.askme-header {
+  padding: 16px 20px; border-bottom: 1px solid var(--mist);
+  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  cursor: grab; user-select: none;
+}
+.askme-header.dragging { cursor: grabbing; }
+.askme-header h3 { font-size: 15px; font-weight: 700; color: var(--ink); flex: 1; margin: 0; }
+.askme-close { background: none; border: none; font-size: 20px; color: var(--steel); cursor: pointer; padding: 0; line-height: 1; }
+.askme-search-wrap { padding: 12px 16px; border-bottom: 1px solid var(--mist); flex-shrink: 0; }
+.askme-search {
+  width: 100%; box-sizing: border-box; font-family: 'Outfit', sans-serif;
+  font-size: 13px; border: 1px solid var(--mist); border-radius: 6px;
+  padding: 8px 12px; background: var(--white); color: var(--ink); outline: none;
+}
+.askme-search:focus { border-color: var(--sage); }
+.askme-body { overflow-y: auto; flex: 1; padding: 8px 0 16px; }
+.askme-group { margin-bottom: 4px; }
+.askme-group-title {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px;
+  color: var(--steel); padding: 10px 16px 6px;
+}
+.askme-item { border-bottom: 0.5px solid var(--mist-light); }
+.askme-q {
+  width: 100%; background: none; border: none; text-align: left;
+  padding: 11px 16px; font-family: 'Outfit', sans-serif; font-size: 13px;
+  font-weight: 600; color: var(--ink); cursor: pointer; display: flex;
+  align-items: center; justify-content: space-between; gap: 8px;
+}
+.askme-q:hover { background: var(--mist-light); }
+.askme-q-arrow { font-size: 11px; color: var(--steel); transition: transform 0.2s; flex-shrink: 0; }
+.askme-q.open .askme-q-arrow { transform: rotate(180deg); }
+.askme-a {
+  display: none; padding: 0 16px 12px 16px; font-size: 12.5px;
+  color: var(--steel); line-height: 1.65;
+}
+.askme-a.open { display: block; }
+.askme-a strong { color: var(--ink); }
+.askme-empty { text-align: center; padding: 32px 20px; color: var(--steel); font-size: 13px; }
+.dark .askme-modal { background: #182030; }
+.dark .askme-search { background: #263545; border-color: #2A3A4A; }
+
 /* ── Monthly Report ──────────────────────────────────────── */
 .report-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.5);
@@ -3710,6 +3764,9 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
               <button class="more-menu-item" onclick="showFeatures(); hideMoreMenu()" style="padding-left:24px;">
                 <span>✦</span> Features
               </button>
+              <button class="more-menu-item" onclick="showAskMe(); hideMoreMenu()" style="padding-left:24px;">
+                <span>💬</span> Ask me
+              </button>
               <button class="more-menu-item" onclick="showShortcuts(); hideMoreMenu()" id="shortcuts-menu-item" style="padding-left:24px;">
                 <span>⌨</span> Keyboard shortcuts
               </button>
@@ -4191,6 +4248,152 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <div class="cal-month-total">Total: <span id="cal-month-total-amt">$0</span></div>
     </div>
     <div class="cal-body" id="cal-body"></div>
+  </div>
+</div>
+
+<!-- Ask Me Modal -->
+<div class="askme-overlay" id="askme-overlay" style="display:none;" onclick="if(event.target===this)hideAskMe()">
+  <div class="askme-modal" id="askme-modal">
+    <div class="askme-header" id="askme-header">
+      <h3>💬 Ask me</h3>
+      <button class="askme-close" onclick="hideAskMe()">×</button>
+    </div>
+    <div class="askme-search-wrap">
+      <input class="askme-search" id="askme-search" type="text" placeholder="Search for help…" oninput="filterAskMe(this.value)">
+    </div>
+    <div class="askme-body" id="askme-body">
+
+      <div class="askme-group" data-group>
+        <div class="askme-group-title">Getting started</div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">Where do I even start?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Start with <strong>Income</strong> — add what you earn each month. Then fill in your fixed expenses like rent, subscriptions, and debt payments. Leave the Actual column blank until you've spent it. Jettana works best when you fill in budget amounts first, then track actuals as the month goes on.</div>
+        </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">What's the difference between Budget and Actual?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a"><strong>Budget</strong> is what you plan to spend. <strong>Actual</strong> is what you actually spent. Fill in Budget at the start of the month as your target, then update Actual as you go. The section total and footer bars compare the two automatically.</div>
+        </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">How do I start a new month?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Click <strong>+ New Month</strong> in the sidebar. You can copy from a previous month to carry over your recurring rows, budgets, and colors — or start fresh. Rows marked as <strong>recurring</strong> always carry over automatically.</div>
+        </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">Can I copy last month's setup?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Yes — click <strong>+ New Month</strong> and choose to copy from a previous month. It brings over all your rows, colors, recurring flags, budget overrides, and footer highlights. Actual values are not copied so you start fresh.</div>
+        </div>
+      </div>
+
+      <div class="askme-group" data-group>
+        <div class="askme-group-title">Card tracking & debt</div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">How do I track which credit card I used?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Click any expense row to open the color toolbar. Go to the <strong>Number</strong> tab and pick your card's color. Then open <strong>⋯ → My Cards</strong> to build a color legend so you remember which color = which card. Any expense with that number color will automatically count toward that card's debt balance.</div>
+        </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">How does the debt auto-calc work?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Open the note on any <strong>Debt</strong> row and tap the 🔗 Auto-calc dropdown. Link it to a card color from your legend. Jettana then sums all expense rows whose number color matches that card and fills in the <strong>Current</strong> balance automatically. When you mark an expense as paid ✓, the balance decreases.</div>
+        </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">What's the difference between Current and Remaining in Debt?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a"><strong>Current</strong> is your total balance this month — what you charged to the card plus any carried-over balance. <strong>Remaining</strong> is what's still owed after payments. When you log a payment in the Payment template, Remaining updates automatically.</div>
+        </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">How does the Checking balance work?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Set your <strong>Beginning</strong> balance in the first column. When you mark an expense as paid ✓ and that expense's number color matches your checking account's color, the <strong>Ending</strong> balance decreases automatically. You can also type in the Ending column directly to override it.</div>
+        </div>
+      </div>
+
+      <div class="askme-group" data-group>
+        <div class="askme-group-title">Templates</div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">How do I log my paycheck?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Click <strong>≡</strong> on any Income row → Add note, then select the <strong>Paycheck</strong> template. Enter your pay date, hours, rate, gross pay, taxes, and deductions. Net pay fills the Received column automatically.</div>
+        </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">How do I track my savings growth?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">The <strong>Growth</strong> column in Savings auto-calculates as the difference between this month's Actual and last month's Actual. You can also open the note on a savings row to use templates like <strong>Performance</strong> (enter account value + cost basis), <strong>Contribution</strong>, or <strong>Interest</strong>.</div>
+        </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">How do I log a debt payment?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Click <strong>≡</strong> on any Debt row → Add note → select <strong>Payment</strong>. Log the date, amount, type and interest charged. The Remaining balance updates automatically based on what you paid.</div>
+        </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">How do I track a subscription's renewal date?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Click <strong>≡</strong> on any Subscriptions row → Add note → select <strong>Manage</strong>. Set a renewal date, cancel-by deadline, and status (Active / Cancel / Renew). The status shows in color below the entry as a reminder.</div>
+        </div>
+      </div>
+
+      <div class="askme-group" data-group>
+        <div class="askme-group-title">Rows & sections</div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">How do I move a row to a different section?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">On desktop, drag the row and drop it onto another section. To move multiple rows: open <strong>⋯ → Select rows to move</strong>, select the rows you want, then drag any selected row or use the section dropdown in the bulk bar that appears.</div>
+        </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">What does "Mark as exempt" do?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Exempt rows stay visible in the tracker but their Actual value is <strong>excluded from section totals</strong>. Great for employer-paid benefits, stipends, or anything you want to document without it affecting your budget math.</div>
+        </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">How do I delete a row?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Click <strong>≡</strong> on the row → Delete row. You can also use <strong>⋯ → Select rows to delete</strong> in the section header to select and delete multiple rows at once. Most deletions are undoable — tap Undo in the toast that appears.</div>
+        </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">Can I rename a section?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Yes — double-click the section header on desktop, or long-press on mobile. You can save the rename for <strong>this month only</strong> or <strong>all months</strong>.</div>
+        </div>
+      </div>
+
+      <div class="askme-group" data-group>
+        <div class="askme-group-title">Importing & exporting</div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">How do I import my bank statement?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Go to <strong>⋯ → Import bank statement</strong>. Download your statement as a CSV from your bank's website, then drop it into the import panel. Transactions are auto-categorized. Review the table, adjust any categories, and tap <strong>Add to tracker</strong>.</div>
+        </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">How do I fix wrong categories in the import?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">In the review table, change the <strong>Category</strong> dropdown on any row individually. To fix multiple rows at once, check 2+ rows — a bulk bar appears letting you reassign all selected rows to a new category in one tap.</div>
+        </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">How do I export my data?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Click <strong>Export</strong> in the top bar. Choose <strong>Export CSV</strong> to download all months as a spreadsheet, <strong>Export PDF</strong> to print the current view, or <strong>Generate Report</strong> for a clean one-page monthly summary you can save as PDF.</div>
+        </div>
+      </div>
+
+      <div class="askme-group" data-group>
+        <div class="askme-group-title">Analytics</div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">How do I see what I spent each day?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Open <strong>⋯ → Spending Calendar</strong>. Days with spending are highlighted — tap any day to see a breakdown of transactions. Use the section filter to focus on one category, or search by transaction name. You can drag the calendar to compare it against your tracker rows.</div>
+        </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">How do I see my spending over time?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Open <strong>⋯ → Spending Trends</strong>. It shows a bar chart of your last 6 months of expenses. Tap any bar to see a category breakdown for that month with amounts and percentages.</div>
+        </div>
+      </div>
+
+      <div class="askme-empty" id="askme-empty" style="display:none;">No results found. Try a different word.</div>
+    </div>
   </div>
 </div>
 
@@ -14138,6 +14341,80 @@ window.addEventListener('load', function() {
     }
   });
 });
+// ── Ask Me ───────────────────────────────────────────────────
+function showAskMe() {
+  var el = document.getElementById('askme-overlay');
+  if (el) el.style.display = 'flex';
+}
+function hideAskMe() {
+  var el = document.getElementById('askme-overlay');
+  if (el) el.style.display = 'none';
+  var modal = document.getElementById('askme-modal');
+  if (modal) { modal.style.position = ''; modal.style.left = ''; modal.style.top = ''; modal.style.margin = ''; }
+  var overlay = document.getElementById('askme-overlay');
+  if (overlay) { overlay.style.background = ''; overlay.style.pointerEvents = ''; overlay.style.alignItems = ''; overlay.style.justifyContent = ''; }
+  var s = document.getElementById('askme-search');
+  if (s) { s.value = ''; filterAskMe(''); }
+}
+function toggleAskMe(btn) {
+  var a = btn.nextElementSibling;
+  var isOpen = a.classList.contains('open');
+  // Close all others
+  document.querySelectorAll('.askme-a.open').forEach(function(el) { el.classList.remove('open'); });
+  document.querySelectorAll('.askme-q.open').forEach(function(el) { el.classList.remove('open'); });
+  if (!isOpen) { a.classList.add('open'); btn.classList.add('open'); }
+}
+function filterAskMe(q) {
+  q = (q || '').trim().toLowerCase();
+  var groups = document.querySelectorAll('#askme-body [data-group]');
+  var totalHits = 0;
+  groups.forEach(function(group) {
+    var items = group.querySelectorAll('.askme-item');
+    var hits = 0;
+    items.forEach(function(item) {
+      var text = item.textContent.toLowerCase();
+      var match = !q || text.indexOf(q) !== -1;
+      item.style.display = match ? '' : 'none';
+      if (match) { hits++; totalHits++; }
+      // Auto-open single match
+      if (match && q) { var a = item.querySelector('.askme-a'); var btn = item.querySelector('.askme-q'); if (a) a.classList.add('open'); if (btn) btn.classList.add('open'); }
+      else if (!match) { var a = item.querySelector('.askme-a'); var btn = item.querySelector('.askme-q'); if (a) a.classList.remove('open'); if (btn) btn.classList.remove('open'); }
+    });
+    group.style.display = hits > 0 ? '' : 'none';
+  });
+  var empty = document.getElementById('askme-empty');
+  if (empty) empty.style.display = totalHits === 0 ? '' : 'none';
+}
+(function() {
+  var dragging = false, offX = 0, offY = 0;
+  function startDrag(clientX, clientY) {
+    var modal = document.getElementById('askme-modal');
+    if (!modal) return;
+    var rect = modal.getBoundingClientRect();
+    modal.style.position = 'fixed'; modal.style.left = rect.left + 'px'; modal.style.top = rect.top + 'px'; modal.style.margin = '0';
+    var overlay = document.getElementById('askme-overlay');
+    if (overlay) { overlay.style.background = 'transparent'; overlay.style.pointerEvents = 'none'; overlay.style.alignItems = 'flex-start'; overlay.style.justifyContent = 'flex-start'; modal.style.pointerEvents = 'auto'; }
+    offX = clientX - rect.left; offY = clientY - rect.top; dragging = true;
+    var hdr = document.getElementById('askme-header'); if (hdr) hdr.classList.add('dragging');
+  }
+  function onMove(clientX, clientY) {
+    if (!dragging) return;
+    var modal = document.getElementById('askme-modal'); if (!modal) return;
+    modal.style.left = Math.max(0, Math.min(clientX - offX, window.innerWidth - modal.offsetWidth)) + 'px';
+    modal.style.top  = Math.max(0, Math.min(clientY - offY, window.innerHeight - 60)) + 'px';
+  }
+  function stopDrag() { dragging = false; var hdr = document.getElementById('askme-header'); if (hdr) hdr.classList.remove('dragging'); }
+  document.addEventListener('DOMContentLoaded', function() {
+    var hdr = document.getElementById('askme-header'); if (!hdr) return;
+    hdr.addEventListener('mousedown', function(e) { if (e.target.closest('button')) return; startDrag(e.clientX, e.clientY); e.preventDefault(); });
+    document.addEventListener('mousemove', function(e) { onMove(e.clientX, e.clientY); });
+    document.addEventListener('mouseup', stopDrag);
+    hdr.addEventListener('touchstart', function(e) { if (e.target.closest('button')) return; var t = e.touches[0]; startDrag(t.clientX, t.clientY); }, { passive: true });
+    hdr.addEventListener('touchmove', function(e) { if (!dragging) return; var t = e.touches[0]; onMove(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
+    document.addEventListener('touchend', stopDrag);
+  });
+})();
+
 // ── Monthly Report ────────────────────────────────────────────
 function showReport() {
   var el = document.getElementById('report-overlay');
