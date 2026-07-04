@@ -3057,6 +3057,8 @@ body.font-large.text-bold .erow-label-input {
 .cal-day.today { border-color: var(--sage); }
 .cal-day.has-spend { background: var(--blush-light); border-color: #E8A8A2; }
 .cal-day.has-spend:hover { background: #F5D8D5; }
+.cal-day.has-exempt { border-color: var(--mist); border-style: dashed; }
+.cal-day.has-exempt:hover { background: var(--mist-light); }
 .cal-day-num { font-size: 10px; font-weight: 700; color: var(--steel); line-height: 1; }
 .cal-day.today .cal-day-num { color: var(--sage-dark); }
 .cal-day-amount { font-size: 11px; font-weight: 700; color: var(--blush); line-height: 1.2; margin-top: auto; }
@@ -14035,8 +14037,9 @@ function renderCalendar() {
         var ds = _calYear + '-' + String(_calMonth+1).padStart(2,'0') + '-' + String(dayNum).padStart(2,'0');
         var entries = spendMap[ds] || [];
         var dayTotal = entries.reduce(function(t,e) { return e.exempt ? t : t + e.amount; }, 0);
+        var hasExemptOnly = entries.length > 0 && dayTotal === 0;
         weekTotal += dayTotal;
-        cell.className = 'cal-day' + (ds === todayStr ? ' today' : '') + (dayTotal !== 0 ? ' has-spend' : '');
+        cell.className = 'cal-day' + (ds === todayStr ? ' today' : '') + (dayTotal !== 0 ? ' has-spend' : (hasExemptOnly ? ' has-exempt' : ''));
         cell.dataset.datekey = ds;
         var numEl = document.createElement('div'); numEl.className = 'cal-day-num'; numEl.textContent = dayNum;
         cell.appendChild(numEl);
@@ -14045,6 +14048,8 @@ function renderCalendar() {
           var amtEl = document.createElement('div'); amtEl.className = 'cal-day-amount';
           amtEl.textContent = '$' + displayTotal.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
           cell.appendChild(amtEl);
+        }
+        if (entries.length > 0) {
           cell.addEventListener('click', (function(dateStr, ents) {
             return function(e) { showCalPopover(e, dateStr, ents); };
           })(ds, entries));
