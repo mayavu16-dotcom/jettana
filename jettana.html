@@ -3698,22 +3698,26 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
               <span style="font-size:14px;color:var(--steel);flex-shrink:0;">A</span>
             </div>
             <div class="more-menu-section">
-              <div class="theme-picker-title" style="padding:4px 12px 6px;">Color theme</div>
-              <button class="theme-opt active" data-theme="" onclick="setTheme(this,'')">
-                <span class="theme-swatch-row"><span style="background:#6B9E70"></span><span style="background:#C0736A"></span><span style="background:#4A85A0"></span><span style="background:#7B72AA"></span></span>
-                Classic
+              <button class="more-menu-item" onclick="toggleThemeExpand()" style="color:var(--steel);padding:6px 12px;">
+                <span>🎨</span> <span id="theme-expand-label">Color theme ▾</span>
               </button>
-              <button class="theme-opt" data-theme="minimal" onclick="setTheme(this,'minimal')">
-                <span class="theme-swatch-row"><span style="background:#4A6FA5"></span><span style="background:#4A6FA5"></span><span style="background:#4A6FA5"></span><span style="background:#4A6FA5"></span></span>
-                Minimal
-              </button>
-              <button class="theme-opt" data-theme="mono" onclick="setTheme(this,'mono')">
-                <span class="theme-swatch-row"><span style="background:#2C3E50"></span><span style="background:#2C3E50"></span><span style="background:#2C3E50"></span><span style="background:#2C3E50"></span></span>
-                Monochrome
-              </button>
-              <div class="theme-custom-row">
-                <span>Custom color</span>
-                <input type="color" id="custom-color" value="#4A6FA5" oninput="setCustomTheme(this.value)">
+              <div id="theme-expanded" style="display:none;">
+                <button class="theme-opt active" data-theme="" onclick="setTheme(this,'')">
+                  <span class="theme-swatch-row"><span style="background:#6B9E70"></span><span style="background:#C0736A"></span><span style="background:#4A85A0"></span><span style="background:#7B72AA"></span></span>
+                  Classic
+                </button>
+                <button class="theme-opt" data-theme="minimal" onclick="setTheme(this,'minimal')">
+                  <span class="theme-swatch-row"><span style="background:#4A6FA5"></span><span style="background:#4A6FA5"></span><span style="background:#4A6FA5"></span><span style="background:#4A6FA5"></span></span>
+                  Minimal
+                </button>
+                <button class="theme-opt" data-theme="mono" onclick="setTheme(this,'mono')">
+                  <span class="theme-swatch-row"><span style="background:#2C3E50"></span><span style="background:#2C3E50"></span><span style="background:#2C3E50"></span><span style="background:#2C3E50"></span></span>
+                  Monochrome
+                </button>
+                <div class="theme-custom-row">
+                  <span>Custom color</span>
+                  <input type="color" id="custom-color" value="#4A6FA5" oninput="setCustomTheme(this.value)">
+                </div>
               </div>
             </div>
             <button class="more-menu-item" onclick="toggleLegendPanel(); hideMoreMenu()">
@@ -11427,6 +11431,15 @@ document.addEventListener('keydown', function(e) {
     setTimeout(initCalcDrag, 500);
   });
 })();
+
+function toggleThemeExpand() {
+  var el = document.getElementById('theme-expanded');
+  var label = document.getElementById('theme-expand-label');
+  if (!el) return;
+  var open = el.style.display === 'none';
+  el.style.display = open ? 'block' : 'none';
+  if (label) label.textContent = open ? 'Color theme ▴' : 'Color theme ▾';
+}
 
 function toggleExportExpand() {
   var el = document.getElementById('export-expanded');
