@@ -4055,6 +4055,8 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
         <option value="gifts">Gifts</option>
         <option value="misc">Misc</option>
       </select>
+      <input id="cal-search" type="text" placeholder="Search transactions…" oninput="renderCalendar()"
+        style="flex:1;min-width:0;font-family:'Outfit',sans-serif;font-size:12px;border:1px solid var(--mist);border-radius:6px;padding:4px 10px;background:var(--white);color:var(--ink);outline:none;">
       <div class="cal-month-total">Total: <span id="cal-month-total-amt">$0</span></div>
     </div>
     <div class="cal-body" id="cal-body"></div>
@@ -13925,6 +13927,8 @@ function showCalendar() {
 function hideCalendar() {
   var el = document.getElementById('cal-overlay');
   if (el) el.style.display = 'none';
+  var s = document.getElementById('cal-search');
+  if (s) s.value = '';
   hideCalPopover();
 }
 
@@ -13941,6 +13945,8 @@ function calGetDaySpend() {
   var mk  = _calYear + '-' + String(_calMonth + 1).padStart(2, '0');
   var d   = (all[mk]) || {};
   var filter = (document.getElementById('cal-filter') || {}).value || 'all';
+  var searchRaw = ((document.getElementById('cal-search') || {}).value || '').trim().toLowerCase();
+
   var map = {};
   var SECTIONS_ALL = ['housing','transport','food','health','subscriptions','gifts','misc'];
 
@@ -13967,6 +13973,8 @@ function calGetDaySpend() {
     if (!cfg) return;
     (d[sec] || []).forEach(function(row) {
       var label = row.label || '—';
+      // Skip if search term doesn't match label
+      if (searchRaw && !label.toLowerCase().includes(searchRaw)) return;
       // date → col 1 amount (mainly income/debt/savings/checking)
       if (row.date) {
         var amt1 = parseAmt(row[cfg.k2]) || parseAmt(row[cfg.k1]) || 0;
