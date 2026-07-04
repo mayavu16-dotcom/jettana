@@ -3723,6 +3723,15 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
             <button class="more-menu-item" onclick="showImportModal(); hideMoreMenu()">
               <span>⬆</span> Import bank statement
             </button>
+            <button class="more-menu-item" onclick="window.print(); hideMoreMenu()">
+              <span>⬇</span> Export PDF
+            </button>
+            <button class="more-menu-item" onclick="exportCSV(); hideMoreMenu()">
+              <span>⬇</span> Export CSV
+            </button>
+            <button class="more-menu-item" onclick="showReport(); hideMoreMenu()">
+              <span>📄</span> Generate Report
+            </button>
             <button class="more-menu-item" onclick="showCalendar(); hideMoreMenu()">
               <span>📅</span> Spending calendar
             </button>
@@ -3764,9 +3773,6 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
               <button class="more-menu-item" onclick="showFeatures(); hideMoreMenu()" style="padding-left:24px;">
                 <span>✦</span> Features
               </button>
-              <button class="more-menu-item" onclick="showAskMe(); hideMoreMenu()" style="padding-left:24px;">
-                <span>💬</span> Ask me
-              </button>
               <button class="more-menu-item" onclick="showShortcuts(); hideMoreMenu()" id="shortcuts-menu-item" style="padding-left:24px;">
                 <span>⌨</span> Keyboard shortcuts
               </button>
@@ -3784,12 +3790,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           </div>
         </div>
         <div class="export-wrap" id="export-wrap">
-          <button class="btn btn-sage" onclick="toggleExportMenu(event)">⬇ Export ▾</button>
-          <div class="export-menu" id="export-menu">
-            <button class="export-opt" onclick="window.print(); hideExportMenu()">⬇ Export PDF</button>
-            <button class="export-opt" onclick="exportCSV(); hideExportMenu()">⬇ Export CSV</button>
-            <button class="export-opt" onclick="showReport(); hideExportMenu()">📄 Generate Report</button>
-          </div>
+          <button class="btn btn-sage" onclick="showAskMe()">💬 Ask me</button>
         </div>
       </div>
     </div>
