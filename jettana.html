@@ -14008,23 +14008,28 @@ function hideTrends() {
 
 function getTrendsData() {
   var all = loadAll();
-  var monthKeys = Object.keys(all)
-    .filter(function(k) { return /^\d{4}-\d{2}$/.test(k); })
-    .sort();
-  var recent = monthKeys.slice(-6);
-  return recent.map(function(mk) {
+  // Build last 6 months from current month backwards
+  var now = new Date();
+  var months = [];
+  for (var i = 5; i >= 0; i--) {
+    var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'));
+  }
+  return months.map(function(mk) {
     var d = all[mk] || {};
     var total = 0;
     var bySection = {};
     TREND_EXPENSE_SECTIONS.forEach(function(sec) {
       var cfg = CONFIGS[sec];
       if (!cfg) return;
-      var secTotal = 0;
-      (d[sec] || []).forEach(function(row) {
-        if (row.exempt) return;
-        var v = row[cfg.k2] !== '' && row[cfg.k2] != null ? row[cfg.k2] : (row[cfg.k1] || 0);
-        secTotal += Math.abs(parseFloat(String(v).replace(/[$,+]/g,'')) || 0);
-      });
+      var secTotal = (d[sec] || []).reduce(function(t, row) {
+        if (row.exempt) return t;
+        var v = row[cfg.mainKey];
+        if (v === '' || v === null || v === undefined) return t;
+        var n = parseFloat(String(v).replace(/[$,+]/g,''));
+        if (isNaN(n)) return t;
+        return t + Math.abs(n);
+      }, 0);
       bySection[sec] = secTotal;
       total += secTotal;
     });
