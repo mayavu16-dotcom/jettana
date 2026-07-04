@@ -11129,15 +11129,24 @@ function renderTourStep() {
       nextBtn.onclick = function() { tourStep(1); };
     }
 
-    // Highlight fade-in
+    // Snap highlight instantly to new position (avoid cross-step animation jump)
     var hl = document.getElementById('tour-highlight');
-    hl.style.transition = 'all 0.3s ease, opacity 0.25s ease';
-    hl.style.opacity = '1';
+    var tt = document.getElementById('tour-tooltip');
+    hl.style.transition = 'opacity 0.25s ease';
+    tt.style.transition = 'none';
+    void hl.offsetWidth; // force reflow
 
-    // Position highlight + tooltip, and keep tracking the target on scroll/resize
+    // Position highlight + tooltip
     _tourScrollTarget = target;
     _tourScrollStep = step;
     repositionTourOverlay(target, step);
+
+    // Fade in, then re-enable smooth transitions for scroll tracking
+    hl.style.opacity = '1';
+    setTimeout(function() {
+      hl.style.transition = 'all 0.3s ease, opacity 0.25s ease';
+      tt.style.transition = 'left 0.3s ease, top 0.3s ease';
+    }, 350);
 
     // Run action
     if (step.action) {
