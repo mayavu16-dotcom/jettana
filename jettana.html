@@ -14507,9 +14507,11 @@ function _showDguideStep() {
            || document.querySelector('.note-wrap[style*="block"]');
     var existing = document.getElementById('dguide-ring-2');
     if (pop && !existing) {
-      // Lighten main spotlight so popup content is visible
+      // Raise popup above ring shadow + drop shadow so popup is fully lit
+      pop._origZ = pop.style.zIndex;
+      pop.style.zIndex = '99996';
       var mainRing = document.getElementById('dguide-ring');
-      if (mainRing) mainRing.style.boxShadow = '0 0 0 9999px rgba(0,0,0,0.18), 0 0 0 6px rgba(240,192,96,0.3)';
+      if (mainRing) mainRing.style.boxShadow = '0 0 0 9999px rgba(0,0,0,0.08), 0 0 0 6px rgba(240,192,96,0.4)';
       var r2 = document.createElement('div');
       r2.id = 'dguide-ring-2';
       r2.style.cssText = 'position:fixed;pointer-events:none;z-index:99996;border:2px solid #F0C060;border-radius:10px;';
@@ -14530,9 +14532,11 @@ function _showDguideStep() {
         requestAnimationFrame(track2);
       })();
     } else if (!pop && existing) {
-      // Restore full spotlight when popup closes
+      // Restore z-index and full spotlight
       var mainRing = document.getElementById('dguide-ring');
       if (mainRing) mainRing.style.boxShadow = '';
+      var prev = document.getElementById('sec-popover');
+      if (prev && prev._origZ !== undefined) prev.style.zIndex = prev._origZ;
       existing.remove();
     }
   }, 150);
