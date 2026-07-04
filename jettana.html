@@ -3851,7 +3851,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           </div>
         </div>
         <div style="display:flex;gap:8px;flex-shrink:0;">
-          <button onclick="startDemoGuide()" style="font-size:12px;font-weight:600;color:white;background:#A07800;border:none;border-radius:6px;padding:5px 10px;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;">👆 Show me around</button>
+          <button onclick="startDemoGuide()" style="font-size:12px;font-weight:600;color:white;background:#A07800;border:none;border-radius:6px;padding:5px 10px;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;">👇 Show me around</button>
           <button onclick="startTour()" style="font-size:12px;font-weight:600;color:white;background:#A07800;border:none;border-radius:6px;padding:5px 10px;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;">🗺 Take the tour</button>
           <button onclick="confirmDeleteDemo()" style="font-size:12px;font-weight:600;color:#A07800;background:rgba(240,192,96,0.2);border:1px solid #F0C060;border-radius:6px;padding:5px 10px;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;">Remove demo</button>
         </div>
@@ -14426,39 +14426,39 @@ var _dguideEl = null;
 
 var DEMO_GUIDE_STEPS = [
   {
-    target: function() { return document.querySelector('.sec-hdr .sec-more-btn, .sec-hdr [onclick*="secPop"], .sec-hdr button[title*="more"], .erow-section-more, [onclick*="showSecPopover"], .sec-more'); },
-    fallback: function() { return document.querySelector('.sec-hdr'); },
+    target: function() { return document.querySelector('.sec-clear-btn'); },
+    fallback: function() { return document.querySelector('.sec-hdr-right'); },
     label: 'Section menu (⋯)',
     desc: 'Tap the ⋯ in any section header to bulk-select rows, copy from another month, or clear values.',
-    arrow: 'bottom',
+    tipSide: 'left',
   },
   {
     target: function() { return document.querySelector('.drag-handle, .erow-handle, [onclick*="showCtx"], .row-handle'); },
     fallback: function() { return document.querySelector('.erow'); },
     label: 'Row options (≡)',
     desc: 'Tap the ≡ handle on any row to add notes, pick a template, change colors, or delete the row.',
-    arrow: 'bottom',
+    tipSide: 'auto',
   },
   {
-    target: function() { return document.querySelector('#sidebar-toggle, .hamburger-btn, [onclick*="toggleSidebar"], .topbar-hamburger'); },
-    fallback: function() { return document.querySelector('.topbar-left'); },
+    target: function() { return document.getElementById('hamburger-btn'); },
+    fallback: function() { return document.querySelector('.topbar-left button'); },
     label: 'Sidebar',
     desc: 'Tap the menu icon to open the sidebar — navigate months, add a new month, or switch back to your real budget.',
-    arrow: 'top',
+    tipSide: 'right',
   },
   {
     target: function() { return document.querySelector('#search-input, .search-input, input[placeholder*="Search"]'); },
     fallback: function() { return document.querySelector('.topbar-right'); },
     label: 'Search',
     desc: 'Search any row by label or amount. The page scrolls straight to the first match.',
-    arrow: 'bottom',
+    tipSide: 'auto',
   },
   {
     target: function() { return document.querySelector('[onclick*="showAskMe"], .btn-sage'); },
     fallback: function() { return document.querySelector('.topbar-right'); },
     label: '💬 Ask me',
-    desc: 'Stuck on something? Tap Ask me for quick answers to common questions — card tracking, templates, importing and more.',
-    arrow: 'bottom',
+    desc: 'Stuck on something? Tap Ask me for quick answers — card tracking, templates, importing and more.',
+    tipSide: 'auto',
   },
 ];
 
@@ -14516,19 +14516,30 @@ function _showDguideStep() {
       '</div>';
     document.body.appendChild(tip);
 
-    // Position tooltip above or below element
-    var tipW = 240, tipH = 130;
+    // Position tooltip using tipSide hint
+    var tipW = 240, tipH = 140;
+    var tipLeft, tipTop;
+    var side = step.tipSide || 'auto';
     var spaceBelow = window.innerHeight - rect.bottom;
     var spaceAbove = rect.top;
-    var tipLeft = Math.max(8, Math.min(rect.left + rect.width / 2 - tipW / 2, window.innerWidth - tipW - 8));
+    var spaceRight = window.innerWidth  - rect.right;
+    var spaceLeft  = rect.left;
 
-    if (spaceBelow > tipH + 20 || spaceBelow > spaceAbove) {
-      tip.style.top  = (rect.bottom + 14) + 'px';
-      tip.style.left = tipLeft + 'px';
+    if (side === 'left' && spaceLeft > tipW + 20) {
+      tipLeft = rect.left - tipW - 12;
+      tipTop  = Math.max(8, Math.min(rect.top + rect.height/2 - tipH/2, window.innerHeight - tipH - 8));
+    } else if (side === 'right' && spaceRight > tipW + 20) {
+      tipLeft = rect.right + 12;
+      tipTop  = Math.max(8, Math.min(rect.top + rect.height/2 - tipH/2, window.innerHeight - tipH - 8));
+    } else if (spaceBelow > tipH + 20 || spaceBelow > spaceAbove) {
+      tipTop  = rect.bottom + 14;
+      tipLeft = Math.max(8, Math.min(rect.left + rect.width/2 - tipW/2, window.innerWidth - tipW - 8));
     } else {
-      tip.style.top  = (rect.top - tipH - 14) + 'px';
-      tip.style.left = tipLeft + 'px';
+      tipTop  = rect.top - tipH - 14;
+      tipLeft = Math.max(8, Math.min(rect.left + rect.width/2 - tipW/2, window.innerWidth - tipW - 8));
     }
+    tip.style.top  = tipTop  + 'px';
+    tip.style.left = tipLeft + 'px';
 
     _dguideEl = { backdrop: backdrop, ring: ring, tip: tip };
   }, 300);
