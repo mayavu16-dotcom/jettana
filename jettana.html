@@ -10982,6 +10982,10 @@ function endTour() {
 function tourStep(dir) {
   var steps = _activeTourSteps || TOUR_STEPS;
   _tourStep = Math.max(0, Math.min(steps.length - 1, _tourStep + dir));
+  // Hide highlight and stop scroll tracking while page scrolls to next target
+  var hl = document.getElementById('tour-highlight');
+  if (hl) { hl.style.transition = 'opacity 0.15s ease'; hl.style.opacity = '0'; }
+  _tourScrollTarget = null;
   renderTourStep();
 }
 
