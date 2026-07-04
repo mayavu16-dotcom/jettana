@@ -3736,15 +3736,20 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
             <button class="more-menu-item" onclick="loadDemo(); hideMoreMenu()">
               <span>▶</span> Try demo
             </button>
-            <button class="more-menu-item" onclick="showChecklist(); hideMoreMenu()">
-              <span>✅</span> Setup checklist
+            <button class="more-menu-item" onclick="toggleReferenceExpand()" style="color:var(--steel);">
+              <span>📖</span> <span id="reference-expand-label">Reference ▾</span>
             </button>
-            <button class="more-menu-item" onclick="showFeatures(); hideMoreMenu()">
-              <span>✦</span> Features
-            </button>
-            <button class="more-menu-item" id="shortcuts-menu-item" onclick="showShortcuts(); hideMoreMenu()" style="display:none;">
-              <span>⌨</span> Keyboard shortcuts
-            </button>
+            <div id="reference-expanded" style="display:none;">
+              <button class="more-menu-item" onclick="showChecklist(); hideMoreMenu()" style="padding-left:24px;">
+                <span>✅</span> Setup checklist
+              </button>
+              <button class="more-menu-item" onclick="showFeatures(); hideMoreMenu()" style="padding-left:24px;">
+                <span>✦</span> Features
+              </button>
+              <button class="more-menu-item" id="shortcuts-menu-item" onclick="showShortcuts(); hideMoreMenu()" style="display:none;padding-left:24px;">
+                <span>⌨</span> Keyboard shortcuts
+              </button>
+            </div>
             <button class="more-menu-item" id="restart-tour-btn" onclick="startTour(); hideMoreMenu()" style="display:none;">
               <span>🗺</span> Restart tour
             </button>
@@ -11424,6 +11429,15 @@ document.addEventListener('keydown', function(e) {
   });
 })();
 
+function toggleReferenceExpand() {
+  var el = document.getElementById('reference-expanded');
+  var label = document.getElementById('reference-expand-label');
+  if (!el) return;
+  var open = el.style.display === 'none';
+  el.style.display = open ? 'block' : 'none';
+  if (label) label.textContent = open ? 'Reference ▴' : 'Reference ▾';
+}
+
 function toggleThemeExpand() {
   var el = document.getElementById('theme-expanded');
   var label = document.getElementById('theme-expand-label');
@@ -11698,11 +11712,17 @@ function _runLoadDemo() {
   ];
   savingsRows.forEach(function(d) { addRow('savings', d, false); });
 
+  // Build date strings for this month so spending calendar shows demo data
+  var demoNow = new Date();
+  var demoY   = demoNow.getFullYear();
+  var demoM   = String(demoNow.getMonth() + 1).padStart(2, '0');
+  var dd = function(day) { return demoY + '-' + demoM + '-' + String(day).padStart(2, '0'); };
+
   // Housing — Discover charges (orange numbers)
   var housingRows = [
-    { label: 'Rent',               budget: 1500, actual: 1500, numColor: DISCOVER_COLOR },
-    { label: 'Electric',           budget: 80,   actual: 67,   numColor: DISCOVER_COLOR },
-    { label: 'Internet',           budget: 60,   actual: 60,   numColor: DISCOVER_COLOR },
+    { label: 'Rent',               budget: 1500, actual: 1500, numColor: DISCOVER_COLOR, date2: dd(1)  },
+    { label: 'Electric',           budget: 80,   actual: 67,   numColor: DISCOVER_COLOR, date2: dd(5)  },
+    { label: 'Internet',           budget: 60,   actual: 60,   numColor: DISCOVER_COLOR, date2: dd(5)  },
   ];
   housingRows.forEach(function(d) { addRow('housing', d, false); });
 
@@ -11714,23 +11734,23 @@ function _runLoadDemo() {
 
   // Transport — mix of cards
   var transportRows = [
-    { label: 'Car Insurance',      budget: 120, actual: 120, numColor: DISCOVER_COLOR },
-    { label: 'Gas — Shell',        budget: 80,  actual: 54,  numColor: BMO_COLOR      },
+    { label: 'Car Insurance',      budget: 120, actual: 120, numColor: DISCOVER_COLOR, date2: dd(3)  },
+    { label: 'Gas — Shell',        budget: 80,  actual: 54,  numColor: BMO_COLOR,      date2: dd(14) },
   ];
   transportRows.forEach(function(d) { addRow('transport', d, false); });
 
   // Food
   var foodRows = [
-    { label: "Trader Joe's",       budget: 200, actual: 178, numColor: DISCOVER_COLOR },
-    { label: 'Chipotle',           budget: 40,  actual: 23,  numColor: DISCOVER_COLOR },
-    { label: 'Poke Bowl',          budget: 30,  actual: 31,  numColor: BMO_COLOR      },
+    { label: "Trader Joe's",       budget: 200, actual: 178, numColor: DISCOVER_COLOR, date2: dd(7)  },
+    { label: 'Chipotle',           budget: 40,  actual: 23,  numColor: DISCOVER_COLOR, date2: dd(15) },
+    { label: 'Poke Bowl',          budget: 30,  actual: 31,  numColor: BMO_COLOR,      date2: dd(20) },
   ];
   foodRows.forEach(function(d) { addRow('food', d, false); });
 
   // Subscriptions
   var subRows = [
-    { label: 'Netflix',            budget: 18, actual: 18, numColor: DISCOVER_COLOR },
-    { label: 'Spotify',            budget: 11, actual: 11, numColor: BMO_COLOR      },
+    { label: 'Netflix',            budget: 18, actual: 18, numColor: DISCOVER_COLOR, date2: dd(1) },
+    { label: 'Spotify',            budget: 11, actual: 11, numColor: BMO_COLOR,      date2: dd(1) },
   ];
   subRows.forEach(function(d) { addRow('subscriptions', d, false); });
 
@@ -14952,7 +14972,8 @@ function calGetDaySpend() {
   // Returns { 'YYYY-MM-DD': [{label, section, amount}] }
   var all = loadAll();
   var mk  = _calYear + '-' + String(_calMonth + 1).padStart(2, '0');
-  var d   = (all[mk]) || {};
+  // When demo month is active, read its data (dates were set to current month)
+  var d   = (currentMonthKey === 'demo-month' ? all['demo-month'] : all[mk]) || {};
   var filter = (document.getElementById('cal-filter') || {}).value || 'all';
   var searchRaw = ((document.getElementById('cal-search') || {}).value || '').trim().toLowerCase();
 
