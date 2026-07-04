@@ -14516,9 +14516,12 @@ function _showDguideStep() {
     var pop = window._secPopover || document.querySelector('.ctx-menu, .more-menu[style*="block"], .sec-pop');
     var existing = document.getElementById('dguide-ring-2');
     if (pop && !existing) {
+      // Raise popup above the shadow so it appears spotlit
+      pop._origZ = pop.style.zIndex;
+      pop.style.zIndex = '99996';
       var r2 = document.createElement('div');
       r2.id = 'dguide-ring-2';
-      r2.style.cssText = 'position:fixed;pointer-events:none;z-index:99994;border:2px solid #F0C060;border-radius:10px;opacity:0.8;transition:all 0.15s;';
+      r2.style.cssText = 'position:fixed;pointer-events:none;z-index:99997;border:2px solid #F0C060;border-radius:10px;transition:all 0.1s;';
       document.body.appendChild(r2);
       (function track2() {
         var r2el = document.getElementById('dguide-ring-2');
