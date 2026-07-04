@@ -3103,6 +3103,73 @@ body.font-large.text-bold .erow-label-input {
   .cal-dow-row, .cal-week-row { grid-template-columns: repeat(7, 1fr) 56px; }
 }
 
+/* ── Monthly Report ──────────────────────────────────────── */
+.report-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  z-index: 99999; display: flex; align-items: center; justify-content: center;
+  padding: 16px; box-sizing: border-box;
+}
+.report-modal {
+  background: #fff; border-radius: 14px; width: 100%; max-width: 560px;
+  max-height: 90vh; overflow-y: auto; font-family: 'Outfit', sans-serif;
+  box-shadow: 0 16px 56px rgba(0,0,0,0.22);
+}
+.report-header {
+  background: var(--ink); color: white; padding: 24px 28px 20px;
+  border-radius: 14px 14px 0 0;
+}
+.report-brand { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.6; margin-bottom: 4px; }
+.report-month { font-size: 22px; font-weight: 700; margin: 0 0 6px; }
+.report-intention { font-size: 12px; opacity: 0.75; font-style: italic; }
+.report-net-row {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+  background: var(--mist-light); border-bottom: 1px solid var(--mist);
+}
+.report-net-cell { padding: 16px 20px; background: white; }
+.report-net-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--steel); margin-bottom: 4px; }
+.report-net-val { font-size: 18px; font-weight: 700; }
+.report-net-val.income { color: var(--sage-dark); }
+.report-net-val.expense { color: var(--blush); }
+.report-net-val.net.positive { color: var(--sage-dark); }
+.report-net-val.net.negative { color: var(--blush); }
+.report-body { padding: 20px 28px; }
+.report-section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--steel); margin: 0 0 12px; }
+.report-sec-row { display: grid; grid-template-columns: 110px 1fr 70px 70px; gap: 8px; align-items: center; margin-bottom: 10px; }
+.report-sec-name { font-size: 12px; color: var(--ink); font-weight: 500; }
+.report-sec-bar-wrap { height: 6px; background: var(--mist-light); border-radius: 3px; overflow: hidden; }
+.report-sec-bar { height: 100%; border-radius: 3px; }
+.report-sec-bar.ok { background: var(--sage); }
+.report-sec-bar.over { background: var(--blush); }
+.report-sec-bar.no-budget { background: var(--mist); }
+.report-sec-actual { font-size: 11px; font-weight: 700; color: var(--ink); text-align: right; }
+.report-sec-budget { font-size: 10px; color: var(--steel); text-align: right; }
+.report-divider { border: none; border-top: 1px solid var(--mist); margin: 16px 0; }
+.report-insights { background: var(--mist-light); border-radius: 8px; padding: 14px 16px; margin-bottom: 16px; }
+.report-insights-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--steel); margin-bottom: 8px; }
+.report-insight { font-size: 12px; color: var(--ink); padding: 3px 0; line-height: 1.5; }
+.report-insight::before { content: '→ '; color: var(--sage); font-weight: 700; }
+.report-footer { font-size: 10px; color: var(--steel); text-align: center; padding: 0 0 20px; }
+.report-actions { display: flex; gap: 10px; padding: 16px 28px; border-top: 1px solid var(--mist); }
+.report-print-btn { flex: 1; background: var(--ink); color: white; border: none; border-radius: 8px; padding: 11px; font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
+.report-print-btn:hover { background: #2A3545; }
+.report-close-btn { background: none; border: 1px solid var(--mist); border-radius: 8px; padding: 11px 18px; font-family: 'Outfit', sans-serif; font-size: 13px; color: var(--steel); cursor: pointer; }
+@media (max-width: 480px) {
+  .report-sec-row { grid-template-columns: 90px 1fr 60px 54px; }
+  .report-net-val { font-size: 15px; }
+  .report-body { padding: 16px 16px; }
+  .report-header { padding: 20px 16px 16px; }
+  .report-actions { padding: 12px 16px; }
+}
+@media print {
+  body > *:not(#report-overlay) { display: none !important; }
+  #report-overlay {
+    position: static !important; background: none !important;
+    padding: 0 !important; display: block !important;
+  }
+  .report-modal { max-height: none !important; box-shadow: none !important; border-radius: 0 !important; }
+  .report-actions { display: none !important; }
+}
+
 /* ── Spending Trends ─────────────────────────────────────── */
 .trends-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.5);
@@ -3662,6 +3729,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <div class="export-menu" id="export-menu">
             <button class="export-opt" onclick="window.print(); hideExportMenu()">⬇ Export PDF</button>
             <button class="export-opt" onclick="exportCSV(); hideExportMenu()">⬇ Export CSV</button>
+            <button class="export-opt" onclick="showReport(); hideExportMenu()">📄 Generate Report</button>
           </div>
         </div>
       </div>
@@ -4121,6 +4189,17 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <div class="cal-month-total">Total: <span id="cal-month-total-amt">$0</span></div>
     </div>
     <div class="cal-body" id="cal-body"></div>
+  </div>
+</div>
+
+<!-- Monthly Report Modal -->
+<div class="report-overlay" id="report-overlay" style="display:none;">
+  <div class="report-modal" id="report-modal">
+    <div id="report-content"></div>
+    <div class="report-actions">
+      <button class="report-print-btn" onclick="window.print()">🖨 Print / Save as PDF</button>
+      <button class="report-close-btn" onclick="closeReport()">Close</button>
+    </div>
   </div>
 </div>
 
@@ -13982,7 +14061,121 @@ window.addEventListener('load', function() {
     }
   });
 });
-// ── Spending Trends ───────────────────────────────────────────
+// ── Monthly Report ────────────────────────────────────────────
+function showReport() {
+  var el = document.getElementById('report-overlay');
+  if (el) el.style.display = 'flex';
+  generateReport();
+}
+
+function closeReport() {
+  var el = document.getElementById('report-overlay');
+  if (el) el.style.display = 'none';
+}
+
+function generateReport() {
+  var all = loadAll();
+  var d   = all[currentMonthKey] || {};
+  var el  = document.getElementById('report-content');
+  if (!el) return;
+
+  var fmt2 = function(n) { return '$' + Math.abs(n).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); };
+  var pct  = function(a, b) { return b > 0 ? Math.min(Math.round(a / b * 100), 100) : (a > 0 ? 100 : 0); };
+
+  // Totals
+  var incA = sum(d.income,        'received');
+  var houB = sum(d.housing,       'budget');   var houA = sum(d.housing,       'actual');
+  var traB = sum(d.transport,     'budget');   var traA = sum(d.transport,     'actual');
+  var fooB = sum(d.food,          'budget');   var fooA = sum(d.food,          'actual');
+  var hlhB = sum(d.health,        'budget');   var hlhA = sum(d.health,        'actual');
+  var subB = sum(d.subscriptions, 'budget');   var subA = sum(d.subscriptions, 'actual');
+  var gftB = sum(d.gifts,         'budget');   var gftA = sum(d.gifts,         'actual');
+  var mscB = sum(d.misc,          'budget');   var mscA = sum(d.misc,          'actual');
+  var totalExpA = houA + traA + fooA + hlhA + subA + gftA + mscA;
+  var totalExpB = houB + traB + fooB + hlhB + subB + gftB + mscB;
+  var net = incA - totalExpA;
+
+  // Intention
+  var intention = (d._intention || '').trim();
+
+  // Month label
+  var mLabel = monthLabel(currentMonthKey);
+
+  // Sections for breakdown
+  var EXPENSE_SECS = [
+    { sec:'housing',       budget:houB, actual:houA },
+    { sec:'transport',     budget:traB, actual:traA },
+    { sec:'food',          budget:fooB, actual:fooA },
+    { sec:'health',        budget:hlhB, actual:hlhA },
+    { sec:'subscriptions', budget:subB, actual:subA },
+    { sec:'gifts',         budget:gftB, actual:gftA },
+    { sec:'misc',          budget:mscB, actual:mscA },
+  ].filter(function(s) { return s.actual > 0 || s.budget > 0; });
+
+  // Insights
+  var insights = [];
+  var sorted = EXPENSE_SECS.slice().sort(function(a,b) { return b.actual - a.actual; });
+  if (sorted.length > 0 && sorted[0].actual > 0) {
+    insights.push(getSectionName(sorted[0].sec) + ' was your biggest expense at ' + fmt2(sorted[0].actual));
+  }
+  var overBudget = EXPENSE_SECS.filter(function(s) { return s.budget > 0 && s.actual > s.budget; });
+  var underBudget = EXPENSE_SECS.filter(function(s) { return s.budget > 0 && s.actual <= s.budget && s.actual > 0; });
+  if (overBudget.length > 0) {
+    insights.push(overBudget.map(function(s) { return getSectionName(s.sec); }).join(', ') + ' went over budget');
+  } else if (underBudget.length > 0 && totalExpB > 0) {
+    var saved = totalExpB - totalExpA;
+    if (saved > 0) insights.push('You came in ' + fmt2(saved) + ' under your total budget');
+  }
+  if (net > 0) insights.push('Net positive month — ' + fmt2(net) + ' left after expenses');
+  else if (net < 0) insights.push('Expenses exceeded income by ' + fmt2(Math.abs(net)));
+
+  // Build section rows HTML
+  var secRowsHtml = EXPENSE_SECS.map(function(s) {
+    var p = pct(s.actual, s.budget);
+    var barClass = s.budget === 0 ? 'no-budget' : (s.actual > s.budget ? 'over' : 'ok');
+    return '<div class="report-sec-row">'
+      + '<div class="report-sec-name">' + getSectionName(s.sec) + '</div>'
+      + '<div class="report-sec-bar-wrap"><div class="report-sec-bar ' + barClass + '" style="width:' + p + '%"></div></div>'
+      + '<div class="report-sec-actual">' + fmt2(s.actual) + '</div>'
+      + '<div class="report-sec-budget">' + (s.budget > 0 ? fmt2(s.budget) : '—') + '</div>'
+      + '</div>';
+  }).join('');
+
+  var insightsHtml = insights.length
+    ? '<div class="report-insights"><div class="report-insights-title">Insights</div>'
+      + insights.map(function(i) { return '<div class="report-insight">' + i + '</div>'; }).join('')
+      + '</div>'
+    : '';
+
+  var today = new Date();
+  var dateStr = today.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+
+  el.innerHTML =
+    '<div class="report-header">'
+      + '<div class="report-brand">Jettana · Monthly Report</div>'
+      + '<div class="report-month">' + mLabel + '</div>'
+      + (intention ? '<div class="report-intention">"' + intention + '"</div>' : '')
+    + '</div>'
+    + '<div class="report-net-row">'
+      + '<div class="report-net-cell"><div class="report-net-label">Income</div><div class="report-net-val income">' + fmt2(incA) + '</div></div>'
+      + '<div class="report-net-cell"><div class="report-net-label">Expenses</div><div class="report-net-val expense">' + fmt2(totalExpA) + '</div></div>'
+      + '<div class="report-net-cell"><div class="report-net-label">Net</div><div class="report-net-val net ' + (net >= 0 ? 'positive' : 'negative') + '">' + (net >= 0 ? '+' : '-') + fmt2(net) + '</div></div>'
+    + '</div>'
+    + '<div class="report-body">'
+      + '<div class="report-section-title">Expense Breakdown</div>'
+      + '<div style="display:grid;grid-template-columns:110px 1fr 70px 70px;gap:8px;margin-bottom:8px;">'
+        + '<div></div><div></div>'
+        + '<div style="font-size:10px;color:var(--steel);text-align:right;font-weight:700;">ACTUAL</div>'
+        + '<div style="font-size:10px;color:var(--steel);text-align:right;font-weight:700;">BUDGET</div>'
+      + '</div>'
+      + secRowsHtml
+      + '<hr class="report-divider">'
+      + insightsHtml
+      + '<div class="report-footer">Generated ' + dateStr + ' · jettana.app</div>'
+    + '</div>';
+}
+
+
 var _trendsData = [];
 var _trendsSelectedIdx = -1;
 
