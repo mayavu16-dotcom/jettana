@@ -3103,6 +3103,60 @@ body.font-large.text-bold .erow-label-input {
   .cal-dow-row, .cal-week-row { grid-template-columns: repeat(7, 1fr) 56px; }
 }
 
+/* ── Spending Trends ─────────────────────────────────────── */
+.trends-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  z-index: 99999; display: flex; align-items: center; justify-content: center;
+  padding: 16px; box-sizing: border-box;
+}
+.trends-modal {
+  background: var(--white); border-radius: var(--radius);
+  width: 100%; max-width: 560px; max-height: 90vh;
+  overflow-y: auto; font-family: 'Outfit', sans-serif;
+  box-shadow: 0 16px 56px rgba(0,0,0,0.22);
+  display: flex; flex-direction: column;
+}
+.trends-header {
+  padding: 16px 20px; border-bottom: 1px solid var(--mist);
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+}
+.trends-header h3 { font-size: 15px; font-weight: 700; color: var(--ink); flex: 1; margin: 0; }
+.trends-close {
+  background: none; border: none; font-size: 20px; color: var(--steel);
+  cursor: pointer; padding: 0; line-height: 1;
+}
+.trends-subtitle {
+  font-size: 11px; color: var(--steel); padding: 8px 20px;
+  border-bottom: 1px solid var(--mist); flex-shrink: 0;
+}
+.trends-chart-wrap { padding: 16px 20px 4px; }
+.trends-chart-wrap svg { width: 100%; display: block; }
+.trends-empty { text-align: center; padding: 32px 20px; color: var(--steel); font-size: 13px; }
+.trends-breakdown { padding: 12px 20px 20px; border-top: 1px solid var(--mist); }
+.trends-breakdown-title {
+  font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 12px;
+  display: flex; justify-content: space-between; align-items: baseline;
+}
+.trends-breakdown-total { font-size: 15px; color: var(--blush); }
+.trends-sec-row {
+  display: grid; grid-template-columns: 96px 1fr 80px 36px;
+  gap: 8px; align-items: center; margin-bottom: 7px;
+}
+.trends-sec-label { font-size: 11px; color: var(--steel); }
+.trends-sec-bar-wrap { height: 6px; background: var(--mist-light); border-radius: 3px; overflow: hidden; }
+.trends-sec-bar { height: 100%; border-radius: 3px; transition: width 0.35s ease; }
+.trends-sec-amt { font-size: 11px; font-weight: 700; color: var(--ink); text-align: right; }
+.trends-sec-pct { font-size: 10px; color: var(--steel); text-align: right; }
+.dark .trends-modal { background: #182030; }
+.dark .trends-breakdown { border-color: #2A3A4A; }
+.dark .trends-header { border-color: #2A3A4A; }
+.dark .trends-subtitle { border-color: #2A3A4A; }
+@media (max-width: 480px) {
+  .trends-sec-row { grid-template-columns: 76px 1fr 64px 30px; }
+  .trends-sec-label { font-size: 10px; }
+  .trends-sec-amt { font-size: 10px; }
+}
+
 /* ── Label autocomplete ──────────────────────────────────────── */
 .autocomplete-wrap {
   position: relative;
@@ -3546,6 +3600,9 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
             </button>
             <button class="more-menu-item" onclick="showCalendar(); hideMoreMenu()">
               <span>📅</span> Spending calendar
+            </button>
+            <button class="more-menu-item" onclick="showTrends(); hideMoreMenu()">
+              <span>📊</span> Spending trends
             </button>
             <button class="more-menu-item" onclick="toggleLegendPanel(); hideMoreMenu()">
               <span>🃏</span> My Cards legend
@@ -4062,6 +4119,21 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <div class="cal-month-total">Total: <span id="cal-month-total-amt">$0</span></div>
     </div>
     <div class="cal-body" id="cal-body"></div>
+  </div>
+</div>
+
+<!-- Spending Trends Modal -->
+<div class="trends-overlay" id="trends-overlay" style="display:none;" onclick="if(event.target===this)hideTrends()">
+  <div class="trends-modal">
+    <div class="trends-header">
+      <h3>📊 Spending Trends</h3>
+      <button class="trends-close" onclick="hideTrends()">×</button>
+    </div>
+    <div class="trends-subtitle">Last 6 months of expenses · tap a bar for details</div>
+    <div class="trends-chart-wrap">
+      <svg id="trends-svg" viewBox="0 0 520 200" preserveAspectRatio="xMidYMid meet" style="overflow:visible;"></svg>
+    </div>
+    <div class="trends-breakdown" id="trends-breakdown"></div>
   </div>
 </div>
 
@@ -13907,7 +13979,179 @@ window.addEventListener('load', function() {
     }
   });
 });
-// ── Spending Calendar ─────────────────────────────────────────
+// ── Spending Trends ───────────────────────────────────────────
+var _trendsData = [];
+var _trendsSelectedIdx = -1;
+
+var TREND_SEC_COLORS = {
+  housing:'#4A85A0', transport:'#A8823E', food:'#6B9E70',
+  health:'#C0736A', subscriptions:'#7B6BAA', gifts:'#C07AAA', misc:'#6B7C8F'
+};
+var TREND_SEC_LABELS = {
+  housing:'Housing', transport:'Transport', food:'Food',
+  health:'Health', subscriptions:'Subscriptions', gifts:'Gifts', misc:'Misc'
+};
+var TREND_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var TREND_MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+var TREND_EXPENSE_SECTIONS = ['housing','transport','food','health','subscriptions','gifts','misc'];
+
+function showTrends() {
+  var el = document.getElementById('trends-overlay');
+  if (el) el.style.display = 'flex';
+  renderTrendsChart();
+}
+
+function hideTrends() {
+  var el = document.getElementById('trends-overlay');
+  if (el) el.style.display = 'none';
+}
+
+function getTrendsData() {
+  var all = loadAll();
+  var monthKeys = Object.keys(all)
+    .filter(function(k) { return /^\d{4}-\d{2}$/.test(k); })
+    .sort();
+  var recent = monthKeys.slice(-6);
+  return recent.map(function(mk) {
+    var d = all[mk] || {};
+    var total = 0;
+    var bySection = {};
+    TREND_EXPENSE_SECTIONS.forEach(function(sec) {
+      var cfg = CONFIGS[sec];
+      if (!cfg) return;
+      var secTotal = 0;
+      (d[sec] || []).forEach(function(row) {
+        if (row.exempt) return;
+        var v = row[cfg.k2] !== '' && row[cfg.k2] != null ? row[cfg.k2] : (row[cfg.k1] || 0);
+        secTotal += Math.abs(parseFloat(String(v).replace(/[$,+]/g,'')) || 0);
+      });
+      bySection[sec] = secTotal;
+      total += secTotal;
+    });
+    return { mk: mk, total: total, bySection: bySection };
+  });
+}
+
+function trendsFormatShort(val) {
+  if (val >= 1000) return '$' + (val / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+  return '$' + Math.round(val);
+}
+
+function trendsNiceMax(val) {
+  if (val === 0) return 100;
+  var mag = Math.pow(10, Math.floor(Math.log10(val)));
+  var norm = val / mag;
+  var nice = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10;
+  return nice * mag;
+}
+
+function renderTrendsChart() {
+  _trendsData = getTrendsData();
+  var svg = document.getElementById('trends-svg');
+  var breakdown = document.getElementById('trends-breakdown');
+  if (!svg) return;
+
+  if (!_trendsData.length) {
+    svg.innerHTML = '<text x="260" y="100" text-anchor="middle" font-size="13" fill="#6B7C8F">No expense data found.</text>';
+    if (breakdown) breakdown.innerHTML = '';
+    return;
+  }
+
+  var W = 520, H = 200;
+  var pad = { left: 48, right: 12, top: 24, bottom: 36 };
+  var chartW = W - pad.left - pad.right;
+  var chartH = H - pad.top - pad.bottom;
+  var n = _trendsData.length;
+  var slotW = chartW / n;
+  var barW = Math.min(slotW * 0.55, 52);
+  var maxVal = Math.max.apply(null, _trendsData.map(function(d) { return d.total; }));
+  var niceMax = trendsNiceMax(maxVal);
+  var isDark = document.body.classList.contains('dark');
+  var inkColor = isDark ? '#E8EDF2' : '#1A2332';
+  var steelColor = '#6B7C8F';
+  var gridColor = isDark ? '#2A3A4A' : '#E0E8EE';
+  var barDefault = '#6B9E70';
+  var barSelected = '#4d7a52';
+
+  var html = '';
+
+  // Grid lines + Y labels
+  for (var g = 0; g <= 4; g++) {
+    var gy = pad.top + chartH - (g / 4) * chartH;
+    var gv = (g / 4) * niceMax;
+    html += '<line x1="' + pad.left + '" y1="' + gy + '" x2="' + (W - pad.right) + '" y2="' + gy + '" stroke="' + gridColor + '" stroke-width="1"/>';
+    html += '<text x="' + (pad.left - 6) + '" y="' + (gy + 4) + '" text-anchor="end" font-size="9" fill="' + steelColor + '" font-family="Outfit,sans-serif">' + trendsFormatShort(gv) + '</text>';
+  }
+
+  // Bars + labels
+  _trendsData.forEach(function(d, i) {
+    var cx = pad.left + i * slotW + slotW / 2;
+    var bx = cx - barW / 2;
+    var barH = niceMax > 0 ? (d.total / niceMax) * chartH : 0;
+    var by = pad.top + chartH - barH;
+    var fill = (i === _trendsSelectedIdx) ? barSelected : barDefault;
+
+    if (d.total === 0) {
+      html += '<rect x="' + bx + '" y="' + (pad.top + chartH - 4) + '" width="' + barW + '" height="4" rx="2" fill="' + gridColor + '" data-idx="' + i + '" style="cursor:pointer"/>';
+    } else {
+      html += '<rect class="trends-bar-r" x="' + bx + '" y="' + by + '" width="' + barW + '" height="' + barH + '" rx="4" fill="' + fill + '" data-idx="' + i + '" style="cursor:pointer"/>';
+      html += '<text x="' + cx + '" y="' + (by - 5) + '" text-anchor="middle" font-size="9" fill="' + inkColor + '" font-family="Outfit,sans-serif">' + trendsFormatShort(d.total) + '</text>';
+    }
+
+    // Month label
+    var mkParts = d.mk.split('-');
+    var mLabel = TREND_MONTHS[parseInt(mkParts[1]) - 1] + ' \'' + mkParts[0].slice(2);
+    html += '<text x="' + cx + '" y="' + (pad.top + chartH + 18) + '" text-anchor="middle" font-size="9" fill="' + steelColor + '" font-family="Outfit,sans-serif">' + mLabel + '</text>';
+  });
+
+  svg.innerHTML = html;
+
+  // Click handlers
+  svg.querySelectorAll('[data-idx]').forEach(function(el) {
+    el.addEventListener('click', function() {
+      _trendsSelectedIdx = parseInt(this.getAttribute('data-idx'));
+      renderTrendsBreakdown(_trendsData[_trendsSelectedIdx]);
+      renderTrendsChart(); // re-draw to update selected bar color
+    });
+  });
+
+  // Auto-select most recent on first load
+  if (_trendsSelectedIdx === -1 && _trendsData.length) {
+    _trendsSelectedIdx = _trendsData.length - 1;
+    renderTrendsBreakdown(_trendsData[_trendsSelectedIdx]);
+    renderTrendsChart();
+  }
+}
+
+function renderTrendsBreakdown(d) {
+  var el = document.getElementById('trends-breakdown');
+  if (!el || !d) return;
+  var mkParts = d.mk.split('-');
+  var monthName = TREND_MONTHS_FULL[parseInt(mkParts[1]) - 1] + ' ' + mkParts[0];
+  var maxSec = Math.max.apply(null, TREND_EXPENSE_SECTIONS.map(function(s) { return d.bySection[s] || 0; }));
+
+  var html = '<div class="trends-breakdown-title">'
+    + monthName
+    + '<span class="trends-breakdown-total">$' + d.total.toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:2}) + '</span>'
+    + '</div>';
+
+  TREND_EXPENSE_SECTIONS.forEach(function(sec) {
+    var amt = d.bySection[sec] || 0;
+    if (!amt && d.total === 0) return;
+    var pct = d.total > 0 ? Math.round(amt / d.total * 100) : 0;
+    var barPct = maxSec > 0 ? (amt / maxSec * 100) : 0;
+    html += '<div class="trends-sec-row">'
+      + '<div class="trends-sec-label">' + TREND_SEC_LABELS[sec] + '</div>'
+      + '<div class="trends-sec-bar-wrap"><div class="trends-sec-bar" style="width:' + barPct + '%;background:' + TREND_SEC_COLORS[sec] + '"></div></div>'
+      + '<div class="trends-sec-amt">$' + amt.toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:2}) + '</div>'
+      + '<div class="trends-sec-pct">' + pct + '%</div>'
+      + '</div>';
+  });
+
+  el.innerHTML = html;
+}
+
+
 var _calYear = null;
 var _calMonth = null; // 0-indexed
 
