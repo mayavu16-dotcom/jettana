@@ -14508,7 +14508,11 @@ function _showDguideStep() {
   var tip = document.createElement('div');
   tip.className = 'dguide-tooltip';
   tip.id = 'dguide-tip';
-  tip.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);max-width:360px;width:calc(100vw - 32px);z-index:99997;';
+  // Position tooltip in the half of the screen the element is NOT in
+  var rect = el.getBoundingClientRect();
+  var elementInTopHalf = (rect.top + rect.height / 2) < (window.innerHeight / 2);
+  var tipTopVal = elementInTopHalf ? '68%' : '28%';
+  tip.style.cssText = 'position:fixed;top:' + tipTopVal + ';left:50%;transform:translate(-50%,-50%);max-width:360px;width:calc(100vw - 32px);z-index:99997;';
   tip.innerHTML =
     '<div class="dguide-label">' + step.label + '</div>' +
     '<div class="dguide-desc">'  + step.desc  + '</div>' +
