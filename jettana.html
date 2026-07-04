@@ -3015,7 +3015,9 @@ body.font-large.text-bold .erow-label-input {
 .cal-header {
   padding: 18px 20px 14px; border-bottom: 1px solid var(--mist);
   display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  cursor: grab; user-select: none;
 }
+.cal-header.dragging { cursor: grabbing; }
 .cal-header h3 { font-size: 15px; font-weight: 700; color: var(--ink); flex: 1; margin: 0; }
 .cal-nav-btn {
   background: none; border: 1px solid var(--mist); border-radius: 6px;
@@ -4036,8 +4038,8 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
 <!-- Spending Calendar Modal -->
 <div class="cal-overlay" id="cal-overlay" style="display:none;" onclick="if(event.target===this)hideCalendar()">
-  <div class="cal-modal">
-    <div class="cal-header">
+  <div class="cal-modal" id="cal-modal">
+    <div class="cal-header" id="cal-header">
       <button class="cal-nav-btn" onclick="calNavigate(-1)">‹</button>
       <h3 id="cal-title">Spending Calendar</h3>
       <button class="cal-nav-btn" onclick="calNavigate(1)">›</button>
@@ -13929,8 +13931,85 @@ function hideCalendar() {
   if (el) el.style.display = 'none';
   var s = document.getElementById('cal-search');
   if (s) s.value = '';
+  // Reset drag state
+  var modal = document.getElementById('cal-modal');
+  if (modal) { modal.style.position = ''; modal.style.left = ''; modal.style.top = ''; modal.style.margin = ''; modal.style.maxHeight = ''; }
+  var overlay = document.getElementById('cal-overlay');
+  if (overlay) { overlay.style.background = ''; overlay.style.pointerEvents = ''; overlay.style.alignItems = ''; overlay.style.justifyContent = ''; }
   hideCalPopover();
 }
+
+(function() {
+  var dragging = false, offX = 0, offY = 0;
+
+  function startDrag(clientX, clientY) {
+    var modal = document.getElementById('cal-modal');
+    if (!modal) return;
+    // Snapshot current position and switch to fixed
+    var rect = modal.getBoundingClientRect();
+    modal.style.position = 'fixed';
+    modal.style.left = rect.left + 'px';
+    modal.style.top  = rect.top  + 'px';
+    modal.style.margin = '0';
+    modal.style.maxHeight = (window.innerHeight - rect.top - 16) + 'px';
+    // Fade overlay so rows behind are visible and clickable
+    var overlay = document.getElementById('cal-overlay');
+    if (overlay) {
+      overlay.style.background = 'transparent';
+      overlay.style.pointerEvents = 'none';
+      overlay.style.alignItems = 'flex-start';
+      overlay.style.justifyContent = 'flex-start';
+      modal.style.pointerEvents = 'auto';
+    }
+    offX = clientX - rect.left;
+    offY = clientY - rect.top;
+    dragging = true;
+    var hdr = document.getElementById('cal-header');
+    if (hdr) hdr.classList.add('dragging');
+  }
+
+  function onMove(clientX, clientY) {
+    if (!dragging) return;
+    var modal = document.getElementById('cal-modal');
+    if (!modal) return;
+    var x = Math.max(0, Math.min(clientX - offX, window.innerWidth  - modal.offsetWidth));
+    var y = Math.max(0, Math.min(clientY - offY, window.innerHeight - 60));
+    modal.style.left = x + 'px';
+    modal.style.top  = y + 'px';
+  }
+
+  function stopDrag() {
+    dragging = false;
+    var hdr = document.getElementById('cal-header');
+    if (hdr) hdr.classList.remove('dragging');
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    var hdr = document.getElementById('cal-header');
+    if (!hdr) return;
+    // Mouse
+    hdr.addEventListener('mousedown', function(e) {
+      if (e.target.closest('button, select, input')) return;
+      startDrag(e.clientX, e.clientY);
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', function(e) { onMove(e.clientX, e.clientY); });
+    document.addEventListener('mouseup',   stopDrag);
+    // Touch
+    hdr.addEventListener('touchstart', function(e) {
+      if (e.target.closest('button, select, input')) return;
+      var t = e.touches[0];
+      startDrag(t.clientX, t.clientY);
+    }, { passive: true });
+    hdr.addEventListener('touchmove', function(e) {
+      if (!dragging) return;
+      var t = e.touches[0];
+      onMove(t.clientX, t.clientY);
+      e.preventDefault();
+    }, { passive: false });
+    document.addEventListener('touchend', stopDrag);
+  });
+})();
 
 function calNavigate(dir) {
   _calMonth += dir;
