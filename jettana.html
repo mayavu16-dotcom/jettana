@@ -14193,8 +14193,11 @@ function renderTrendsBreakdown(d) {
     if (!amt && d.total === 0) return;
     var pct = d.total > 0 ? Math.round(amt / d.total * 100) : 0;
     var barPct = maxSec > 0 ? (amt / maxSec * 100) : 0;
-    var secTitleEl = document.getElementById('sec-title-' + sec);
-    var secLabel = secTitleEl ? secTitleEl.textContent.trim() : getSectionName(sec);
+    var secLabel = (function() {
+      var all = loadAll();
+      var monthNames = (all[d.mk] && all[d.mk]._sectionNames) || {};
+      return monthNames[sec] || _sectionNames[sec] || DEFAULT_SECTION_NAMES[sec] || sec;
+    })();
     html += '<div class="trends-sec-row">'
       + '<div class="trends-sec-label">' + secLabel + '</div>'
       + '<div class="trends-sec-bar-wrap"><div class="trends-sec-bar" style="width:' + barPct + '%;background:' + TREND_SEC_COLORS[sec] + '"></div></div>'
