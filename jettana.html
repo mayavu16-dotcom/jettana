@@ -3150,6 +3150,8 @@ body.font-large.text-bold .erow-label-input {
 .report-insight::before { content: '→ '; color: var(--sage); font-weight: 700; }
 .report-footer { font-size: 10px; color: var(--steel); text-align: center; padding: 0 0 20px; }
 .report-actions { display: flex; gap: 10px; padding: 16px 28px; border-top: 1px solid var(--mist); }
+.report-header { cursor: grab; user-select: none; }
+.report-header.dragging { cursor: grabbing; }
 .report-print-btn { flex: 1; background: var(--ink); color: white; border: none; border-radius: 8px; padding: 11px; font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
 .report-print-btn:hover { background: #2A3545; }
 .report-close-btn { background: none; border: 1px solid var(--mist); border-radius: 8px; padding: 11px 18px; font-family: 'Outfit', sans-serif; font-size: 13px; color: var(--steel); cursor: pointer; }
@@ -14071,7 +14073,58 @@ function showReport() {
 function closeReport() {
   var el = document.getElementById('report-overlay');
   if (el) el.style.display = 'none';
+  var modal = document.getElementById('report-modal');
+  if (modal) { modal.style.position = ''; modal.style.left = ''; modal.style.top = ''; modal.style.margin = ''; }
+  var overlay = document.getElementById('report-overlay');
+  if (overlay) { overlay.style.background = ''; overlay.style.pointerEvents = ''; overlay.style.alignItems = ''; overlay.style.justifyContent = ''; }
 }
+
+(function() {
+  var dragging = false, offX = 0, offY = 0;
+  function startDrag(clientX, clientY) {
+    var modal = document.getElementById('report-modal');
+    if (!modal) return;
+    var rect = modal.getBoundingClientRect();
+    modal.style.position = 'fixed';
+    modal.style.left = rect.left + 'px';
+    modal.style.top  = rect.top  + 'px';
+    modal.style.margin = '0';
+    var overlay = document.getElementById('report-overlay');
+    if (overlay) { overlay.style.background = 'transparent'; overlay.style.pointerEvents = 'none'; overlay.style.alignItems = 'flex-start'; overlay.style.justifyContent = 'flex-start'; modal.style.pointerEvents = 'auto'; }
+    offX = clientX - rect.left; offY = clientY - rect.top;
+    dragging = true;
+  }
+  function onMove(clientX, clientY) {
+    if (!dragging) return;
+    var modal = document.getElementById('report-modal');
+    if (!modal) return;
+    modal.style.left = Math.max(0, Math.min(clientX - offX, window.innerWidth  - modal.offsetWidth))  + 'px';
+    modal.style.top  = Math.max(0, Math.min(clientY - offY, window.innerHeight - 60)) + 'px';
+  }
+  function stopDrag() {
+    dragging = false;
+    var hdr = document.querySelector('.report-header');
+    if (hdr) hdr.classList.remove('dragging');
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('mousemove', function(e) { onMove(e.clientX, e.clientY); });
+    document.addEventListener('mouseup', stopDrag);
+    document.addEventListener('touchend', stopDrag);
+    document.getElementById('report-modal').addEventListener('mousedown', function(e) {
+      var hdr = e.target.closest('.report-header');
+      if (!hdr) return;
+      hdr.classList.add('dragging');
+      startDrag(e.clientX, e.clientY); e.preventDefault();
+    });
+    document.getElementById('report-modal').addEventListener('touchstart', function(e) {
+      if (!e.target.closest('.report-header')) return;
+      var t = e.touches[0]; startDrag(t.clientX, t.clientY);
+    }, { passive: true });
+    document.getElementById('report-modal').addEventListener('touchmove', function(e) {
+      if (!dragging) return; var t = e.touches[0]; onMove(t.clientX, t.clientY); e.preventDefault();
+    }, { passive: false });
+  });
+})();
 
 function generateReport() {
   var all = loadAll();
