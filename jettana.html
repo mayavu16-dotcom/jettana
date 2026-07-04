@@ -3110,13 +3110,14 @@ body.font-large.text-bold .erow-label-input {
 }
 .dguide-ring {
   position: fixed; z-index: 99995; border-radius: 50%;
-  border: 3px solid #F0C060; box-shadow: 0 0 0 4px rgba(240,192,96,0.35);
+  border: 3px solid #F0C060;
   pointer-events: none;
+  box-shadow: 0 0 0 9999px rgba(0,0,0,0.45), 0 0 0 4px rgba(240,192,96,0.35);
   animation: dguide-pulse 1.4s ease-in-out infinite;
 }
 @keyframes dguide-pulse {
-  0%,100% { box-shadow: 0 0 0 4px rgba(240,192,96,0.35); }
-  50%      { box-shadow: 0 0 0 10px rgba(240,192,96,0.1); }
+  0%,100% { box-shadow: 0 0 0 9999px rgba(0,0,0,0.45), 0 0 0 4px rgba(240,192,96,0.35); }
+  50%      { box-shadow: 0 0 0 9999px rgba(0,0,0,0.45), 0 0 0 10px rgba(240,192,96,0.1); }
 }
 .dguide-tooltip {
   position: fixed; z-index: 99996;
@@ -14477,13 +14478,7 @@ function _showDguideStep() {
   // Scroll element into view
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-  // Backdrop
-  var backdrop = document.createElement('div');
-  backdrop.className = 'dguide-backdrop';
-  backdrop.id = 'dguide-backdrop';
-  document.body.appendChild(backdrop);
-
-  // Ring — created immediately, position updated live via rAF
+  // Ring — box-shadow creates the spotlight effect
   var ring = document.createElement('div');
   ring.className = 'dguide-ring';
   ring.id = 'dguide-ring';
@@ -14527,12 +14522,12 @@ function _showDguideStep() {
     '</div>';
   document.body.appendChild(tip);
 
-  _dguideEl = { backdrop: backdrop, ring: ring, tip: tip, stopTracking: function() { tracking = false; } };
+  _dguideEl = { ring: ring, tip: tip, stopTracking: function() { tracking = false; } };
 }
 
 function _clearDguide() {
   if (_dguideEl && _dguideEl.stopTracking) _dguideEl.stopTracking();
-  ['dguide-backdrop','dguide-ring','dguide-tip'].forEach(function(id) {
+  ['dguide-ring','dguide-tip'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.remove();
   });
   _dguideEl = null;
