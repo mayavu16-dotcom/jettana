@@ -3716,30 +3716,39 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
                 <input type="color" id="custom-color" value="#4A6FA5" oninput="setCustomTheme(this.value)">
               </div>
             </div>
+            <button class="more-menu-item" onclick="toggleLegendPanel(); hideMoreMenu()">
+              <span>🃏</span> My Cards legend
+            </button>
 
-            <!-- Actions -->
+            <!-- Import / Export -->
             <div class="more-divider"></div>
-            <div class="more-menu-title">Actions</div>
+            <div class="more-menu-title">Import / Export</div>
             <button class="more-menu-item" onclick="showImportModal(); hideMoreMenu()">
               <span>⬆</span> Import bank statement
             </button>
-            <button class="more-menu-item" onclick="window.print(); hideMoreMenu()">
-              <span>⬇</span> Export PDF
+            <button class="more-menu-item" onclick="toggleExportExpand()" style="color:var(--steel);">
+              <span>⬇</span> <span id="export-expand-label">Export ▾</span>
             </button>
-            <button class="more-menu-item" onclick="exportCSV(); hideMoreMenu()">
-              <span>⬇</span> Export CSV
-            </button>
-            <button class="more-menu-item" onclick="showReport(); hideMoreMenu()">
-              <span>📄</span> Generate Report
-            </button>
+            <div id="export-expanded" style="display:none;">
+              <button class="more-menu-item" onclick="window.print(); hideMoreMenu()" style="padding-left:24px;">
+                <span>⬇</span> Export PDF
+              </button>
+              <button class="more-menu-item" onclick="exportCSV(); hideMoreMenu()" style="padding-left:24px;">
+                <span>⬇</span> Export CSV
+              </button>
+              <button class="more-menu-item" onclick="showReport(); hideMoreMenu()" style="padding-left:24px;">
+                <span>📄</span> Generate Report
+              </button>
+            </div>
+
+            <!-- Analytics -->
+            <div class="more-divider"></div>
+            <div class="more-menu-title">Analytics</div>
             <button class="more-menu-item" onclick="showCalendar(); hideMoreMenu()">
               <span>📅</span> Spending calendar
             </button>
             <button class="more-menu-item" onclick="showTrends(); hideMoreMenu()">
               <span>📊</span> Spending trends
-            </button>
-            <button class="more-menu-item" onclick="toggleLegendPanel(); hideMoreMenu()">
-              <span>🃏</span> My Cards legend
             </button>
 
             <!-- Learn -->
@@ -3761,7 +3770,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
               <span>🎨</span> Personalize tour
             </button>
 
-            <!-- More (power features) -->
+            <!-- Power features -->
             <div class="more-divider"></div>
             <button class="more-menu-item" id="more-expand-btn" onclick="toggleMoreExpand()" style="color:var(--steel);">
               <span>⚡</span> <span id="more-expand-label">Power features</span>
@@ -11418,6 +11427,15 @@ document.addEventListener('keydown', function(e) {
     setTimeout(initCalcDrag, 500);
   });
 })();
+
+function toggleExportExpand() {
+  var el = document.getElementById('export-expanded');
+  var label = document.getElementById('export-expand-label');
+  if (!el) return;
+  var open = el.style.display === 'none';
+  el.style.display = open ? 'block' : 'none';
+  if (label) label.textContent = open ? 'Export ▴' : 'Export ▾';
+}
 
 function toggleMoreExpand() {
   var expanded = document.getElementById('more-expanded');
