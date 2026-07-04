@@ -14503,11 +14503,39 @@ function _showDguideStep() {
   var tip = document.createElement('div');
   tip.className = 'dguide-tooltip';
   tip.id = 'dguide-tip';
-  // Position tooltip in the half of the screen the element is NOT in
+  // Position tooltip in opposite quadrant from the highlighted element
   var rect = el.getBoundingClientRect();
-  var elementInTopHalf = (rect.top + rect.height / 2) < (window.innerHeight / 2);
-  var tipTopVal = elementInTopHalf ? '68%' : '28%';
-  tip.style.cssText = 'position:fixed;top:' + tipTopVal + ';left:50%;transform:translate(-50%,-50%);max-width:360px;width:calc(100vw - 32px);z-index:99997;';
+  var inTopHalf  = (rect.top  + rect.height / 2) < (window.innerHeight / 2);
+  var inLeftHalf = (rect.left + rect.width  / 2) < (window.innerWidth  / 2);
+  var tipTopVal  = inTopHalf  ? '75%' : '25%';
+  var tipLeftVal = inLeftHalf ? '65%' : '35%';
+  tip.style.cssText = 'position:fixed;top:' + tipTopVal + ';left:' + tipLeftVal + ';transform:translate(-50%,-50%);max-width:360px;width:calc(100vw - 32px);z-index:99997;';
+
+  // Watch for any popup opening while this step is active and add a secondary ring
+  var _popWatcher = setInterval(function() {
+    var pop = window._secPopover || document.querySelector('.ctx-menu, .more-menu[style*="block"], .sec-pop');
+    var existing = document.getElementById('dguide-ring-2');
+    if (pop && !existing) {
+      var r2 = document.createElement('div');
+      r2.id = 'dguide-ring-2';
+      r2.style.cssText = 'position:fixed;pointer-events:none;z-index:99994;border:2px solid #F0C060;border-radius:10px;opacity:0.8;transition:all 0.15s;';
+      document.body.appendChild(r2);
+      (function track2() {
+        var r2el = document.getElementById('dguide-ring-2');
+        var popEl = window._secPopover || document.querySelector('.ctx-menu, .sec-pop');
+        if (!r2el || !popEl) return;
+        var pr = popEl.getBoundingClientRect();
+        var pad = 6;
+        r2el.style.left   = (pr.left - pad) + 'px';
+        r2el.style.top    = (pr.top  - pad) + 'px';
+        r2el.style.width  = (pr.width  + pad * 2) + 'px';
+        r2el.style.height = (pr.height + pad * 2) + 'px';
+        requestAnimationFrame(track2);
+      })();
+    } else if (!pop && existing) {
+      existing.remove();
+    }
+  }, 150);
   tip.innerHTML =
     '<div class="dguide-label">' + step.label + '</div>' +
     '<div class="dguide-desc">'  + step.desc  + '</div>' +
@@ -14522,12 +14550,12 @@ function _showDguideStep() {
     '</div>';
   document.body.appendChild(tip);
 
-  _dguideEl = { ring: ring, tip: tip, stopTracking: function() { tracking = false; } };
+  _dguideEl = { ring: ring, tip: tip, stopTracking: function() { tracking = false; clearInterval(_popWatcher); }, popWatcher: _popWatcher };
 }
 
 function _clearDguide() {
   if (_dguideEl && _dguideEl.stopTracking) _dguideEl.stopTracking();
-  ['dguide-ring','dguide-tip'].forEach(function(id) {
+  ['dguide-ring','dguide-ring-2','dguide-tip'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.remove();
   });
   _dguideEl = null;
