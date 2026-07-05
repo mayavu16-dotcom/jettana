@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jettana — Budget with intention.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,700;1,700&family=Cormorant+Garamond:ital,wght@0,700;1,700&family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink:        #1A2332;
+  --sage:       #6B9E70;
+  --sage-dark:  #4d7a52;
+  --sage-light: #EAF3EB;
+  --gold:       #A8823E;
+  --gold-light: #FAF3E6;
+  --blush:      #C0736A;
+  --blush-light:#FAEDEB;
+  --mist:       #C8D4DC;
+  --mist-light: #EEF2F5;
+  --off-white:  #F8F7F4;
+  --white:      #FFFFFF;
+  --steel:      #6B7C8F;
+}
+
+html { scroll-behavior: smooth; }
+body { font-family: 'Outfit', sans-serif; color: var(--ink); background: var(--white); -webkit-font-smoothing: antialiased; }
+
+/* ── Nav ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 5%; height: 64px;
+  background: rgba(255,255,255,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(200,212,220,0.4);
+}
+.nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 700; color: var(--ink); text-decoration: none; letter-spacing: -0.5px; }
+.nav-logo em { font-style: italic; color: var(--sage); }
+.nav-links { display: flex; align-items: center; gap: 32px; }
+.nav-links a { font-size: 14px; font-weight: 500; color: var(--steel); text-decoration: none; transition: color 0.2s; }
+.nav-links a:hover { color: var(--ink); }
+.nav-cta { background: var(--sage); color: white; font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 600; padding: 9px 22px; border-radius: 8px; border: none; cursor: pointer; text-decoration: none; transition: background 0.2s; }
+.nav-cta:hover { background: var(--sage-dark); }
+
+/* ── Hero ── */
+.hero {
+  min-height: 100vh; padding: 120px 5% 80px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center;
+  background: var(--white); position: relative; overflow: hidden;
+}
+.thai-watermark {
+  position: absolute; right: -2%; top: 50%; transform: translateY(-50%);
+  font-family: 'Noto Sans Thai', sans-serif; font-size: 320px; font-weight: 600;
+  color: var(--sage-light); line-height: 1; pointer-events: none; z-index: 0;
+  opacity: 0.6; user-select: none;
+}
+.hero-content { position: relative; z-index: 1; }
+.hero-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--sage); margin-bottom: 20px; }
+.hero-headline {
+  font-family: 'Cormorant Garamond', serif; font-size: clamp(42px, 5.5vw, 72px);
+  font-weight: 900; line-height: 1.08; letter-spacing: -1.5px; color: var(--ink);
+  margin-bottom: 24px;
+}
+.hero-headline em { font-style: italic; color: var(--sage); }
+.hero-sub { font-size: 17px; font-weight: 400; color: var(--steel); line-height: 1.65; max-width: 440px; margin-bottom: 40px; }
+.hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+.btn-primary { background: var(--sage); color: white; font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 600; padding: 14px 28px; border-radius: 10px; border: none; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s, transform 0.15s; }
+.btn-primary:hover { background: var(--sage-dark); transform: translateY(-1px); }
+.btn-secondary { background: none; color: var(--ink); font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 500; padding: 14px 24px; border-radius: 10px; border: 1.5px solid var(--mist); cursor: pointer; text-decoration: none; transition: border-color 0.2s, transform 0.15s; }
+.btn-secondary:hover { border-color: var(--ink); transform: translateY(-1px); }
+.hero-note { margin-top: 20px; font-size: 12px; color: var(--steel); }
+.hero-mockup { position: relative; z-index: 1; }
+
+/* ── App Mockup ── */
+.mockup-browser {
+  background: #F0F2F5; border-radius: 16px; overflow: hidden;
+  box-shadow: 0 32px 80px rgba(26,35,50,0.18), 0 8px 24px rgba(26,35,50,0.08);
+}
+.mockup-chrome { background: #E4E7EC; padding: 12px 16px; display: flex; align-items: center; gap: 8px; }
+.mockup-dots { display: flex; gap: 6px; }
+.mockup-dot { width: 11px; height: 11px; border-radius: 50%; }
+.mockup-dot.red   { background: #FF5F57; }
+.mockup-dot.amber { background: #FFBD2E; }
+.mockup-dot.green { background: #28C840; }
+.mockup-bar { flex: 1; background: white; border-radius: 5px; height: 24px; margin: 0 8px; display: flex; align-items: center; padding: 0 10px; font-size: 11px; color: #8A9BAC; font-family: 'Outfit', sans-serif; }
+.mockup-body { background: var(--off-white); padding: 16px; }
+
+/* Sidebar mockup */
+.mockup-app { display: grid; grid-template-columns: 140px 1fr; height: 380px; gap: 0; }
+.mockup-sidebar { background: var(--ink); padding: 16px 12px; display: flex; flex-direction: column; gap: 8px; }
+.mockup-brand { font-family: 'Cormorant Garamond', serif; font-size: 13px; color: white; font-weight: 700; margin-bottom: 8px; }
+.mockup-brand em { color: var(--sage); font-style: italic; }
+.mockup-label { font-size: 9px; font-weight: 700; letter-spacing: 1px; color: rgba(255,255,255,0.35); text-transform: uppercase; margin-top: 6px; }
+.mockup-month { font-size: 12px; color: rgba(255,255,255,0.6); padding: 6px 8px; border-radius: 5px; cursor: default; }
+.mockup-month.active { background: var(--sage); color: white; font-weight: 600; }
+.mockup-main { overflow: hidden; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.mockup-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.mockup-month-title { font-family: 'Cormorant Garamond', serif; font-size: 15px; font-weight: 700; color: var(--ink); }
+.mockup-search { background: white; border: 1px solid var(--mist); border-radius: 6px; padding: 4px 10px; font-size: 10px; color: var(--steel); width: 100px; font-family: 'Outfit', sans-serif; }
+.mockup-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.mockup-stat { background: white; border-radius: 8px; padding: 8px 10px; border: 1px solid var(--mist-light); }
+.mockup-stat-label { font-size: 8px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--steel); margin-bottom: 3px; }
+.mockup-stat-val { font-size: 15px; font-weight: 700; color: var(--ink); }
+.mockup-stat-val.green { color: var(--sage-dark); }
+.mockup-stat-val.blush { color: var(--blush); }
+.mockup-sections { display: flex; flex-direction: column; gap: 6px; overflow: hidden; }
+.mockup-section { background: white; border-radius: 8px; overflow: hidden; border: 1px solid var(--mist-light); }
+.mockup-sec-hdr { padding: 7px 10px; display: flex; justify-content: space-between; align-items: center; }
+.mockup-sec-hdr span { font-size: 9px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: white; }
+.mockup-sec-hdr .amt { font-size: 11px; font-weight: 700; color: white; }
+.mockup-row { padding: 5px 10px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--mist-light); }
+.mockup-row-label { font-size: 10px; color: var(--ink); font-weight: 500; }
+.mockup-row-val { font-size: 10px; font-weight: 600; }
+
+/* ── Problem ── */
+.problem {
+  background: var(--ink); color: white; padding: 100px 5%;
+  text-align: center;
+}
+.problem-headline { font-family: 'Cormorant Garamond', serif; font-size: clamp(28px, 3.5vw, 48px); font-weight: 700; line-height: 1.2; max-width: 720px; margin: 0 auto 24px; }
+.problem-headline em { font-style: italic; color: var(--sage); }
+.problem-sub { font-size: 16px; color: rgba(255,255,255,0.6); max-width: 520px; margin: 0 auto 60px; line-height: 1.7; }
+.problem-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 40px; max-width: 720px; margin: 0 auto; }
+.stat-num { font-family: 'Cormorant Garamond', serif; font-size: 48px; font-weight: 900; color: var(--sage); margin-bottom: 8px; }
+.stat-label { font-size: 14px; color: rgba(255,255,255,0.65); line-height: 1.5; }
+
+/* ── Features ── */
+.features { padding: 100px 5%; background: var(--off-white); }
+.section-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--sage); margin-bottom: 14px; }
+.section-headline { font-family: 'Cormorant Garamond', serif; font-size: clamp(28px, 3vw, 42px); font-weight: 700; line-height: 1.2; color: var(--ink); margin-bottom: 14px; }
+.section-headline em { font-style: italic; }
+.section-sub { font-size: 16px; color: var(--steel); line-height: 1.7; max-width: 540px; margin-bottom: 56px; }
+.features-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+.feature-card { background: white; border-radius: 14px; padding: 28px; border: 1px solid var(--mist-light); transition: box-shadow 0.2s, transform 0.2s; }
+.feature-card:hover { box-shadow: 0 8px 28px rgba(26,35,50,0.08); transform: translateY(-2px); }
+.feature-icon { font-size: 24px; margin-bottom: 14px; }
+.feature-title { font-size: 15px; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
+.feature-desc { font-size: 13.5px; color: var(--steel); line-height: 1.6; }
+
+/* ── How it works ── */
+.how { padding: 100px 5%; background: white; }
+.how-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start; }
+.how-steps { display: flex; flex-direction: column; gap: 40px; }
+.how-step { display: grid; grid-template-columns: 48px 1fr; gap: 20px; align-items: start; }
+.step-num { width: 48px; height: 48px; border-radius: 12px; background: var(--sage-light); display: flex; align-items: center; justify-content: center; font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 900; color: var(--sage-dark); flex-shrink: 0; }
+.step-title { font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: 6px; }
+.step-desc { font-size: 14px; color: var(--steel); line-height: 1.65; }
+.how-visual { position: sticky; top: 100px; }
+
+/* ── Story ── */
+.story { padding: 100px 5%; background: var(--gold-light); border-top: 1px solid rgba(168,130,62,0.15); border-bottom: 1px solid rgba(168,130,62,0.15); }
+.story-inner { max-width: 640px; margin: 0 auto; }
+.story-thai { font-family: 'Noto Sans Thai', sans-serif; font-size: 48px; font-weight: 600; color: var(--gold); margin-bottom: 8px; line-height: 1; }
+.story-phonetic { font-size: 13px; color: var(--gold); opacity: 0.75; margin-bottom: 28px; letter-spacing: 0.5px; }
+.story-text { font-size: 16px; color: var(--ink); line-height: 1.8; }
+.story-text p + p { margin-top: 18px; }
+.story-sig { margin-top: 36px; font-size: 15px; color: var(--steel); font-style: italic; }
+
+/* ── Support ── */
+.support { padding: 100px 5%; background: var(--off-white); text-align: center; }
+.support-card { background: white; border-radius: 20px; padding: 56px 40px; max-width: 520px; margin: 0 auto; border: 1px solid var(--mist-light); box-shadow: 0 8px 40px rgba(26,35,50,0.06); }
+.support-badge { display: inline-block; background: var(--sage-light); color: var(--sage-dark); font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 5px 12px; border-radius: 20px; margin-bottom: 20px; }
+.support-headline { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 700; color: var(--ink); margin-bottom: 14px; }
+.support-sub { font-size: 15px; color: var(--steel); line-height: 1.7; margin-bottom: 32px; }
+.support-price { font-family: 'Cormorant Garamond', serif; font-size: 48px; font-weight: 900; color: var(--ink); margin-bottom: 4px; }
+.support-price-sub { font-size: 13px; color: var(--steel); margin-bottom: 32px; }
+.support-note { font-size: 12px; color: var(--steel); margin-top: 16px; opacity: 0.75; }
+
+/* ── CTA band ── */
+.cta-band { background: var(--sage); padding: 100px 5%; text-align: center; }
+.cta-headline { font-family: 'Cormorant Garamond', serif; font-size: clamp(32px, 4vw, 54px); font-weight: 900; color: white; line-height: 1.15; margin-bottom: 16px; }
+.cta-headline em { font-style: italic; color: var(--sage-light); }
+.cta-sub { font-size: 17px; color: rgba(255,255,255,0.75); margin-bottom: 40px; }
+.btn-white { background: white; color: var(--sage-dark); font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 700; padding: 14px 32px; border-radius: 10px; border: none; cursor: pointer; text-decoration: none; display: inline-block; transition: transform 0.15s, box-shadow 0.15s; }
+.btn-white:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+
+/* ── Footer ── */
+footer { background: var(--ink); color: rgba(255,255,255,0.55); padding: 48px 5%; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; }
+.footer-logo { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 700; color: white; }
+.footer-logo em { font-style: italic; color: var(--sage); }
+.footer-tagline { font-size: 12px; color: rgba(255,255,255,0.35); margin-top: 4px; letter-spacing: 0.5px; }
+.footer-links { display: flex; gap: 28px; }
+.footer-links a { font-size: 13px; color: rgba(255,255,255,0.5); text-decoration: none; transition: color 0.2s; }
+.footer-links a:hover { color: white; }
+.footer-right { font-size: 12px; text-align: right; }
+
+/* ── Reveal animations ── */
+.reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+.reveal.visible { opacity: 1; transform: translateY(0); }
+.reveal.d1 { transition-delay: 0.1s; }
+.reveal.d2 { transition-delay: 0.2s; }
+.reveal.d3 { transition-delay: 0.3s; }
+.reveal.d4 { transition-delay: 0.4s; }
+.reveal.d5 { transition-delay: 0.5s; }
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; padding-top: 100px; }
+  .thai-watermark { font-size: 180px; opacity: 0.35; }
+  .hero-mockup { display: none; }
+  .features-grid { grid-template-columns: 1fr 1fr; }
+  .how-grid { grid-template-columns: 1fr; }
+  .how-visual { display: none; }
+  .problem-stats { grid-template-columns: 1fr; gap: 32px; }
+  nav .nav-links { display: none; }
+}
+@media (max-width: 600px) {
+  .features-grid { grid-template-columns: 1fr; }
+  .mockup-app { grid-template-columns: 1fr; }
+  .mockup-sidebar { display: none; }
+  footer { flex-direction: column; text-align: center; }
+  .footer-right { text-align: center; }
+  .footer-links { justify-content: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <a href="#" class="nav-logo">Jet<em>tana</em></a>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#how">How it works</a>
+    <a href="#story">Our story</a>
+    <a href="#support">Support</a>
+  </div>
+  <a href="https://jettana.app/app" class="nav-cta">Start free →</a>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="thai-watermark">เจ</div>
+  <div class="hero-content">
+    <div class="hero-eyebrow reveal">Free budget tracker</div>
+    <h1 class="hero-headline reveal d1">Budget with<br><em>intention.</em></h1>
+    <p class="hero-sub reveal d2">A personal budget tracker for people who are ready to be honest about their money — and actually do something about it.</p>
+    <div class="hero-actions reveal d3">
+      <a href="https://jettana.app/app" class="btn-primary">Start free →</a>
+      <a href="https://jettana.app/app?demo=true" class="btn-secondary">Try the demo</a>
+    </div>
+    <p class="hero-note reveal d4">Free account · Syncs across devices · No payment required.</p>
+  </div>
+  <div class="hero-mockup reveal d2">
+    <div class="mockup-browser">
+      <div class="mockup-chrome">
+        <div class="mockup-dots">
+          <div class="mockup-dot red"></div>
+          <div class="mockup-dot amber"></div>
+          <div class="mockup-dot green"></div>
+        </div>
+        <div class="mockup-bar">jettana.app</div>
+      </div>
+      <div class="mockup-app">
+        <div class="mockup-sidebar">
+          <div class="mockup-brand">Jet<em>tana</em></div>
+          <div class="mockup-label">Your Months</div>
+          <div class="mockup-month active">Jul ✦</div>
+          <div class="mockup-month">Jun</div>
+          <div class="mockup-month">May</div>
+        </div>
+        <div class="mockup-main">
+          <div class="mockup-topbar">
+            <div class="mockup-month-title">July 2026</div>
+            <div class="mockup-search">Search…</div>
+          </div>
+          <div class="mockup-cards">
+            <div class="mockup-stat">
+              <div class="mockup-stat-label">Total Income</div>
+              <div class="mockup-stat-val green">$3,365</div>
+            </div>
+            <div class="mockup-stat">
+              <div class="mockup-stat-label">Net Balance</div>
+              <div class="mockup-stat-val green">$1,738</div>
+            </div>
+            <div class="mockup-stat">
+              <div class="mockup-stat-label">Total Expenses</div>
+              <div class="mockup-stat-val blush">$1,627</div>
+            </div>
+            <div class="mockup-stat">
+              <div class="mockup-stat-label">Total Saved</div>
+              <div class="mockup-stat-val">$700</div>
+            </div>
+          </div>
+          <div class="mockup-sections">
+            <div class="mockup-section">
+              <div class="mockup-sec-hdr" style="background:#5A8A5F;">
+                <span>INCOME</span><span class="amt">$3,365</span>
+              </div>
+              <div class="mockup-row">
+                <span class="mockup-row-label" style="color:#5A8A5F;font-weight:600;">Bi-Weekly Pay</span>
+                <span class="mockup-row-val" style="color:#5A8A5F;">$2,865</span>
+              </div>
+            </div>
+            <div class="mockup-section">
+              <div class="mockup-sec-hdr" style="background:#8B6914;">
+                <span>SAVINGS</span><span class="amt">$700</span>
+              </div>
+              <div class="mockup-row">
+                <span class="mockup-row-label">Marcus HYSA</span>
+                <span class="mockup-row-val" style="color:#5A8A5F;">+$12</span>
+              </div>
+            </div>
+            <div class="mockup-section">
+              <div class="mockup-sec-hdr" style="background:#A05A50;">
+                <span>HOUSING</span><span class="amt">$1,627</span>
+              </div>
+              <div class="mockup-row">
+                <span class="mockup-row-label">Rent</span>
+                <span class="mockup-row-val" style="color:#E8824A;">$1,500</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Problem -->
+<section class="problem">
+  <div class="problem-headline reveal">Most apps tell you what you spent.<br>None ask you <em>why.</em></div>
+  <p class="problem-sub reveal d1">Budgeting fails when it feels like punishment. Jettana is different — it's a tool for people who want to be intentional, not just informed.</p>
+  <div class="problem-stats">
+    <div class="reveal d1">
+      <div class="stat-num">78%</div>
+      <div class="stat-label">of people live paycheck to paycheck — not from lack of income, but lack of clarity</div>
+    </div>
+    <div class="reveal d2">
+      <div class="stat-num">$400+</div>
+      <div class="stat-label">the average monthly spending on things most people can't account for</div>
+    </div>
+    <div class="reveal d3">
+      <div class="stat-num">1 file</div>
+      <div class="stat-label">all of Jettana — no app download, no subscription wall, no account required</div>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="features" id="features">
+  <div class="section-eyebrow reveal">What's inside</div>
+  <h2 class="section-headline reveal d1">Everything you need.<br><em>Nothing you don't.</em></h2>
+  <p class="section-sub reveal d2">Jettana is a full budget tracker that lives in one file. No downloads, no subscriptions, no data leaving your device unless you want it to.</p>
+  <div class="features-grid">
+    <div class="feature-card reveal">
+      <div class="feature-icon">💳</div>
+      <div class="feature-title">Color-coded card linking</div>
+      <div class="feature-desc">Assign a color to each credit card. Expenses with that color automatically update your debt balance when marked paid.</div>
+    </div>
+    <div class="feature-card reveal d1">
+      <div class="feature-icon">📥</div>
+      <div class="feature-title">Import bank statements</div>
+      <div class="feature-desc">Drop in a CSV from any major bank. Transactions are auto-categorized and ready to review before they hit your budget.</div>
+    </div>
+    <div class="feature-card reveal d2">
+      <div class="feature-icon">📅</div>
+      <div class="feature-title">Spending calendar</div>
+      <div class="feature-desc">See what you spent each day of the month, laid out on a calendar with weekly totals and a category breakdown on tap.</div>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feature-icon">📊</div>
+      <div class="feature-title">6-month trends</div>
+      <div class="feature-desc">A bar chart of your last 6 months of spending. Tap any bar to see where your money actually went that month.</div>
+    </div>
+    <div class="feature-card reveal d1">
+      <div class="feature-icon">📄</div>
+      <div class="feature-title">Monthly report</div>
+      <div class="feature-desc">Generate a clean one-page summary of your month — income, expenses, budget vs actual — ready to save as PDF.</div>
+    </div>
+    <div class="feature-card reveal d2">
+      <div class="feature-icon">🎨</div>
+      <div class="feature-title">Built to be yours</div>
+      <div class="feature-desc">Rename sections, set custom colors, add your monthly intention, and personalize it until it actually feels like your budget.</div>
+    </div>
+  </div>
+</section>
+
+<!-- How it works -->
+<section class="how" id="how">
+  <div class="how-grid">
+    <div>
+      <div class="section-eyebrow reveal">How it works</div>
+      <h2 class="section-headline reveal d1">Simple by design.<br><em>Powerful by choice.</em></h2>
+      <p class="section-sub reveal d2">You don't need a finance degree. You just need a place to start.</p>
+      <div class="how-steps">
+        <div class="how-step reveal">
+          <div class="step-num">1</div>
+          <div>
+            <div class="step-title">Set your intention</div>
+            <div class="step-desc">Add a monthly intention at the top — a word, a goal, a reminder of why you're tracking. Then add your income sources.</div>
+          </div>
+        </div>
+        <div class="how-step reveal d1">
+          <div class="step-num">2</div>
+          <div>
+            <div class="step-title">Track every category</div>
+            <div class="step-desc">Fill in your budget and actual amounts across income, savings, housing, food, debt, and more. Import from your bank or enter manually.</div>
+          </div>
+        </div>
+        <div class="how-step reveal d2">
+          <div class="step-num">3</div>
+          <div>
+            <div class="step-title">See where you stand</div>
+            <div class="step-desc">Your net balance, total expenses, and savings update in real time. Generate a report. Review the trends. Start next month with clarity.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="how-visual reveal d2">
+      <div class="mockup-browser">
+        <div class="mockup-chrome">
+          <div class="mockup-dots">
+            <div class="mockup-dot red"></div>
+            <div class="mockup-dot amber"></div>
+            <div class="mockup-dot green"></div>
+          </div>
+          <div class="mockup-bar">jettana.app</div>
+        </div>
+        <div style="background:var(--off-white);padding:16px;display:flex;flex-direction:column;gap:8px;">
+          <div style="background:white;border-radius:10px;padding:14px;border:1px solid var(--mist-light);">
+            <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--steel);margin-bottom:10px;">July 2026 · "Be intentional with every dollar"</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
+              <div style="background:var(--sage-light);border-radius:6px;padding:8px;"><div style="font-size:8px;color:var(--sage-dark);font-weight:600;">INCOME</div><div style="font-size:14px;font-weight:700;color:var(--sage-dark);">$3,365</div></div>
+              <div style="background:var(--blush-light);border-radius:6px;padding:8px;"><div style="font-size:8px;color:var(--blush);font-weight:600;">EXPENSES</div><div style="font-size:14px;font-weight:700;color:var(--blush);">$1,627</div></div>
+            </div>
+            <div style="background:var(--mist-light);border-radius:6px;padding:10px;">
+              <div style="font-size:9px;color:var(--steel);margin-bottom:4px;">Food & Dining — $342 of $500</div>
+              <div style="background:var(--mist);border-radius:3px;height:5px;overflow:hidden;"><div style="background:var(--sage);width:68%;height:100%;border-radius:3px;"></div></div>
+            </div>
+          </div>
+          <div style="background:white;border-radius:10px;padding:12px;border:1px solid var(--mist-light);">
+            <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--steel);margin-bottom:8px;">Net saved this month</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:900;color:var(--sage-dark);">+$1,738</div>
+            <div style="font-size:10px;color:var(--steel);margin-top:2px;">income − expenses</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Story -->
+<section class="story" id="story">
+  <div class="story-inner">
+    <div class="thai-watermark" style="position:static;font-size:64px;transform:none;opacity:1;margin-bottom:4px;color:var(--gold);">เจตนา</div>
+    <div class="story-phonetic reveal">jèt · thà · naa &nbsp;·&nbsp; Thai for "intention"</div>
+    <div class="story-text reveal d1">
+      <p>This app is named after a word my mom carried with her — เจตนา. She taught me to be intentional about everything I do, to be a good person first, and to trust that the rest would follow.</p>
+      <p>Growing up, I saw firsthand how quietly money stress can affect a family. So in college, I made a decision: I wasn't going to let that be my story. I started tracking my money — not because someone taught me, but because I had to figure it out on my own.</p>
+      <p>It's what helped me save for my first trip abroad — an internship in Thailand, the country my mom carried with her long before I ever got to see it. Going there felt like her will becoming mine.</p>
+      <p>I built Jettana for anyone who feels the way I did — overwhelmed, unsure where to start, and never taught how any of this works. <em>You just need a place to begin. This is that place.</em></p>
+    </div>
+    <div class="story-sig reveal d2">— Maya 💚</div>
+  </div>
+</section>
+
+<!-- Support -->
+<section class="support" id="support">
+  <div class="section-eyebrow reveal" style="margin-bottom:16px;">Support Jettana</div>
+  <h2 class="section-headline reveal d1" style="text-align:center;margin-bottom:48px;">Keep it free for everyone.</h2>
+  <div class="support-card reveal d2">
+    <div class="support-badge">Voluntary · No features locked</div>
+    <div class="support-headline">Support Jettana</div>
+    <p class="support-sub">Jettana is free because it was built for people who need it — not to make money. If it's helped you, here's a way to say thanks and keep it going.</p>
+    <div class="support-price">$6<span style="font-size:20px;font-weight:400;color:var(--steel)">/mo</span></div>
+    <div class="support-price-sub">Or whatever feels right — no pressure.</div>
+    <a href="https://buy.stripe.com/6oU28q6j084G2sI2ExfQI00" class="btn-primary" style="width:100%;justify-content:center;">Support Jettana ✦</a>
+    <p class="support-note">You can cancel anytime. All features remain free regardless.</p>
+  </div>
+</section>
+
+<!-- CTA Band -->
+<section class="cta-band">
+  <h2 class="cta-headline reveal">Your net worth starts with<br><em>one honest month.</em></h2>
+  <p class="cta-sub reveal d1">Free. No account required. Start in under a minute.</p>
+  <a href="https://jettana.app/app" class="btn-white reveal d2">Start budgeting free →</a>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div>
+    <div class="footer-logo">Jet<em>tana</em></div>
+    <div class="footer-tagline">Budget · Track · Grow</div>
+  </div>
+  <div class="footer-links">
+    <a href="#features">Features</a>
+    <a href="#how">How it works</a>
+    <a href="#story">Our story</a>
+    <a href="#support">Support</a>
+    <a href="https://jettana.app/app">Open app</a>
+  </div>
+  <div class="footer-right">
+    <div style="margin-bottom:4px;">Made with intention 🌿</div>
+    <div>© 2026 Jettana</div>
+  </div>
+</footer>
+
+<script>
+// Reveal on scroll
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.12 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
