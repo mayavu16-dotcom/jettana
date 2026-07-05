@@ -57,7 +57,7 @@ nav {
   opacity: 0.8; user-select: none;
 }
 .hero-content { position: relative; z-index: 1; }
-.hero-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--sage); margin-bottom: 12px; margin-top: 12px; }
+.hero-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--sage); margin-bottom: 12px; margin-top: 0; }
 .hero-headline {
   font-family: 'Cormorant Garamond', serif; font-size: clamp(42px, 5.5vw, 72px);
   font-weight: 900; line-height: 1.08; letter-spacing: -1.5px; color: var(--ink);
@@ -367,6 +367,21 @@ footer { background: var(--ink); color: rgba(255,255,255,0.55); padding: 48px 5%
                 <span class="mockup-row-val">$60</span>
                 <span class="mockup-row-val" style="color:#C0736A;">$60</span>
               </div>
+            </div>
+          </div>
+          <!-- Calculator FAB below sections, not overlapping -->
+          <div style="padding:8px 0 2px;">
+            <div style="width:28px;height:28px;background:var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);color:white;">
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3" y="2" width="14" height="16" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                <rect x="5.5" y="4.5" width="9" height="3" rx="0.75" fill="currentColor" opacity="0.9"/>
+                <circle cx="6.5" cy="11" r="1" fill="currentColor" opacity="0.8"/>
+                <circle cx="10" cy="11" r="1" fill="currentColor" opacity="0.8"/>
+                <circle cx="13.5" cy="11" r="1" fill="currentColor" opacity="0.8"/>
+                <circle cx="6.5" cy="14.5" r="1" fill="currentColor" opacity="0.8"/>
+                <circle cx="10" cy="14.5" r="1" fill="currentColor" opacity="0.8"/>
+                <rect x="12.5" y="13.5" width="2" height="2" rx="0.5" fill="currentColor" opacity="0.9"/>
+              </svg>
             </div>
           </div>
         </div>
