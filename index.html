@@ -155,6 +155,17 @@ nav {
 .step-num { width: 48px; height: 48px; border-radius: 12px; background: var(--sage-light); display: flex; align-items: center; justify-content: center; font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 900; color: var(--sage-dark); flex-shrink: 0; }
 .step-title { font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: 6px; }
 .step-desc { font-size: 14px; color: var(--steel); line-height: 1.65; }
+.how-step { cursor: pointer; border-radius: 12px; padding: 10px 12px; margin: -10px -12px; transition: background 0.25s; }
+.how-step .step-num { transition: background 0.25s, color 0.25s; }
+.how-step.active { background: var(--off-white); }
+.how-step.active .step-num { background: var(--sage); color: white; }
+.how-panels { position: relative; background: var(--off-white); min-height: 330px; }
+.how-panel { position: absolute; inset: 0; padding: 16px; display: flex; flex-direction: column; gap: 8px; opacity: 0; transition: opacity 0.4s ease; pointer-events: none; }
+.how-panel.active { opacity: 1; pointer-events: auto; }
+.hp-card { background: white; border-radius: 10px; padding: 14px; border: 1px solid var(--mist-light); }
+.hp-eyebrow { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--steel); margin-bottom: 10px; }
+.hp-caret { display: inline-block; width: 1.5px; height: 12px; background: var(--ink); margin-left: 2px; vertical-align: -2px; animation: hp-blink 1s steps(1) infinite; }
+@keyframes hp-blink { 50% { opacity: 0; } }
 .how-visual { position: sticky; top: 100px; }
 
 /* ── Story ── */
@@ -442,18 +453,9 @@ footer { background: var(--ink); color: rgba(255,255,255,0.55); padding: 48px 5%
         </div>
         <!-- App body placeholder -->
         <div style="padding:12px;display:flex;flex-direction:column;gap:6px;">
-          <div style="background:white;border-radius:8px;padding:10px 12px;border:1px solid var(--mist-light);">
-            <div style="font-size:9px;font-weight:700;color:var(--sage-dark);letter-spacing:0.5px;margin-bottom:6px;">INCOME</div>
-            <div style="display:flex;justify-content:space-between;font-size:10px;"><span style="color:var(--sage-dark);font-weight:600;">Bi-Weekly Pay</span><span style="color:var(--sage-dark);font-weight:700;">$2,865</span></div>
-          </div>
-          <div style="background:white;border-radius:8px;padding:10px 12px;border:1px solid var(--mist-light);">
-            <div style="font-size:9px;font-weight:700;color:var(--blush);letter-spacing:0.5px;margin-bottom:6px;">HOUSING</div>
-            <div style="display:flex;justify-content:space-between;font-size:10px;"><span>Rent</span><span style="color:var(--blush);font-weight:700;">$1,500</span></div>
-          </div>
-          <div style="background:white;border-radius:8px;padding:10px 12px;border:1px solid var(--mist-light);">
-            <div style="font-size:9px;font-weight:700;color:var(--blush);letter-spacing:0.5px;margin-bottom:6px;">FOOD</div>
-            <div style="display:flex;justify-content:space-between;font-size:10px;align-items:center;"><span>Trader Joe's</span><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.2;"><span style="font-size:8px;color:var(--steel);" class="fa-day7-date">Jul 7</span><span style="font-weight:700;">$178</span></div></div>
-          </div>
+          <div style="background:white;border-radius:8px;border:1px solid var(--mist-light);overflow:hidden;"><div style="background:var(--sage);padding:5px 12px;display:flex;justify-content:space-between;align-items:center;"><span style="font-size:8px;font-weight:700;letter-spacing:0.6px;color:white;">INCOME</span><span style="font-size:8.5px;font-weight:700;color:white;">$2,865</span></div><div style="padding:8px 12px;display:flex;justify-content:space-between;font-size:10px;"><span>Bi-Weekly Pay</span><span style="color:var(--sage-dark);font-weight:700;">$2,865</span></div></div>
+          <div style="background:white;border-radius:8px;border:1px solid var(--mist-light);overflow:hidden;"><div style="background:var(--blush);padding:5px 12px;display:flex;justify-content:space-between;align-items:center;"><span style="font-size:8px;font-weight:700;letter-spacing:0.6px;color:white;">HOUSING</span><span style="font-size:8.5px;font-weight:700;color:white;">$1,500</span></div><div style="padding:8px 12px;display:flex;justify-content:space-between;font-size:10px;"><span>Rent</span><span style="color:var(--blush);font-weight:700;">$1,500</span></div></div>
+          <div style="background:white;border-radius:8px;border:1px solid var(--mist-light);overflow:hidden;"><div style="background:var(--blush);padding:5px 12px;display:flex;justify-content:space-between;align-items:center;"><span style="font-size:8px;font-weight:700;letter-spacing:0.6px;color:white;">FOOD</span><span style="font-size:8.5px;font-weight:700;color:white;">$178</span></div><div style="padding:8px 12px;display:flex;justify-content:space-between;font-size:10px;align-items:center;"><span>Trader Joe's</span><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.2;"><span style="font-size:8px;color:var(--steel);" class="fa-day7-date">Jul 7</span><span style="font-weight:700;">$178</span></div></div></div>
         </div>
 
         <!-- Dropdown menu (hidden by default) -->
@@ -592,7 +594,7 @@ footer { background: var(--ink); color: rgba(255,255,255,0.55); padding: 48px 5%
           <div class="step-num">1</div>
           <div>
             <div class="step-title">Set your intention</div>
-            <div class="step-desc">Add a monthly intention at the top — a word, a goal, a reminder of why you're tracking. Then add your income sources.</div>
+            <div class="step-desc">Add a monthly intention at the top — a quote, a verse, a goal, a reminder of why you're tracking. Then add your income sources.</div>
           </div>
         </div>
         <div class="how-step reveal d1">
@@ -621,24 +623,7 @@ footer { background: var(--ink); color: rgba(255,255,255,0.55); padding: 48px 5%
           </div>
           <div class="mockup-bar">jettana.app</div>
         </div>
-        <div style="background:var(--off-white);padding:16px;display:flex;flex-direction:column;gap:8px;">
-          <div style="background:white;border-radius:10px;padding:14px;border:1px solid var(--mist-light);">
-            <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--steel);margin-bottom:10px;"><span class="dyn-month-full">July 2026</span> · "Be intentional with every dollar"</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
-              <div style="background:var(--sage-light);border-radius:6px;padding:8px;"><div style="font-size:8px;color:var(--sage-dark);font-weight:600;">INCOME</div><div style="font-size:14px;font-weight:700;color:var(--sage-dark);">$3,365</div></div>
-              <div style="background:var(--blush-light);border-radius:6px;padding:8px;"><div style="font-size:8px;color:var(--blush);font-weight:600;">EXPENSES</div><div style="font-size:14px;font-weight:700;color:var(--blush);">$1,627</div></div>
-            </div>
-            <div style="background:var(--mist-light);border-radius:6px;padding:10px;">
-              <div style="font-size:9px;color:var(--steel);margin-bottom:4px;">Food & Dining — $342 of $500</div>
-              <div style="background:var(--mist);border-radius:3px;height:5px;overflow:hidden;"><div style="background:var(--sage);width:68%;height:100%;border-radius:3px;"></div></div>
-            </div>
-          </div>
-          <div style="background:white;border-radius:10px;padding:12px;border:1px solid var(--mist-light);">
-            <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--steel);margin-bottom:8px;">Net saved this month</div>
-            <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:900;color:var(--sage-dark);">+$1,738</div>
-            <div style="font-size:10px;color:var(--steel);margin-top:2px;">income − expenses</div>
-          </div>
-        </div>
+        <div class="how-panels"><div class="how-panel active"><div class="hp-eyebrow" style="margin-bottom:0;"><span class="dyn-month-full">July 2026</span></div><div class="hp-card"><div style="font-size:12px;color:var(--ink);font-style:italic;font-weight:500;margin-bottom:4px;">"But seek ye first the kingdom of God, and his righteousness; and all these things shall be added unto you." — Matthew 6:33<span class="hp-caret"></span></div><div style="font-size:9px;color:var(--steel);">Your intention sits at the top of every month</div></div><div class="hp-card" style="padding:0;overflow:hidden;"><div style="background:var(--sage);padding:7px 14px;display:flex;justify-content:space-between;align-items:center;"><span style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:white;">Income</span><span style="font-size:10px;font-weight:700;color:white;">$3,365</span></div><div style="padding:10px 14px;"><div style="display:grid;grid-template-columns:1fr 64px 64px;gap:8px;font-size:8px;color:var(--steel);font-weight:700;letter-spacing:0.5px;text-transform:uppercase;"><span>Source</span><span style="text-align:right;">Planned</span><span style="text-align:right;">Received</span></div><div style="display:grid;grid-template-columns:1fr 64px 64px;gap:8px;align-items:center;font-size:10.5px;padding:6px 0;border-top:1px solid var(--mist-light);"><span>Bi-Weekly Pay</span><span style="text-align:right;font-weight:600;">$3,000</span><span style="text-align:right;font-weight:600;color:var(--sage-dark);">$2,865</span></div><div style="display:grid;grid-template-columns:1fr 64px 64px;gap:8px;align-items:center;font-size:10.5px;padding:6px 0;border-top:1px solid var(--mist-light);"><span>Freelance Design</span><span style="text-align:right;font-weight:600;">$500</span><span style="text-align:right;font-weight:600;color:var(--sage-dark);">$500</span></div><div style="display:grid;grid-template-columns:1fr 64px 64px;gap:8px;font-size:10.5px;padding-top:8px;border-top:1px solid var(--mist-light);font-weight:700;"><span>Total Income</span><span style="text-align:right;">$3,500</span><span style="text-align:right;color:var(--sage-dark);">$3,365</span></div></div></div></div><div class="how-panel"><div class="hp-card"><div class="hp-eyebrow">Budget vs actual</div><div style="margin-bottom:9px;"><div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--steel);margin-bottom:4px;"><span>Housing &amp; Utilities</span><span>$1,627 of $1,500</span></div><div style="background:var(--mist-light);border-radius:3px;height:5px;overflow:hidden;"><div style="background:var(--blush);width:100%;height:100%;border-radius:3px;"></div></div></div><div style="margin-bottom:9px;"><div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--steel);margin-bottom:4px;"><span>Food &amp; Dining</span><span>$342 of $500</span></div><div style="background:var(--mist-light);border-radius:3px;height:5px;overflow:hidden;"><div style="background:var(--sage);width:68%;height:100%;border-radius:3px;"></div></div></div><div style="margin-bottom:9px;"><div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--steel);margin-bottom:4px;"><span>Transportation</span><span>$96 of $150</span></div><div style="background:var(--mist-light);border-radius:3px;height:5px;overflow:hidden;"><div style="background:var(--sage);width:64%;height:100%;border-radius:3px;"></div></div></div><div style="margin-bottom:9px;"><div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--steel);margin-bottom:4px;"><span>Subscriptions</span><span>$45 of $45</span></div><div style="background:var(--mist-light);border-radius:3px;height:5px;overflow:hidden;"><div style="background:var(--sage);width:100%;height:100%;border-radius:3px;"></div></div></div></div><div class="hp-card" style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:10px;color:var(--steel);">Enter amounts manually or import a CSV</span><span style="font-size:9px;font-weight:700;color:var(--sage-dark);background:var(--sage-light);border-radius:20px;padding:3px 9px;white-space:nowrap;">⬆ Import</span></div></div><div class="how-panel"><div class="hp-card"><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;"><div style="background:var(--sage-light);border-radius:6px;padding:8px;"><div style="font-size:8px;color:var(--sage-dark);font-weight:600;">INCOME</div><div style="font-size:14px;font-weight:700;color:var(--sage-dark);">$3,365</div></div><div style="background:var(--blush-light);border-radius:6px;padding:8px;"><div style="font-size:8px;color:var(--blush);font-weight:600;">EXPENSES</div><div style="font-size:14px;font-weight:700;color:var(--blush);">$1,627</div></div></div><div class="hp-eyebrow" style="margin-bottom:6px;">Net saved this month</div><div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:900;color:var(--sage-dark);">+$1,738</div><div style="font-size:10px;color:var(--steel);margin-top:2px;">income − expenses</div></div><div class="hp-card" style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:10px;color:var(--steel);">✓ Food &amp; Dining stayed under budget</span><span style="font-size:9px;font-weight:700;color:var(--sage-dark);background:var(--sage-light);border-radius:20px;padding:3px 9px;white-space:nowrap;">📄 Report</span></div></div></div>
       </div>
     </div>
   </div>
@@ -712,6 +697,29 @@ const observer = new IntersectionObserver((entries) => {
   entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
 }, { threshold: 0.12 });
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// How-it-works step-linked mockup
+(function() {
+  var steps = document.querySelectorAll('.how-step');
+  var panels = document.querySelectorAll('.how-panel');
+  if (!steps.length || panels.length !== steps.length) return;
+  var idx = 0, timer = null;
+  function setStep(i) {
+    idx = i;
+    steps.forEach(function(s, k) { s.classList.toggle('active', k === i); });
+    panels.forEach(function(p, k) { p.classList.toggle('active', k === i); });
+  }
+  function startTimer() {
+    clearInterval(timer);
+    timer = setInterval(function() { setStep((idx + 1) % panels.length); }, 4500);
+  }
+  steps.forEach(function(s, k) {
+    s.addEventListener('click', function() { setStep(k); startTimer(); });
+  });
+  setStep(0);
+  startTimer();
+})();
+
 
 // Keep the feature-animation month current
 (function() {
