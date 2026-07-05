@@ -36,7 +36,7 @@ nav {
   background: rgba(255,255,255,0.92); backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(200,212,220,0.4);
 }
-.nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 700; color: var(--ink); text-decoration: none; letter-spacing: -0.5px; }
+.nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 700; color: var(--ink); text-decoration: none; letter-spacing: -0.5px; }
 .nav-logo em { font-style: italic; color: var(--sage); }
 .nav-links { display: flex; align-items: center; gap: 32px; }
 .nav-links a { font-size: 14px; font-weight: 500; color: var(--steel); text-decoration: none; transition: color 0.2s; }
@@ -46,7 +46,7 @@ nav {
 
 /* ── Hero ── */
 .hero {
-  padding: 96px 5% 72px;
+  padding: 72px 5% 60px;
   display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center;
   background: var(--white); position: relative; overflow: hidden;
 }
@@ -54,7 +54,7 @@ nav {
   position: absolute; right: -2%; top: 50%; transform: translateY(-50%);
   font-family: 'Sarabun', sans-serif; font-size: 320px; font-weight: 600;
   color: var(--sage-light); line-height: 1; pointer-events: none; z-index: 0;
-  opacity: 0.6; user-select: none;
+  opacity: 0.8; user-select: none;
 }
 .hero-content { position: relative; z-index: 1; }
 .hero-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--sage); margin-bottom: 20px; }
@@ -88,9 +88,9 @@ nav {
 .mockup-body { background: var(--off-white); padding: 16px; }
 
 /* Sidebar mockup */
-.mockup-app { display: grid; grid-template-columns: 140px 1fr; height: 380px; gap: 0; }
+.mockup-app { display: grid; grid-template-columns: 140px 1fr; height: 520px; gap: 0; }
 .mockup-sidebar { background: var(--ink); padding: 16px 12px; display: flex; flex-direction: column; gap: 8px; }
-.mockup-brand { font-family: 'Cormorant Garamond', serif; font-size: 13px; color: white; font-weight: 700; margin-bottom: 8px; }
+.mockup-brand { font-family: 'Cormorant Garamond', serif; font-size: 17px; color: white; font-weight: 700; margin-bottom: 8px; }
 .mockup-brand em { color: var(--sage); font-style: italic; }
 .mockup-label { font-size: 9px; font-weight: 700; letter-spacing: 1px; color: rgba(255,255,255,0.35); text-transform: uppercase; margin-top: 6px; }
 .mockup-month { font-size: 12px; color: rgba(255,255,255,0.6); padding: 6px 8px; border-radius: 5px; cursor: default; }
@@ -110,9 +110,9 @@ nav {
 .mockup-sec-hdr { padding: 7px 10px; display: flex; justify-content: space-between; align-items: center; }
 .mockup-sec-hdr span { font-size: 9px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: white; }
 .mockup-sec-hdr .amt { font-size: 11px; font-weight: 700; color: white; }
-.mockup-row { padding: 5px 10px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--mist-light); }
-.mockup-row-label { font-size: 10px; color: var(--ink); font-weight: 500; }
-.mockup-row-val { font-size: 10px; font-weight: 600; }
+.mockup-row { padding: 5px 10px; display: grid; grid-template-columns: 1fr 72px 72px; align-items: center; border-top: 1px solid var(--mist-light); gap: 0; }
+.mockup-row-label { font-size: 10px; color: var(--ink); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mockup-row-val { font-size: 10px; font-weight: 600; text-align: right; }
 
 /* ── Problem ── */
 .problem {
@@ -241,7 +241,11 @@ footer { background: var(--ink); color: rgba(255,255,255,0.55); padding: 48px 5%
       <a href="https://jettana.app/app" class="btn-primary">Start tracking free →</a>
       <a href="https://jettana.app/app?demo=true" class="btn-secondary">Try the demo</a>
     </div>
-    <p class="hero-note reveal d4">Free account · Syncs across devices · No payment required.</p>
+    <p class="hero-note reveal d4" style="display:flex;gap:20px;flex-wrap:wrap;">
+      <span>✓ No spreadsheets</span>
+      <span>✓ Works on any device</span>
+      <span>✓ Your data stays yours</span>
+    </p>
   </div>
   <div class="hero-mockup reveal d2">
     <div class="mockup-browser">
@@ -256,30 +260,32 @@ footer { background: var(--ink); color: rgba(255,255,255,0.55); padding: 48px 5%
       <div class="mockup-app">
         <div class="mockup-sidebar">
           <div class="mockup-brand">Jet<em>tana</em></div>
+          <div style="font-size:8px;color:rgba(255,255,255,0.35);letter-spacing:0.5px;margin-bottom:6px;">BUDGET · TRACK · GROW</div>
           <div class="mockup-label">Your Months</div>
           <div class="mockup-month active">Jul ✦</div>
           <div class="mockup-month">Jun</div>
           <div class="mockup-month">May</div>
         </div>
-        <div class="mockup-main">
+        <div class="mockup-main" style="position:relative;">
           <div class="mockup-topbar">
-            <div class="mockup-month-title">July 2026</div>
+            <div><div class="mockup-month-title">July 2026</div><div style="font-size:9px;color:var(--sage);font-weight:600;margin-top:1px;">On track · $1.3k ahead</div></div>
             <div class="mockup-search">Search…</div>
           </div>
+          <div style="font-size:11px;color:var(--sage-dark);font-style:italic;font-weight:700;text-align:center;margin-bottom:10px;letter-spacing:0.2px;">"Be intentional with every dollar"</div>
           <div class="mockup-cards">
-            <div class="mockup-stat">
+            <div class="mockup-stat" style="border-top:2px solid #6B9E70;">
               <div class="mockup-stat-label">Total Income</div>
               <div class="mockup-stat-val green">$3,365</div>
             </div>
-            <div class="mockup-stat">
+            <div class="mockup-stat" style="border-top:2px solid #6B9E70;">
               <div class="mockup-stat-label">Net Balance</div>
               <div class="mockup-stat-val green">$1,738</div>
             </div>
-            <div class="mockup-stat">
+            <div class="mockup-stat" style="border-top:2px solid #C0736A;">
               <div class="mockup-stat-label">Total Expenses</div>
               <div class="mockup-stat-val blush">$1,627</div>
             </div>
-            <div class="mockup-stat">
+            <div class="mockup-stat" style="border-top:2px solid #A8823E;">
               <div class="mockup-stat-label">Total Saved</div>
               <div class="mockup-stat-val">$700</div>
             </div>
@@ -289,27 +295,56 @@ footer { background: var(--ink); color: rgba(255,255,255,0.55); padding: 48px 5%
               <div class="mockup-sec-hdr" style="background:#5A8A5F;">
                 <span>INCOME</span><span class="amt">$3,365</span>
               </div>
+              <div class="mockup-row" style="opacity:0.5;padding:3px 10px;">
+                <span class="mockup-row-label"></span>
+                <span style="font-size:8px;color:var(--steel);font-weight:700;letter-spacing:0.5px;text-align:right;">PLANNED</span>
+                <span style="font-size:8px;color:var(--steel);font-weight:700;letter-spacing:0.5px;text-align:right;">RECEIVED</span>
+              </div>
               <div class="mockup-row">
                 <span class="mockup-row-label" style="color:#5A8A5F;font-weight:600;">Bi-Weekly Pay</span>
+                <span class="mockup-row-val">$3,000</span>
                 <span class="mockup-row-val" style="color:#5A8A5F;">$2,865</span>
+              </div>
+              <div class="mockup-row">
+                <span class="mockup-row-label" style="color:#5A8A5F;font-weight:600;">Freelance Design</span>
+                <span class="mockup-row-val">$500</span>
+                <span class="mockup-row-val" style="color:#5A8A5F;">$500</span>
               </div>
             </div>
             <div class="mockup-section">
               <div class="mockup-sec-hdr" style="background:#8B6914;">
                 <span>SAVINGS</span><span class="amt">$700</span>
               </div>
+              <div class="mockup-row" style="opacity:0.5;">
+                <span class="mockup-row-label"></span>
+                <span style="font-size:8px;color:var(--steel);font-weight:700;letter-spacing:0.5px;text-align:right;">ACTUAL</span>
+                <span style="font-size:8px;color:var(--steel);font-weight:700;letter-spacing:0.5px;text-align:right;">GROWTH</span>
+              </div>
               <div class="mockup-row">
                 <span class="mockup-row-label">Marcus HYSA</span>
+                <span class="mockup-row-val">$500</span>
                 <span class="mockup-row-val" style="color:#5A8A5F;">+$12</span>
+              </div>
+              <div class="mockup-row">
+                <span class="mockup-row-label">Roth IRA</span>
+                <span class="mockup-row-val">$200</span>
+                <span class="mockup-row-val" style="color:#5A8A5F;">+$340</span>
               </div>
             </div>
             <div class="mockup-section">
               <div class="mockup-sec-hdr" style="background:#A05A50;">
-                <span>HOUSING</span><span class="amt">$1,627</span>
+                <span>HOUSING</span>
+                <span style="background:rgba(255,255,255,0.2);border-radius:8px;padding:1px 5px;font-size:7.5px;font-weight:700;letter-spacing:0.3px;">99%</span>
+              </div>
+              <div class="mockup-row" style="opacity:0.5;">
+                <span class="mockup-row-label"></span>
+                <span style="font-size:8px;color:var(--steel);font-weight:700;letter-spacing:0.5px;text-align:right;">BUDGET</span>
+                <span style="font-size:8px;color:var(--steel);font-weight:700;letter-spacing:0.5px;text-align:right;">ACTUAL</span>
               </div>
               <div class="mockup-row">
                 <span class="mockup-row-label">Rent</span>
-                <span class="mockup-row-val" style="color:#E8824A;">$1,500</span>
+                <span class="mockup-row-val">$1,500</span>
+                <span class="mockup-row-val" style="color:#C0736A;">$1,627</span>
               </div>
             </div>
           </div>
