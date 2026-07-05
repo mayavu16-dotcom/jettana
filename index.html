@@ -271,13 +271,13 @@ footer { background: var(--ink); color: rgba(255,255,255,0.55); padding: 48px 5%
           <div class="mockup-brand">Jet<em>tana</em></div>
           <div style="font-size:8px;color:rgba(255,255,255,0.35);letter-spacing:0.5px;margin-bottom:6px;">BUDGET · TRACK · GROW</div>
           <div class="mockup-label">Your Months</div>
-          <div class="mockup-month active">Jul ✦</div>
-          <div class="mockup-month">Jun</div>
-          <div class="mockup-month">May</div>
+          <div class="mockup-month active"><span class="dyn-month-abbr" data-offset="0">Jul</span> ✦</div>
+          <div class="mockup-month dyn-month-abbr" data-offset="-1">Jun</div>
+          <div class="mockup-month dyn-month-abbr" data-offset="-2">May</div>
         </div>
         <div class="mockup-main" style="position:relative;">
           <div class="mockup-topbar">
-            <div><div class="mockup-month-title">July 2026</div><div style="font-size:9px;color:var(--sage);font-weight:600;margin-top:1px;">On track · $1.7k ahead</div></div>
+            <div><div class="mockup-month-title dyn-month-full">July 2026</div><div style="font-size:9px;color:var(--sage);font-weight:600;margin-top:1px;">On track · $1.7k ahead</div></div>
             <div class="mockup-search">Search…</div>
           </div>
           <div style="font-size:11px;color:var(--sage-dark);font-style:italic;font-weight:700;text-align:center;margin-bottom:10px;letter-spacing:0.2px;">"Be intentional with every dollar"</div>
@@ -363,17 +363,17 @@ footer { background: var(--ink); color: rgba(255,255,255,0.55); padding: 48px 5%
               <div class="mockup-row">
                 <span class="mockup-row-label">Rent</span>
                 <span class="mockup-row-val">$1,500</span>
-                <span class="mockup-row-val" style="color:#C0736A;">$1,627</span>
+                <span class="mockup-row-val" style="color:#C0736A;"><span class="dyn-date" data-day="1" style="font-size:7.5px;color:var(--steel);font-weight:500;margin-right:4px;">Jul 1</span>$1,627</span>
               </div>
               <div class="mockup-row">
                 <span class="mockup-row-label">Electric</span>
                 <span class="mockup-row-val">$80</span>
-                <span class="mockup-row-val" style="color:#C0736A;">$67</span>
+                <span class="mockup-row-val" style="color:#C0736A;"><span class="dyn-date" data-day="12" style="font-size:7.5px;color:var(--steel);font-weight:500;margin-right:4px;">Jul 12</span>$67</span>
               </div>
               <div class="mockup-row">
                 <span class="mockup-row-label">Internet</span>
                 <span class="mockup-row-val">$60</span>
-                <span class="mockup-row-val" style="color:#C0736A;">$60</span>
+                <span class="mockup-row-val" style="color:#C0736A;"><span class="dyn-date" data-day="15" style="font-size:7.5px;color:var(--steel);font-weight:500;margin-right:4px;">Jul 15</span>$60</span>
               </div>
             </div>
           </div>
@@ -622,7 +622,7 @@ footer { background: var(--ink); color: rgba(255,255,255,0.55); padding: 48px 5%
         </div>
         <div style="background:var(--off-white);padding:16px;display:flex;flex-direction:column;gap:8px;">
           <div style="background:white;border-radius:10px;padding:14px;border:1px solid var(--mist-light);">
-            <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--steel);margin-bottom:10px;">July 2026 · "Be intentional with every dollar"</div>
+            <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--steel);margin-bottom:10px;"><span class="dyn-month-full">July 2026</span> · "Be intentional with every dollar"</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
               <div style="background:var(--sage-light);border-radius:6px;padding:8px;"><div style="font-size:8px;color:var(--sage-dark);font-weight:600;">INCOME</div><div style="font-size:14px;font-weight:700;color:var(--sage-dark);">$3,365</div></div>
               <div style="background:var(--blush-light);border-radius:6px;padding:8px;"><div style="font-size:8px;color:var(--blush);font-weight:600;">EXPENSES</div><div style="font-size:14px;font-weight:700;color:var(--blush);">$1,627</div></div>
@@ -726,6 +726,15 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
   var mo = months[now.getMonth()].slice(0, 3);
   [['fa-mon-2', 2], ['fa-mon-5', 5], ['fa-mon-7', 7]].forEach(function(p) {
     document.querySelectorAll('.' + p[0]).forEach(function(el) { el.textContent = mo + ' ' + p[1]; });
+  });
+  document.querySelectorAll('.dyn-month-full').forEach(function(el) { el.textContent = full; });
+  document.querySelectorAll('.dyn-month-abbr').forEach(function(el) {
+    var off = parseInt(el.getAttribute('data-offset') || '0', 10);
+    var d = new Date(now.getFullYear(), now.getMonth() + off, 1);
+    el.textContent = months[d.getMonth()].slice(0, 3);
+  });
+  document.querySelectorAll('.dyn-date').forEach(function(el) {
+    el.textContent = mo + ' ' + el.getAttribute('data-day');
   });
 })();
 
