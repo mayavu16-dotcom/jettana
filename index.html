@@ -117,14 +117,14 @@ nav {
 
 /* ── Problem ── */
 .problem {
-  background: var(--ink); color: white; padding: 100px 5%;
+  background: var(--ink); color: white; padding: 80px 5% 60px;
   text-align: center;
 }
 .problem-headline { font-family: 'Cormorant Garamond', serif; font-size: clamp(28px, 3.5vw, 48px); font-weight: 700; line-height: 1.2; max-width: 720px; margin: 0 auto 24px; }
 .problem-headline em { font-style: italic; color: var(--sage); }
-.problem-sub { font-size: 16px; color: rgba(255,255,255,0.6); max-width: 520px; margin: 0 auto 60px; line-height: 1.7; }
+.problem-sub { font-size: 16px; color: rgba(255,255,255,0.6); max-width: 520px; margin: 0 auto 40px; line-height: 1.7; }
 .problem-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 40px; max-width: 720px; margin: 0 auto; }
-.stat-num { font-family: 'Cormorant Garamond', serif; font-size: 48px; font-weight: 900; color: var(--sage); margin-bottom: 8px; }
+.stat-num { font-family: 'Cormorant Garamond', serif; font-size: 48px; font-weight: 900; color: var(--sage); margin-bottom: 12px; }
 .stat-label { font-size: 14px; color: rgba(255,255,255,0.65); line-height: 1.5; }
 
 /* ── Features ── */
@@ -401,20 +401,129 @@ footer { background: var(--ink); color: rgba(255,255,255,0.55); padding: 48px 5%
     </div>
     <div class="reveal d2">
       <div class="stat-num">$400+</div>
-      <div class="stat-label">the average monthly spending on things most people can't account for</div>
+      <div class="stat-label">the average monthly spend people can't explain</div>
     </div>
     <div class="reveal d3">
-      <div class="stat-num">100%</div>
-      <div class="stat-label">yours — no app to download, no subscription wall, cancel anytime</div>
+      <div class="stat-num">$0</div>
+      <div class="stat-label">to get started — no credit card, no subscription required</div>
     </div>
   </div>
 </section>
 
 <!-- Features -->
 <section class="features" id="features">
-  <div class="section-eyebrow reveal">What's inside</div>
-  <h2 class="section-headline reveal d1">Everything you need.<br><em>Nothing you don't.</em></h2>
-  <p class="section-sub reveal d2">Jettana is a full budget tracker that lives in one file. No downloads, no subscriptions, no data leaving your device unless you want it to.</p>
+  <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:48px;align-items:center;margin-bottom:56px;">
+    <div>
+      <div class="section-eyebrow reveal">What's inside</div>
+      <h2 class="section-headline reveal d1">Everything you need.<br><em>Nothing you don't.</em></h2>
+      <p class="section-sub reveal d2" style="margin-bottom:0;">Jettana is a full budget tracker that lives in one file. No downloads, no subscriptions, no data leaving your device unless you want it to.</p>
+    </div>
+    <!-- Interactive feature animation -->
+    <div class="reveal d2" style="display:flex;justify-content:center;align-items:center;">
+      <div id="feat-anim" style="width:100%;max-width:440px;background:var(--off-white);border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(26,35,50,0.12);border:1px solid var(--mist-light);position:relative;font-family:'Outfit',sans-serif;">
+        <!-- Mini topbar -->
+        <div style="background:white;border-bottom:1px solid var(--mist-light);padding:10px 14px;display:flex;align-items:center;gap:8px;">
+          <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;color:var(--ink);flex:1;">Jet<em style="font-style:italic;color:var(--sage);">tana</em></div>
+          <div style="background:var(--mist-light);border-radius:6px;padding:4px 10px;font-size:10px;color:var(--steel);flex:1;">Search…</div>
+          <div id="fa-more-btn" style="width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--ink);letter-spacing:1px;border:1px solid var(--mist);cursor:pointer;transition:all 0.2s;position:relative;">⋯
+            <div id="fa-hint-dot" style="position:absolute;top:4px;right:4px;width:6px;height:6px;background:var(--sage);border-radius:50%;animation:hint-pulse 1.5s ease-in-out infinite;"></div>
+          </div>
+          <div style="background:var(--sage);color:white;border-radius:6px;padding:4px 8px;font-size:10px;font-weight:600;">💬 Ask me</div>
+        </div>
+        <!-- App body placeholder -->
+        <div style="padding:12px;display:flex;flex-direction:column;gap:6px;">
+          <div style="background:white;border-radius:8px;padding:10px 12px;border:1px solid var(--mist-light);">
+            <div style="font-size:9px;font-weight:700;color:var(--sage-dark);letter-spacing:0.5px;margin-bottom:6px;">INCOME</div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;"><span style="color:var(--sage-dark);font-weight:600;">Bi-Weekly Pay</span><span style="color:var(--sage-dark);font-weight:700;">$2,865</span></div>
+          </div>
+          <div style="background:white;border-radius:8px;padding:10px 12px;border:1px solid var(--mist-light);">
+            <div style="font-size:9px;font-weight:700;color:var(--blush);letter-spacing:0.5px;margin-bottom:6px;">HOUSING</div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;"><span>Rent</span><span style="color:var(--blush);font-weight:700;">$1,500</span></div>
+          </div>
+          <div style="background:white;border-radius:8px;padding:10px 12px;border:1px solid var(--mist-light);">
+            <div style="font-size:9px;font-weight:700;color:var(--blush);letter-spacing:0.5px;margin-bottom:6px;">FOOD</div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;align-items:center;"><span>Trader Joe's</span><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:8px;color:var(--steel);">Jul 7</span><span style="font-weight:700;">$178</span></div></div>
+          </div>
+        </div>
+
+        <!-- Dropdown menu (hidden by default) -->
+        <div id="fa-menu" style="position:absolute;top:46px;right:8px;width:190px;background:white;border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,0.15);border:1px solid var(--mist-light);z-index:10;opacity:0;pointer-events:none;transition:opacity 0.2s,transform 0.2s;transform:translateY(-4px);">
+          <div style="background:var(--sage);padding:8px 12px;border-radius:9px 9px 0 0;display:flex;align-items:center;gap:6px;">
+            <span style="font-size:10px;font-weight:700;color:white;">✦ Support Jettana — $6/mo</span>
+          </div>
+          <div style="padding:4px 0;">
+            <div style="padding:3px 12px;font-size:9px;font-weight:700;letter-spacing:0.8px;color:var(--steel);text-transform:uppercase;margin-top:3px;">Analytics</div>
+            <div id="fa-cal-item" style="padding:7px 12px;font-size:11px;color:var(--ink);display:flex;align-items:center;gap:8px;border-radius:5px;margin:0 4px;transition:background 0.15s;">📅 Spending calendar</div>
+            <div style="padding:7px 12px;font-size:11px;color:var(--ink);display:flex;align-items:center;gap:8px;">📊 Spending trends</div>
+            <div style="border-top:1px solid var(--mist-light);margin:3px 0;"></div>
+            <div style="padding:3px 12px;font-size:9px;font-weight:700;letter-spacing:0.8px;color:var(--steel);text-transform:uppercase;">Import / Export</div>
+            <div style="padding:7px 12px;font-size:11px;color:var(--ink);display:flex;align-items:center;gap:8px;">⬆ Import bank statement</div>
+            <div style="padding:7px 12px;font-size:11px;color:var(--steel);display:flex;align-items:center;gap:8px;">⬇ Export ▾</div>
+          </div>
+        </div>
+
+        <!-- Calendar result modal (hidden by default) -->
+        <div id="fa-calendar" style="position:absolute;inset:0;background:rgba(0,0,0,0.4);border-radius:16px;z-index:20;opacity:0;pointer-events:none;transition:opacity 0.3s;display:flex;align-items:center;justify-content:center;">
+          <div style="background:white;border-radius:12px;width:92%;box-shadow:0 8px 32px rgba(0,0,0,0.2);overflow:hidden;">
+            <div style="background:var(--ink);padding:10px 14px;display:flex;align-items:center;gap:8px;">
+              <span style="font-size:11px;font-weight:700;color:white;">📅 Spending Calendar — July 2026</span>
+            </div>
+            <div style="padding:10px;display:grid;grid-template-columns:repeat(7,1fr);gap:2px;font-family:'Outfit',sans-serif;">
+              <div style="font-size:8px;font-weight:700;color:var(--steel);text-align:center;">S</div><div style="font-size:8px;font-weight:700;color:var(--steel);text-align:center;">M</div><div style="font-size:8px;font-weight:700;color:var(--steel);text-align:center;">T</div><div style="font-size:8px;font-weight:700;color:var(--steel);text-align:center;">W</div><div style="font-size:8px;font-weight:700;color:var(--steel);text-align:center;">T</div><div style="font-size:8px;font-weight:700;color:var(--steel);text-align:center;">F</div><div style="font-size:8px;font-weight:700;color:var(--steel);text-align:center;">S</div>
+              <div style="height:18px;"></div>
+              <div style="height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:600;color:var(--steel);">1</div>
+              <div style="height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:600;color:var(--steel);">2</div>
+              <div style="height:18px;border-radius:3px;background:var(--blush-light);display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:var(--blush);border:1px solid #E8A8A2;">3</div>
+              <div style="height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:600;color:var(--steel);">4</div>
+              <div style="height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:600;color:var(--steel);">5</div>
+              <div style="height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:600;color:var(--steel);">6</div>
+              <div style="height:18px;border-radius:3px;background:var(--blush-light);display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:var(--blush);border:1px solid #E8A8A2;">7</div>
+              <div style="height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:600;color:var(--steel);">8</div>
+              <div style="height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:600;color:var(--steel);">9</div>
+              <div style="height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:600;color:var(--steel);">10</div>
+              <div style="height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:600;color:var(--steel);">11</div>
+              <div style="height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:600;color:var(--steel);">12</div>
+              <div style="height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:600;color:var(--steel);">13</div>
+              <div style="height:18px;border-radius:3px;background:var(--blush-light);display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:var(--blush);border:1px solid #E8A8A2;">14</div>
+              <div style="height:18px;border-radius:3px;background:var(--blush-light);display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:var(--blush);border:1px solid #E8A8A2;">15</div>
+              <div style="height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:600;color:var(--steel);">16</div>
+              <div style="height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:600;color:var(--steel);">17</div>
+              <div style="height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:600;color:var(--steel);">18</div>
+              <div style="height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:600;color:var(--steel);">19</div>
+              <div style="height:18px;border-radius:3px;background:var(--blush-light);display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:var(--blush);border:1px solid #E8A8A2;">20</div>
+              <div style="height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:600;color:var(--steel);">21</div>
+              <div style="height:18px;border-radius:3px;background:var(--blush-light);display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:var(--blush);border:1px solid #E8A8A2;">22</div>
+              <div style="height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:600;color:var(--steel);">23</div>
+              <div style="height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:600;color:var(--steel);">24</div>
+              <div style="height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:600;color:var(--steel);">25</div>
+              <div style="height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:600;color:var(--steel);">26</div>
+              <div style="height:18px;border-radius:3px;background:var(--blush-light);display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:var(--blush);border:1px solid #E8A8A2;">27</div>
+              <div style="height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:600;color:var(--steel);">28</div>
+              <div style="height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:600;color:var(--steel);">29</div>
+              <div style="height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:600;color:var(--steel);">30</div>
+            </div>
+            <div style="padding:6px 10px;background:var(--mist-light);font-size:9px;color:var(--steel);text-align:center;">Tap any day to see transactions</div>
+          </div>
+          <!-- Day popover -->
+          <div id="fa-day-pop" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:white;border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,0.18);border:1px solid var(--mist);padding:12px 16px;min-width:180px;opacity:0;transition:opacity 0.25s;z-index:30;">
+            <div style="font-size:10px;font-weight:700;color:var(--sage-dark);margin-bottom:8px;">Jul 7</div>
+            <div style="font-size:8px;font-weight:700;color:var(--steel);letter-spacing:0.5px;text-transform:uppercase;margin-bottom:5px;">Food</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;gap:12px;">
+              <span style="color:var(--ink);">🛒 Trader Joe's</span>
+              <span style="font-weight:700;color:var(--blush);">$178</span>
+            </div>
+            <div style="border-top:1px solid var(--mist-light);margin:8px 0 6px;"></div>
+            <div style="font-size:10px;color:var(--steel);">Total · <strong style="color:var(--ink);">$178</strong></div>
+          </div>
+        </div>
+
+        <!-- Animated cursor -->
+        <div id="fa-cursor" style="position:absolute;top:20px;left:50%;width:16px;height:16px;pointer-events:none;z-index:30;transition:all 0.6s cubic-bezier(0.25,0.46,0.45,0.94);opacity:0;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--ink)" xmlns="http://www.w3.org/2000/svg"><path d="M4 2L20 12L12 13L8 22L4 2Z"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="features-grid">
     <div class="feature-card reveal">
       <div class="feature-icon">💳</div>
@@ -581,6 +690,91 @@ const observer = new IntersectionObserver((entries) => {
   entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
 }, { threshold: 0.12 });
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// Feature animation sequence
+(function() {
+  function runFeatAnim() {
+    var cursor = document.getElementById('fa-cursor');
+    var menu = document.getElementById('fa-menu');
+    var cal = document.getElementById('fa-calendar');
+    var moreBtn = document.getElementById('fa-more-btn');
+    var calItem = document.getElementById('fa-cal-item');
+    var hintDot = document.getElementById('fa-hint-dot');
+    if (!cursor || !menu || !cal) return;
+
+    function reset() {
+      cursor.style.opacity = '0';
+      menu.style.opacity = '0'; menu.style.pointerEvents = 'none'; menu.style.transform = 'translateY(-4px)';
+      cal.style.opacity = '0'; cal.style.pointerEvents = 'none';
+      moreBtn.style.background = ''; moreBtn.style.borderColor = '';
+      calItem.style.background = '';
+      if (hintDot) hintDot.style.display = '';
+    }
+
+    reset();
+
+    // Step 1 — cursor appears, moves toward ⋯ button
+    setTimeout(function() {
+      cursor.style.opacity = '1';
+      cursor.style.top = '80px'; cursor.style.left = '60%';
+    }, 800);
+
+    setTimeout(function() {
+      cursor.style.top = '16px'; cursor.style.left = 'calc(100% - 98px)';
+    }, 1400);
+
+    // Step 2 — ⋯ highlights, menu opens
+    setTimeout(function() {
+      moreBtn.style.background = 'var(--mist-light)';
+      moreBtn.style.borderColor = 'var(--sage)';
+      if (hintDot) hintDot.style.display = 'none';
+      menu.style.opacity = '1'; menu.style.pointerEvents = 'auto'; menu.style.transform = 'translateY(0)';
+    }, 2000);
+
+    // Step 3 — cursor moves to Spending calendar item
+    setTimeout(function() {
+      cursor.style.top = '118px'; cursor.style.left = 'calc(100% - 108px)';
+    }, 2600);
+
+    // Step 4 — highlight calendar item
+    setTimeout(function() {
+      calItem.style.background = 'var(--sage-light)';
+    }, 3100);
+
+    // Step 5 — menu closes, calendar modal opens
+    setTimeout(function() {
+      menu.style.opacity = '0'; menu.style.pointerEvents = 'none';
+      cursor.style.opacity = '0';
+      cal.style.opacity = '1'; cal.style.pointerEvents = 'auto';
+    }, 3600);
+
+    // Step 5b — cursor reappears, moves to day 7 on calendar
+    var dayPop = document.getElementById('fa-day-pop');
+    setTimeout(function() {
+      cursor.style.opacity = '1';
+      cursor.style.top = '148px'; cursor.style.left = '105px';
+    }, 4400);
+
+    // Step 5c — cursor clicks, popover appears
+    setTimeout(function() {
+      if (dayPop) dayPop.style.opacity = '1';
+      cursor.style.opacity = '0';
+    }, 5000);
+
+    // Step 6 — reset and loop
+    setTimeout(function() {
+      if (dayPop) dayPop.style.opacity = '0';
+      cal.style.opacity = '0'; cal.style.pointerEvents = 'none';
+      setTimeout(reset, 400);
+      setTimeout(runFeatAnim, 1200);
+    }, 7800);
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(runFeatAnim, 1500);
+  });
+})();
+
 </script>
 </body>
 </html>
