@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Jettana — Budget with intention.</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,700;1,700&family=Cormorant+Garamond:ital,wght@0,700;1,700&family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,700;1,700&family=Cormorant+Garamond:ital,wght@0,700;1,700&family=Outfit:wght@300;400;500;600;700&family=Sarabun:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -46,13 +46,13 @@ nav {
 
 /* ── Hero ── */
 .hero {
-  min-height: 100vh; padding: 120px 5% 80px;
+  min-height: 100vh; padding: 88px 5% 60px;
   display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center;
   background: var(--white); position: relative; overflow: hidden;
 }
 .thai-watermark {
   position: absolute; right: -2%; top: 50%; transform: translateY(-50%);
-  font-family: 'Noto Sans Thai', sans-serif; font-size: 320px; font-weight: 600;
+  font-family: 'Sarabun', sans-serif; font-size: 320px; font-weight: 600;
   color: var(--sage-light); line-height: 1; pointer-events: none; z-index: 0;
   opacity: 0.6; user-select: none;
 }
@@ -133,9 +133,9 @@ nav {
 .section-headline em { font-style: italic; }
 .section-sub { font-size: 16px; color: var(--steel); line-height: 1.7; max-width: 540px; margin-bottom: 56px; }
 .features-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
-.feature-card { background: white; border-radius: 14px; padding: 28px; border: 1px solid var(--mist-light); transition: box-shadow 0.2s, transform 0.2s; }
+.feature-card { background: white; border-radius: 14px; padding: 24px 24px 28px; border: 1px solid var(--mist-light); transition: box-shadow 0.2s, transform 0.2s; }
 .feature-card:hover { box-shadow: 0 8px 28px rgba(26,35,50,0.08); transform: translateY(-2px); }
-.feature-icon { font-size: 24px; margin-bottom: 14px; }
+.feature-icon { font-size: 28px; margin-bottom: 12px; }
 .feature-title { font-size: 15px; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
 .feature-desc { font-size: 13.5px; color: var(--steel); line-height: 1.6; }
 
@@ -152,10 +152,10 @@ nav {
 /* ── Story ── */
 .story { padding: 100px 5%; background: var(--gold-light); border-top: 1px solid rgba(168,130,62,0.15); border-bottom: 1px solid rgba(168,130,62,0.15); }
 .story-inner { max-width: 640px; margin: 0 auto; }
-.story-thai { font-family: 'Noto Sans Thai', sans-serif; font-size: 48px; font-weight: 600; color: var(--gold); margin-bottom: 8px; line-height: 1; }
+.story-thai { font-family: 'Sarabun', sans-serif; font-size: 48px; font-weight: 600; color: var(--gold); margin-bottom: 8px; line-height: 1; }
 .story-phonetic { font-size: 13px; color: var(--gold); opacity: 0.75; margin-bottom: 28px; letter-spacing: 0.5px; }
 .story-text { font-size: 16px; color: var(--ink); line-height: 1.8; }
-.story-text p + p { margin-top: 18px; }
+.story-text p + p { margin-top: 22px; }
 .story-sig { margin-top: 36px; font-size: 15px; color: var(--steel); font-style: italic; }
 
 /* ── Support ── */
@@ -455,6 +455,12 @@ footer { background: var(--ink); color: rgba(255,255,255,0.55); padding: 48px 5%
     </div>
     <div class="story-sig reveal d2">— Maya 💚</div>
   </div>
+</section>
+
+<!-- Mid-page CTA nudge -->
+<section style="background:var(--sage);padding:60px 5%;text-align:center;">
+  <p style="font-family:'Cormorant Garamond',serif;font-size:clamp(22px,3vw,36px);font-weight:700;color:white;font-style:italic;margin-bottom:20px;">"You just need a place to begin."</p>
+  <a href="https://jettana.app/app" style="background:white;color:var(--sage-dark);font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;padding:12px 28px;border-radius:8px;text-decoration:none;display:inline-block;transition:transform 0.15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">Start tracking free →</a>
 </section>
 
 <!-- Support -->
