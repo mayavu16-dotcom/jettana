@@ -216,6 +216,10 @@ footer { background: var(--ink); color: rgba(255,255,255,0.55); padding: 48px 5%
 
 /* ── Responsive ── */
 @media (max-width: 900px) {
+  .how-step .how-panel { position: static; opacity: 1; pointer-events: auto; min-height: 0; padding: 14px 0 0; grid-column: 1 / -1; }
+  .how-step { cursor: default; }
+  .how-step.active { background: none; }
+  .how-step.active .step-num { background: var(--sage-light); color: var(--sage-dark); }
   .hero { grid-template-columns: 1fr; padding-top: 100px; }
   .thai-watermark { font-size: 180px; opacity: 0.35; }
   .hero-mockup { display: none; }
@@ -712,6 +716,26 @@ const observer = new IntersectionObserver((entries) => {
   entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
 }, { threshold: 0.12 });
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// Mobile: interleave the how-panels under their steps
+(function() {
+  var mq = window.matchMedia('(max-width: 900px)');
+  var wrap = document.querySelector('.how-panels');
+  var steps = document.querySelectorAll('.how-step');
+  if (!wrap || steps.length === 0) return;
+  var panels = Array.prototype.slice.call(wrap.children);
+  function place() {
+    if (mq.matches) {
+      panels.forEach(function(p, i) { if (steps[i]) steps[i].appendChild(p); });
+    } else {
+      panels.forEach(function(p) { wrap.appendChild(p); });
+    }
+  }
+  if (mq.addEventListener) mq.addEventListener('change', place);
+  else mq.addListener(place);
+  place();
+})();
+
 
 // How-it-works step-linked mockup
 (function() {
