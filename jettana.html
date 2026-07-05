@@ -1859,6 +1859,13 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
 .dark #demo-banner [style*="color:#A07800"] { color: #A89040 !important; }
 .dark #demo-banner button[style*="background:#A07800"] { background: #5A4A10 !important; color: #E8C96A !important; }
 .dark #demo-banner button[style*="background:rgba(240"] { background: rgba(90,74,16,0.4) !important; border-color: #5A4A20 !important; color: #C8A84A !important; }
+/* Demo banner: stack on mobile so text isn't crushed by buttons */
+@media (max-width: 700px) {
+  #demo-banner { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; }
+  #demo-banner > div:last-child { width: 100%; }
+  #demo-banner > div:last-child button,
+  #demo-banner > div:last-child a { flex: 1 1 calc(50% - 4px); text-align: center; }
+}
 .dark #income-empty-state { background: #1A2E1C !important; border-color: var(--sage) !important; }
 .dark .bulk-bar { background: #1E2A38 !important; border-color: #2A3A4A !important; }
 .dark .bulk-bar-count { color: var(--steel) !important; }
