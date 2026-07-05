@@ -5215,25 +5215,50 @@ function confirmDeleteAccount() {
 // Auth state listener - handles ALL auth events
 // INITIAL_SESSION fires on every page load/refresh with the persisted session
 // Fallback: if onAuthStateChange never fires within 5s, show login
-var _authTimeout = setTimeout(function() { showAuthModal(); }, 5000);
+var _isDemoMode = new URLSearchParams(window.location.search).get('demo') === 'true'
+               || sessionStorage.getItem('jettana_pending_demo') === '1';
+var _authTimeout = setTimeout(function() {
+  if (_isDemoMode) return; // don't show auth modal in demo mode
+  showAuthModal();
+}, 5000);
 var _pendingAuth = null; // store auth result until DOM is ready
 
 function _handleAuthReady() {
   if (!_pendingAuth) return;
   var event = _pendingAuth.event, session = _pendingAuth.session;
   _pendingAuth = null;
+  // Demo bypass — skip auth, load demo directly
+  if (_isDemoMode && (!session || !session.user)) {
+    clearTimeout(_authTimeout);
+    sessionStorage.removeItem('jettana_pending_demo');
+    hideAuthModal();
+    setTimeout(function() { loadDemo(); }, 500);
+    return;
+  }
   if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
     clearTimeout(_authTimeout);
     if (session && session.user) {
       _currentUser = session.user;
       hideAuthModal();
       syncFromSupabase();
+      // Auto-load demo if user came from the marketing site demo link
+      if (sessionStorage.getItem('jettana_pending_demo')) {
+        sessionStorage.removeItem('jettana_pending_demo');
+        setTimeout(function() { loadDemo(); }, 800);
+      }
+    } else if (_isDemoMode) {
+      clearTimeout(_authTimeout);
+      sessionStorage.removeItem('jettana_pending_demo');
+      hideAuthModal();
+      setTimeout(function() { loadDemo(); }, 500);
     } else {
       showAuthModal();
     }
   } else if (event === 'SIGNED_OUT') {
-    _currentUser = null;
-    showAuthModal();
+    if (!_isDemoMode) {
+      _currentUser = null;
+      showAuthModal();
+    }
   }
 }
 
@@ -7818,6 +7843,10 @@ function init() {
     setTimeout(maybeShowStartBanner, 400);
   }
   renderSidebar();
+  // Auto-load demo if ?demo=true in URL — store in sessionStorage to survive auth redirect
+  if (new URLSearchParams(window.location.search).get('demo') === 'true') {
+    sessionStorage.setItem('jettana_pending_demo', '1');
+  }
 }
 
 let dragSrc = null;
