@@ -3880,7 +3880,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <button onclick="startDemoGuide()" style="font-size:12px;font-weight:600;color:white;background:#A07800;border:none;border-radius:6px;padding:5px 10px;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;">👇 Show me around</button>
           <button onclick="startTour()" style="font-size:12px;font-weight:600;color:white;background:#A07800;border:none;border-radius:6px;padding:5px 10px;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;">🗺 Take the tour</button>
           <button onclick="confirmDeleteDemo()" style="font-size:12px;font-weight:600;color:#A07800;background:rgba(240,192,96,0.2);border:1px solid #F0C060;border-radius:6px;padding:5px 10px;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;">Remove demo</button>
-          <a href="https://jettana.app/app" style="font-size:12px;font-weight:700;color:white;background:var(--sage);border-radius:6px;padding:5px 12px;text-decoration:none;white-space:nowrap;">✦ Create free account →</a>
+          <a id="demo-signup-btn" href="https://jettana.app/app" style="font-size:12px;font-weight:700;color:white;background:var(--sage);border-radius:6px;padding:5px 12px;text-decoration:none;white-space:nowrap;">✦ Create free account →</a>
         </div>
       </div>
       <div class="intention-wrap">
@@ -5242,6 +5242,9 @@ function _handleAuthReady() {
       _currentUser = session.user;
       hideAuthModal();
       syncFromSupabase();
+      // Hide "Create free account" button — user already has an account
+      var signupBtn = document.getElementById('demo-signup-btn');
+      if (signupBtn) signupBtn.style.display = 'none';
       // Auto-load demo if user came from the marketing site demo link
       if (sessionStorage.getItem('jettana_pending_demo')) {
         sessionStorage.removeItem('jettana_pending_demo');
