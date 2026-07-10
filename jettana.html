@@ -15359,17 +15359,29 @@ function renderNWChart() {
   });
   document.addEventListener('mousedown', hidePeek);
 
-  // Touch: show while editing so tapping a cut-off label reveals it
-  document.addEventListener('focusin', function(e) {
+  // Touch: first tap on a cut-off label shows the peek (no keyboard);
+  // second tap edits as normal. Short labels edit immediately as before.
+  var peekArmed = null;
+  var peekTimer = null;
+  function disarmPeek() { peekArmed = null; hidePeek(); if (peekTimer) { clearTimeout(peekTimer); peekTimer = null; } }
+  document.addEventListener('touchend', function(e) {
     if (!coarse) return;
     var inp = e.target.closest && e.target.closest('.erow-label-input');
-    if (inp && isOverflowing(inp)) showPeek(inp);
-  });
-  document.addEventListener('input', function(e) {
-    if (!coarse || !peek || peek.style.display === 'none') return;
+    if (!inp) return;
+    if (document.activeElement === inp) return;          // already editing
+    if (!isOverflowing(inp)) { disarmPeek(); return; }   // short label → edit normally
+    if (peekArmed === inp) { disarmPeek(); return; }     // second tap → edit normally
+    e.preventDefault();                                  // first tap: peek only
+    peekArmed = inp;
+    showPeek(inp);
+    if (peekTimer) clearTimeout(peekTimer);
+    peekTimer = setTimeout(disarmPeek, 4000);
+  }, { passive: false });
+  document.addEventListener('touchstart', function(e) {
+    if (!peekArmed) return;
     var inp = e.target.closest && e.target.closest('.erow-label-input');
-    if (inp) { peek.textContent = inp.value; }
-  });
+    if (inp !== peekArmed) disarmPeek();
+  }, { passive: true });
   document.addEventListener('focusout', function(e) {
     if (e.target.closest && e.target.closest('.erow-label-input')) hidePeek();
   });
