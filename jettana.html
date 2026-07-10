@@ -1958,6 +1958,11 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
   margin-right: 8px;
 }
 .erow.exempt-row .exempt-badge { display: inline-block; }
+/* Shift the note dot left of the exempt badge so they never overlap */
+.erow.exempt-row .note-indicator { right: 96px; }
+@media (pointer: coarse) {
+  .erow.exempt-row .note-indicator { right: 112px; }
+}
 
 /* ── Undo toast ──────────────────────────────────────────────── */
 .toast-undo {
