@@ -775,6 +775,7 @@ body {
 
 .del-btn {
   opacity: 0;
+  z-index: 3;
   background: none;
   border: none;
   cursor: pointer;
@@ -1431,9 +1432,12 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 44px;
+  width: 28px;
   height: 44px;
   border-radius: 50%;
+}
+@media (pointer: coarse) {
+  .note-indicator.has-note::after { width: 44px; }
 }
 .erow:hover .note-indicator.has-note { opacity: 1; }
 @media (pointer: coarse) {
@@ -6379,6 +6383,7 @@ function renderRowEl(section, row, animate = false) {
   div.addEventListener('contextmenu', function(e) { showCtxMenu(e, section, row.id); });
 
   div.addEventListener('click', function(e) {
+    if (window._justDeletedAt && Date.now() - window._justDeletedAt < 400) return;
     if (e.shiftKey) { e.preventDefault(); toggleBulkRow(section, row.id); return; }
     if (_bulkSection === section) { e.preventDefault(); toggleBulkRow(section, row.id); return; }
     if (e.target.closest('button, .paid-checkbox, .del-btn, .note-indicator, .recurring-dot')) return;
@@ -6616,6 +6621,7 @@ function updateRow(section, id, key, val) {
 }
 
 function delRow(section, id) {
+  window._justDeletedAt = Date.now();
   // Get label for toast message
   const all = loadAll();
   const rows = all[currentMonthKey][section] || [];
