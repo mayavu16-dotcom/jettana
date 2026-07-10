@@ -1964,6 +1964,16 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
 @media (pointer: coarse) {
   .erow.exempt-row .note-indicator { right: 100px; }
 }
+/* If an exempt row has a note, hide the badge — the faded amount already signals exempt.
+   Dot and ✕ return to their normal positions, label gets full width back. */
+.erow.exempt-row .note-indicator.has-note + .exempt-badge { display: none; }
+.erow.exempt-row .note-indicator.has-note { right: 42px; }
+.erow.exempt-row:has(.note-indicator.has-note) .del-btn { right: 74px; }
+.erow.exempt-row:has(.note-indicator.has-note) .erow-label-wrap .erow-label-input { padding-right: 36px; }
+@media (pointer: coarse) {
+  .erow.exempt-row .note-indicator.has-note { right: 58px; }
+  .erow.exempt-row:has(.note-indicator.has-note) .erow-label-wrap .erow-label-input { padding-right: 44px; }
+}
 /* Long labels: reserve space only for always-visible chrome (badge, checkbox);
    fade the text tail so hover controls (✕, dot) overlay cleanly */
 .erow-label-wrap .erow-label-input {
