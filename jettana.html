@@ -1958,17 +1958,34 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
   margin-right: 8px;
 }
 .erow.exempt-row .exempt-badge { display: inline-block; }
-/* Shift the note dot left of the exempt badge so they never overlap */
-.erow.exempt-row .note-indicator { right: 96px; }
+/* Exempt rows: give each right-side element its own lane — checkbox, badge, ✕, dot */
+.erow.exempt-row .del-btn { right: 92px; }
+.erow.exempt-row .note-indicator { right: 124px; }
 @media (pointer: coarse) {
-  .erow.exempt-row .note-indicator { right: 112px; }
+  .erow.exempt-row .note-indicator { right: 118px; }
 }
-/* Keep long labels clear of the hover ✕, note dot, and exempt badge */
+/* Keep long labels clear of the hover ✕, note dot, badge, and checkbox */
 .erow-label-wrap .erow-label-input { padding-right: 54px; }
-[data-section="subscriptions"] .erow-label-wrap .erow-label-input { padding-right: 102px; }
+[data-section="housing"] .erow-label-wrap .erow-label-input,
+[data-section="transport"] .erow-label-wrap .erow-label-input,
+[data-section="debt"] .erow-label-wrap .erow-label-input,
+[data-section="food"] .erow-label-wrap .erow-label-input,
+[data-section="health"] .erow-label-wrap .erow-label-input,
+[data-section="gifts"] .erow-label-wrap .erow-label-input,
+[data-section="misc"] .erow-label-wrap .erow-label-input,
+[data-section="subscriptions"] .erow-label-wrap .erow-label-input { padding-right: 106px; }
+.erow.exempt-row .erow-label-wrap .erow-label-input { padding-right: 140px; }
 @media (pointer: coarse) {
   .erow-label-wrap .erow-label-input { padding-right: 70px; }
-  [data-section="subscriptions"] .erow-label-wrap .erow-label-input { padding-right: 118px; }
+  [data-section="housing"] .erow-label-wrap .erow-label-input,
+  [data-section="transport"] .erow-label-wrap .erow-label-input,
+  [data-section="debt"] .erow-label-wrap .erow-label-input,
+  [data-section="food"] .erow-label-wrap .erow-label-input,
+  [data-section="health"] .erow-label-wrap .erow-label-input,
+  [data-section="gifts"] .erow-label-wrap .erow-label-input,
+  [data-section="misc"] .erow-label-wrap .erow-label-input,
+  [data-section="subscriptions"] .erow-label-wrap .erow-label-input { padding-right: 78px; }
+  .erow.exempt-row .erow-label-wrap .erow-label-input { padding-right: 128px; }
 }
 
 /* ── Undo toast ──────────────────────────────────────────────── */
