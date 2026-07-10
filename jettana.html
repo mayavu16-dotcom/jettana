@@ -1970,7 +1970,7 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
 }
 .dark #label-peek { background: #EEF2F5; color: #1A2332; }
 /* Hide the hover ✕ when the label text reaches its position (delete stays in the row menu) */
-.erow.label-crowded .del-btn { opacity: 0 !important; pointer-events: none; }
+.erow.label-crowded .del-btn { opacity: 0 !important; visibility: hidden; pointer-events: none; transition: none; }
 /* Exempt rows: keep hover controls left of the badge */
 .erow.exempt-row .del-btn { right: 118px; }
 .erow.exempt-row .note-indicator { right: 100px; }
@@ -15416,7 +15416,7 @@ function renderNWChart() {
     if (!del) return;
     var limit = del.offsetLeft - inp.offsetLeft - 6;
     var cs = getComputedStyle(inp);
-    _mctx.font = cs.font;
+    _mctx.font = cs.font && cs.font.length ? cs.font : (cs.fontStyle + ' ' + cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily);
     var w = _mctx.measureText(inp.value || '').width + (parseFloat(cs.paddingLeft) || 0);
     row.classList.toggle('label-crowded', limit > 0 && w > limit);
   }
