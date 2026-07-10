@@ -1958,6 +1958,17 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
   margin-right: 8px;
 }
 .erow.exempt-row .exempt-badge { display: inline-block; }
+/* Full-label peek tooltip (hover on desktop, focus on touch) */
+#label-peek {
+  position: fixed; z-index: 10050; display: none;
+  background: var(--ink); color: #fff;
+  font-family: 'Outfit', sans-serif; font-size: 12.5px; line-height: 1.45;
+  padding: 7px 11px; border-radius: 8px;
+  max-width: min(340px, calc(100vw - 24px));
+  box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+  pointer-events: none; word-break: break-word;
+}
+.dark #label-peek { background: #EEF2F5; color: #1A2332; }
 /* Exempt rows: keep hover controls left of the badge */
 .erow.exempt-row .del-btn { right: 118px; }
 .erow.exempt-row .note-indicator { right: 100px; }
@@ -15305,6 +15316,65 @@ function renderNWChart() {
     hdr.addEventListener('touchmove', function(e) { if (!dragging) return; var t = e.touches[0]; onMove(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
     document.addEventListener('touchend', stopDrag);
   });
+})();
+
+/* ── Full-label peek: show the whole label when it's cut off ── */
+(function() {
+  var peek = null;
+  function ensurePeek() {
+    if (!peek) {
+      peek = document.createElement('div');
+      peek.id = 'label-peek';
+      document.body.appendChild(peek);
+    }
+    return peek;
+  }
+  function isOverflowing(inp) {
+    return inp.value && inp.scrollWidth > inp.clientWidth + 2;
+  }
+  function showPeek(inp) {
+    var p = ensurePeek();
+    p.textContent = inp.value;
+    p.style.display = 'block';
+    var r = inp.getBoundingClientRect();
+    // measure, then place above the input (below if no room)
+    var pw = p.offsetWidth, ph = p.offsetHeight;
+    var left = Math.max(8, Math.min(r.left, window.innerWidth - pw - 8));
+    var top = r.top - ph - 6;
+    if (top < 8) top = r.bottom + 6;
+    p.style.left = left + 'px';
+    p.style.top = top + 'px';
+  }
+  function hidePeek() { if (peek) peek.style.display = 'none'; }
+  var coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+
+  document.addEventListener('mouseover', function(e) {
+    if (coarse) return;
+    var inp = e.target.closest && e.target.closest('.erow-label-input');
+    if (!inp || document.activeElement === inp) return;
+    if (isOverflowing(inp)) showPeek(inp);
+  });
+  document.addEventListener('mouseout', function(e) {
+    if (e.target.closest && e.target.closest('.erow-label-input')) hidePeek();
+  });
+  document.addEventListener('mousedown', hidePeek);
+
+  // Touch: show while editing so tapping a cut-off label reveals it
+  document.addEventListener('focusin', function(e) {
+    if (!coarse) return;
+    var inp = e.target.closest && e.target.closest('.erow-label-input');
+    if (inp && isOverflowing(inp)) showPeek(inp);
+  });
+  document.addEventListener('input', function(e) {
+    if (!coarse || !peek || peek.style.display === 'none') return;
+    var inp = e.target.closest && e.target.closest('.erow-label-input');
+    if (inp) { peek.textContent = inp.value; }
+  });
+  document.addEventListener('focusout', function(e) {
+    if (e.target.closest && e.target.closest('.erow-label-input')) hidePeek();
+  });
+  window.addEventListener('scroll', hidePeek, true);
+  window.addEventListener('resize', hidePeek);
 })();
 
 function getTrendsData() {
