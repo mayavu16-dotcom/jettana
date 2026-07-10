@@ -1969,6 +1969,8 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
   pointer-events: none; word-break: break-word;
 }
 .dark #label-peek { background: #EEF2F5; color: #1A2332; }
+/* Hide the hover ✕ when the label text reaches its position (delete stays in the row menu) */
+.erow.label-crowded .del-btn { opacity: 0 !important; pointer-events: none; }
 /* Exempt rows: keep hover controls left of the badge */
 .erow.exempt-row .del-btn { right: 118px; }
 .erow.exempt-row .note-indicator { right: 100px; }
@@ -15387,6 +15389,32 @@ function renderNWChart() {
   });
   window.addEventListener('scroll', hidePeek, true);
   window.addEventListener('resize', hidePeek);
+
+  // Hide the hover ✕ when the label text reaches it; restore live as the user edits
+  var _mctx = document.createElement('canvas').getContext('2d');
+  function updateCrowded(inp) {
+    var row = inp.closest('.erow');
+    if (!row) return;
+    var del = row.querySelector('.del-btn');
+    if (!del) return;
+    var limit = del.offsetLeft - inp.offsetLeft - 6;
+    var cs = getComputedStyle(inp);
+    _mctx.font = cs.font;
+    var w = _mctx.measureText(inp.value || '').width + (parseFloat(cs.paddingLeft) || 0);
+    row.classList.toggle('label-crowded', limit > 0 && w > limit);
+  }
+  if (!coarse) {
+    document.addEventListener('mouseover', function(e) {
+      var row = e.target.closest && e.target.closest('.erow');
+      if (!row) return;
+      var inp = row.querySelector('.erow-label-input');
+      if (inp) updateCrowded(inp);
+    });
+    document.addEventListener('input', function(e) {
+      var inp = e.target.closest && e.target.closest('.erow-label-input');
+      if (inp) updateCrowded(inp);
+    });
+  }
 })();
 
 function getTrendsData() {
