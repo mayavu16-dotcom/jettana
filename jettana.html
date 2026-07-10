@@ -3277,6 +3277,10 @@ body.font-large.text-bold .erow-label-input {
   .report-actions { display: none !important; }
 }
 
+/* ── Net Worth Trend chips ───────────────────────────────── */
+.nw-chip { font-size: 11px; font-weight: 700; letter-spacing: 0.4px; padding: 3px 10px; border-radius: 20px; border: 1.5px solid var(--mist); color: var(--steel); cursor: pointer; user-select: none; }
+.nw-chip.active { background: var(--sage); border-color: var(--sage); color: white; }
+#nw-from { font-family: 'Outfit', sans-serif; font-size: 11.5px; padding: 3px 6px; border: 1.5px solid var(--mist); border-radius: 6px; color: var(--ink); background: transparent; }
 /* ── Spending Trends ─────────────────────────────────────── */
 .trends-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.5);
@@ -3837,6 +3841,9 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
             </button>
             <button class="more-menu-item" onclick="showTrends(); hideMoreMenu()">
               <span>📊</span> Spending trends
+            </button>
+            <button class="more-menu-item" onclick="showNetWorthTrend(); hideMoreMenu()">
+              <span>📈</span> Net worth trend
             </button>
 
             <!-- Account -->
@@ -4503,6 +4510,29 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
   </div>
 </div>
 
+<!-- Net Worth Trend Modal -->
+<div class="trends-overlay" id="nw-overlay" style="display:none;" onclick="if(event.target===this)hideNetWorthTrend()">
+  <div class="trends-modal" id="nw-modal">
+    <div class="trends-header" id="nw-header">
+      <h3>📈 Net Worth Trend</h3>
+      <button class="trends-close" onclick="hideNetWorthTrend()">×</button>
+    </div>
+    <div class="trends-subtitle" style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+      <span id="nw-chip-6m" class="nw-chip" onclick="setNWPeriod('6m')">6M</span>
+      <span id="nw-chip-ytd" class="nw-chip active" onclick="setNWPeriod('ytd')">YTD</span>
+      <span id="nw-chip-1y" class="nw-chip" onclick="setNWPeriod('1y')">1Y</span>
+      <span id="nw-chip-all" class="nw-chip" onclick="setNWPeriod('all')">All</span>
+      <span style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;">From
+        <select id="nw-from" onchange="setNWFrom(this.value)"><option value="">month…</option></select>
+      </span>
+    </div>
+    <div class="trends-chart-wrap">
+      <svg id="nw-svg" viewBox="0 0 520 230" preserveAspectRatio="xMidYMid meet" style="overflow:visible;"></svg>
+    </div>
+    <div class="trends-breakdown" id="nw-summary"></div>
+  </div>
+</div>
+
 <!-- About Jettana Modal -->
 <div class="welcome-overlay" id="about-overlay" style="display:none;" onclick="hideAbout()">
   <div class="welcome-modal" onclick="event.stopPropagation()" style="max-width:520px;max-height:85vh;overflow-y:auto;">
@@ -4797,6 +4827,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <div class="shortcuts-group-title">Analytics</div>
       <div class="shortcut-row"><span>📅 <strong>Spending Calendar</strong> — ⋯ → Spending Calendar; see daily spending laid out on a calendar grid with weekly totals. Filter by section, search by transaction name, and tap any day for a breakdown. Drag to reposition over the tracker.</span></div>
       <div class="shortcut-row"><span>📊 <strong>Spending Trends</strong> — ⋯ → Spending Trends; bar chart of your last 6 months of expenses. Tap any bar to see a category breakdown with amounts and percentages. Drag to reposition.</span></div>
+      <div class="shortcut-row"><span>📈 <strong>Net Worth Trend</strong> — ⋯ → Net worth trend; a line chart of your net worth (checking + savings − debt) by month. Pick 6M, YTD, 1Y, All, or a custom start month. Drag to reposition.</span></div>
     </div>
 
     <div class="shortcuts-group">
@@ -15033,6 +15064,197 @@ function hideTrends() {
     var hdr = document.getElementById('trends-header');
     if (!hdr) return;
     hdr.addEventListener('mousedown', function(e) { if (e.target.closest('button')) return; startDrag(e.clientX, e.clientY); e.preventDefault(); });
+    document.addEventListener('mousemove', function(e) { onMove(e.clientX, e.clientY); });
+    document.addEventListener('mouseup', stopDrag);
+    hdr.addEventListener('touchstart', function(e) { if (e.target.closest('button')) return; var t = e.touches[0]; startDrag(t.clientX, t.clientY); }, { passive: true });
+    hdr.addEventListener('touchmove', function(e) { if (!dragging) return; var t = e.touches[0]; onMove(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
+    document.addEventListener('touchend', stopDrag);
+  });
+})();
+
+/* ── Net Worth Trend ─────────────────────────────────────── */
+var _nwPeriod = 'ytd';
+var _nwFrom = null;
+
+function monthNetWorth(d) {
+  function s(rows, f) { return (rows || []).reduce(function(t, r) { return t + (parseFloat(r[f]) || 0); }, 0); }
+  return s(d.checking, 'ending') + s(d.savings, 'actual') - s(d.debt, 'remaining');
+}
+
+function getNWKeys() {
+  var all = loadAll();
+  var keys = Object.keys(all).filter(function(k) { return /^\d{4}-\d{2}$/.test(k); }).sort();
+  if (!keys.length) return [];
+  var now = new Date();
+  var curKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  function cutoff(monthsBack) {
+    var d = new Date(now.getFullYear(), now.getMonth() - (monthsBack - 1), 1);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  }
+  var from = null;
+  if (_nwPeriod === '6m') from = cutoff(6);
+  else if (_nwPeriod === '1y') from = cutoff(12);
+  else if (_nwPeriod === 'ytd') from = now.getFullYear() + '-01';
+  else if (_nwPeriod === 'custom' && _nwFrom) from = _nwFrom;
+  return keys.filter(function(k) { return (!from || k >= from) && k <= curKey; });
+}
+
+function setNWPeriod(p) {
+  _nwPeriod = p; _nwFrom = null;
+  var sel = document.getElementById('nw-from');
+  if (sel) sel.value = '';
+  ['6m', 'ytd', '1y', 'all'].forEach(function(x) {
+    var c = document.getElementById('nw-chip-' + x);
+    if (c) c.classList.toggle('active', x === p);
+  });
+  renderNWChart();
+}
+
+function setNWFrom(v) {
+  if (!v) return;
+  _nwPeriod = 'custom'; _nwFrom = v;
+  ['6m', 'ytd', '1y', 'all'].forEach(function(x) {
+    var c = document.getElementById('nw-chip-' + x);
+    if (c) c.classList.remove('active');
+  });
+  renderNWChart();
+}
+
+function nwShortFmt(v) {
+  var a = Math.abs(v);
+  var s = a >= 1000 ? (a / 1000).toFixed(a >= 10000 ? 0 : 1) + 'k' : String(Math.round(a));
+  return (v < 0 ? '-$' : '$') + s;
+}
+
+function showNetWorthTrend() {
+  var el = document.getElementById('nw-overlay');
+  if (el) el.style.display = 'flex';
+  // Populate the From dropdown with existing months
+  var sel = document.getElementById('nw-from');
+  if (sel) {
+    var all = loadAll();
+    var keys = Object.keys(all).filter(function(k) { return /^\d{4}-\d{2}$/.test(k); }).sort();
+    var cur = sel.value;
+    sel.innerHTML = '<option value="">month…</option>' + keys.map(function(k) {
+      return '<option value="' + k + '">' + monthLabel(k) + '</option>';
+    }).join('');
+    sel.value = cur;
+  }
+  renderNWChart();
+}
+
+function hideNetWorthTrend() {
+  var el = document.getElementById('nw-overlay');
+  if (el) el.style.display = 'none';
+  var modal = document.getElementById('nw-modal');
+  if (modal) { modal.style.position = ''; modal.style.left = ''; modal.style.top = ''; modal.style.margin = ''; }
+  var overlay = document.getElementById('nw-overlay');
+  if (overlay) { overlay.style.background = ''; overlay.style.pointerEvents = ''; overlay.style.alignItems = ''; overlay.style.justifyContent = ''; }
+}
+
+function renderNWChart() {
+  var svg = document.getElementById('nw-svg');
+  var summary = document.getElementById('nw-summary');
+  if (!svg || !summary) return;
+  var all = loadAll();
+  var keys = getNWKeys();
+  var pts = keys.map(function(k) { return { key: k, v: monthNetWorth(all[k] || {}) }; });
+
+  if (!pts.length) {
+    svg.innerHTML = '';
+    summary.innerHTML = '<div style="text-align:center;color:var(--steel);font-size:12.5px;padding:8px 0;">No months in this period yet. Add checking, savings, or debt data to see your net worth trend.</div>';
+    return;
+  }
+
+  var W = 520, H = 230, L = 58, R = 18, T = 24, B = 36;
+  var innerW = W - L - R, innerH = H - T - B;
+  var vals = pts.map(function(p) { return p.v; });
+  var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+  if (min === max) { var pad0 = Math.max(Math.abs(min) * 0.1, 100); min -= pad0; max += pad0; }
+  var pad = (max - min) * 0.08; min -= pad; max += pad;
+  function X(i) { return pts.length === 1 ? L + innerW / 2 : L + (innerW * i) / (pts.length - 1); }
+  function Y(v) { return T + innerH - ((v - min) / (max - min)) * innerH; }
+
+  var multiYear = keys[0].slice(0, 4) !== keys[keys.length - 1].slice(0, 4);
+  var MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function tick(k) {
+    var m = MN[parseInt(k.slice(5), 10) - 1];
+    return multiYear ? m + " '" + k.slice(2, 4) : m;
+  }
+
+  var out = '';
+  // Gridlines + y labels
+  for (var g = 0; g <= 3; g++) {
+    var gv = min + ((max - min) * g) / 3;
+    var gy = Y(gv);
+    out += '<line x1="' + L + '" y1="' + gy + '" x2="' + (W - R) + '" y2="' + gy + '" stroke="var(--mist)" stroke-width="0.75" opacity="0.6"/>';
+    out += '<text x="' + (L - 8) + '" y="' + (gy + 3.5) + '" text-anchor="end" font-size="10" fill="var(--steel)" font-family="Outfit,sans-serif">' + nwShortFmt(gv) + '</text>';
+  }
+  // Line
+  if (pts.length > 1) {
+    var poly = pts.map(function(p, i) { return X(i).toFixed(1) + ',' + Y(p.v).toFixed(1); }).join(' ');
+    out += '<polyline points="' + poly + '" fill="none" stroke="var(--sage)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
+  }
+  // Dots, value labels, month ticks
+  var step = Math.max(1, Math.ceil(pts.length / 8));
+  pts.forEach(function(p, i) {
+    var up = i === 0 || p.v >= pts[i - 1].v;
+    out += '<circle cx="' + X(i) + '" cy="' + Y(p.v) + '" r="4" fill="' + (up ? 'var(--sage)' : 'var(--blush)') + '" stroke="white" stroke-width="1.5"/>';
+    var showLbl = pts.length <= 8 || i % step === 0 || i === pts.length - 1;
+    if (showLbl) {
+      out += '<text x="' + X(i) + '" y="' + (Y(p.v) - 9) + '" text-anchor="middle" font-size="10" font-weight="700" fill="var(--ink)" font-family="Outfit,sans-serif">' + nwShortFmt(p.v) + '</text>';
+      out += '<text x="' + X(i) + '" y="' + (H - 12) + '" text-anchor="middle" font-size="10" fill="var(--steel)" font-family="Outfit,sans-serif">' + tick(p.key) + '</text>';
+    }
+  });
+  svg.innerHTML = out;
+
+  // Summary
+  var first = pts[0], last = pts[pts.length - 1];
+  var delta = last.v - first.v;
+  var pct = first.v !== 0 ? (delta / Math.abs(first.v)) * 100 : null;
+  var col = delta >= 0 ? 'var(--sage-dark)' : 'var(--blush)';
+  var sign = delta >= 0 ? '+' : '−';
+  summary.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;font-size:12.5px;padding:6px 2px;">'
+    + '<span style="color:var(--steel);">' + monthLabel(first.key) + ' → ' + monthLabel(last.key) + '</span>'
+    + '<span style="font-weight:700;color:' + col + ';">' + sign + fmt(Math.abs(delta)).replace('$', '$')
+    + (pct !== null ? ' <span style="font-weight:600;opacity:0.8;">(' + sign + Math.abs(pct).toFixed(1) + '%)</span>' : '') + '</span>'
+    + '</div>';
+}
+
+// Drag support for the Net Worth modal (mirrors the Trends modal)
+(function() {
+  var dragging = false, offX = 0, offY = 0;
+  function startDrag(clientX, clientY) {
+    var modal = document.getElementById('nw-modal');
+    if (!modal) return;
+    var rect = modal.getBoundingClientRect();
+    modal.style.position = 'fixed';
+    modal.style.left = rect.left + 'px';
+    modal.style.top  = rect.top  + 'px';
+    modal.style.margin = '0';
+    var overlay = document.getElementById('nw-overlay');
+    if (overlay) { overlay.style.background = 'transparent'; overlay.style.pointerEvents = 'none'; overlay.style.alignItems = 'flex-start'; overlay.style.justifyContent = 'flex-start'; modal.style.pointerEvents = 'auto'; }
+    offX = clientX - rect.left; offY = clientY - rect.top;
+    dragging = true;
+    var hdr = document.getElementById('nw-header');
+    if (hdr) hdr.classList.add('dragging');
+  }
+  function onMove(clientX, clientY) {
+    if (!dragging) return;
+    var modal = document.getElementById('nw-modal');
+    if (!modal) return;
+    modal.style.left = Math.max(0, Math.min(clientX - offX, window.innerWidth  - modal.offsetWidth))  + 'px';
+    modal.style.top  = Math.max(0, Math.min(clientY - offY, window.innerHeight - 60)) + 'px';
+  }
+  function stopDrag() {
+    dragging = false;
+    var hdr = document.getElementById('nw-header');
+    if (hdr) hdr.classList.remove('dragging');
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    var hdr = document.getElementById('nw-header');
+    if (!hdr) return;
+    hdr.addEventListener('mousedown', function(e) { if (e.target.closest('button') || e.target.closest('select') || e.target.closest('.nw-chip')) return; startDrag(e.clientX, e.clientY); e.preventDefault(); });
     document.addEventListener('mousemove', function(e) { onMove(e.clientX, e.clientY); });
     document.addEventListener('mouseup', stopDrag);
     hdr.addEventListener('touchstart', function(e) { if (e.target.closest('button')) return; var t = e.touches[0]; startDrag(t.clientX, t.clientY); }, { passive: true });
