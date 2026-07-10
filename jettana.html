@@ -9145,6 +9145,31 @@ function toggleBulletMode(section, id) {
 }
 
 function noteBulletKeydown(e, section, id) {
+  var ta = e.target;
+  var start = ta.selectionStart;
+  var val = ta.value;
+  var lineStart = val.lastIndexOf('\n', start - 1) + 1;
+  var lineEnd = val.indexOf('\n', start); if (lineEnd === -1) lineEnd = val.length;
+  var fullLine = val.substring(lineStart, lineEnd);
+  var bm = fullLine.match(/^(\s*)(• |☐ |☑ )/);
+
+  // Tab / Shift+Tab — indent or outdent bullet & checkbox lines
+  if (e.key === 'Tab' && bm) {
+    e.preventDefault();
+    if (e.shiftKey) {
+      var remove = Math.min(2, bm[1].length);
+      if (remove > 0) {
+        ta.value = val.substring(0, lineStart) + val.substring(lineStart + remove);
+        ta.selectionStart = ta.selectionEnd = Math.max(lineStart, start - remove);
+      }
+    } else {
+      ta.value = val.substring(0, lineStart) + '  ' + val.substring(lineStart);
+      ta.selectionStart = ta.selectionEnd = start + 2;
+    }
+    saveNote(section, id, ta.value);
+    return;
+  }
+
   if (e.key !== 'Enter') return;
   var all = loadAll();
   var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
@@ -9152,18 +9177,16 @@ function noteBulletKeydown(e, section, id) {
   if (!row || !row._noteBullet) return;
 
   e.preventDefault();
-  var ta = e.target;
-  var start = ta.selectionStart;
-  var val = ta.value;
-  var lineStart = val.lastIndexOf('\n', start - 1) + 1;
   var currentLine = val.substring(lineStart, start);
+  var lm = currentLine.match(/^(\s*)• /);
+  var indent = lm ? lm[1] : '';
 
-  // If current line is just a bullet with nothing after, exit bullet mode line
-  if (currentLine === '• ') {
+  // If current line is just an (indented) bullet with nothing after, exit bullet mode line
+  if (lm && currentLine === indent + '• ') {
     ta.value = val.substring(0, lineStart) + val.substring(start);
     ta.selectionStart = ta.selectionEnd = lineStart;
   } else {
-    var insert = '\n• ';
+    var insert = '\n' + indent + '• ';
     ta.value = val.substring(0, start) + insert + val.substring(start);
     ta.selectionStart = ta.selectionEnd = start + insert.length;
   }
@@ -9383,23 +9406,41 @@ function insertNotesText(prefix) {
 }
 
 function notesKeydown(e) {
-  if (e.key !== 'Enter') return;
   var ta = document.getElementById('notes-textarea');
   if (!ta) return;
   var start = ta.selectionStart;
   var text = ta.value;
   var lineStart = text.lastIndexOf('\n', start - 1) + 1;
+  var lineEnd = text.indexOf('\n', start); if (lineEnd === -1) lineEnd = text.length;
+  var fullLine = text.substring(lineStart, lineEnd);
+  var bm = fullLine.match(/^(\s*)(• |☐ |☑ )/);
+
+  // Tab / Shift+Tab — indent or outdent bullet & checkbox lines
+  if (e.key === 'Tab' && bm) {
+    e.preventDefault();
+    if (e.shiftKey) {
+      var remove = Math.min(2, bm[1].length);
+      if (remove > 0) {
+        ta.value = text.substring(0, lineStart) + text.substring(lineStart + remove);
+        ta.selectionStart = ta.selectionEnd = Math.max(lineStart, start - remove);
+      }
+    } else {
+      ta.value = text.substring(0, lineStart) + '  ' + text.substring(lineStart);
+      ta.selectionStart = ta.selectionEnd = start + 2;
+    }
+    saveNotes();
+    return;
+  }
+
+  if (e.key !== 'Enter') return;
   var line = text.substring(lineStart, start);
-
-  var prefix = null;
-  if (line.startsWith('• ')) prefix = '• ';
-  else if (line.startsWith('☐ ') || line.startsWith('☑ ')) prefix = '☐ ';
-
-  if (!prefix) return;
+  var lm = line.match(/^(\s*)(• |☐ |☑ )/);
+  if (!lm) return;
   e.preventDefault();
+  var prefix = lm[1] + (lm[2] === '• ' ? '• ' : '☐ ');
 
-  // If the current line is just the prefix with nothing after, exit the list
-  if (line === prefix || line === '☑ ') {
+  // If the current line is just an (indented) prefix with nothing after, exit the list
+  if (line === lm[1] + lm[2]) {
     ta.value = text.substring(0, lineStart) + text.substring(start);
     ta.selectionStart = ta.selectionEnd = lineStart;
   } else {
