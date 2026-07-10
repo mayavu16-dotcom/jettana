@@ -6395,7 +6395,7 @@ function renderRowEl(section, row, animate = false) {
   div.innerHTML = `
     <div class="erow-label-wrap">
       <button class="drag-handle" title="Options" onclick="showCtxMenuBtn(event,'${section}','${row.id}');dismissRowMenuHint()" ontouchend="event.preventDefault();showCtxMenuBtn(event,'${section}','${row.id}');dismissRowMenuHint()"><span></span><span></span><span></span><span id="row-menu-hint-dot" style="display:none;position:absolute;top:2px;right:2px;width:6px;height:6px;background:#6B9E70;border-radius:50%;animation:hint-pulse 1.5s ease-in-out infinite;pointer-events:none;"></span></button>
-      <button class="del-btn" onclick="delRow('${section}','${row.id}')" title="Remove row">×</button>
+      <button class="del-btn" onmousedown="event.preventDefault();event.stopPropagation();this._md=1;delRow('${section}','${row.id}')" onclick="event.stopPropagation();if(!this._md)delRow('${section}','${row.id}');this._md=0" title="Remove row">×</button>
       <input type="text" class="erow-label-input" placeholder="${cfg.ph}" value="${escHtml(row.label||'')}"
         data-section="${section}" data-id="${row.id}" data-key="label" data-col="0"
         oninput="updateRow('${section}','${row.id}','label',this.value); this.closest('.erow').style.display=''; showAutocomplete(this,'${section}')"
