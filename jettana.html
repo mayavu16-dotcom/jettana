@@ -1963,6 +1963,13 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
 @media (pointer: coarse) {
   .erow.exempt-row .note-indicator { right: 112px; }
 }
+/* Keep long labels clear of the hover ✕, note dot, and exempt badge */
+.erow-label-wrap .erow-label-input { padding-right: 54px; }
+[data-section="subscriptions"] .erow-label-wrap .erow-label-input { padding-right: 102px; }
+@media (pointer: coarse) {
+  .erow-label-wrap .erow-label-input { padding-right: 70px; }
+  [data-section="subscriptions"] .erow-label-wrap .erow-label-input { padding-right: 118px; }
+}
 
 /* ── Undo toast ──────────────────────────────────────────────── */
 .toast-undo {
