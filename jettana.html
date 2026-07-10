@@ -1958,14 +1958,20 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
   margin-right: 8px;
 }
 .erow.exempt-row .exempt-badge { display: inline-block; }
-/* Exempt rows: give each right-side element its own lane — checkbox, badge, ✕, dot */
-.erow.exempt-row .del-btn { right: 92px; }
-.erow.exempt-row .note-indicator { right: 124px; }
+/* Exempt rows: keep hover controls left of the badge */
+.erow.exempt-row .del-btn { right: 118px; }
+.erow.exempt-row .note-indicator { right: 100px; }
 @media (pointer: coarse) {
-  .erow.exempt-row .note-indicator { right: 118px; }
+  .erow.exempt-row .note-indicator { right: 100px; }
 }
-/* Keep long labels clear of the hover ✕, note dot, badge, and checkbox */
-.erow-label-wrap .erow-label-input { padding-right: 54px; }
+/* Long labels: reserve space only for always-visible chrome (badge, checkbox);
+   fade the text tail so hover controls (✕, dot) overlay cleanly */
+.erow-label-wrap .erow-label-input {
+  padding-right: 16px;
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
+  mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
+}
+.erow-label-wrap .erow-label-input:focus { -webkit-mask-image: none; mask-image: none; }
 [data-section="housing"] .erow-label-wrap .erow-label-input,
 [data-section="transport"] .erow-label-wrap .erow-label-input,
 [data-section="debt"] .erow-label-wrap .erow-label-input,
@@ -1973,10 +1979,9 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
 [data-section="health"] .erow-label-wrap .erow-label-input,
 [data-section="gifts"] .erow-label-wrap .erow-label-input,
 [data-section="misc"] .erow-label-wrap .erow-label-input,
-[data-section="subscriptions"] .erow-label-wrap .erow-label-input { padding-right: 106px; }
-.erow.exempt-row .erow-label-wrap .erow-label-input { padding-right: 140px; }
+[data-section="subscriptions"] .erow-label-wrap .erow-label-input { padding-right: 36px; }
+.erow.exempt-row .erow-label-wrap .erow-label-input { padding-right: 96px; }
 @media (pointer: coarse) {
-  .erow-label-wrap .erow-label-input { padding-right: 70px; }
   [data-section="housing"] .erow-label-wrap .erow-label-input,
   [data-section="transport"] .erow-label-wrap .erow-label-input,
   [data-section="debt"] .erow-label-wrap .erow-label-input,
@@ -1984,8 +1989,8 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
   [data-section="health"] .erow-label-wrap .erow-label-input,
   [data-section="gifts"] .erow-label-wrap .erow-label-input,
   [data-section="misc"] .erow-label-wrap .erow-label-input,
-  [data-section="subscriptions"] .erow-label-wrap .erow-label-input { padding-right: 78px; }
-  .erow.exempt-row .erow-label-wrap .erow-label-input { padding-right: 128px; }
+  [data-section="subscriptions"] .erow-label-wrap .erow-label-input { padding-right: 44px; }
+  .erow.exempt-row .erow-label-wrap .erow-label-input { padding-right: 108px; }
 }
 
 /* ── Undo toast ──────────────────────────────────────────────── */
