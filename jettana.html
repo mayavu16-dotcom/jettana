@@ -4489,7 +4489,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
         <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">What does "Mark as exempt" do?<span class="askme-q-arrow">▾</span></button>
-          <div class="askme-a">Exempt rows stay visible in the tracker but their Actual value is <strong>excluded from section totals</strong>. Great for employer-paid benefits, stipends, or anything you want to document without it affecting your budget math.</div>
+          <div class="askme-a">Exempt rows stay visible in the tracker but their Actual value is <strong>excluded from section totals</strong> — the amount shows faded so you can tell at a glance. An <strong>exempt</strong> badge appears on the row; if the row also has a note, the badge steps aside for the note dot and the faded amount alone signals it. Great for employer-paid benefits, stipends, or anything you want to document without it affecting your budget math.</div>
         </div>
 
         <div class="askme-item">
@@ -4500,6 +4500,16 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
         <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">Can I rename a section?<span class="askme-q-arrow">▾</span></button>
           <div class="askme-a">Yes — double-click the section header on desktop, or long-press on mobile. You can save the rename for <strong>this month only</strong> or <strong>all months</strong>.</div>
+        </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">Can I make indented bullet points in notes?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Yes — in any note (row notes or the Notes section), put your cursor on a bullet or checkbox line and press <strong>Tab</strong> to indent it. <strong>Shift+Tab</strong> outdents. Pressing <strong>Enter</strong> continues the list at the same indent level.</div>
+        </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">A row name is cut off — how do I read the whole thing?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Long names fade out at the edge instead of colliding with the row's controls. On desktop, <strong>hover</strong> over the name to see the full text in a small popup. On mobile, <strong>tap once</strong> to peek at the full name — tap again to edit it.</div>
         </div>
       </div>
 
@@ -4533,6 +4543,11 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
         <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">How do I see my spending over time?<span class="askme-q-arrow">▾</span></button>
           <div class="askme-a">Open <strong>⋯ → Spending Trends</strong>. It shows a bar chart of your last 6 months of expenses. Tap any bar to see a category breakdown for that month with amounts and percentages.</div>
+        </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">How do I see my net worth over time?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Open <strong>⋯ → Net worth trend</strong>. It draws a line chart of your net worth by month (checking + savings − debt). Pick a period with the <strong>6M / YTD / 1Y / All</strong> chips, or choose any starting month from the <strong>From</strong> dropdown. Green dots mean your net worth rose that month; the summary below shows your total change for the period.</div>
         </div>
       </div>
 
@@ -4784,10 +4799,11 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <div class="shortcut-row"><span>📊 <strong>12 sections</strong> — Income, Savings, Housing, Checking, Transportation, Debt, Food, Health, Subscriptions, Gifts, Misc, and Notes</span></div>
       <div class="shortcut-row"><span>✎ <strong>Rename sections</strong> — double-click (desktop) or long-press (mobile) any section header to rename it; choose "This month only" or "All months"</span></div>
       <div class="shortcut-row"><span>✓ <strong>Mark as paid</strong> — click ✓ on any expense row to strike it through; if a card link is set, the debt Current updates and the linked checking/savings account balance decreases</span></div>
-      <div class="shortcut-row"><span>◎ <strong>Mark as exempt</strong> — row menu → Mark as exempt; the row stays visible for documentation but its actual value is excluded from section totals. Great for stipends or employer-paid expenses.</span></div>
+      <div class="shortcut-row"><span>◎ <strong>Mark as exempt</strong> — row menu → Mark as exempt; the row stays visible for documentation but its actual value is excluded from section totals (shown faded). An exempt badge appears; if the row also has a note, the badge hides and the faded amount signals it. Great for stipends or employer-paid expenses.</span></div>
       <div class="shortcut-row"><span>📅 <strong>Date stamps</strong> — add planned and actual dates to any row via the date button that appears on hover</span></div>
       <div class="shortcut-row"><span>📅 <strong>Beginning balance date</strong> — open the note on any Checking row to set a beginning balance date; expenses dated before that date won't be deducted from the balance</span></div>
       <div class="shortcut-row"><span>✎ <strong>Row notes</strong> — click ≡ on any row → Add note; a gold dot appears on hover to indicate a note exists</span></div>
+      <div class="shortcut-row"><span>👁 <strong>Full name peek</strong> — long row names fade at the edge; hover (desktop) or tap once (mobile) to see the full text, tap again to edit</span></div>
       <div class="shortcut-row"><span>→ <strong>Income destination</strong> — open the note on any income row to set a "→ goes to" label (e.g. Marcus Savings, HYSA)</span></div>
       <div class="shortcut-row"><span>🔄 <strong>Subscriptions</strong> — dedicated section for recurring services; included in expense totals and month-over-month comparison</span></div>
       <div class="shortcut-row"><span>📝 <strong>Notes</strong> — free-form notes per month with bullet points and checkable to-dos; syncs across devices</span></div>
@@ -4833,6 +4849,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <div class="shortcut-row"><span>⠿ <strong>Drag to reorder</strong> — hover a row to reveal the ⠿ handle; drag on desktop, long-press on mobile</span></div>
       <div class="shortcut-row"><span>↔ <strong>Move to another section</strong> — drag a row and drop it onto a different section to move it. To move multiple rows: ⋯ → Select rows to move, select your rows, then drag any selected row or use the section dropdown in the bulk bar.</span></div>
       <div class="shortcut-row"><span>↕ <strong>Expand notes</strong> — the ↕ button in the note actions bar expands a row note to full height; the global Notes section has the same button</span></div>
+      <div class="shortcut-row"><span>⇥ <strong>Indent bullets</strong> — on a bullet or checkbox line in any note, Tab indents and Shift+Tab outdents; Enter continues the list at the same level</span></div>
       <div class="shortcut-row"><span>✨ <strong>Autocomplete</strong> — start typing a label to see suggestions from your history; selecting one prefills all 3 colors</span></div>
       <div class="shortcut-row"><span>⌨ <strong>Enter key</strong> — pressing Enter in any cell moves down to the same column in the next row; on the last row it creates a new row automatically</span></div>
       <div class="shortcut-row"><span>🧮 <strong>Expression calculator</strong> — type a math expression in any number cell (e.g. <em>50+25+30</em> or <em>1500-200-50</em>) and it auto-calculates when you tab or click away</span></div>
