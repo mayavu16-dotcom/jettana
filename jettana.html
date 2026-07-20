@@ -4493,7 +4493,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
         <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">What does "Mark as exempt" do?<span class="askme-q-arrow">▾</span></button>
-          <div class="askme-a">Exempt rows stay visible in the tracker but their Actual value is <strong>excluded from section totals</strong> — the amount shows faded so you can tell at a glance. An <strong>exempt</strong> badge appears on the row; if the row also has a note, the badge steps aside for the note dot and the faded amount alone signals it. Great for employer-paid benefits, stipends, or anything you want to document without it affecting your budget math.</div>
+          <div class="askme-a">Exempt behaves differently by section type. On <strong>expense rows</strong>, the Actual value is <strong>excluded from section totals</strong> — great for employer-paid benefits or stipends you want documented without affecting budget math. On <strong>Checking and Savings rows</strong>, the balance still counts in that section's own totals, but is <strong>excluded from Total Saved and Net Worth</strong> — useful for accounts you track but don't consider yours (a shared account, a business float). Either way the amount shows faded so you can tell at a glance, and an <strong>exempt</strong> badge appears (stepping aside for the note dot if the row has a note).</div>
         </div>
 
         <div class="askme-item">
@@ -4803,7 +4803,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <div class="shortcut-row"><span>📊 <strong>12 sections</strong> — Income, Savings, Housing, Checking, Transportation, Debt, Food, Health, Subscriptions, Gifts, Misc, and Notes</span></div>
       <div class="shortcut-row"><span>✎ <strong>Rename sections</strong> — double-click (desktop) or long-press (mobile) any section header to rename it; choose "This month only" or "All months"</span></div>
       <div class="shortcut-row"><span>✓ <strong>Mark as paid</strong> — click ✓ on any expense row to strike it through; if a card link is set, the debt Current updates and the linked checking/savings account balance decreases</span></div>
-      <div class="shortcut-row"><span>◎ <strong>Mark as exempt</strong> — row menu → Mark as exempt; the row stays visible for documentation but its actual value is excluded from section totals (shown faded). An exempt badge appears; if the row also has a note, the badge hides and the faded amount signals it. Great for stipends or employer-paid expenses.</span></div>
+      <div class="shortcut-row"><span>◎ <strong>Mark as exempt</strong> — row menu → Mark as exempt; shown faded with an exempt badge (badge hides if the row has a note). Expense rows: excluded from section totals — great for stipends or employer-paid expenses. Checking/Savings rows: still counted in the section's own totals, but excluded from Total Saved and Net Worth.</span></div>
       <div class="shortcut-row"><span>📅 <strong>Date stamps</strong> — add planned and actual dates to any row via the date button that appears on hover</span></div>
       <div class="shortcut-row"><span>📅 <strong>Beginning balance date</strong> — open the note on any Checking row to set a beginning balance date; expenses dated before that date won't be deducted from the balance</span></div>
       <div class="shortcut-row"><span>✎ <strong>Row notes</strong> — click ≡ on any row → Add note; a gold dot appears on hover to indicate a note exists</span></div>
