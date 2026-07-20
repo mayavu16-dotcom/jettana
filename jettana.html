@@ -7196,6 +7196,18 @@ function sum(rows, key) {
   }, 0);
 }
 
+// Like sum(), but INCLUDES exempt rows — used for checking/savings section
+// headers & footers, so exempt accounts stay visible in their own section
+// while remaining excluded from Net Worth and Total Saved.
+function sumAll(rows, key) {
+  return (rows || []).reduce((t, r) => {
+    var v = r[key];
+    if (v === '' || v === null || v === undefined) return t;
+    var n = parseFloat(String(v).replace(/[$,+]/g, ''));
+    return t + (isNaN(n) ? 0 : (String(v).trim().startsWith('-') ? -Math.abs(n) : n));
+  }, 0);
+}
+
 function sumExempt(rows, key) {
   return (rows || []).reduce((t, r) => t + (r.exempt ? (parseFloat(r[key]) || 0) : 0), 0);
 }
@@ -7266,6 +7278,8 @@ function recalc() {
   })();
   const houB = sum(d.housing,   'budget');  const houA = sum(d.housing,   'actual');
   const chkB = sum(d.checking,  'beginning'); const chkE = sum(d.checking, 'ending');
+  const chkBAll = sumAll(d.checking, 'beginning'); const chkEAll = sumAll(d.checking, 'ending');
+  const savAAll = sumAll(d.savings, 'actual');
   const traB = sum(d.transport, 'budget');  const traA = sum(d.transport, 'actual');
   const dbtC = sum(d.debt,      'current'); const dbtR = sum(d.debt,      'remaining');
   const fooB = sum(d.food,      'budget');  const fooA = sum(d.food,      'actual');
@@ -7290,7 +7304,7 @@ function recalc() {
       inp.classList.toggle('overridden', overrideVal !== undefined);
     }
   })();  set('ft-income-1',   fmt(incA));
-  set('hdr-savings',  fmt(savA));  set('ft-savings-0',  fmt(savA));
+  set('hdr-savings',  fmt(savAAll));  set('ft-savings-0',  fmt(savAAll));
   // Growth footer — green + or red -
   (function() {
     var el = document.getElementById('ft-savings-1');
@@ -7316,7 +7330,7 @@ function recalc() {
       inp.classList.toggle('overridden', overrideVal !== undefined);
     }
   })();  set('ft-housing-1',  fmt(houA));
-  set('hdr-checking', fmt(chkE));  set('ft-checking-0', fmt(chkB));  set('ft-checking-1', fmt(chkE));
+  set('hdr-checking', fmt(chkEAll));  set('ft-checking-0', fmt(chkBAll));  set('ft-checking-1', fmt(chkEAll));
   set('hdr-transport',fmt(traA));  (function() {
     var inp = document.getElementById('ft-transport-0');
     if (inp && document.activeElement !== inp) {
@@ -15175,7 +15189,7 @@ var _nwPeriod = 'ytd';
 var _nwFrom = null;
 
 function monthNetWorth(d) {
-  function s(rows, f) { return (rows || []).reduce(function(t, r) { return t + (parseFloat(r[f]) || 0); }, 0); }
+  function s(rows, f) { return (rows || []).reduce(function(t, r) { if (r.exempt) return t; return t + (parseFloat(String(r[f]).replace(/[$,]/g, '')) || 0); }, 0); }
   return s(d.checking, 'ending') + s(d.savings, 'actual') - s(d.debt, 'remaining');
 }
 
