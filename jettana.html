@@ -4824,6 +4824,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <div class="shortcut-row"><span>🔁 <strong>Transfer (Savings)</strong> — log deposits, withdrawals and transfers with direction, from and to fields</span></div>
       <div class="shortcut-row"><span>💹 <strong>Investment (Savings)</strong> — log fund/ticker, shares and price per share; total value auto-fills the Growth column</span></div>
       <div class="shortcut-row"><span>🏦 <strong>Interest (Savings)</strong> — log interest earned, APY % and date; amount auto-fills the Growth column</span></div>
+      <div class="shortcut-row"><span>💵 <strong>Dividend (Savings)</strong> — log dividend payouts with an optional ticker/fund and date; totals show in the note alongside your other entries</span></div>
       <div class="shortcut-row"><span>⛽ <strong>Fuel (Transportation)</strong> — log price per gallon, gallons filled and date; total cost auto-fills the Actual column. Add miles driven to see your MPG.</span></div>
       <div class="shortcut-row"><span>📅 <strong>Manage (Subscriptions)</strong> — set a renewal date, cancel-by deadline and status (Active / Cancel / Renew); status shows in color below the entry</span></div>
       <div class="shortcut-row"><span>🏦 <strong>Transaction (Checking)</strong> — log deposits and withdrawals with description and date; net change auto-fills the Ending column. Supports Venmo, Zelle, Direct Deposit, Rent and more.</span></div>
@@ -8475,7 +8476,7 @@ function toggleNote(section, id) {
           templates = ['general', 'transaction'];
           templateLabels = { general: 'General', transaction: 'Transaction' };
         } else {
-          templates = ['general','transfer','contribution','investment','interest','performance'];
+          templates = ['general','transfer','contribution','investment','interest','dividend','performance'];
           templateLabels = { general: 'General', transfer: 'Transfer', contribution: 'Contribution', investment: 'Investment', interest: 'Interest', performance: 'Performance' };
         }
 
@@ -8535,7 +8536,7 @@ function buildCardLinkHtml(section, id, row) {
 
 function setSavingsTemplate(section, id, template) {
   // Update pill styles
-  var templates = ['general','transfer','contribution','investment','interest'];
+  var templates = ['general','transfer','contribution','investment','interest','dividend'];
   templates.forEach(function(t) {
     var pill = document.getElementById('st-pill-' + id + '-' + t);
     if (!pill) return;
@@ -8581,12 +8582,13 @@ function renderAllEntries(section, id, template, entries, skipTotal) {
   if (!container) return;
   container.innerHTML = '';
 
-  var TYPE_LABELS = { contribution: 'Contribution', transfer: 'Transfer', investment: 'Investment', interest: 'Interest', performance: 'Performance', payment: 'Payment', paycheck: 'Paycheck', transaction: 'Transaction', fuel: 'Fuel', manage: 'Manage', due: 'Due date' };
+  var TYPE_LABELS = { contribution: 'Contribution', transfer: 'Transfer', investment: 'Investment', interest: 'Interest', dividend: 'Dividend', performance: 'Performance', payment: 'Payment', paycheck: 'Paycheck', transaction: 'Transaction', fuel: 'Fuel', manage: 'Manage', due: 'Due date' };
   var TYPE_COLORS = {
     contribution: 'var(--sage-dark)',
     investment:   'var(--sage-dark)',
     interest:     'var(--sage-dark)',
     transfer:     '#4A85A0',
+    dividend:     '#3A9B7A',
     performance:  '#A8823E',
     payment:      'var(--blush)',
     paycheck:     'var(--sage-dark)',
@@ -8730,6 +8732,17 @@ function renderEntryFields(section, id, template, entry, idx) {
       '<input type="text" data-key="interest" value="' + (entry.interest ? '$' + parseFloat(String(entry.interest).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'interest\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">APY %</label>' +
       '<input type="text" data-key="apy" value="' + (entry.apy || '') + '" placeholder="4.5" style="' + inputStyle + '" oninput="this.dataset.key=\'apy\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Date</label>' +
+      '<input type="date" data-key="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '</div>';
+  }
+  if (template === 'dividend') {
+    var blurCb = 'templateMoneyBlur(this,\'' + section + '\',\'' + id + '\',\'' + template + '\')';
+    return '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Dividend amount</label>' +
+      '<input type="text" data-key="dividend" value="' + (entry.dividend ? '$' + parseFloat(String(entry.dividend).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'dividend\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + 'min-width:110px;"><label style="' + labelStyle + '">Ticker / fund <span style="color:var(--steel);font-weight:400;">(optional)</span></label>' +
+      '<input type="text" data-key="divsrc" value="' + escHtml(entry.divsrc || '') + '" placeholder="e.g. VOO, SCHD" style="' + inputStyle + '" oninput="this.dataset.key=\'divsrc\';' + cb + '" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Date</label>' +
       '<input type="date" data-key="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
       '</div>';
@@ -9045,6 +9058,8 @@ function updateEntryTotal(section, id, template) {
       hasPerfEntry = true;
     } else if (entryType === 'interest') {
       entryTotal = parseAmt(vals.interest);
+    } else if (entryType === 'dividend') {
+      entryTotal = parseAmt(vals.dividend);
     }
     grandTotal += entryTotal;
     idx++;
