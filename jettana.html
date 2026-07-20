@@ -7659,13 +7659,28 @@ function recalcCheckingBalances() {
     // Skip if user has manually overridden the ending balance
     if (acctRow._endingOverride) return;
     var acctColor = (acctRow.paidColor || acctRow.numColor || '').toLowerCase();
-    if (!acctColor) return;
 
     var beginning = parseAmt(acctRow['beginning']) || 0;
     var beginDate = acctRow._beginDate || '';
     var totalDeductions = 0;
 
-    EXPENSE_SECTIONS.forEach(function(sec) {
+    // Transaction template entries: deposits add, withdrawals subtract.
+    // Same begin-date rule as expenses: dated before it, they don't count.
+    var txNet = 0;
+    var hasTxEntries = false;
+    (acctRow._entries || []).forEach(function(en) {
+      if (en._type !== 'transaction') return;
+      var amt = parseAmt(en.txamt);
+      if (!amt) return;
+      if (beginDate && en.date && en.date < beginDate) return;
+      hasTxEntries = true;
+      txNet += en.txtype === 'withdrawal' ? -amt : amt;
+    });
+
+    // No color link and no transactions: leave this account fully manual
+    if (!acctColor && !hasTxEntries) return;
+
+    if (acctColor) EXPENSE_SECTIONS.forEach(function(sec) {
       var cfg = CONFIGS[sec];
       var rows = monthData[sec] || [];
       rows.forEach(function(row) {
@@ -7684,7 +7699,7 @@ function recalcCheckingBalances() {
       });
     });
 
-    var ending = Math.max(0, beginning - totalDeductions);
+    var ending = Math.max(0, beginning - totalDeductions + txNet);
     acctRow['ending'] = ending || '';
     acctRow['_paidAdj'] = totalDeductions;
     changed = true;
@@ -9060,11 +9075,11 @@ function updateEntryTotal(section, id, template) {
       var txRows2 = (txAll2[currentMonthKey] && txAll2[currentMonthKey][section]) || [];
       var txRowData2 = txRows2.find(function(r) { return r.id === id; }) || {};
       txBeginning = parseAmt(txRowData2['beginning']) || 0;
-      txEnding = txBeginning + grandTotal;
+      var txPaidAdj = parseAmt(txRowData2['_paidAdj']) || 0;
+      txEnding = Math.max(0, txBeginning - txPaidAdj + grandTotal);
       totalEl.style.color = grandTotal >= 0 ? '#27AE60' : '#C0392B';
-      totalEl.textContent = 'Net: ' + txSign + '$' + abs.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + (txBeginning ? '  →  Ending: $' + Math.abs(txEnding).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '');
-      // Write Beginning + net into the row's Ending column (was display-only before)
-      applyToColumn(section, id, txEnding, 'Beginning + transactions');
+      totalEl.textContent = 'Net: ' + txSign + '$' + abs.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + ((txBeginning || txPaidAdj) ? '  →  Ending: $' + txEnding.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '');
+      recalc();
     } else {
       var sign = grandTotal >= 0 ? '+' : '−';
       totalEl.style.color = grandTotal >= 0 ? 'var(--sage)' : 'var(--blush)';
