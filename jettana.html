@@ -7226,6 +7226,10 @@ function set(id, val) {
 }
 
 function recalc() {
+  // Run auto-calcs FIRST so header/footer/net-worth totals see fresh values
+  autoCalcDebtFromCards();
+  recalcCheckingBalances();
+
   const all = loadAll();
   const d = all[currentMonthKey] || {};
 
@@ -7447,8 +7451,6 @@ function recalc() {
       else if (pctRaw >= 80) pctEl.classList.add('pct-approaching');
     }
   });
-  autoCalcDebtFromCards();
-  recalcCheckingBalances();
 }
 
 function autoCalcDebtFromCards() {
