@@ -4569,7 +4569,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <button class="askme-q" onclick="toggleAskMe(this)">How do I see my net worth over time?<span class="askme-q-arrow">▾</span></button>
           <div class="askme-a">Open <strong>⋯ → Net worth trend</strong>. It draws a line chart of your net worth by month (checking + savings − debt). Pick a period with the <strong>6M / YTD / 1Y / All</strong> chips, or choose any starting month from the <strong>From</strong> dropdown. Green dots mean your net worth rose that month; the summary below shows your total change for the period.</div>
           <button class="askme-q" onclick="toggleAskMe(this)">Can I see how my savings might grow over time?<span class="askme-q-arrow">▾</span></button>
-          <div class="askme-a">Open <strong>⋯ → Growth projection</strong>. It starts from your <strong>current savings</strong> and your <strong>average monthly contribution</strong> so far, then shows how that could compound over <strong>5, 10, 20, or 30 years</strong>. Every field is editable — change the starting amount, the monthly contribution, or the annual return (7% is a common long-term average) to try different what-ifs. The solid line is your projected balance and the dashed line is what you actually deposited; the space between them is growth. It only looks at savings — checking and debt aren't included, since they don't grow at a market rate. And it's a <strong>hypothetical illustration, not a guarantee</strong> — real returns move up and down year to year.</div>
+          <div class="askme-a">Open <strong>⋯ → Growth projection</strong>. It starts from your <strong>current savings</strong> and your <strong>average monthly contribution</strong> so far, then shows how that could compound over <strong>5, 10, 20, or 30 years</strong>. Every field is editable — change the starting amount, the monthly contribution, or the annual return (7% is a common long-term average) to try different what-ifs. You can also enter your <strong>age</strong> (optional) to see how old you'd be at the end of the projection — it's saved on your device only. The solid line is your projected balance and the dashed line is what you actually deposited; the space between them is growth. It only looks at savings — checking and debt aren't included, since they don't grow at a market rate. And it's a <strong>hypothetical illustration, not a guarantee</strong> — real returns move up and down year to year.</div>
         </div>
       </div>
 
@@ -4655,6 +4655,11 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
         <label>Annual return %</label>
         <input type="text" inputmode="decimal" id="gp-rate" value="7" oninput="renderGPChart()">
         <span class="gp-hint">a common long-term average</span>
+      </div>
+      <div class="gp-field">
+        <label>Your age <span style="text-transform:none;font-weight:600;opacity:0.7;">(optional)</span></label>
+        <input type="text" inputmode="numeric" id="gp-age" placeholder="—" oninput="gpAgeInput()">
+        <span class="gp-hint">to see your age at the finish line</span>
       </div>
     </div>
     <div class="trends-chart-wrap">
@@ -15502,6 +15507,24 @@ function gpAvgContribution() {
   return Math.max(0, Math.round(avg));
 }
 
+var GP_AGE_KEY = 'jettana_gp_age';
+
+function gpAge() {
+  var el = document.getElementById('gp-age');
+  var v = el ? parseInt(String(el.value).replace(/[^0-9]/g, ''), 10) : NaN;
+  if (!isFinite(v) || v < 1 || v > 120) return null;
+  return v;
+}
+
+function gpAgeInput() {
+  try {
+    var v = gpAge();
+    if (v === null) localStorage.removeItem(GP_AGE_KEY);
+    else localStorage.setItem(GP_AGE_KEY, String(v));
+  } catch (e) {}
+  renderGPChart();
+}
+
 function setGPYears(y) {
   _gpYears = y;
   [5, 10, 20, 30].forEach(function(x) {
@@ -15532,6 +15555,11 @@ function showGrowthProjection() {
   if (cHint) cHint.textContent = (avg === null || avg === 0)
     ? 'enter what you plan to add each month'
     : 'your average so far — adjust it';
+
+  var ageInp = document.getElementById('gp-age');
+  if (ageInp && !ageInp.value) {
+    try { var saved = localStorage.getItem(GP_AGE_KEY); if (saved) ageInp.value = saved; } catch (e) {}
+  }
 
   renderGPChart();
 }
@@ -15609,6 +15637,10 @@ function renderGPChart() {
   var last = pts[pts.length - 1];
   out += '<circle cx="' + X(last.yr) + '" cy="' + Y(last.v) + '" r="4.5" fill="var(--sage)" stroke="white" stroke-width="1.5"/>';
   out += '<text x="' + (X(last.yr) - 4) + '" y="' + (Y(last.v) - 10) + '" text-anchor="end" font-size="11" font-weight="700" fill="var(--ink)" font-family="Outfit,sans-serif">' + nwShortFmt(last.v) + '</text>';
+  var age = gpAge();
+  if (age !== null) {
+    out += '<text x="' + (X(last.yr) - 4) + '" y="' + (Y(last.v) - 23) + '" text-anchor="end" font-size="10" font-weight="600" fill="var(--steel)" font-family="Outfit,sans-serif">at ' + (age + _gpYears) + '</text>';
+  }
   svg.innerHTML = out;
 
   var growth = last.v - last.contrib;
@@ -15620,6 +15652,7 @@ function renderGPChart() {
   var targetYear = new Date().getFullYear() + _gpYears;
   summary.innerHTML = '<div style="font-size:12.5px;padding:8px 2px 2px;color:var(--steel);">'
     + 'At this pace: <strong style="color:var(--ink);">' + gpFmt((last.v)) + '</strong> by ' + targetYear
+    + (age !== null ? ', when you\'re <strong style="color:var(--ink);">' + (age + _gpYears) + '</strong>' : '')
     + ' — of which <strong style="color:var(--sage-dark);">' + gpFmt((growth)) + '</strong> is growth you didn\'t deposit.'
     + '</div>';
 }
