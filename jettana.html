@@ -8477,7 +8477,7 @@ function toggleNote(section, id) {
           templateLabels = { general: 'General', transaction: 'Transaction' };
         } else {
           templates = ['general','transfer','contribution','investment','interest','dividend','performance'];
-          templateLabels = { general: 'General', transfer: 'Transfer', contribution: 'Contribution', investment: 'Investment', interest: 'Interest', performance: 'Performance' };
+          templateLabels = { general: 'General', transfer: 'Transfer', contribution: 'Contribution', investment: 'Investment', interest: 'Interest', dividend: 'Dividend', performance: 'Performance' };
         }
 
         // Build pill selector — each pill adds an entry of that type
@@ -8581,6 +8581,23 @@ function renderAllEntries(section, id, template, entries, skipTotal) {
   var container = document.getElementById('st-fields-' + id);
   if (!container) return;
   container.innerHTML = '';
+
+  // Keep entries in date order (undated entries sink to the end, stable).
+  // Persist the sorted order so save-by-index stays consistent with the DOM.
+  if (entries && entries.length > 1) {
+    var beforeKeys = entries.map(function(e) { return e.date || '9999-99-99'; }).join('|');
+    entries.sort(function(a, b) {
+      var da = a.date || '9999-99-99', db = b.date || '9999-99-99';
+      return da < db ? -1 : da > db ? 1 : 0;
+    });
+    var afterKeys = entries.map(function(e) { return e.date || '9999-99-99'; }).join('|');
+    if (beforeKeys !== afterKeys) {
+      var allData = loadAll();
+      var rws = (allData[currentMonthKey] && allData[currentMonthKey][section]) || [];
+      var rw = rws.find(function(r) { return r.id === id; });
+      if (rw) { rw._entries = entries; saveAll(allData); }
+    }
+  }
 
   var TYPE_LABELS = { contribution: 'Contribution', transfer: 'Transfer', investment: 'Investment', interest: 'Interest', dividend: 'Dividend', performance: 'Performance', payment: 'Payment', paycheck: 'Paycheck', transaction: 'Transaction', fuel: 'Fuel', manage: 'Manage', due: 'Due date' };
   var TYPE_COLORS = {
