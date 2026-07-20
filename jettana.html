@@ -3342,6 +3342,19 @@ body.font-large.text-bold .erow-label-input {
 .nw-chip { font-size: 11px; font-weight: 700; letter-spacing: 0.4px; padding: 3px 10px; border-radius: 20px; border: 1.5px solid var(--mist); color: var(--steel); cursor: pointer; user-select: none; }
 .nw-chip.active { background: var(--sage); border-color: var(--sage); color: white; }
 #nw-from { font-family: 'Outfit', sans-serif; font-size: 11.5px; padding: 3px 6px; border: 1.5px solid var(--mist); border-radius: 6px; color: var(--ink); background: transparent; }
+/* ── Growth Projection ───────────────────────────────────── */
+.gp-controls { display: flex; flex-wrap: wrap; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--mist); }
+.gp-field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 130px; min-width: 118px; }
+.gp-field label { font-size: 10.5px; font-weight: 700; letter-spacing: 0.3px; color: var(--steel); text-transform: uppercase; }
+.gp-field input { font-family: 'Outfit', sans-serif; font-size: 13px; padding: 6px 8px; border: 1.5px solid var(--mist); border-radius: 8px; color: var(--ink); background: transparent; width: 100%; box-sizing: border-box; }
+.gp-field input:focus { outline: none; border-color: var(--sage); }
+.gp-hint { font-size: 10px; color: var(--steel); opacity: 0.85; }
+.gp-note { font-size: 10.5px; color: var(--steel); font-style: italic; padding: 4px 20px 14px; line-height: 1.5; }
+.gp-stats { display: flex; flex-wrap: wrap; gap: 10px; padding: 4px 20px 2px; }
+.gp-stat { flex: 1 1 100px; background: var(--cloud, rgba(0,0,0,0.03)); border-radius: 10px; padding: 8px 10px; }
+.gp-stat span { display: block; font-size: 10px; color: var(--steel); letter-spacing: 0.3px; }
+.gp-stat strong { display: block; font-size: 14.5px; color: var(--ink); margin-top: 2px; }
+@media (max-width: 560px) { .gp-field { flex: 1 1 45%; } .gp-stat { flex: 1 1 45%; } }
 /* ── Spending Trends ─────────────────────────────────────── */
 .trends-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.5);
@@ -3905,6 +3918,9 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
             </button>
             <button class="more-menu-item" onclick="showNetWorthTrend(); hideMoreMenu()">
               <span>📈</span> Net worth trend
+            </button>
+            <button class="more-menu-item" onclick="showGrowthProjection(); hideMoreMenu()">
+              <span>🌱</span> Growth projection
             </button>
 
             <!-- Account -->
@@ -4552,6 +4568,8 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
         <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">How do I see my net worth over time?<span class="askme-q-arrow">▾</span></button>
           <div class="askme-a">Open <strong>⋯ → Net worth trend</strong>. It draws a line chart of your net worth by month (checking + savings − debt). Pick a period with the <strong>6M / YTD / 1Y / All</strong> chips, or choose any starting month from the <strong>From</strong> dropdown. Green dots mean your net worth rose that month; the summary below shows your total change for the period.</div>
+          <button class="askme-q" onclick="toggleAskMe(this)">Can I see how my savings might grow over time?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Open <strong>⋯ → Growth projection</strong>. It starts from your <strong>current savings</strong> and your <strong>average monthly contribution</strong> so far, then shows how that could compound over <strong>5, 10, 20, or 30 years</strong>. Every field is editable — change the starting amount, the monthly contribution, or the annual return (7% is a common long-term average) to try different what-ifs. The solid line is your projected balance and the dashed line is what you actually deposited; the space between them is growth. It only looks at savings — checking and debt aren't included, since they don't grow at a market rate. And it's a <strong>hypothetical illustration, not a guarantee</strong> — real returns move up and down year to year.</div>
         </div>
       </div>
 
@@ -4606,6 +4624,45 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <svg id="nw-svg" viewBox="0 0 520 230" preserveAspectRatio="xMidYMid meet" style="overflow:visible;"></svg>
     </div>
     <div class="trends-breakdown" id="nw-summary"></div>
+  </div>
+</div>
+
+<!-- Growth Projection Modal -->
+<div class="trends-overlay" id="gp-overlay" style="display:none;" onclick="if(event.target===this)hideGrowthProjection()">
+  <div class="trends-modal" id="gp-modal">
+    <div class="trends-header" id="gp-header">
+      <h3>🌱 Savings Growth Projection</h3>
+      <button class="trends-close" onclick="hideGrowthProjection()">×</button>
+    </div>
+    <div class="trends-subtitle" style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+      <span id="gp-chip-5" class="nw-chip" onclick="setGPYears(5)">5Y</span>
+      <span id="gp-chip-10" class="nw-chip active" onclick="setGPYears(10)">10Y</span>
+      <span id="gp-chip-20" class="nw-chip" onclick="setGPYears(20)">20Y</span>
+      <span id="gp-chip-30" class="nw-chip" onclick="setGPYears(30)">30Y</span>
+    </div>
+    <div class="gp-controls">
+      <div class="gp-field">
+        <label>Starting savings</label>
+        <input type="text" inputmode="decimal" id="gp-start" oninput="renderGPChart()">
+        <span class="gp-hint" id="gp-start-hint">from this month</span>
+      </div>
+      <div class="gp-field">
+        <label>Monthly contribution</label>
+        <input type="text" inputmode="decimal" id="gp-contrib" oninput="renderGPChart()">
+        <span class="gp-hint" id="gp-contrib-hint">adjust to whatever feels realistic</span>
+      </div>
+      <div class="gp-field">
+        <label>Annual return %</label>
+        <input type="text" inputmode="decimal" id="gp-rate" value="7" oninput="renderGPChart()">
+        <span class="gp-hint">a common long-term average</span>
+      </div>
+    </div>
+    <div class="trends-chart-wrap">
+      <svg id="gp-svg" viewBox="0 0 520 230" preserveAspectRatio="xMidYMid meet" style="overflow:visible;"></svg>
+    </div>
+    <div class="gp-stats" id="gp-stats"></div>
+    <div class="trends-breakdown" id="gp-summary"></div>
+    <div class="gp-note">This is a hypothetical illustration, not a prediction or a guarantee. Real returns vary year to year and can be negative.</div>
   </div>
 </div>
 
@@ -4907,6 +4964,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <div class="shortcut-row"><span>📅 <strong>Spending Calendar</strong> — ⋯ → Spending Calendar; see daily spending laid out on a calendar grid with weekly totals. Filter by section, search by transaction name, and tap any day for a breakdown. Drag to reposition over the tracker.</span></div>
       <div class="shortcut-row"><span>📊 <strong>Spending Trends</strong> — ⋯ → Spending Trends; bar chart of your last 6 months of expenses. Tap any bar to see a category breakdown with amounts and percentages. Drag to reposition.</span></div>
       <div class="shortcut-row"><span>📈 <strong>Net Worth Trend</strong> — ⋯ → Net worth trend; a line chart of your net worth (checking + savings − debt) by month. Pick 6M, YTD, 1Y, All, or a custom start month. Drag to reposition.</span></div>
+      <div class="shortcut-row"><span>🌱 <strong>Growth Projection</strong> — ⋯ → Growth projection; a hypothetical compound-growth view seeded from your current savings and average monthly contribution. Adjust the amount, contribution, or return rate; pick 5Y / 10Y / 20Y / 30Y. Drag to reposition.</span></div>
     </div>
 
     <div class="shortcuts-group">
@@ -15402,6 +15460,207 @@ function renderNWChart() {
     document.addEventListener('mousemove', function(e) { onMove(e.clientX, e.clientY); });
     document.addEventListener('mouseup', stopDrag);
     hdr.addEventListener('touchstart', function(e) { if (e.target.closest('button')) return; var t = e.touches[0]; startDrag(t.clientX, t.clientY); }, { passive: true });
+    hdr.addEventListener('touchmove', function(e) { if (!dragging) return; var t = e.touches[0]; onMove(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
+    document.addEventListener('touchend', stopDrag);
+  });
+})();
+
+/* ── Growth Projection ───────────────────────────────────── */
+var _gpYears = 10;
+
+function gpSavingsTotal(d) {
+  return ((d && d.savings) || []).reduce(function(t, r) {
+    if (r.exempt) return t;
+    return t + (parseFloat(String(r.actual).replace(/[$,]/g, '')) || 0);
+  }, 0);
+}
+
+function gpFmt(n) {
+  var num = Math.round(parseFloat(n) || 0);
+  var str = '$' + Math.abs(num).toLocaleString('en-US');
+  return num < 0 ? '−' + str : str;
+}
+
+function gpNum(id) {
+  var el = document.getElementById(id);
+  if (!el) return 0;
+  var v = parseFloat(String(el.value).replace(/[$,%\s]/g, ''));
+  return isFinite(v) ? v : 0;
+}
+
+// Average month-over-month increase in savings across the user's real months
+function gpAvgContribution() {
+  var all = loadAll();
+  var keys = Object.keys(all).filter(function(k) { return /^\d{4}-\d{2}$/.test(k); }).sort();
+  if (keys.length < 2) return null;
+  var deltas = [], i;
+  for (i = 1; i < keys.length; i++) {
+    deltas.push(gpSavingsTotal(all[keys[i]]) - gpSavingsTotal(all[keys[i - 1]]));
+  }
+  if (!deltas.length) return null;
+  var avg = deltas.reduce(function(a, b) { return a + b; }, 0) / deltas.length;
+  return Math.max(0, Math.round(avg));
+}
+
+function setGPYears(y) {
+  _gpYears = y;
+  [5, 10, 20, 30].forEach(function(x) {
+    var c = document.getElementById('gp-chip-' + x);
+    if (c) c.classList.toggle('active', x === y);
+  });
+  renderGPChart();
+}
+
+function showGrowthProjection() {
+  var el = document.getElementById('gp-overlay');
+  if (el) el.style.display = 'flex';
+
+  var all = loadAll();
+  var cur = all[currentMonthKey] || {};
+  var start = Math.round(gpSavingsTotal(cur));
+  var startInp = document.getElementById('gp-start');
+  if (startInp) startInp.value = gpFmt(start);
+  var sHint = document.getElementById('gp-start-hint');
+  if (sHint) sHint.textContent = start > 0
+    ? 'your savings in ' + monthLabel(currentMonthKey)
+    : 'no savings logged yet — enter an amount';
+
+  var avg = gpAvgContribution();
+  var cInp = document.getElementById('gp-contrib');
+  if (cInp) cInp.value = gpFmt(avg === null ? 0 : avg);
+  var cHint = document.getElementById('gp-contrib-hint');
+  if (cHint) cHint.textContent = (avg === null || avg === 0)
+    ? 'enter what you plan to add each month'
+    : 'your average so far — adjust it';
+
+  renderGPChart();
+}
+
+function hideGrowthProjection() {
+  var el = document.getElementById('gp-overlay');
+  if (el) el.style.display = 'none';
+  var modal = document.getElementById('gp-modal');
+  if (modal) { modal.style.position = ''; modal.style.left = ''; modal.style.top = ''; modal.style.margin = ''; }
+  if (el) { el.style.background = ''; el.style.pointerEvents = ''; el.style.alignItems = ''; el.style.justifyContent = ''; }
+}
+
+function renderGPChart() {
+  var svg = document.getElementById('gp-svg');
+  var stats = document.getElementById('gp-stats');
+  var summary = document.getElementById('gp-summary');
+  if (!svg || !stats || !summary) return;
+
+  var P = Math.max(0, gpNum('gp-start'));
+  var C = Math.max(0, gpNum('gp-contrib'));
+  var rate = gpNum('gp-rate');
+  if (rate > 100) rate = 100;
+  if (rate < 0) rate = 0;
+  var i = rate / 100 / 12;
+
+  // Year-by-year balances (monthly compounding, contribution at month end)
+  var pts = [], bal = P, y, m;
+  pts.push({ yr: 0, v: bal, contrib: P });
+  var contribTotal = P;
+  for (y = 1; y <= _gpYears; y++) {
+    for (m = 0; m < 12; m++) {
+      bal = bal * (1 + i) + C;
+      contribTotal += C;
+    }
+    pts.push({ yr: y, v: bal, contrib: contribTotal });
+  }
+
+  if (P === 0 && C === 0) {
+    svg.innerHTML = '';
+    stats.innerHTML = '';
+    summary.innerHTML = '<div style="text-align:center;color:var(--steel);font-size:12.5px;padding:8px 0;">Enter a starting amount or a monthly contribution to see how it could grow.</div>';
+    return;
+  }
+
+  var W = 520, H = 230, L = 58, R = 18, T = 24, B = 36;
+  var innerW = W - L - R, innerH = H - T - B;
+  var max = pts[pts.length - 1].v * 1.08, min = 0;
+  function X(k) { return L + (innerW * k) / _gpYears; }
+  function Y(v) { return T + innerH - ((v - min) / (max - min || 1)) * innerH; }
+
+  var out = '';
+  for (var g = 0; g <= 3; g++) {
+    var gv = min + ((max - min) * g) / 3;
+    var gy = Y(gv);
+    out += '<line x1="' + L + '" y1="' + gy + '" x2="' + (W - R) + '" y2="' + gy + '" stroke="var(--mist)" stroke-width="0.75" opacity="0.6"/>';
+    out += '<text x="' + (L - 8) + '" y="' + (gy + 3.5) + '" text-anchor="end" font-size="10" fill="var(--steel)" font-family="Outfit,sans-serif">' + nwShortFmt(gv) + '</text>';
+  }
+
+  // Contributions-only line (what you put in)
+  var cPoly = pts.map(function(p) { return X(p.yr).toFixed(1) + ',' + Y(p.contrib).toFixed(1); }).join(' ');
+  out += '<polyline points="' + cPoly + '" fill="none" stroke="var(--steel)" stroke-width="1.75" stroke-dasharray="4 4" opacity="0.65" stroke-linejoin="round"/>';
+
+  // Projected balance line
+  var poly = pts.map(function(p) { return X(p.yr).toFixed(1) + ',' + Y(p.v).toFixed(1); }).join(' ');
+  out += '<polyline points="' + poly + '" fill="none" stroke="var(--sage)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
+
+  // Year ticks
+  var step = _gpYears <= 10 ? (_gpYears <= 5 ? 1 : 2) : (_gpYears <= 20 ? 4 : 5);
+  pts.forEach(function(p) {
+    if (p.yr % step !== 0 && p.yr !== _gpYears) return;
+    out += '<text x="' + X(p.yr) + '" y="' + (H - 12) + '" text-anchor="middle" font-size="10" fill="var(--steel)" font-family="Outfit,sans-serif">' + (p.yr === 0 ? 'now' : p.yr + 'y') + '</text>';
+  });
+
+  // End marker
+  var last = pts[pts.length - 1];
+  out += '<circle cx="' + X(last.yr) + '" cy="' + Y(last.v) + '" r="4.5" fill="var(--sage)" stroke="white" stroke-width="1.5"/>';
+  out += '<text x="' + (X(last.yr) - 4) + '" y="' + (Y(last.v) - 10) + '" text-anchor="end" font-size="11" font-weight="700" fill="var(--ink)" font-family="Outfit,sans-serif">' + nwShortFmt(last.v) + '</text>';
+  svg.innerHTML = out;
+
+  var growth = last.v - last.contrib;
+  stats.innerHTML =
+    '<div class="gp-stat"><span>You put in</span><strong>' + gpFmt((last.contrib)) + '</strong></div>' +
+    '<div class="gp-stat"><span>Growth</span><strong style="color:var(--sage-dark);">' + gpFmt((growth)) + '</strong></div>' +
+    '<div class="gp-stat"><span>Balance</span><strong>' + gpFmt((last.v)) + '</strong></div>';
+
+  var targetYear = new Date().getFullYear() + _gpYears;
+  summary.innerHTML = '<div style="font-size:12.5px;padding:8px 2px 2px;color:var(--steel);">'
+    + 'At this pace: <strong style="color:var(--ink);">' + gpFmt((last.v)) + '</strong> by ' + targetYear
+    + ' — of which <strong style="color:var(--sage-dark);">' + gpFmt((growth)) + '</strong> is growth you didn\'t deposit.'
+    + '</div>';
+}
+
+// Drag support for the Growth Projection modal (mirrors the Net Worth modal)
+(function() {
+  var dragging = false, offX = 0, offY = 0;
+  function startDrag(clientX, clientY) {
+    var modal = document.getElementById('gp-modal');
+    if (!modal) return;
+    var rect = modal.getBoundingClientRect();
+    modal.style.position = 'fixed';
+    modal.style.left = rect.left + 'px';
+    modal.style.top  = rect.top  + 'px';
+    modal.style.margin = '0';
+    var overlay = document.getElementById('gp-overlay');
+    if (overlay) { overlay.style.background = 'transparent'; overlay.style.pointerEvents = 'none'; overlay.style.alignItems = 'flex-start'; overlay.style.justifyContent = 'flex-start'; modal.style.pointerEvents = 'auto'; }
+    offX = clientX - rect.left; offY = clientY - rect.top;
+    dragging = true;
+    var hdr = document.getElementById('gp-header');
+    if (hdr) hdr.classList.add('dragging');
+  }
+  function onMove(clientX, clientY) {
+    if (!dragging) return;
+    var modal = document.getElementById('gp-modal');
+    if (!modal) return;
+    modal.style.left = Math.max(0, Math.min(clientX - offX, window.innerWidth  - modal.offsetWidth))  + 'px';
+    modal.style.top  = Math.max(0, Math.min(clientY - offY, window.innerHeight - 60)) + 'px';
+  }
+  function stopDrag() {
+    dragging = false;
+    var hdr = document.getElementById('gp-header');
+    if (hdr) hdr.classList.remove('dragging');
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    var hdr = document.getElementById('gp-header');
+    if (!hdr) return;
+    hdr.addEventListener('mousedown', function(e) { if (e.target.closest('button') || e.target.closest('input') || e.target.closest('.nw-chip')) return; startDrag(e.clientX, e.clientY); e.preventDefault(); });
+    document.addEventListener('mousemove', function(e) { onMove(e.clientX, e.clientY); });
+    document.addEventListener('mouseup', stopDrag);
+    hdr.addEventListener('touchstart', function(e) { if (e.target.closest('button') || e.target.closest('input')) return; var t = e.touches[0]; startDrag(t.clientX, t.clientY); }, { passive: true });
     hdr.addEventListener('touchmove', function(e) { if (!dragging) return; var t = e.touches[0]; onMove(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
     document.addEventListener('touchend', stopDrag);
   });
