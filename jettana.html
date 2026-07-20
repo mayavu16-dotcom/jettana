@@ -9063,7 +9063,8 @@ function updateEntryTotal(section, id, template) {
       txEnding = txBeginning + grandTotal;
       totalEl.style.color = grandTotal >= 0 ? '#27AE60' : '#C0392B';
       totalEl.textContent = 'Net: ' + txSign + '$' + abs.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + (txBeginning ? '  →  Ending: $' + Math.abs(txEnding).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '');
-      recalc();
+      // Write Beginning + net into the row's Ending column (was display-only before)
+      applyToColumn(section, id, txEnding, 'Beginning + transactions');
     } else {
       var sign = grandTotal >= 0 ? '+' : '−';
       totalEl.style.color = grandTotal >= 0 ? 'var(--sage)' : 'var(--blush)';
