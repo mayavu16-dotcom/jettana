@@ -1987,6 +1987,24 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
 #income-breakdown-pop .ibp-neg { color: var(--blush); }
 #income-breakdown-pop .ibp-title { font-size: 10.5px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--steel); margin-bottom: 7px; }
 .dark #income-breakdown-pop { background: #1E2A38; border-color: #2A3A4A; }
+#expense-breakdown-pop {
+  position: fixed; z-index: 10050; display: none;
+  background: var(--white); color: var(--ink);
+  border: 1px solid var(--mist); border-radius: 12px;
+  font-family: 'Outfit', sans-serif; font-size: 12.5px; line-height: 1.5;
+  padding: 12px 14px; min-width: 220px; max-width: min(300px, calc(100vw - 24px));
+  box-shadow: 0 8px 30px rgba(0,0,0,0.16); pointer-events: none;
+}
+#expense-breakdown-pop .ebp-title { font-size: 10.5px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--steel); margin-bottom: 8px; }
+#expense-breakdown-pop .ebp-row { padding: 3px 0; }
+#expense-breakdown-pop .ebp-head { display: flex; justify-content: space-between; gap: 12px; }
+#expense-breakdown-pop .ebp-name { color: var(--ink); }
+#expense-breakdown-pop .ebp-amt { font-variant-numeric: tabular-nums; white-space: nowrap; }
+#expense-breakdown-pop .ebp-pct { color: var(--steel); font-size: 11px; margin-left: 6px; }
+#expense-breakdown-pop .ebp-bar { height: 4px; border-radius: 2px; background: var(--mist); margin-top: 3px; overflow: hidden; }
+#expense-breakdown-pop .ebp-bar > span { display: block; height: 100%; background: var(--blush); border-radius: 2px; }
+#expense-breakdown-pop .ebp-total { display: flex; justify-content: space-between; gap: 12px; border-top: 1px solid var(--mist); margin-top: 7px; padding-top: 7px; font-weight: 700; }
+.dark #expense-breakdown-pop { background: #1E2A38; border-color: #2A3A4A; }
 /* Hide the hover ✕ when the label text reaches its position (delete stays in the row menu) */
 .erow.label-crowded .del-btn { opacity: 0 !important; visibility: hidden; pointer-events: none; transition: none; }
 /* Exempt rows: keep hover controls left of the badge */
@@ -4045,10 +4063,10 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <div class="sum-amount" id="sum-income">$0</div>
           <div class="sum-sub" id="income-sum-sub">received this month</div>
         </div>
-        <div class="sum-card c-blush">
+        <div class="sum-card c-blush" id="expense-sum-card" style="position:relative;" onmouseenter="showExpenseBreakdown(this)" onmouseleave="hideExpenseBreakdown()" onclick="toggleExpenseBreakdown(this)">
           <div class="sum-label">Total Expenses</div>
           <div class="sum-amount" id="sum-expenses">$0</div>
-          <div class="sum-sub">across all categories</div>
+          <div class="sum-sub" id="expense-sum-sub">across all categories</div>
         </div>
         <div class="sum-card c-slate">
           <div class="sum-label">Net Balance</div>
@@ -7375,6 +7393,63 @@ document.addEventListener('touchstart', function(e) {
   if ('ontouchstart' in window && !e.target.closest('#income-sum-card')) hideIncomeBreakdown();
 }, { passive: true });
 
+var _expenseBreakdown = null;
+
+function _expenseBreakdownPop() {
+  var pop = document.getElementById('expense-breakdown-pop');
+  if (!pop) {
+    pop = document.createElement('div');
+    pop.id = 'expense-breakdown-pop';
+    document.body.appendChild(pop);
+  }
+  return pop;
+}
+
+function showExpenseBreakdown(card) {
+  var b = _expenseBreakdown;
+  if (!b || !b.cats.length) return;
+  var pop = _expenseBreakdownPop();
+  var maxAmt = b.cats[0].amt || 1;
+  var rows = '<div class="ebp-title">Where it went</div>';
+  b.cats.forEach(function(c) {
+    var pct = b.total > 0 ? Math.round((c.amt / b.total) * 100) : 0;
+    var barW = Math.max(3, Math.round((c.amt / maxAmt) * 100));
+    rows += '<div class="ebp-row">' +
+      '<div class="ebp-head"><span class="ebp-name">' + escHtml(getSectionName(c.key)) + '</span>' +
+      '<span class="ebp-amt">' + _fmtMoney(c.amt) + '<span class="ebp-pct">' + pct + '%</span></span></div>' +
+      '<div class="ebp-bar"><span style="width:' + barW + '%"></span></div>' +
+    '</div>';
+  });
+  rows += '<div class="ebp-total"><span>Total</span><span>' + _fmtMoney(b.total) + '</span></div>';
+  pop.innerHTML = rows;
+  pop.style.display = 'block';
+  var r = card.getBoundingClientRect();
+  var pw = pop.offsetWidth, ph = pop.offsetHeight;
+  var left = Math.max(12, Math.min(window.innerWidth - pw - 12, r.left));
+  var top = r.bottom + 8;
+  if (top + ph > window.innerHeight - 12) top = Math.max(12, r.top - ph - 8);
+  pop.style.left = left + 'px';
+  pop.style.top = top + 'px';
+}
+
+function hideExpenseBreakdown() {
+  var pop = document.getElementById('expense-breakdown-pop');
+  if (pop) pop.style.display = 'none';
+}
+
+function toggleExpenseBreakdown(card) {
+  if (!('ontouchstart' in window)) return;
+  var pop = document.getElementById('expense-breakdown-pop');
+  if (pop && pop.style.display === 'block') { hideExpenseBreakdown(); }
+  else { showExpenseBreakdown(card); }
+}
+
+document.addEventListener('scroll', hideExpenseBreakdown, true);
+window.addEventListener('resize', hideExpenseBreakdown);
+document.addEventListener('touchstart', function(e) {
+  if ('ontouchstart' in window && !e.target.closest('#expense-sum-card')) hideExpenseBreakdown();
+}, { passive: true });
+
 function recalc() {
   // Run auto-calcs FIRST so header/footer/net-worth totals see fresh values
   autoCalcDebtFromCards();
@@ -7459,6 +7534,19 @@ function recalc() {
 
   const totalExpA = houA + traA + fooA + hlhA + gftA + mscA + subA;
   const totalExpB = houB + traB + fooB + hlhB + gftB + mscB + subB;
+  // Category breakdown for the Total Expenses tooltip
+  _expenseBreakdown = {
+    total: totalExpA,
+    cats: [
+      { key: 'housing',       amt: houA },
+      { key: 'transport',     amt: traA },
+      { key: 'food',          amt: fooA },
+      { key: 'health',        amt: hlhA },
+      { key: 'gifts',         amt: gftA },
+      { key: 'misc',          amt: mscA },
+      { key: 'subscriptions', amt: subA }
+    ].filter(function(c) { return c.amt > 0; }).sort(function(a, b) { return b.amt - a.amt; })
+  };
   const balance   = incA - totalExpA;
   const assets    = chkE + savA;
   const liab      = dbtR;
@@ -7570,6 +7658,17 @@ function recalc() {
     }
   }
   set('sum-expenses', fmt(totalExpA));
+  var expSub = document.getElementById('expense-sum-sub');
+  var expCard = document.getElementById('expense-sum-card');
+  if (expSub && expCard) {
+    if (_expenseBreakdown && _expenseBreakdown.cats.length) {
+      expSub.textContent = ('ontouchstart' in window) ? 'tap for breakdown' : 'hover for breakdown';
+      expCard.style.cursor = 'help';
+    } else {
+      expSub.textContent = 'across all categories';
+      expCard.style.cursor = 'default';
+    }
+  }
   set('sum-savings',  fmt(savA));
   set('sum-balance',  fmt(balance));
   const balEl = document.getElementById('sum-balance');
