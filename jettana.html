@@ -8276,9 +8276,9 @@ function init() {
     all._seeded = true;
     saveAll(all);
     switchMonth(todayKey);
-    // Skip the Welcome modal when we're arriving via the demo link — the demo
-    // is loading on its own, so Welcome would just stack behind it.
-    if (!_isDemoMode) {
+    // Only surface Welcome/onboarding once the user is signed in — init() re-runs
+    // after login, so a fresh account still gets it, without stacking on auth.
+    if (!_isDemoMode && _currentUser) {
       setTimeout(showWelcome, 600);
       setTimeout(maybeShowStartBanner, 800);
     }
@@ -10405,8 +10405,8 @@ window.addEventListener('load', function() {
   })();
   loadFooterBudgets();
   loadFtHighlights();
-  // Show welcome if never seen (but not when auto-loading the demo link)
-  if (!_isDemoMode && !localStorage.getItem('intentra_welcomed') && !localStorage.getItem('intentra_v1')) {
+  // Show welcome if never seen (only once signed in, and not during demo load)
+  if (!_isDemoMode && _currentUser && !localStorage.getItem('intentra_welcomed') && !localStorage.getItem('intentra_v1')) {
     localStorage.setItem('intentra_welcomed', '1');
     setTimeout(showWelcome, 600);
     setTimeout(function() {
@@ -13440,6 +13440,10 @@ function maybeShowStartBanner() {
 }
 
 function showWelcome() {
+  // Don't surface Welcome while the sign-in modal is up — it would stack behind
+  // the auth card. It'll be shown after the user signs in (fresh account).
+  var auth = document.getElementById('auth-overlay');
+  if (auth && auth.style.display !== 'none' && auth.style.display !== '') return;
   var el = document.getElementById('welcome-overlay');
   if (el) el.style.display = 'flex';
 }
