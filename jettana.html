@@ -11157,7 +11157,7 @@ var TOUR_STEPS_PERSONALIZE = [
   {
     target: '#more-btn',
     title: 'Find the color theme picker',
-    desc: 'Tap ⋯ then look for "Color theme" — choose Classic, Minimal, Monochrome, or pick your own custom accent color.',
+    desc: 'Tap ⋯ then open "Color theme" — choose Classic, Minimal, Monochrome, or pick your own custom accent color.',
     position: 'bottom',
     noBackdropAdvance: true,
     action: function() {
@@ -11171,11 +11171,19 @@ var TOUR_STEPS_PERSONALIZE = [
             toggleMoreMenu(fakeE);
           }
         }
-        // Move highlight onto the theme section in the same smooth motion
-        // as the menu opening, rather than a delayed second snap
+        // Expand the Color theme sub-menu so the options are visible
+        var expanded = document.getElementById('theme-expanded');
+        if (expanded && expanded.style.display === 'none') {
+          toggleThemeExpand();
+        }
+        // Move highlight onto the theme section (now expanded) in the same smooth
+        // motion as the menu opening, rather than a delayed second snap
         requestAnimationFrame(function() {
-          var section = document.querySelector('.theme-picker-title');
-          section = section ? section.closest('.more-menu-section') : null;
+          // The theme picker lives in the .more-menu-section that holds the
+          // "Color theme" toggle (#theme-expand-label). (.theme-picker-title is a
+          // CSS-only class and never rendered, so target the real element.)
+          var toggle = document.getElementById('theme-expand-label');
+          var section = toggle ? toggle.closest('.more-menu-section') : null;
           if (!section) return;
           var sr = section.getBoundingClientRect();
           var hl = document.getElementById('tour-highlight');
@@ -11192,21 +11200,21 @@ var TOUR_STEPS_PERSONALIZE = [
             var ttW = tt.offsetWidth || 300;
             var ttH = tt.offsetHeight || 200;
             var left, top;
-            // Prefer placing the tooltip to the LEFT of the menu (which sits on the
-            // right). Only go beside it if there's genuinely room; otherwise stack
-            // it above/below the highlighted section so it never covers the menu.
+            // The menu is pinned to the right (under ⋯), so the empty space is on
+            // the LEFT. Put the tooltip there whenever it fits, vertically centered
+            // on the highlighted section. Only stack above/below as a last resort.
             var roomLeft = sr.left - 12;
             if (roomLeft >= ttW + 16) {
               left = Math.max(16, sr.left - ttW - 12);
-              top = Math.max(16, Math.min(vh - ttH - 16, sr.top));
+              top = Math.max(16, Math.min(vh - ttH - 16, sr.top + sr.height / 2 - ttH / 2));
             } else {
-              // No horizontal room — center over the free area and stack vertically
               left = Math.max(16, Math.min(vw - ttW - 16, sr.left + sr.width / 2 - ttW / 2));
-              var spaceAbove = sr.top - 12;
-              if (spaceAbove >= ttH + 16) {
-                top = sr.top - ttH - 12;               // above the highlighted section
+              if (sr.top - 12 >= ttH + 16) {
+                top = sr.top - ttH - 12;
+              } else if (vh - (sr.bottom + 12) >= ttH + 16) {
+                top = sr.bottom + 12;
               } else {
-                top = Math.min(sr.bottom + 12, vh - ttH - 16); // below, clamped on-screen
+                top = Math.max(16, vh - ttH - 16);
               }
             }
             tt.style.left = left + 'px';
@@ -11215,7 +11223,11 @@ var TOUR_STEPS_PERSONALIZE = [
         });
       }, 300);
     },
-    cleanup: function() { hideMoreMenu(); }
+    cleanup: function() {
+      var expanded = document.getElementById('theme-expanded');
+      if (expanded && expanded.style.display !== 'none') { toggleThemeExpand(); }
+      hideMoreMenu();
+    }
   },
   {
     target: '#rows-savings .erow:first-child',
