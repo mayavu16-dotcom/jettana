@@ -15384,7 +15384,14 @@ function setNWFrom(v) {
 
 function nwShortFmt(v) {
   var a = Math.abs(v);
-  var s = a >= 1000 ? (a / 1000).toFixed(a >= 10000 ? 0 : 1) + 'k' : String(Math.round(a));
+  var s;
+  if (a >= 1000000) {
+    s = (a / 1000000).toFixed(a >= 10000000 ? 1 : 2).replace(/\.?0+$/, '') + 'M';
+  } else if (a >= 1000) {
+    s = (a / 1000).toFixed(a >= 10000 ? 0 : 1) + 'k';
+  } else {
+    s = String(Math.round(a));
+  }
   return (v < 0 ? '-$' : '$') + s;
 }
 
