@@ -7465,8 +7465,16 @@ function recalc() {
   _incomeBreakdown = (function() {
     var grossPaychecks = 0, taxes = 0, deductions = 0, otherIncome = 0, hasPaycheck = false;
     (d.income || []).forEach(function(row) {
-      var entries = (row._template === 'paycheck' && row._entries) ? row._entries : null;
-      if (entries && entries.length) {
+      // Treat a row as a paycheck if it's flagged as one OR its entries carry
+      // paycheck data (gross / taxes / deductions / hours+rate). This keeps the
+      // breakdown working even if a month's _template flag is missing.
+      var entries = (row._entries && row._entries.length) ? row._entries : null;
+      var looksLikePaycheck = row._template === 'paycheck' || (entries && entries.some(function(e) {
+        return (!e._type || e._type === 'paycheck') &&
+               (parseAmt(e.gross) > 0 || parseAmt(e.taxes) > 0 || parseAmt(e.deductions) > 0 ||
+                (parseAmt(e.hours) > 0 && parseAmt(e.rate) > 0));
+      }));
+      if (entries && looksLikePaycheck) {
         entries.forEach(function(e) {
           if (e._type && e._type !== 'paycheck') { otherIncome += parseAmt(e.amt); return; }
           var g = parseAmt(e.gross);
