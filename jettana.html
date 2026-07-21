@@ -11069,7 +11069,15 @@ var TOUR_STEPS_PERSONALIZE = [
     target: '.intention-wrap',
     title: 'Set a monthly intention',
     desc: 'Click "Add intention" to write a quote, goal, or reminder for the month. Pick a color, font and size to make it yours.',
-    position: 'bottom'
+    position: 'bottom',
+    action: function() {
+      var t = document.getElementById('intention-trigger');
+      if (t) { t.style.opacity = '1'; t.dataset.tourForced = '1'; }
+    },
+    cleanup: function() {
+      var t = document.getElementById('intention-trigger');
+      if (t && t.dataset.tourForced) { t.style.opacity = ''; delete t.dataset.tourForced; }
+    }
   },
   {
     target: '#topbar-title',
@@ -11183,10 +11191,26 @@ var TOUR_STEPS_PERSONALIZE = [
             var vw = window.innerWidth, vh = window.innerHeight;
             var ttW = tt.offsetWidth || 300;
             var ttH = tt.offsetHeight || 200;
-            var left = Math.max(16, Math.min(vw - ttW - 16, sr.left - ttW - 12));
-            if (left < 240) left = Math.max(16, Math.min(vw - ttW - 16, sr.right + 12));
+            var left, top;
+            // Prefer placing the tooltip to the LEFT of the menu (which sits on the
+            // right). Only go beside it if there's genuinely room; otherwise stack
+            // it above/below the highlighted section so it never covers the menu.
+            var roomLeft = sr.left - 12;
+            if (roomLeft >= ttW + 16) {
+              left = Math.max(16, sr.left - ttW - 12);
+              top = Math.max(16, Math.min(vh - ttH - 16, sr.top));
+            } else {
+              // No horizontal room — center over the free area and stack vertically
+              left = Math.max(16, Math.min(vw - ttW - 16, sr.left + sr.width / 2 - ttW / 2));
+              var spaceAbove = sr.top - 12;
+              if (spaceAbove >= ttH + 16) {
+                top = sr.top - ttH - 12;               // above the highlighted section
+              } else {
+                top = Math.min(sr.bottom + 12, vh - ttH - 16); // below, clamped on-screen
+              }
+            }
             tt.style.left = left + 'px';
-            tt.style.top = Math.max(16, Math.min(vh - ttH - 16, sr.top)) + 'px';
+            tt.style.top = top + 'px';
           }
         });
       }, 300);
@@ -11219,9 +11243,28 @@ var TOUR_STEPS_PERSONALIZE = [
             hl.style.width = (pr.width + 8) + 'px';
             hl.style.height = (pr.height + 8) + 'px';
           }
+          // Move the tooltip off the pills — below if there's room, else above
+          var tt = document.getElementById('tour-tooltip');
+          if (tt) {
+            var vw = window.innerWidth, vh = window.innerHeight;
+            var ttW = tt.offsetWidth || 300;
+            var ttH = tt.offsetHeight || 200;
+            var left = Math.max(16, Math.min(vw - ttW - 16, pr.left + pr.width / 2 - ttW / 2));
+            var spaceBelow = vh - (pr.bottom + 12);
+            var top;
+            if (spaceBelow >= ttH + 16) {
+              top = pr.bottom + 12;                    // below the pills
+            } else if (pr.top - 12 >= ttH + 16) {
+              top = pr.top - ttH - 12;                 // above the pills
+            } else {
+              top = Math.max(16, vh - ttH - 16);       // clamp to bottom of viewport
+            }
+            tt.style.left = left + 'px';
+            tt.style.top = top + 'px';
+          }
           // Pills are in normal page flow and scroll with content — track them
           _tourScrollTarget = pillRow;
-          _tourScrollStep = { position: 'bottom' };
+          _tourScrollStep = { position: 'bottom', _pillTooltip: true };
         }, 350);
       }, 300);
     },
