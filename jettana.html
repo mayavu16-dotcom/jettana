@@ -3341,7 +3341,7 @@ body.font-large.text-bold .erow-label-input {
 /* ── Net Worth Trend chips ───────────────────────────────── */
 .nw-chip { font-size: 11px; font-weight: 700; letter-spacing: 0.4px; padding: 3px 10px; border-radius: 20px; border: 1.5px solid var(--mist); color: var(--steel); cursor: pointer; user-select: none; }
 .nw-chip.active { background: var(--sage); border-color: var(--sage); color: white; }
-#nw-from { font-family: 'Outfit', sans-serif; font-size: 11.5px; padding: 3px 6px; border: 1.5px solid var(--mist); border-radius: 6px; color: var(--ink); background: transparent; }
+#nw-from, #nw-to { font-family: 'Outfit', sans-serif; font-size: 11.5px; padding: 3px 6px; border: 1.5px solid var(--mist); border-radius: 6px; color: var(--ink); background: transparent; }
 /* ── Growth Projection ───────────────────────────────────── */
 .gp-controls { display: flex; flex-wrap: wrap; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--mist); }
 .gp-field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 130px; min-width: 118px; }
@@ -4618,6 +4618,8 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <span id="nw-chip-all" class="nw-chip" onclick="setNWPeriod('all')">All</span>
       <span style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;">From
         <select id="nw-from" onchange="setNWFrom(this.value)"><option value="">month…</option></select>
+        <span style="color:var(--steel);">to</span>
+        <select id="nw-to" onchange="setNWTo(this.value)"><option value="">now</option></select>
       </span>
     </div>
     <div class="trends-chart-wrap">
@@ -15337,6 +15339,7 @@ function hideTrends() {
 /* ── Net Worth Trend ─────────────────────────────────────── */
 var _nwPeriod = 'ytd';
 var _nwFrom = null;
+var _nwTo = null;
 
 function monthNetWorth(d) {
   function s(rows, f) { return (rows || []).reduce(function(t, r) { if (r.exempt) return t; return t + (parseFloat(String(r[f]).replace(/[$,]/g, '')) || 0); }, 0); }
@@ -15358,13 +15361,16 @@ function getNWKeys() {
   else if (_nwPeriod === '1y') from = cutoff(12);
   else if (_nwPeriod === 'ytd') from = now.getFullYear() + '-01';
   else if (_nwPeriod === 'custom' && _nwFrom) from = _nwFrom;
-  return keys.filter(function(k) { return (!from || k >= from) && k <= curKey; });
+  var to = (_nwPeriod === 'custom' && _nwTo) ? _nwTo : curKey;
+  return keys.filter(function(k) { return (!from || k >= from) && k <= to; });
 }
 
 function setNWPeriod(p) {
-  _nwPeriod = p; _nwFrom = null;
-  var sel = document.getElementById('nw-from');
-  if (sel) sel.value = '';
+  _nwPeriod = p; _nwFrom = null; _nwTo = null;
+  var selF = document.getElementById('nw-from');
+  if (selF) selF.value = '';
+  var selT = document.getElementById('nw-to');
+  if (selT) selT.value = '';
   ['6m', 'ytd', '1y', 'all'].forEach(function(x) {
     var c = document.getElementById('nw-chip-' + x);
     if (c) c.classList.toggle('active', x === p);
@@ -15373,8 +15379,16 @@ function setNWPeriod(p) {
 }
 
 function setNWFrom(v) {
-  if (!v) return;
-  _nwPeriod = 'custom'; _nwFrom = v;
+  _nwPeriod = 'custom'; _nwFrom = v || null;
+  ['6m', 'ytd', '1y', 'all'].forEach(function(x) {
+    var c = document.getElementById('nw-chip-' + x);
+    if (c) c.classList.remove('active');
+  });
+  renderNWChart();
+}
+
+function setNWTo(v) {
+  _nwPeriod = 'custom'; _nwTo = v || null;
   ['6m', 'ytd', '1y', 'all'].forEach(function(x) {
     var c = document.getElementById('nw-chip-' + x);
     if (c) c.classList.remove('active');
@@ -15398,16 +15412,23 @@ function nwShortFmt(v) {
 function showNetWorthTrend() {
   var el = document.getElementById('nw-overlay');
   if (el) el.style.display = 'flex';
-  // Populate the From dropdown with existing months
-  var sel = document.getElementById('nw-from');
-  if (sel) {
-    var all = loadAll();
-    var keys = Object.keys(all).filter(function(k) { return /^\d{4}-\d{2}$/.test(k); }).sort();
-    var cur = sel.value;
-    sel.innerHTML = '<option value="">month…</option>' + keys.map(function(k) {
-      return '<option value="' + k + '">' + monthLabel(k) + '</option>';
-    }).join('');
-    sel.value = cur;
+  // Populate the From and To dropdowns with existing months
+  var all = loadAll();
+  var keys = Object.keys(all).filter(function(k) { return /^\d{4}-\d{2}$/.test(k); }).sort();
+  var opts = keys.map(function(k) {
+    return '<option value="' + k + '">' + monthLabel(k) + '</option>';
+  }).join('');
+  var selF = document.getElementById('nw-from');
+  if (selF) {
+    var curF = selF.value;
+    selF.innerHTML = '<option value="">earliest</option>' + opts;
+    selF.value = curF;
+  }
+  var selT = document.getElementById('nw-to');
+  if (selT) {
+    var curT = selT.value;
+    selT.innerHTML = '<option value="">now</option>' + opts;
+    selT.value = curT;
   }
   renderNWChart();
 }
