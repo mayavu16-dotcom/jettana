@@ -5447,7 +5447,7 @@ function _handleAuthReady() {
     clearTimeout(_authTimeout);
     sessionStorage.removeItem('jettana_pending_demo');
     hideAuthModal();
-    setTimeout(function() { loadDemo(); }, 500);
+    setTimeout(function() { _runLoadDemo(); }, 500);
     return;
   }
   if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
@@ -5462,13 +5462,13 @@ function _handleAuthReady() {
       // Auto-load demo if user came from the marketing site demo link
       if (sessionStorage.getItem('jettana_pending_demo')) {
         sessionStorage.removeItem('jettana_pending_demo');
-        setTimeout(function() { loadDemo(); }, 800);
+        setTimeout(function() { _runLoadDemo(); }, 800);
       }
     } else if (_isDemoMode) {
       clearTimeout(_authTimeout);
       sessionStorage.removeItem('jettana_pending_demo');
       hideAuthModal();
-      setTimeout(function() { loadDemo(); }, 500);
+      setTimeout(function() { _runLoadDemo(); }, 500);
     } else {
       showAuthModal();
     }
@@ -8276,8 +8276,12 @@ function init() {
     all._seeded = true;
     saveAll(all);
     switchMonth(todayKey);
-    setTimeout(showWelcome, 600);
-    setTimeout(maybeShowStartBanner, 800);
+    // Skip the Welcome modal when we're arriving via the demo link — the demo
+    // is loading on its own, so Welcome would just stack behind it.
+    if (!_isDemoMode) {
+      setTimeout(showWelcome, 600);
+      setTimeout(maybeShowStartBanner, 800);
+    }
   } else {
     switchMonth(key);
     setTimeout(maybeShowStartBanner, 400);
@@ -10401,8 +10405,8 @@ window.addEventListener('load', function() {
   })();
   loadFooterBudgets();
   loadFtHighlights();
-  // Show welcome if never seen
-  if (!localStorage.getItem('intentra_welcomed') && !localStorage.getItem('intentra_v1')) {
+  // Show welcome if never seen (but not when auto-loading the demo link)
+  if (!_isDemoMode && !localStorage.getItem('intentra_welcomed') && !localStorage.getItem('intentra_v1')) {
     localStorage.setItem('intentra_welcomed', '1');
     setTimeout(showWelcome, 600);
     setTimeout(function() {
