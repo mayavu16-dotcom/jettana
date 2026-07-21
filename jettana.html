@@ -1973,6 +1973,20 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
   pointer-events: none; word-break: break-word;
 }
 .dark #label-peek { background: #EEF2F5; color: #1A2332; }
+#income-breakdown-pop {
+  position: fixed; z-index: 10050; display: none;
+  background: var(--white); color: var(--ink);
+  border: 1px solid var(--mist); border-radius: 12px;
+  font-family: 'Outfit', sans-serif; font-size: 12.5px; line-height: 1.5;
+  padding: 12px 14px; min-width: 210px; max-width: min(280px, calc(100vw - 24px));
+  box-shadow: 0 8px 30px rgba(0,0,0,0.16); pointer-events: none;
+}
+#income-breakdown-pop .ibp-row { display: flex; justify-content: space-between; gap: 16px; padding: 2px 0; }
+#income-breakdown-pop .ibp-row.ibp-sub { color: var(--steel); }
+#income-breakdown-pop .ibp-row.ibp-total { border-top: 1px solid var(--mist); margin-top: 6px; padding-top: 7px; font-weight: 700; }
+#income-breakdown-pop .ibp-neg { color: var(--blush); }
+#income-breakdown-pop .ibp-title { font-size: 10.5px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--steel); margin-bottom: 7px; }
+.dark #income-breakdown-pop { background: #1E2A38; border-color: #2A3A4A; }
 /* Hide the hover ✕ when the label text reaches its position (delete stays in the row menu) */
 .erow.label-crowded .del-btn { opacity: 0 !important; visibility: hidden; pointer-events: none; transition: none; }
 /* Exempt rows: keep hover controls left of the badge */
@@ -4026,10 +4040,10 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       </div>
 
       <div class="summary-strip">
-        <div class="sum-card c-sage">
+        <div class="sum-card c-sage" id="income-sum-card" style="cursor:help;position:relative;" onmouseenter="showIncomeBreakdown(this)" onmouseleave="hideIncomeBreakdown()" onclick="toggleIncomeBreakdown(this)">
           <div class="sum-label">Total Income</div>
           <div class="sum-amount" id="sum-income">$0</div>
-          <div class="sum-sub">received this month</div>
+          <div class="sum-sub" id="income-sum-sub">received this month</div>
         </div>
         <div class="sum-card c-blush">
           <div class="sum-label">Total Expenses</div>
@@ -7303,6 +7317,64 @@ function set(id, val) {
   }
 }
 
+var _incomeBreakdown = null;
+
+function _incomeBreakdownPop() {
+  var pop = document.getElementById('income-breakdown-pop');
+  if (!pop) {
+    pop = document.createElement('div');
+    pop.id = 'income-breakdown-pop';
+    document.body.appendChild(pop);
+  }
+  return pop;
+}
+
+function _fmtMoney(n) {
+  return '$' + Math.round(n).toLocaleString('en-US');
+}
+
+function showIncomeBreakdown(card) {
+  var b = _incomeBreakdown;
+  // Only worth showing when a paycheck contributes a gross figure
+  if (!b || !b.hasPaycheck) return;
+  var pop = _incomeBreakdownPop();
+  var rows = '<div class="ibp-title">Gross → take-home</div>';
+  rows += '<div class="ibp-row"><span>Gross pay</span><span>' + _fmtMoney(b.gross) + '</span></div>';
+  if (b.taxes > 0) rows += '<div class="ibp-row ibp-sub"><span>− Taxes</span><span class="ibp-neg">−' + _fmtMoney(b.taxes) + '</span></div>';
+  if (b.deductions > 0) rows += '<div class="ibp-row ibp-sub"><span>− Deductions</span><span class="ibp-neg">−' + _fmtMoney(b.deductions) + '</span></div>';
+  if (b.other > 0) rows += '<div class="ibp-row"><span>+ Other income</span><span>' + _fmtMoney(b.other) + '</span></div>';
+  rows += '<div class="ibp-row ibp-total"><span>Received</span><span>' + _fmtMoney(b.net) + '</span></div>';
+  pop.innerHTML = rows;
+  pop.style.display = 'block';
+  // Position under the card, clamped to viewport
+  var r = card.getBoundingClientRect();
+  var pw = pop.offsetWidth, ph = pop.offsetHeight;
+  var left = Math.max(12, Math.min(window.innerWidth - pw - 12, r.left));
+  var top = r.bottom + 8;
+  if (top + ph > window.innerHeight - 12) top = Math.max(12, r.top - ph - 8);
+  pop.style.left = left + 'px';
+  pop.style.top = top + 'px';
+}
+
+function hideIncomeBreakdown() {
+  var pop = document.getElementById('income-breakdown-pop');
+  if (pop) pop.style.display = 'none';
+}
+
+// Tap toggle for touch devices (hover doesn't fire)
+function toggleIncomeBreakdown(card) {
+  if (!('ontouchstart' in window)) return; // desktop uses hover
+  var pop = document.getElementById('income-breakdown-pop');
+  if (pop && pop.style.display === 'block') { hideIncomeBreakdown(); }
+  else { showIncomeBreakdown(card); }
+}
+
+document.addEventListener('scroll', hideIncomeBreakdown, true);
+window.addEventListener('resize', hideIncomeBreakdown);
+document.addEventListener('touchstart', function(e) {
+  if ('ontouchstart' in window && !e.target.closest('#income-sum-card')) hideIncomeBreakdown();
+}, { passive: true });
+
 function recalc() {
   // Run auto-calcs FIRST so header/footer/net-worth totals see fresh values
   autoCalcDebtFromCards();
@@ -7313,6 +7385,37 @@ function recalc() {
 
   const incP = sum(d.income,    'planned');
   const incA = sum(d.income,    'received');
+  // Gross-income breakdown for the Total Income tooltip. Paycheck entries carry
+  // gross/taxes/deductions; other income rows have only a plain received amount.
+  _incomeBreakdown = (function() {
+    var grossPaychecks = 0, taxes = 0, deductions = 0, otherIncome = 0, hasPaycheck = false;
+    (d.income || []).forEach(function(row) {
+      var entries = (row._template === 'paycheck' && row._entries) ? row._entries : null;
+      if (entries && entries.length) {
+        entries.forEach(function(e) {
+          if (e._type && e._type !== 'paycheck') { otherIncome += parseAmt(e.amt); return; }
+          var g = parseAmt(e.gross);
+          if (!g && e.hours && e.rate) g = parseAmt(e.hours) * parseAmt(e.rate);
+          if (g > 0) {
+            hasPaycheck = true;
+            grossPaychecks += g;
+            taxes += parseAmt(e.taxes);
+            deductions += parseAmt(e.deductions);
+          }
+        });
+      } else {
+        otherIncome += parseAmt(row.received);
+      }
+    });
+    return {
+      hasPaycheck: hasPaycheck,
+      gross: grossPaychecks,
+      taxes: taxes,
+      deductions: deductions,
+      other: otherIncome,
+      net: incA
+    };
+  })();
   // Show/hide income empty state + nudge button
   var incEmptyState = document.getElementById('income-empty-state');
   var addIncomeBtn = document.getElementById('add-income-btn');
@@ -7455,6 +7558,17 @@ function recalc() {
   })();  set('ft-subscriptions-1', fmt(subA));
 
   set('sum-income',   fmt(incA));
+  var incSub = document.getElementById('income-sum-sub');
+  var incCard = document.getElementById('income-sum-card');
+  if (incSub && incCard) {
+    if (_incomeBreakdown && _incomeBreakdown.hasPaycheck) {
+      incSub.textContent = ('ontouchstart' in window) ? 'received · tap for gross' : 'received · hover for gross';
+      incCard.style.cursor = 'help';
+    } else {
+      incSub.textContent = 'received this month';
+      incCard.style.cursor = 'default';
+    }
+  }
   set('sum-expenses', fmt(totalExpA));
   set('sum-savings',  fmt(savA));
   set('sum-balance',  fmt(balance));
