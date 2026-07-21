@@ -5281,13 +5281,13 @@ function showAuthTab(tab) {
   var signupTab = document.getElementById('tab-signup');
   var btn = document.getElementById('auth-btn');
   if (tab === 'login') {
-    if (loginTab) { loginTab.style.color = '#1A2332'; loginTab.style.borderBottomColor = '#6B9E70'; loginTab.style.fontWeight = '600'; }
+    if (loginTab) { loginTab.style.color = 'var(--ink)'; loginTab.style.borderBottomColor = '#6B9E70'; loginTab.style.fontWeight = '600'; }
     if (signupTab) { signupTab.style.color = '#8A9AB5'; signupTab.style.borderBottomColor = 'transparent'; signupTab.style.fontWeight = '500'; }
     if (btn) btn.textContent = 'Sign in';
     var reset = document.getElementById('auth-reset');
     if (reset) reset.style.display = 'block';
   } else {
-    if (signupTab) { signupTab.style.color = '#1A2332'; signupTab.style.borderBottomColor = '#6B9E70'; signupTab.style.fontWeight = '600'; }
+    if (signupTab) { signupTab.style.color = 'var(--ink)'; signupTab.style.borderBottomColor = '#6B9E70'; signupTab.style.fontWeight = '600'; }
     if (loginTab) { loginTab.style.color = '#8A9AB5'; loginTab.style.borderBottomColor = 'transparent'; loginTab.style.fontWeight = '500'; }
     if (btn) btn.textContent = 'Create account';
     var reset = document.getElementById('auth-reset');
@@ -16558,11 +16558,11 @@ function hideCalPopover() {
 <div id="auth-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;align-items:center;justify-content:center;">
   <div style="background:var(--white);border-radius:16px;padding:36px;width:100%;max-width:400px;margin:16px;font-family:'Outfit',sans-serif;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
     <div style="text-align:center;margin-bottom:28px;">
-      <div style="font-family:'Playfair Display',serif;font-size:28px;color:#1A2332;margin-bottom:4px;">Jet<span style="color:#6B9E70;font-style:italic;">tana</span></div>
+      <div style="font-family:'Playfair Display',serif;font-size:28px;color:var(--ink);margin-bottom:4px;">Jet<span style="color:#6B9E70;font-style:italic;">tana</span></div>
       <div style="font-size:12px;color:#8A9AB5;letter-spacing:1.5px;">BUDGET · TRACK · GROW</div>
     </div>
     <div id="auth-tabs" style="display:flex;gap:0;margin-bottom:24px;border-bottom:1px solid #E8EDF2;">
-      <button onclick="showAuthTab('login')" id="tab-login" style="flex:1;background:none;border:none;padding:10px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;color:#1A2332;border-bottom:2px solid #6B9E70;cursor:pointer;">Sign in</button>
+      <button onclick="showAuthTab('login')" id="tab-login" style="flex:1;background:none;border:none;padding:10px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;color:var(--ink);border-bottom:2px solid #6B9E70;cursor:pointer;">Sign in</button>
       <button onclick="showAuthTab('signup')" id="tab-signup" style="flex:1;background:none;border:none;padding:10px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:500;color:#8A9AB5;border-bottom:2px solid transparent;cursor:pointer;">Create account</button>
     </div>
     <div id="auth-error" style="display:none;background:#FEF2F2;color:#C0736A;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;"></div>
