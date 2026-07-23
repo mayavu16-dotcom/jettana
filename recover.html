@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Jettana — Data Recovery</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+         margin: 0; padding: 20px; background: #F7F6F2; color: #1A2332; line-height: 1.5; }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: #6B7C8F; font-size: 13px; margin-bottom: 18px; }
+  .card { background: #fff; border: 1px solid #E3E7EC; border-radius: 12px;
+          padding: 16px; margin-bottom: 14px; }
+  .ok   { border-left: 4px solid #6B9E70; }
+  .bad  { border-left: 4px solid #C0736A; }
+  .big  { font-size: 22px; font-weight: 700; margin: 4px 0; }
+  ul { margin: 8px 0 0; padding-left: 20px; }
+  li { font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
+  code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+  textarea { width: 100%; height: 180px; font-family: ui-monospace, Menlo, monospace;
+             font-size: 11px; border: 1px solid #E3E7EC; border-radius: 8px;
+             padding: 10px; box-sizing: border-box; background: #FAFBFC; }
+  button { font: inherit; font-weight: 600; background: #6B9E70; color: #fff;
+           border: none; border-radius: 10px; padding: 12px 18px; cursor: pointer;
+           margin: 6px 6px 0 0; -webkit-appearance: none; }
+  button.alt { background: #fff; color: #1A2332; border: 1px solid #C9D2DA; }
+  .note { font-size: 12px; color: #6B7C8F; margin-top: 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Jettana — Data Recovery</h1>
+  <div class="sub">Read-only. This page never saves, changes, or deletes anything.</div>
+  <div id="out"></div>
+</div>
+
+<script>
+(function () {
+  var KEY = 'intentra_v1';
+  var out = document.getElementById('out');
+  var raw = null;
+  try { raw = localStorage.getItem(KEY); } catch (e) {}
+
+  function el(html) { var d = document.createElement('div'); d.innerHTML = html; return d.firstElementChild; }
+
+  if (!raw) {
+    var keys = [];
+    try { keys = Object.keys(localStorage); } catch (e) {}
+    var related = keys.filter(function (k) { return /intentra|jettana/i.test(k); });
+    out.appendChild(el(
+      '<div class="card bad"><div class="big">No budget data on this device</div>' +
+      '<div>Nothing is stored under <code>' + KEY + '</code> at this address.</div>' +
+      (related.length
+        ? '<div class="note">Other Jettana settings are here (' + related.join(', ') +
+          '), so the app was used on this device — but the budget itself is not stored here.</div>'
+        : '<div class="note">No Jettana data of any kind at this address. Try the exact address you normally used, with or without <code>www.</code> — storage is not shared between them.</div>') +
+      '<div class="note">All keys present: ' + (keys.length ? keys.join(', ') : '(none)') + '</div>' +
+      '</div>'
+    ));
+    return;
+  }
+
+  var data = null, months = [], other = [];
+  try { data = JSON.parse(raw); } catch (e) {}
+  if (data && typeof data === 'object') {
+    Object.keys(data).forEach(function (k) {
+      if (/^\d{4}-\d{2}$/.test(k)) months.push(k); else other.push(k);
+    });
+    months.sort();
+  }
+
+  function rowCount(m) {
+    var d = data[m], n = 0;
+    if (d && typeof d === 'object') {
+      Object.keys(d).forEach(function (sec) { if (Array.isArray(d[sec])) n += d[sec].length; });
+    }
+    return n;
+  }
+
+  out.appendChild(el(
+    '<div class="card ok"><div class="big">Found your data</div>' +
+    '<div>' + raw.length.toLocaleString() + ' characters &middot; ' + months.length + ' month(s)</div>' +
+    (months.length
+      ? '<ul>' + months.map(function (m) { return '<li>' + m + ' &mdash; ' + rowCount(m) + ' rows</li>'; }).join('') + '</ul>'
+      : '<div class="note">No month keys found inside.</div>') +
+    (other.length ? '<div class="note">Also stored: ' + other.join(', ') + '</div>' : '') +
+    '</div>'
+  ));
+
+  var card = el('<div class="card"><div><strong>Save this somewhere safe</strong></div></div>');
+  var ta = document.createElement('textarea');
+  ta.readOnly = true; ta.value = raw;
+  var bDl = document.createElement('button'); bDl.textContent = 'Download backup file';
+  var bCp = document.createElement('button'); bCp.className = 'alt'; bCp.textContent = 'Copy to clipboard';
+  var note = el('<div class="note">If the download does nothing, tap Copy and paste it into Notes or an email to yourself.</div>');
+
+  bDl.onclick = function () {
+    try {
+      var blob = new Blob([raw], { type: 'application/json' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'jettana-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      bDl.textContent = 'Downloaded \u2713';
+    } catch (e) { bDl.textContent = 'Download failed \u2014 use Copy'; }
+  };
+  bCp.onclick = function () {
+    ta.select();
+    try { ta.setSelectionRange(0, raw.length); } catch (e) {}
+    var done = false;
+    try { done = document.execCommand('copy'); } catch (e) {}
+    if (!done && navigator.clipboard) {
+      navigator.clipboard.writeText(raw).then(function () { bCp.textContent = 'Copied \u2713'; });
+    } else {
+      bCp.textContent = done ? 'Copied \u2713' : 'Select the text above and copy';
+    }
+  };
+
+  card.appendChild(ta); card.appendChild(bDl); card.appendChild(bCp); card.appendChild(note);
+  out.appendChild(card);
+})();
+</script>
+</body>
+</html>
