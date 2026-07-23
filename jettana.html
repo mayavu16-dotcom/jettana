@@ -10636,16 +10636,46 @@ function applyIntentionTextColor(color) {
   saveIntention(inp.innerHTML);
   updateIntentionBoldState();
 }
+// True when the selection spans the entire field — colouring "everything" is
+// the same intent as clicking a swatch with nothing selected.
+function selectionCoversAll(inp) {
+  var sel = window.getSelection();
+  if (!sel || !sel.rangeCount) return false;
+  var r = sel.getRangeAt(0);
+  if (r.collapsed) return false;
+  var all = document.createRange();
+  all.selectNodeContents(inp);
+  try {
+    return r.compareBoundaryPoints(Range.START_TO_START, all) <= 0 &&
+           r.compareBoundaryPoints(Range.END_TO_END, all) >= 0;
+  } catch (e) { return false; }
+}
+
+// Drop per-word colour wrappers so the whole-intention base colour shows
+function stripIntentionColorSpans(inp) {
+  var spans = inp.querySelectorAll('span[data-c]');
+  if (!spans.length) return false;
+  spans.forEach(unwrapEl);
+  return true;
+}
+
 function pickIntentionColor(color) {
   var inp = document.getElementById('intention-input');
   var sel = window.getSelection();
   var hasSelection = !!(inp && sel && sel.rangeCount && !sel.isCollapsed &&
                         sel.anchorNode && inp.contains(sel.anchorNode));
-  if (hasSelection) {
-    applyIntentionTextColor(color); // colour just the selected words
+
+  // A partial selection colours just those words
+  if (hasSelection && !selectionCoversAll(inp)) {
+    applyIntentionTextColor(color);
     return;
   }
-  // Nothing selected — set the base colour for the whole intention (unchanged)
+
+  // Otherwise this means "the whole intention". Clear any per-word colours
+  // first, or they'd override the base colour and nothing would appear to change.
+  if (inp && stripIntentionColorSpans(inp)) {
+    paintIntentionColors(inp);
+  }
   applyIntentionColor(color);
   saveIntention(currentIntentionHtml(), color);
 }
