@@ -6431,13 +6431,14 @@ function renderSidebar() {
 
       // Apply split gradient for active month with custom color
       if (isActive && titleColor) {
-        var leftColor = darkModeColor(titleColor);
-        div.style.background = 'linear-gradient(to right, ' + leftColor + ' 55%, var(--sage) 55%)';
+        // This is a BACKGROUND, so use the real colour — darkModeColor() is for
+        // text and would flip a dark pick to white, hiding the white label.
+        div.style.background = 'linear-gradient(to right, ' + titleColor + ' 55%, var(--sage) 55%)';
         div.style.border = 'none';
       }
 
       div.innerHTML =
-        '<span class="month-label" style="color:' + (isActive && titleColor ? 'white' : (isActive ? 'white' : (titleColor ? sidebarSafeColor(titleColor) : ''))) + '">' + label + (monthEmoji ? ' ' + monthEmoji : '') + '</span>' +
+        '<span class="month-label" style="color:' + (isActive && titleColor ? readableOn(titleColor) : (isActive ? 'white' : (titleColor ? sidebarSafeColor(titleColor) : ''))) + '">' + label + (monthEmoji ? ' ' + monthEmoji : '') + '</span>' +
         '<span class="dot"></span>' +
         '<button class="month-edit-btn" title="Rename month" id="edit-' + key + '">✎</button>' +
         '<button class="month-del-btn" title="Delete month" id="del-' + key + '">✕</button>';
@@ -9839,6 +9840,8 @@ function applyDark(dark) {
   try { localStorage.setItem('intentra_dark', dark ? '1' : '0'); } catch(e) {}
   // Refresh intention color so dark/light flip applies
   loadIntention();
+  // Same for the month title — a near-black colour needs to flip to white
+  applyMonthTitleColor();
   // Re-apply all row colors so dark↔light inversion kicks in
   setTimeout(function() {
     var all = loadAll();
@@ -13459,7 +13462,7 @@ function toggleMonthColorPicker(e) {
   var swatchContainer = popup.querySelector('#month-color-swatches');
   presets.forEach(function(c) {
     var sw = document.createElement('div');
-    sw.style.cssText = 'width:24px;height:24px;border-radius:50%;background:' + c + ';cursor:pointer;border:2px solid ' + (c === currentColor ? '#1A2332' : 'transparent') + ';transition:border-color 0.15s;flex-shrink:0;';
+    sw.style.cssText = 'width:24px;height:24px;border-radius:50%;background:' + c + ';cursor:pointer;border:2px solid ' + (c === currentColor ? 'var(--ink)' : 'transparent') + ';box-shadow:0 0 0 1px rgba(128,128,128,0.4);transition:border-color 0.15s;flex-shrink:0;';
     sw.onclick = function() { setMonthTitleColor(c); popup.remove(); };
     swatchContainer.appendChild(sw);
   });
@@ -13491,6 +13494,19 @@ function applyMonthTitleColor() {
   var color = (all[currentMonthKey] && all[currentMonthKey]._titleColor) || '';
   var title = document.getElementById('topbar-title');
   if (title) title.style.color = color ? darkModeColor(color) : '';
+}
+
+// Text colour that stays readable ON TOP OF a given background colour
+function readableOn(bg) {
+  if (!bg) return 'white';
+  var tmp = document.createElement('div');
+  tmp.style.color = bg;
+  document.body.appendChild(tmp);
+  var rgb = getComputedStyle(tmp).color.match(/\d+/g);
+  document.body.removeChild(tmp);
+  if (!rgb) return 'white';
+  var lum = (parseInt(rgb[0]) * 299 + parseInt(rgb[1]) * 587 + parseInt(rgb[2]) * 114) / 1000;
+  return lum < 140 ? 'white' : '#1A2332';
 }
 
 // Sidebar is always dark — ensure any chosen color is readable against it
