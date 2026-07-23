@@ -1769,8 +1769,10 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
   font-weight: 700;
   font-synthesis: weight;
 }
-/* displayed intention matches the editing weight, so bold reads the same in both */
-.intention-trigger.has-content { font-weight: 500; }
+/* displayed intention matches the editing weight, so bold reads the same in both.
+   inline-block (not the base inline-flex) because rich text splits into several
+   children — as flex items they'd each pick up the 5px gap as phantom spaces. */
+.intention-trigger.has-content { font-weight: 500; display: inline-block; }
 .intention-bold-btn {
   font-family: 'Outfit', sans-serif;
   font-size: 11px;
@@ -1800,7 +1802,10 @@ mark.hl-rose  { --hl: rgba(224, 132, 132, 0.30); }
 .report-intention mark {
   background: var(--hl, rgba(232, 190, 90, 0.38));
   color: inherit;
+  /* the 1px breathing room is cancelled by the negative margin so highlighting
+     never changes the width of the text or shifts anything around it */
   padding: 0 1px;
+  margin: 0 -1px;
   border-radius: 2px;
 }
 .intention-hl-btn {
