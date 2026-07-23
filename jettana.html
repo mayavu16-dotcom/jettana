@@ -12802,9 +12802,22 @@ function _runLoadDemo() {
   });
   saveLegend();
 
-  // Income rows
+  // Build date strings for this month so spending calendar shows demo data
+  var demoNow = new Date();
+  var demoY   = demoNow.getFullYear();
+  var demoM   = String(demoNow.getMonth() + 1).padStart(2, '0');
+  var dd = function(day) { return demoY + '-' + demoM + '-' + String(day).padStart(2, '0'); };
+
+  // Income rows — the paycheck row is filled in via the paycheck template so the
+  // demo shows a real gross → take-home breakdown when hovering Total Income.
+  // 2 x (1800 gross - 300 taxes - 67.50 deductions) = 2865 net, matching `received`.
   var incomeRows = [
-    { label: 'Bi-Weekly Pay',      planned: 3000, received: 2865, paidColor: '#6B9E70', numColor: '#6B9E70' },
+    { label: 'Bi-Weekly Pay',      planned: 3000, received: 2865, paidColor: '#6B9E70', numColor: '#6B9E70',
+      _template: 'paycheck',
+      _entries: [
+        { date: dd(14), payType: 'Regular', hours: '80', rate: '22.50', gross: '1800', taxes: '300', deductions: '67.50' },
+        { date: dd(28), payType: 'Regular', hours: '80', rate: '22.50', gross: '1800', taxes: '300', deductions: '67.50' }
+      ] },
     { label: 'Freelance Design',   planned: 500,  received: 500,  paidColor: '#6B9E70', numColor: '#6B9E70' },
   ];
   incomeRows.forEach(function(d) { addRow('income', d, false); });
@@ -12815,12 +12828,6 @@ function _runLoadDemo() {
     { label: 'Roth IRA',           actual: 200,  gains: 340  },
   ];
   savingsRows.forEach(function(d) { addRow('savings', d, false); });
-
-  // Build date strings for this month so spending calendar shows demo data
-  var demoNow = new Date();
-  var demoY   = demoNow.getFullYear();
-  var demoM   = String(demoNow.getMonth() + 1).padStart(2, '0');
-  var dd = function(day) { return demoY + '-' + demoM + '-' + String(day).padStart(2, '0'); };
 
   // Housing — Discover charges (orange numbers)
   var housingRows = [
