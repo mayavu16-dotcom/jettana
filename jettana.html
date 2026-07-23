@@ -1787,6 +1787,34 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
 }
 .intention-bold-btn:hover { color: var(--ink); border-color: var(--steel); }
 .intention-bold-btn.active { background: var(--sage); color: #fff; border-color: var(--sage); }
+/* Highlight — translucent so the user's chosen text colour stays readable
+   on both the light and dark backgrounds. */
+.intention-input mark,
+.intention-trigger mark,
+.report-intention mark {
+  background: rgba(232, 190, 90, 0.38);
+  color: inherit;
+  padding: 0 1px;
+  border-radius: 2px;
+}
+.dark .intention-input mark,
+.dark .intention-trigger mark { background: rgba(232, 190, 90, 0.30); }
+.intention-hl-btn {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--steel);
+  background: var(--white);
+  border: 1px solid var(--mist);
+  border-radius: 4px;
+  padding: 3px 7px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.intention-hl-btn:hover { color: var(--ink); border-color: var(--steel); }
+.intention-hl-btn.active { background: rgba(232, 190, 90, 0.75); color: var(--ink); border-color: #D9AE4A; }
 .intention-dismiss {
   background: none;
   border: none;
@@ -1811,6 +1839,7 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
 /* ── Intention color swatches ────────────────────────────────── */
 .intention-swatches {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   align-items: center;
   margin-top: 6px;
@@ -4059,6 +4088,9 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <button type="button" class="intention-bold-btn" id="intention-bold-btn" title="Bold (Ctrl/⌘+B)"
             onmousedown="event.preventDefault(); toggleIntentionBold();"
             ontouchend="event.preventDefault(); toggleIntentionBold();">B</button>
+          <button type="button" class="intention-hl-btn" id="intention-hl-btn" title="Highlight"
+            onmousedown="event.preventDefault(); toggleIntentionHighlight();"
+            ontouchend="event.preventDefault(); toggleIntentionHighlight();">H</button>
           <div style="width:0.5px;height:14px;background:var(--mist);margin:0 2px;flex-shrink:0;"></div>
           <span style="font-size:10px;color:var(--steel);font-family:'Outfit',sans-serif;margin-right:2px;">Color:</span>
           <div class="swatch" data-color="#6B7C8F" style="background:#6B7C8F;" title="Steel"></div>
@@ -5018,7 +5050,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <div class="shortcuts-group-title">Personalisation</div>
       <div class="shortcut-row"><span>☁️ <strong>Sync across devices</strong> — your data saves automatically to the cloud; sign in on any device to access your budget</span></div>
       <div class="shortcut-row"><span>↩ <strong>Sign out / Delete account</strong> — ⋯ → Sign out or Delete account to manage your account</span></div>
-      <div class="shortcut-row"><span>✦ <strong>Monthly intention</strong> — click "Add intention" at the top to write a quote or goal; pick a color, font (10 options) and size</span></div>
+      <div class="shortcut-row"><span>✦ <strong>Monthly intention</strong> — click "Add intention" at the top to write a quote or goal; pick a color, font (10 options) and size, and use <strong>B</strong> / <strong>H</strong> to bold or highlight words</span></div>
       <div class="shortcut-row"><span>🎨 <strong>Color themes</strong> — ⋯ → Appearance: Classic, Minimal, Monochrome, Warm, or a fully custom color</span></div>
       <div class="shortcut-row"><span>𝐁 <strong>Bold text</strong> — ⋯ → Appearance → Bold text: On/Off</span></div>
       <div class="shortcut-row"><span>𝗔 <strong>Text size</strong> — ⋯ → Appearance → S / M / L; scales all row labels, headers, footers and summary tables</span></div>
@@ -10041,27 +10073,39 @@ function sanitizeIntentionHtml(html) {
   var tmp = document.createElement('div');
   tmp.innerHTML = String(html == null ? '' : html);
   var out = '';
-  (function walk(node, bold) {
+  function isTransparentBg(v) {
+    v = String(v || '').trim().toLowerCase();
+    return v === '' || v === 'transparent' || v === 'initial' || v === 'inherit' ||
+           /rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0\s*\)/.test(v);
+  }
+  (function walk(node, bold, hl) {
     for (var i = 0; i < node.childNodes.length; i++) {
       var n = node.childNodes[i];
       if (n.nodeType === 3) {
         var t = escHtml(n.nodeValue).replace(/[\r\n]+/g, ' ');
-        if (t) out += bold ? '<b>' + t + '</b>' : t;
+        if (!t) continue;
+        var piece = bold ? '<b>' + t + '</b>' : t;
+        out += hl ? '<mark>' + piece + '</mark>' : piece;
       } else if (n.nodeType === 1) {
         if (n.tagName === 'BR') { continue; }
-        // Some browsers emit <span style="font-weight:bold"> instead of <b>;
-        // treat either as bold so formatting survives the round-trip.
-        var sw = (n.getAttribute && n.getAttribute('style')) || '';
-        var m = /font-weight\s*:\s*([^;]+)/i.exec(sw);
-        var styledBold = false;
-        if (m) {
-          var w = m[1].trim().toLowerCase();
-          styledBold = (w === 'bold' || w === 'bolder' || (parseInt(w, 10) >= 600));
+        var b = bold, h = hl;
+        if (n.tagName === 'B' || n.tagName === 'STRONG') b = true;
+        if (n.tagName === 'MARK') h = true;
+        // Browsers may emit <span style="..."> rather than <b>/<mark>. An
+        // explicit style OVERRIDES an inherited one, so un-bolding or
+        // un-highlighting inside an existing tag is handled correctly.
+        var st = (n.getAttribute && n.getAttribute('style')) || '';
+        var mw = /font-weight\s*:\s*([^;]+)/i.exec(st);
+        if (mw) {
+          var w = mw[1].trim().toLowerCase();
+          b = (w === 'bold' || w === 'bolder' || parseInt(w, 10) >= 600);
         }
-        walk(n, bold || n.tagName === 'B' || n.tagName === 'STRONG' || styledBold);
+        var mb = /background(?:-color)?\s*:\s*([^;]+)/i.exec(st);
+        if (mb) h = !isTransparentBg(mb[1]);
+        walk(n, b, h);
       }
     }
-  })(tmp, false);
+  })(tmp, false, false);
   return out;
 }
 
@@ -10098,12 +10142,58 @@ function toggleIntentionBold() {
   updateIntentionBoldState();
 }
 
+// Translucent so it reads over both the light and dark backgrounds, and so the
+// live editing view matches how <mark> renders once saved.
+var INTENTION_HL = 'rgba(232, 190, 90, 0.38)';
+
+function intentionHighlightActive() {
+  var inp = document.getElementById('intention-input');
+  var sel = window.getSelection();
+  if (!inp || !sel || !sel.rangeCount || !sel.anchorNode) return false;
+  if (!inp.contains(sel.anchorNode)) return false;
+  var n = sel.anchorNode;
+  while (n && n !== inp) {
+    if (n.nodeType === 1) {
+      if (n.tagName === 'MARK') return true;
+      var st = (n.getAttribute('style') || '');
+      var m = /background(?:-color)?\s*:\s*([^;]+)/i.exec(st);
+      if (m) {
+        var bg = m[1].trim().toLowerCase();
+        // nearest explicit background wins — transparent means un-highlighted
+        return !(bg === '' || bg === 'transparent' ||
+                 /rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0\s*\)/.test(bg));
+      }
+    }
+    n = n.parentNode;
+  }
+  return false;
+}
+
+function toggleIntentionHighlight() {
+  var inp = document.getElementById('intention-input');
+  if (!inp) return;
+  if (document.activeElement !== inp) inp.focus();
+  var on = intentionHighlightActive();
+  var val = on ? 'transparent' : INTENTION_HL;
+  // hiliteColor needs styleWithCSS; fall back to backColor where unsupported
+  try { document.execCommand('styleWithCSS', false, true); } catch (e) {}
+  var ok = false;
+  try { ok = document.execCommand('hiliteColor', false, val); } catch (e) {}
+  if (!ok) { try { document.execCommand('backColor', false, val); } catch (e) {} }
+  try { document.execCommand('styleWithCSS', false, false); } catch (e) {}
+  saveIntention(inp.innerHTML);
+  updateIntentionBoldState();
+}
+
 function updateIntentionBoldState() {
   var btn = document.getElementById('intention-bold-btn');
-  if (!btn) return;
-  var on = false;
-  try { on = document.queryCommandState('bold'); } catch (e) {}
-  btn.classList.toggle('active', !!on);
+  if (btn) {
+    var on = false;
+    try { on = document.queryCommandState('bold'); } catch (e) {}
+    btn.classList.toggle('active', !!on);
+  }
+  var hlBtn = document.getElementById('intention-hl-btn');
+  if (hlBtn) hlBtn.classList.toggle('active', intentionHighlightActive());
 }
 
 document.addEventListener('selectionchange', function() {
