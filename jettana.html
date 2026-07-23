@@ -10273,10 +10273,60 @@ function intentionHighlightClass() {
 
 function intentionHighlightActive() { return !!intentionHighlightClass(); }
 
+// The highlighted element the caret currently sits in, or null
+function intentionHighlightEl() {
+  var inp = document.getElementById('intention-input');
+  var sel = window.getSelection();
+  if (!inp || !sel || !sel.rangeCount || !sel.anchorNode) return null;
+  if (!inp.contains(sel.anchorNode)) return null;
+  var n = sel.anchorNode;
+  while (n && n !== inp) {
+    if (n.nodeType === 1) {
+      var st = (n.getAttribute('style') || '');
+      var m = /background(?:-color)?\s*:\s*([^;]+)/i.exec(st);
+      if (m) return hlKeyFromBg(m[1]) ? n : null; // nearest explicit wins
+      if (n.tagName === 'MARK') return n;
+    }
+    n = n.parentNode;
+  }
+  return null;
+}
+
+function caretAtEndOf(el) {
+  var sel = window.getSelection();
+  if (!sel || !sel.rangeCount) return false;
+  var endR = document.createRange();
+  endR.selectNodeContents(el);
+  endR.collapse(false);
+  try {
+    return sel.getRangeAt(0).compareBoundaryPoints(Range.END_TO_END, endR) === 0;
+  } catch (e) { return false; }
+}
+
 function applyIntentionHighlight(turnOff) {
   var inp = document.getElementById('intention-input');
   if (!inp) return;
   if (document.activeElement !== inp) inp.focus();
+
+  var sel = window.getSelection();
+  var collapsed = !!(sel && sel.rangeCount && sel.isCollapsed);
+
+  // Turning highlight off at a bare caret means "stop highlighting from here".
+  // If the caret is at the end of the highlighted element, step it outside
+  // first — otherwise the browser keeps inserting new text inside it.
+  if (turnOff && collapsed) {
+    var hlEl = intentionHighlightEl();
+    if (hlEl && hlEl.parentNode && caretAtEndOf(hlEl)) {
+      try {
+        var r = document.createRange();
+        r.setStartAfter(hlEl);
+        r.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(r);
+      } catch (e) {}
+    }
+  }
+
   var val = turnOff ? 'transparent' : INTENTION_HL_COLORS[_intentionHlColor];
   // hiliteColor needs styleWithCSS; fall back to backColor where unsupported
   try { document.execCommand('styleWithCSS', false, true); } catch (e) {}
@@ -10284,12 +10334,11 @@ function applyIntentionHighlight(turnOff) {
   try { ok = document.execCommand('hiliteColor', false, val); } catch (e) {}
   if (!ok) { try { document.execCommand('backColor', false, val); } catch (e) {} }
   try { document.execCommand('styleWithCSS', false, false); } catch (e) {}
-  if (turnOff) {
-    // Browsers clear highlights in several different shapes (wrapping the old
-    // <mark>, nesting inside it, or replacing it). Re-render from the sanitized
-    // result so the editor shows exactly what gets saved. Safe here because
-    // clearing is a one-shot action — unlike toggling on, which relies on a
-    // pending state for "click, then type".
+
+  // Only re-render when clearing an actual selection. Browsers clear highlights
+  // in several different shapes, so normalising keeps the editor honest — but
+  // doing it at a bare caret would wipe the pending "type unhighlighted" state.
+  if (turnOff && !collapsed) {
     var clean = sanitizeIntentionHtml(inp.innerHTML);
     if (clean !== inp.innerHTML) {
       inp.innerHTML = clean;
