@@ -1748,6 +1748,38 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
 }
 .intention-input::placeholder { color: var(--mist); }
 .intention-input:focus { border-bottom-color: var(--sage); color: var(--ink); }
+/* contenteditable behaviour: single line + placeholder */
+.intention-input {
+  white-space: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  min-height: 1.4em;
+  cursor: text;
+}
+.intention-input:empty:before {
+  content: attr(data-ph);
+  color: var(--mist);
+  pointer-events: none;
+}
+.dark .intention-input:empty:before { color: #3A4A5A; }
+/* the field sits at weight 500, so bold needs to be heavy enough to read */
+.intention-input b, .intention-trigger b { font-weight: 800; }
+.intention-bold-btn {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--steel);
+  background: var(--white);
+  border: 1px solid var(--mist);
+  border-radius: 4px;
+  padding: 3px 7px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.intention-bold-btn:hover { color: var(--ink); border-color: var(--steel); }
+.intention-bold-btn.active { background: var(--sage); color: #fff; border-color: var(--sage); }
 .intention-dismiss {
   background: none;
   border: none;
@@ -4011,12 +4043,16 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           Add intention
         </button>
         <div class="intention-field" id="intention-field">
-          <input type="text" class="intention-input" id="intention-input"
-            placeholder="Type a quote, goal, or reminder for this month…"
-            maxlength="200">
+          <div class="intention-input" id="intention-input" contenteditable="true"
+            role="textbox" aria-label="Monthly intention"
+            data-ph="Type a quote, goal, or reminder for this month…"></div>
           <button class="intention-dismiss" id="intention-dismiss" title="Hide">×</button>
         </div>
         <div class="intention-swatches" id="intention-swatches" style="display:none;">
+          <button type="button" class="intention-bold-btn" id="intention-bold-btn" title="Bold (Ctrl/⌘+B)"
+            onmousedown="event.preventDefault(); toggleIntentionBold();"
+            ontouchend="event.preventDefault(); toggleIntentionBold();">B</button>
+          <div style="width:0.5px;height:14px;background:var(--mist);margin:0 2px;flex-shrink:0;"></div>
           <span style="font-size:10px;color:var(--steel);font-family:'Outfit',sans-serif;margin-right:2px;">Color:</span>
           <div class="swatch" data-color="#6B7C8F" style="background:#6B7C8F;" title="Steel"></div>
           <div class="swatch" data-color="#6B9E70" style="background:#6B9E70;" title="Sage"></div>
@@ -9988,6 +10024,81 @@ function clearNotes() {
   if (all[currentMonthKey]) { all[currentMonthKey]._notes = ''; saveAll(all); }
 }
 
+/* ── Intention rich text (bold only) ─────────────────────────
+   The field is a contenteditable, so its content is HTML. Everything is
+   escaped and only <b> survives — stored values can never carry markup. */
+var INTENTION_MAX = 200;
+var _lastIntentionHtml = '';
+
+function sanitizeIntentionHtml(html) {
+  var tmp = document.createElement('div');
+  tmp.innerHTML = String(html == null ? '' : html);
+  var out = '';
+  (function walk(node, bold) {
+    for (var i = 0; i < node.childNodes.length; i++) {
+      var n = node.childNodes[i];
+      if (n.nodeType === 3) {
+        var t = escHtml(n.nodeValue).replace(/[\r\n]+/g, ' ');
+        if (t) out += bold ? '<b>' + t + '</b>' : t;
+      } else if (n.nodeType === 1) {
+        if (n.tagName === 'BR') { continue; }
+        walk(n, bold || n.tagName === 'B' || n.tagName === 'STRONG');
+      }
+    }
+  })(tmp, false);
+  return out;
+}
+
+// Plain text of an intention value (for emptiness + length checks)
+function intentionText(html) {
+  var d = document.createElement('div');
+  d.innerHTML = String(html == null ? '' : html);
+  return d.textContent || '';
+}
+
+function currentIntentionHtml() {
+  var el = document.getElementById('intention-input');
+  return el ? sanitizeIntentionHtml(el.innerHTML) : '';
+}
+
+function placeIntentionCaretEnd(el) {
+  try {
+    var r = document.createRange();
+    r.selectNodeContents(el);
+    r.collapse(false);
+    var s = window.getSelection();
+    s.removeAllRanges();
+    s.addRange(r);
+  } catch (e) {}
+}
+
+function toggleIntentionBold() {
+  var inp = document.getElementById('intention-input');
+  if (!inp) return;
+  if (document.activeElement !== inp) inp.focus();
+  try { document.execCommand('styleWithCSS', false, false); } catch (e) {}
+  try { document.execCommand('bold'); } catch (e) {}
+  saveIntention(inp.innerHTML);
+  updateIntentionBoldState();
+}
+
+function updateIntentionBoldState() {
+  var btn = document.getElementById('intention-bold-btn');
+  if (!btn) return;
+  var on = false;
+  try { on = document.queryCommandState('bold'); } catch (e) {}
+  btn.classList.toggle('active', !!on);
+}
+
+document.addEventListener('selectionchange', function() {
+  var inp = document.getElementById('intention-input');
+  if (!inp) return;
+  var sel = window.getSelection();
+  if (sel && sel.rangeCount && sel.anchorNode && inp.contains(sel.anchorNode)) {
+    updateIntentionBoldState();
+  }
+});
+
 function loadIntention() {
   var all = loadAll();
   var val = (all[currentMonthKey] && all[currentMonthKey]._intention) || '';
@@ -9995,12 +10106,14 @@ function loadIntention() {
   var field   = document.getElementById('intention-field');
   var trigger = document.getElementById('intention-trigger');
   var swatches = document.getElementById('intention-swatches');
-  if (inp) inp.value = val;
+  var html = sanitizeIntentionHtml(val);
+  if (inp) inp.innerHTML = html;
+  _lastIntentionHtml = html;
   // Always start closed — user opens by clicking
   if (field) field.classList.remove('open');
   if (swatches) swatches.style.display = 'none';
-  if (val) {
-    if (trigger) { trigger.textContent = val; trigger.classList.add('has-content'); }
+  if (intentionText(html).trim()) {
+    if (trigger) { trigger.innerHTML = html; trigger.classList.add('has-content'); }
   } else {
     if (trigger) { trigger.textContent = 'Add intention'; trigger.classList.remove('has-content'); }
   }
@@ -10012,7 +10125,8 @@ function loadIntention() {
 function saveIntention(val, color) {
   var all = loadAll();
   if (!all[currentMonthKey]) return;
-  all[currentMonthKey]._intention = val;
+  var clean = sanitizeIntentionHtml(val);
+  all[currentMonthKey]._intention = clean;
   if (color !== undefined) all[currentMonthKey]._intentionColor = color;
   saveAll(all);
   scheduleSave();
@@ -10020,8 +10134,8 @@ function saveIntention(val, color) {
   // Update trigger label
   var trigger = document.getElementById('intention-trigger');
   if (trigger) {
-    if (val.trim()) {
-      trigger.textContent = val;
+    if (intentionText(clean).trim()) {
+      trigger.innerHTML = clean;
       trigger.classList.add('has-content');
     } else {
       trigger.textContent = 'Add intention';
@@ -10064,7 +10178,7 @@ function applyIntentionColor(forceColor) {
 function pickIntentionColor(color) {
   // Apply color instantly without waiting for storage round-trip
   applyIntentionColor(color);
-  saveIntention(document.getElementById('intention-input').value, color);
+  saveIntention(currentIntentionHtml(), color);
 }
 
 function toggleIntention() {
@@ -10077,7 +10191,15 @@ function toggleIntention() {
   applyIntentionColor();
   applyIntentionFont();
   applyIntentionSize();
-  if (inp) setTimeout(function() { inp.focus(); inp.select(); }, 50);
+  if (inp) setTimeout(function() {
+    inp.focus();
+    // select all (parity with the old input.select()) so typing replaces
+    try {
+      var r = document.createRange(); r.selectNodeContents(inp);
+      var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    } catch (e) {}
+    updateIntentionBoldState();
+  }, 50);
 }
 
 function dismissIntention() {
@@ -10087,13 +10209,13 @@ function dismissIntention() {
   var inp      = document.getElementById('intention-input');
   if (field) field.classList.remove('open');
   if (swatches) swatches.style.display = 'none';
-  var val = inp ? inp.value.trim() : '';
-  if (!val) {
+  var val = inp ? sanitizeIntentionHtml(inp.innerHTML) : '';
+  if (!intentionText(val).trim()) {
     if (trigger) { trigger.textContent = 'Add intention'; trigger.classList.remove('has-content'); trigger.style.color = ''; trigger.style.fontFamily = ''; trigger.style.fontStyle = ''; trigger.style.fontSize = ''; trigger.style.fontWeight = ''; }
     saveIntention('');
   } else {
     // Set trigger text and has-content BEFORE applying styles so applyIntentionColor works
-    if (trigger) { trigger.textContent = val; trigger.classList.add('has-content'); }
+    if (trigger) { trigger.innerHTML = val; trigger.classList.add('has-content'); }
     // Re-read stored color and apply it directly to avoid any race condition
     var all = loadAll();
     var storedColor = (all[currentMonthKey] && all[currentMonthKey]._intentionColor) || '';
@@ -10119,13 +10241,38 @@ window.addEventListener('load', function() {
   // Intention listeners
   var intentEl = document.getElementById('intention-input');
   if (intentEl) {
-    intentEl.addEventListener('input', function() { saveIntention(this.value); });
+    intentEl.addEventListener('input', function() {
+      // Browsers leave a stray <br> behind when the field is emptied, which
+      // would defeat the :empty placeholder — clear it.
+      if (/^(<br\s*\/?>)+$/i.test(this.innerHTML.trim())) this.innerHTML = '';
+      // maxlength isn't available on contenteditable, so cap it manually
+      if (intentionText(this.innerHTML).length > INTENTION_MAX) {
+        this.innerHTML = _lastIntentionHtml || '';
+        placeIntentionCaretEnd(this);
+        return;
+      }
+      _lastIntentionHtml = sanitizeIntentionHtml(this.innerHTML);
+      saveIntention(this.innerHTML);
+      updateIntentionBoldState();
+    });
+    // Paste as plain text so outside formatting can't leak in
+    intentEl.addEventListener('paste', function(e) {
+      e.preventDefault();
+      var text = (e.clipboardData || window.clipboardData).getData('text/plain') || '';
+      text = text.replace(/[\r\n]+/g, ' ');
+      try { document.execCommand('insertText', false, text); } catch (err) {}
+    });
     intentEl.addEventListener('keydown', function(e) {
       if (e.key === 'Enter') {
         e.preventDefault();
-        saveIntention(intentEl.value); // ensure saved before dismiss
+        saveIntention(intentEl.innerHTML); // ensure saved before dismiss
         dismissIntention();
         intentEl.blur();
+      }
+      // Ctrl/⌘+B is handled natively; just keep the button state in sync
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'b' || e.key === 'B')) {
+        try { document.execCommand('styleWithCSS', false, false); } catch (err) {}
+        setTimeout(function() { saveIntention(intentEl.innerHTML); updateIntentionBoldState(); }, 0);
       }
     });
     intentEl.addEventListener('blur', function() {
@@ -10146,9 +10293,11 @@ window.addEventListener('load', function() {
     intentEl.addEventListener('focus', function() {
       var swatches = document.getElementById('intention-swatches');
       if (swatches) swatches.style.display = 'flex';
+      _lastIntentionHtml = sanitizeIntentionHtml(this.innerHTML);
       applyIntentionColor();
       applyIntentionFont();
       applyIntentionSize();
+      updateIntentionBoldState();
     });
   }
   var dismissBtn = document.getElementById('intention-dismiss');
