@@ -10167,7 +10167,10 @@ function sanitizeIntentionHtml(html) {
     for (var i = 0; i < node.childNodes.length; i++) {
       var n = node.childNodes[i];
       if (n.nodeType === 3) {
-        var t = escHtml(String(n.nodeValue).replace(/\u200B/g, '')).replace(/[\r\n]+/g, ' ');
+        // contenteditable injects non-breaking spaces around element edges;
+        // those don't collapse like normal spaces and stack up into big gaps.
+        var raw = String(n.nodeValue).replace(/\u200B/g, '').replace(/\u00A0/g, ' ');
+        var t = escHtml(raw).replace(/[\r\n]+/g, ' ').replace(/ {2,}/g, ' ');
         if (!t) continue;
         // canonical nesting: <mark><b><span data-c></span></b></mark>
         var piece = col ? '<span data-c="' + col + '">' + t + '</span>' : t;
@@ -10658,9 +10661,6 @@ function paintIntentionColors(root) {
   });
 }
 
-// Transient marker so we can find the spans execCommand just created
-var COLOR_TAG = '#0b0c0d';
-
 function unwrapEl(el) {
   var p = el.parentNode;
   if (!p) return;
@@ -10669,32 +10669,58 @@ function unwrapEl(el) {
 }
 
 // Colour just the selected text. `color` empty means "back to default".
+// Done structurally rather than through execCommand, which proved unreliable
+// for colour, and so the selection survives for a follow-up pick.
 function applyIntentionTextColor(color) {
   var inp = document.getElementById('intention-input');
   if (!inp) return;
-  if (document.activeElement !== inp) inp.focus();
+  var sel = window.getSelection();
+  if (!sel || !sel.rangeCount || sel.isCollapsed) return;
+  var range = sel.getRangeAt(0);
+  if (!inp.contains(range.commonAncestorContainer)) return;
 
-  // Apply a marker colour first, then rewrite those spans ourselves — that way
-  // the stored value is the user's real pick, not a dark-mode-adjusted one.
-  try { document.execCommand('styleWithCSS', false, true); } catch (e) {}
-  try { document.execCommand('foreColor', false, COLOR_TAG); } catch (e) {}
-  try { document.execCommand('styleWithCSS', false, false); } catch (e) {}
+  var frag = range.extractContents();
+  var tmp = document.createElement('div');
+  tmp.appendChild(frag);
 
-  var marked = [];
-  inp.querySelectorAll('span, font').forEach(function(el) {
-    var c = normHexColor(el.style && el.style.color) ||
-            normHexColor(el.getAttribute && el.getAttribute('color'));
-    if (c === COLOR_TAG) marked.push(el);
+  // strip any colour already inside the selection so the new one wins
+  tmp.querySelectorAll('font[color]').forEach(unwrapEl);
+  tmp.querySelectorAll('span[data-c]').forEach(function(el) {
+    el.removeAttribute('data-c');
+    if (el.style) el.style.color = '';
+    var st = (el.getAttribute('style') || '').trim();
+    if (!st) el.removeAttribute('style');
+    if (!el.getAttribute('class') && !el.getAttribute('style')) unwrapEl(el);
   });
-  marked.forEach(function(el) {
-    if (color) {
-      el.removeAttribute('color');
-      el.setAttribute('data-c', color);
-      el.style.color = darkModeColor(color) || '';
-    } else {
-      unwrapEl(el); // "default" — drop the colour wrapper entirely
-    }
+  tmp.querySelectorAll('[style]').forEach(function(el) {
+    if (el.style && el.style.color) el.style.color = '';
   });
+
+  var inserted = [];
+  var node;
+  if (color) {
+    node = document.createElement('span');
+    node.setAttribute('data-c', color);
+    node.style.color = darkModeColor(color) || '';
+    while (tmp.firstChild) node.appendChild(tmp.firstChild);
+    inserted.push(node);
+  } else {
+    node = document.createDocumentFragment();
+    while (tmp.firstChild) node.appendChild(tmp.firstChild);
+    for (var i = 0; i < node.childNodes.length; i++) inserted.push(node.childNodes[i]);
+  }
+  range.insertNode(node);
+
+  // keep the same text selected so another swatch can be tried straight away
+  if (inserted.length) {
+    try {
+      var r = document.createRange();
+      r.setStartBefore(inserted[0]);
+      r.setEndAfter(inserted[inserted.length - 1]);
+      sel.removeAllRanges();
+      sel.addRange(r);
+    } catch (e) {}
+  }
 
   saveIntention(inp.innerHTML);
   updateIntentionBoldState();
