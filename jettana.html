@@ -1860,6 +1860,19 @@ mark.hl-rose  { --hl: rgba(224, 132, 132, 0.30); }
 }
 .hl-dot:hover { border-color: var(--steel); }
 .hl-dot.active { border-color: var(--ink); }
+.hl-dot.hl-none {
+  background: var(--white);
+  border-color: var(--mist);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Outfit', sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--steel);
+  line-height: 1;
+}
+.hl-dot.hl-none:hover { color: var(--blush); border-color: var(--blush); }
 .intention-dismiss {
   background: none;
   border: none;
@@ -4146,6 +4159,8 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
             <div class="hl-dot" data-hl="sky"   style="background:rgba(110,170,212,0.85);" title="Sky"></div>
             <div class="hl-dot" data-hl="lilac" style="background:rgba(160,145,205,0.85);" title="Lilac"></div>
             <div class="hl-dot" data-hl="rose"  style="background:rgba(224,132,132,0.85);" title="Rose"></div>
+            <div style="width:0.5px;height:14px;background:var(--mist);flex-shrink:0;"></div>
+            <div class="hl-dot hl-none" data-hl="none" title="Remove highlight">✕</div>
           </div>
           <div style="width:0.5px;height:14px;background:var(--mist);margin:0 2px;flex-shrink:0;"></div>
           <span style="font-size:10px;color:var(--steel);font-family:'Outfit',sans-serif;margin-right:2px;">Color:</span>
@@ -10129,7 +10144,7 @@ function sanitizeIntentionHtml(html) {
   var tmp = document.createElement('div');
   tmp.innerHTML = String(html == null ? '' : html);
   var out = '';
-  (function walk(node, bold, hl) {
+  (function walk(node, bold, hl, cleared) {
     for (var i = 0; i < node.childNodes.length; i++) {
       var n = node.childNodes[i];
       if (n.nodeType === 3) {
@@ -10139,9 +10154,11 @@ function sanitizeIntentionHtml(html) {
         out += hl ? '<mark class="hl-' + hl + '">' + piece + '</mark>' : piece;
       } else if (n.nodeType === 1) {
         if (n.tagName === 'BR') { continue; }
-        var b = bold, h = hl;
+        var b = bold, h = hl, c = cleared;
         if (n.tagName === 'B' || n.tagName === 'STRONG') b = true;
-        if (n.tagName === 'MARK') h = hlKeyFromMark(n);
+        // A <mark> must not resurrect a highlight that an ancestor explicitly
+        // cleared — browsers sometimes wrap the old <mark> in the clearing span.
+        if (n.tagName === 'MARK' && !c) h = hlKeyFromMark(n);
         // Browsers may emit <span style="..."> rather than <b>/<mark>. An
         // explicit style OVERRIDES an inherited one, so un-bolding or
         // un-highlighting inside an existing tag is handled correctly.
@@ -10152,11 +10169,15 @@ function sanitizeIntentionHtml(html) {
           b = (w === 'bold' || w === 'bolder' || parseInt(w, 10) >= 600);
         }
         var mb = /background(?:-color)?\s*:\s*([^;]+)/i.exec(st);
-        if (mb) h = hlKeyFromBg(mb[1]);
-        walk(n, b, h);
+        if (mb) {
+          var key = hlKeyFromBg(mb[1]);
+          h = key;
+          c = (key === null); // explicit transparent clears the whole subtree
+        }
+        walk(n, b, h, c);
       }
     }
-  })(tmp, false, null);
+  })(tmp, false, null, false);
   return out;
 }
 
@@ -10263,6 +10284,18 @@ function applyIntentionHighlight(turnOff) {
   try { ok = document.execCommand('hiliteColor', false, val); } catch (e) {}
   if (!ok) { try { document.execCommand('backColor', false, val); } catch (e) {} }
   try { document.execCommand('styleWithCSS', false, false); } catch (e) {}
+  if (turnOff) {
+    // Browsers clear highlights in several different shapes (wrapping the old
+    // <mark>, nesting inside it, or replacing it). Re-render from the sanitized
+    // result so the editor shows exactly what gets saved. Safe here because
+    // clearing is a one-shot action — unlike toggling on, which relies on a
+    // pending state for "click, then type".
+    var clean = sanitizeIntentionHtml(inp.innerHTML);
+    if (clean !== inp.innerHTML) {
+      inp.innerHTML = clean;
+      placeIntentionCaretEnd(inp);
+    }
+  }
   saveIntention(inp.innerHTML);
 }
 
@@ -10288,6 +10321,14 @@ function hideIntentionHlPalette() {
 }
 
 function pickIntentionHl(key) {
+  // "None" clears the highlight and leaves the remembered tint alone, so the
+  // next plain H click still uses the colour they last chose.
+  if (key === 'none') {
+    hideIntentionHlPalette();
+    applyIntentionHighlight(true);
+    updateIntentionBoldState();
+    return;
+  }
   if (!INTENTION_HL_COLORS[key]) return;
   _intentionHlColor = key;
   try { localStorage.setItem('jettana_hl_color', key); } catch (e) {}
