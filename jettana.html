@@ -10148,7 +10148,7 @@ function sanitizeIntentionHtml(html) {
     for (var i = 0; i < node.childNodes.length; i++) {
       var n = node.childNodes[i];
       if (n.nodeType === 3) {
-        var t = escHtml(n.nodeValue).replace(/[\r\n]+/g, ' ');
+        var t = escHtml(String(n.nodeValue).replace(/\u200B/g, '')).replace(/[\r\n]+/g, ' ');
         if (!t) continue;
         var piece = bold ? '<b>' + t + '</b>' : t;
         out += hl ? '<mark class="hl-' + hl + '">' + piece + '</mark>' : piece;
@@ -10185,7 +10185,7 @@ function sanitizeIntentionHtml(html) {
 function intentionText(html) {
   var d = document.createElement('div');
   d.innerHTML = String(html == null ? '' : html);
-  return d.textContent || '';
+  return (d.textContent || '').replace(/\u200B/g, '');
 }
 
 function currentIntentionHtml() {
@@ -10292,15 +10292,63 @@ function intentionHighlightEl() {
   return null;
 }
 
-function caretAtEndOf(el) {
+// execCommand('hiliteColor') is a no-op on a collapsed cursor in most browsers
+// (unlike bold, background colour has no "pending style"), so caret-position
+// toggling is done structurally instead. A zero-width space gives the caret a
+// plain text node to live in; it's stripped out again on save.
+var ZWSP = '\u200B';
+
+// Split the highlighted element at the caret and drop the caret into a plain
+// text node outside it, so whatever is typed next is NOT highlighted.
+function escapeHighlightAtCaret() {
   var sel = window.getSelection();
-  if (!sel || !sel.rangeCount) return false;
-  var endR = document.createRange();
-  endR.selectNodeContents(el);
-  endR.collapse(false);
-  try {
-    return sel.getRangeAt(0).compareBoundaryPoints(Range.END_TO_END, endR) === 0;
-  } catch (e) { return false; }
+  if (!sel || !sel.rangeCount || !sel.isCollapsed) return false;
+  var hlEl = intentionHighlightEl();
+  if (!hlEl || !hlEl.parentNode) return false;
+
+  var range = sel.getRangeAt(0);
+  var parent = hlEl.parentNode;
+
+  // Everything from the caret to the end of the highlight moves to a clone
+  var tail = document.createRange();
+  tail.selectNodeContents(hlEl);
+  try { tail.setStart(range.startContainer, range.startOffset); } catch (e) { return false; }
+  var tailFrag = tail.extractContents();
+
+  var anchor = document.createTextNode(ZWSP);
+  parent.insertBefore(anchor, hlEl.nextSibling);
+
+  if (tailFrag && tailFrag.textContent) {
+    var clone = hlEl.cloneNode(false); // same tag + class/style, no children
+    clone.appendChild(tailFrag);
+    parent.insertBefore(clone, anchor.nextSibling);
+  }
+  if (!hlEl.textContent) parent.removeChild(hlEl);
+
+  var r = document.createRange();
+  r.setStart(anchor, 1);
+  r.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(r);
+  return true;
+}
+
+// Start a highlight at the caret so whatever is typed next IS highlighted.
+function startHighlightAtCaret() {
+  var sel = window.getSelection();
+  if (!sel || !sel.rangeCount || !sel.isCollapsed) return false;
+  var range = sel.getRangeAt(0);
+  var span = document.createElement('span');
+  span.setAttribute('style', 'background-color: ' + INTENTION_HL_COLORS[_intentionHlColor]);
+  span.appendChild(document.createTextNode(ZWSP));
+  try { range.insertNode(span); } catch (e) { return false; }
+
+  var r = document.createRange();
+  r.setStart(span.firstChild, 1);
+  r.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(r);
+  return true;
 }
 
 function applyIntentionHighlight(turnOff) {
@@ -10311,20 +10359,15 @@ function applyIntentionHighlight(turnOff) {
   var sel = window.getSelection();
   var collapsed = !!(sel && sel.rangeCount && sel.isCollapsed);
 
-  // Turning highlight off at a bare caret means "stop highlighting from here".
-  // If the caret is at the end of the highlighted element, step it outside
-  // first — otherwise the browser keeps inserting new text inside it.
-  if (turnOff && collapsed) {
-    var hlEl = intentionHighlightEl();
-    if (hlEl && hlEl.parentNode && caretAtEndOf(hlEl)) {
-      try {
-        var r = document.createRange();
-        r.setStartAfter(hlEl);
-        r.collapse(true);
-        sel.removeAllRanges();
-        sel.addRange(r);
-      } catch (e) {}
+  // No selection — handle it structurally, since execCommand won't act here
+  if (collapsed) {
+    var done = turnOff ? escapeHighlightAtCaret() : startHighlightAtCaret();
+    if (done) {
+      saveIntention(inp.innerHTML);
+      updateIntentionBoldState();
+      return;
     }
+    if (turnOff) return; // nothing highlighted at the caret; nothing to do
   }
 
   var val = turnOff ? 'transparent' : INTENTION_HL_COLORS[_intentionHlColor];
@@ -10335,10 +10378,9 @@ function applyIntentionHighlight(turnOff) {
   if (!ok) { try { document.execCommand('backColor', false, val); } catch (e) {} }
   try { document.execCommand('styleWithCSS', false, false); } catch (e) {}
 
-  // Only re-render when clearing an actual selection. Browsers clear highlights
-  // in several different shapes, so normalising keeps the editor honest — but
-  // doing it at a bare caret would wipe the pending "type unhighlighted" state.
-  if (turnOff && !collapsed) {
+  // Browsers clear highlights in several different shapes, so re-render from
+  // the sanitized result to keep the editor honest about what will be saved.
+  if (turnOff) {
     var clean = sanitizeIntentionHtml(inp.innerHTML);
     if (clean !== inp.innerHTML) {
       inp.innerHTML = clean;
@@ -10557,7 +10599,7 @@ window.addEventListener('load', function() {
     intentEl.addEventListener('input', function() {
       // Browsers leave a stray <br> behind when the field is emptied, which
       // would defeat the :empty placeholder — clear it.
-      if (/^(<br\s*\/?>)+$/i.test(this.innerHTML.trim())) this.innerHTML = '';
+      if (/^(<br\s*\/?>|\u200B)+$/i.test(this.innerHTML.trim())) this.innerHTML = '';
       // maxlength isn't available on contenteditable, so cap it manually
       if (intentionText(this.innerHTML).length > INTENTION_MAX) {
         this.innerHTML = _lastIntentionHtml || '';
