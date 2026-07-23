@@ -5597,10 +5597,17 @@ function confirmDeleteAccount() {
 // Auth state listener - handles ALL auth events
 // INITIAL_SESSION fires on every page load/refresh with the persisted session
 // Fallback: if onAuthStateChange never fires within 5s, show login
-var _isDemoMode = new URLSearchParams(window.location.search).get('demo') === 'true'
-               || sessionStorage.getItem('jettana_pending_demo') === '1';
+// A ?demo=true visit is a SANDBOX. It must never read from, write to, or reveal
+// a real account: it gets its own storage key (see STORAGE_KEY) and never signs
+// anyone in, so cloud sync can't run. Driven by the URL only — the old
+// sessionStorage flag leaked demo mode into later loads in the same tab.
+var _demoIsolated = new URLSearchParams(window.location.search).get('demo') === 'true';
+var _demoLoaded = false;
+// Never push to the cloud until we've pulled the account's data down, or a
+// half-initialised local state could overwrite the real thing.
+var _initialSyncDone = false;
 var _authTimeout = setTimeout(function() {
-  if (_isDemoMode) return; // don't show auth modal in demo mode
+  if (_demoIsolated) return; // sandbox never shows the auth modal
   showAuthModal();
 }, 5000);
 var _pendingAuth = null; // store auth result until DOM is ready
@@ -5609,12 +5616,16 @@ function _handleAuthReady() {
   if (!_pendingAuth) return;
   var event = _pendingAuth.event, session = _pendingAuth.session;
   _pendingAuth = null;
-  // Demo bypass — skip auth, load demo directly
-  if (_isDemoMode && (!session || !session.user)) {
+  // Sandbox demo — never authenticate, never load a real account, whatever the
+  // session says. This is what stops a demo link from showing someone's budget.
+  if (_demoIsolated) {
     clearTimeout(_authTimeout);
-    sessionStorage.removeItem('jettana_pending_demo');
+    _currentUser = null;
     hideAuthModal();
-    setTimeout(function() { _runLoadDemo(); }, 500);
+    if (!_demoLoaded) {
+      _demoLoaded = true;
+      setTimeout(function() { _runLoadDemo(); }, 300);
+    }
     return;
   }
   if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
@@ -5626,24 +5637,12 @@ function _handleAuthReady() {
       // Hide "Create free account" button — user already has an account
       var signupBtn = document.getElementById('demo-signup-btn');
       if (signupBtn) signupBtn.style.display = 'none';
-      // Auto-load demo if user came from the marketing site demo link
-      if (sessionStorage.getItem('jettana_pending_demo')) {
-        sessionStorage.removeItem('jettana_pending_demo');
-        setTimeout(function() { _runLoadDemo(); }, 800);
-      }
-    } else if (_isDemoMode) {
-      clearTimeout(_authTimeout);
-      sessionStorage.removeItem('jettana_pending_demo');
-      hideAuthModal();
-      setTimeout(function() { _runLoadDemo(); }, 500);
     } else {
       showAuthModal();
     }
   } else if (event === 'SIGNED_OUT') {
-    if (!_isDemoMode) {
-      _currentUser = null;
-      showAuthModal();
-    }
+    _currentUser = null;
+    showAuthModal();
   }
 }
 
@@ -5659,11 +5658,22 @@ if (_sb) {
   });
 } else {
   clearTimeout(_authTimeout);
-  showAuthModal();
+  if (_demoIsolated) {
+    // Sandbox still works with no backend at all
+    if (!_demoLoaded) { _demoLoaded = true; setTimeout(function() { _runLoadDemo(); }, 300); }
+  } else {
+    showAuthModal();
+  }
 }
+
+// Safety net: if the auth event never arrives, the sandbox still shows the demo
+setTimeout(function() {
+  if (_demoIsolated && !_demoLoaded) { _demoLoaded = true; _runLoadDemo(); }
+}, 2500);
 
 // Sync data from Supabase → localStorage on login/refresh
 async function syncFromSupabase() {
+  if (_demoIsolated) return;
   if (!_currentUser || !_sb) return;
   // ALWAYS clear localStorage first — never show another user's data
   localStorage.removeItem(STORAGE_KEY);
@@ -5675,6 +5685,8 @@ async function syncFromSupabase() {
   } catch(e) {
     // No data found for this user (new account) — start fresh
   }
+  // Cloud state is now reflected locally, so it's safe to push again
+  _initialSyncDone = true;
   migrateZeros();
   migrateFormattedNumbers();
   init();
@@ -5691,6 +5703,8 @@ async function syncFromSupabase() {
 // Push data to Supabase in background
 async function syncToSupabase(data) {
   if (!_currentUser || !_sb) return;
+  if (_demoIsolated) return;      // sandbox must never write to an account
+  if (!_initialSyncDone) return;  // don't overwrite the cloud before we've read it
   try {
     await _sb.from('user_data').upsert({
       user_id: _currentUser.id,
@@ -5700,7 +5714,7 @@ async function syncToSupabase(data) {
   } catch(e) {}
 }
 
-const STORAGE_KEY = 'intentra_v1';
+const STORAGE_KEY = _demoIsolated ? 'jettana_demo_sandbox' : 'intentra_v1';
 
 function loadAll() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
@@ -8446,7 +8460,7 @@ function init() {
     switchMonth(todayKey);
     // Only surface Welcome/onboarding once the user is signed in — init() re-runs
     // after login, so a fresh account still gets it, without stacking on auth.
-    if (!_isDemoMode && _currentUser) {
+    if (!_demoIsolated && _currentUser) {
       setTimeout(showWelcome, 600);
       setTimeout(maybeShowStartBanner, 800);
     }
@@ -8455,10 +8469,6 @@ function init() {
     setTimeout(maybeShowStartBanner, 400);
   }
   renderSidebar();
-  // Auto-load demo if ?demo=true in URL — store in sessionStorage to survive auth redirect
-  if (new URLSearchParams(window.location.search).get('demo') === 'true') {
-    sessionStorage.setItem('jettana_pending_demo', '1');
-  }
 }
 
 let dragSrc = null;
@@ -11193,7 +11203,7 @@ window.addEventListener('load', function() {
   loadFooterBudgets();
   loadFtHighlights();
   // Show welcome if never seen (only once signed in, and not during demo load)
-  if (!_isDemoMode && _currentUser && !localStorage.getItem('intentra_welcomed') && !localStorage.getItem('intentra_v1')) {
+  if (!_demoIsolated && _currentUser && !localStorage.getItem('intentra_welcomed') && !localStorage.getItem('intentra_v1')) {
     localStorage.setItem('intentra_welcomed', '1');
     setTimeout(showWelcome, 600);
     setTimeout(function() {
