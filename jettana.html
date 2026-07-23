@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Jettana — Monthly Budget Tracker</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Outfit:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@700;800&family=Cormorant+Garamond:ital,wght@1,400;1,500;1,600&family=Lora:ital,wght@0,400;0,600;1,400;1,600&family=Dancing+Script:wght@400;600&family=Merriweather:ital,wght@0,400;0,700;1,400&family=DM+Serif+Display:ital@0;1&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Crimson+Text:ital,wght@0,400;1,400;1,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500;1,700&family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@700;800&family=Cormorant+Garamond:ital,wght@1,400;1,500;1,600;1,700&family=Lora:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&family=Dancing+Script:wght@400;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400;1,700&family=DM+Serif+Display:ital@0;1&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Crimson+Text:ital,wght@0,400;0,700;1,400;1,600;1,700&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -1762,8 +1762,15 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
   pointer-events: none;
 }
 .dark .intention-input:empty:before { color: #3A4A5A; }
-/* the field sits at weight 500, so bold needs to be heavy enough to read */
-.intention-input b, .intention-trigger b { font-weight: 800; }
+/* the field sits at weight 500, so bold needs a real 700 face to read clearly.
+   font-synthesis lets the browser fake bold for the few families (DM Serif,
+   Libre Baskerville italic) that ship no bold face at all. */
+.intention-input b, .intention-trigger b {
+  font-weight: 700;
+  font-synthesis: weight;
+}
+/* displayed intention matches the editing weight, so bold reads the same in both */
+.intention-trigger.has-content { font-weight: 500; }
 .intention-bold-btn {
   font-family: 'Outfit', sans-serif;
   font-size: 11px;
@@ -10042,7 +10049,16 @@ function sanitizeIntentionHtml(html) {
         if (t) out += bold ? '<b>' + t + '</b>' : t;
       } else if (n.nodeType === 1) {
         if (n.tagName === 'BR') { continue; }
-        walk(n, bold || n.tagName === 'B' || n.tagName === 'STRONG');
+        // Some browsers emit <span style="font-weight:bold"> instead of <b>;
+        // treat either as bold so formatting survives the round-trip.
+        var sw = (n.getAttribute && n.getAttribute('style')) || '';
+        var m = /font-weight\s*:\s*([^;]+)/i.exec(sw);
+        var styledBold = false;
+        if (m) {
+          var w = m[1].trim().toLowerCase();
+          styledBold = (w === 'bold' || w === 'bolder' || (parseInt(w, 10) >= 600));
+        }
+        walk(n, bold || n.tagName === 'B' || n.tagName === 'STRONG' || styledBold);
       }
     }
   })(tmp, false);
