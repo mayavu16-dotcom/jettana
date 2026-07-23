@@ -10168,6 +10168,16 @@ function sanitizeIntentionHtml(html) {
   var tmp = document.createElement('div');
   tmp.innerHTML = String(html == null ? '' : html);
   var out = '';
+  // Consecutive runs sharing a highlight are merged into ONE <mark>. Emitting a
+  // separate <mark> per text run made each one a rounded pill, so a highlight
+  // spanning several colours showed seams where the runs met.
+  var openHl = null;
+  function closeHl() { if (openHl) { out += '</mark>'; openHl = null; } }
+  function ensureHl(k) {
+    if (openHl === k) return;
+    closeHl();
+    if (k) { out += '<mark class="hl-' + k + '">'; openHl = k; }
+  }
   (function walk(node, bold, hl, cleared, col) {
     for (var i = 0; i < node.childNodes.length; i++) {
       var n = node.childNodes[i];
@@ -10178,9 +10188,10 @@ function sanitizeIntentionHtml(html) {
         var t = escHtml(raw).replace(/[\r\n]+/g, ' ').replace(/ {2,}/g, ' ');
         if (!t) continue;
         // canonical nesting: <mark><b><span data-c></span></b></mark>
+        ensureHl(hl);
         var piece = col ? '<span data-c="' + col + '">' + t + '</span>' : t;
         if (bold) piece = '<b>' + piece + '</b>';
-        out += hl ? '<mark class="hl-' + hl + '">' + piece + '</mark>' : piece;
+        out += piece;
       } else if (n.nodeType === 1) {
         if (n.tagName === 'BR') { continue; }
         var b = bold, h = hl, c = cleared, cl = col;
@@ -10221,6 +10232,7 @@ function sanitizeIntentionHtml(html) {
       }
     }
   })(tmp, false, null, false, null);
+  closeHl();
   return out;
 }
 
@@ -10456,6 +10468,42 @@ function startHighlightAtCaret() {
   return true;
 }
 
+// Merge neighbouring <mark>s of the same tint in the live DOM. Text nodes are
+// moved rather than recreated, so an active selection survives.
+function mergeAdjacentMarks(root) {
+  if (!root || !root.querySelectorAll) return;
+  // Text nodes are moved, not recreated, so their references stay valid —
+  // capture the selection and put it back rather than trusting the browser to.
+  var sel = window.getSelection();
+  var saved = null;
+  if (sel && sel.rangeCount) {
+    var r0 = sel.getRangeAt(0);
+    saved = { sc: r0.startContainer, so: r0.startOffset, ec: r0.endContainer, eo: r0.endOffset };
+  }
+  var marks = root.querySelectorAll('mark');
+  for (var i = 0; i < marks.length; i++) {
+    var m = marks[i];
+    if (!m.parentNode) continue;
+    var next = m.nextSibling;
+    while (next && next.nodeType === 1 && next.tagName === 'MARK' &&
+           next.getAttribute('class') === m.getAttribute('class')) {
+      while (next.firstChild) m.appendChild(next.firstChild);
+      var dead = next;
+      next = next.nextSibling;
+      if (dead.parentNode) dead.parentNode.removeChild(dead);
+    }
+  }
+  if (saved && saved.sc && saved.sc.isConnected !== false && saved.ec && saved.ec.isConnected !== false) {
+    try {
+      var nr = document.createRange();
+      nr.setStart(saved.sc, saved.so);
+      nr.setEnd(saved.ec, saved.eo);
+      sel.removeAllRanges();
+      sel.addRange(nr);
+    } catch (e) {}
+  }
+}
+
 function applyIntentionHighlight(turnOff) {
   var inp = document.getElementById('intention-input');
   if (!inp) return;
@@ -10482,6 +10530,8 @@ function applyIntentionHighlight(turnOff) {
   try { ok = document.execCommand('hiliteColor', false, val); } catch (e) {}
   if (!ok) { try { document.execCommand('backColor', false, val); } catch (e) {} }
   try { document.execCommand('styleWithCSS', false, false); } catch (e) {}
+
+  mergeAdjacentMarks(inp);
 
   // Browsers clear highlights in several different shapes, so re-render from
   // the sanitized result to keep the editor honest about what will be saved.
@@ -10727,9 +10777,11 @@ function applyIntentionTextColor(color) {
     } catch (e) {}
   }
 
+  mergeAdjacentMarks(inp);
   saveIntention(inp.innerHTML);
   updateIntentionBoldState();
 }
+
 function pickIntentionColor(color) {
   var inp = document.getElementById('intention-input');
   var sel = window.getSelection();
