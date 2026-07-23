@@ -1787,18 +1787,22 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
 }
 .intention-bold-btn:hover { color: var(--ink); border-color: var(--steel); }
 .intention-bold-btn.active { background: var(--sage); color: #fff; border-color: var(--sage); }
-/* Highlight — translucent so the user's chosen text colour stays readable
-   on both the light and dark backgrounds. */
+/* Highlight tints — translucent so the user's chosen text colour stays
+   readable on both the light and dark backgrounds. The tint lives in CSS
+   (via a class), so no colour values are ever stored in the user's data. */
+mark.hl-gold  { --hl: rgba(232, 190, 90, 0.38); }
+mark.hl-mint  { --hl: rgba(120, 190, 140, 0.34); }
+mark.hl-sky   { --hl: rgba(110, 170, 212, 0.32); }
+mark.hl-lilac { --hl: rgba(160, 145, 205, 0.32); }
+mark.hl-rose  { --hl: rgba(224, 132, 132, 0.30); }
 .intention-input mark,
 .intention-trigger mark,
 .report-intention mark {
-  background: rgba(232, 190, 90, 0.38);
+  background: var(--hl, rgba(232, 190, 90, 0.38));
   color: inherit;
   padding: 0 1px;
   border-radius: 2px;
 }
-.dark .intention-input mark,
-.dark .intention-trigger mark { background: rgba(232, 190, 90, 0.30); }
 .intention-hl-btn {
   font-family: 'Outfit', sans-serif;
   font-size: 11px;
@@ -1807,14 +1811,55 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
   color: var(--steel);
   background: var(--white);
   border: 1px solid var(--mist);
-  border-radius: 4px;
+  border-radius: 4px 0 0 4px;
   padding: 3px 7px;
   cursor: pointer;
   flex-shrink: 0;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 .intention-hl-btn:hover { color: var(--ink); border-color: var(--steel); }
-.intention-hl-btn.active { background: rgba(232, 190, 90, 0.75); color: var(--ink); border-color: #D9AE4A; }
+.intention-hl-btn.active { color: var(--ink); border-color: #D9AE4A; }
+.intention-hl-caret {
+  font-family: 'Outfit', sans-serif;
+  font-size: 9px;
+  line-height: 1;
+  color: var(--steel);
+  background: var(--white);
+  border: 1px solid var(--mist);
+  border-left: none;
+  border-radius: 0 4px 4px 0;
+  padding: 4px 4px 4px 2px;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-left: -6px;
+}
+.intention-hl-caret:hover { color: var(--ink); }
+.intention-hl-palette {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  background: var(--white);
+  border: 1px solid var(--mist);
+  border-radius: 8px;
+  padding: 6px 9px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.14);
+  z-index: 60;
+}
+.dark .intention-hl-palette { background: #1E2A38; border-color: #2A3A4A; }
+.hl-dot {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  flex-shrink: 0;
+  transition: border-color 0.15s;
+}
+.hl-dot:hover { border-color: var(--steel); }
+.hl-dot.active { border-color: var(--ink); }
 .intention-dismiss {
   background: none;
   border: none;
@@ -1844,6 +1889,7 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
   align-items: center;
   margin-top: 6px;
   padding-bottom: 2px;
+  position: relative;
 }
 .swatch {
   width: 14px; height: 14px;
@@ -4091,6 +4137,16 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <button type="button" class="intention-hl-btn" id="intention-hl-btn" title="Highlight"
             onmousedown="event.preventDefault(); toggleIntentionHighlight();"
             ontouchend="event.preventDefault(); toggleIntentionHighlight();">H</button>
+          <button type="button" class="intention-hl-caret" id="intention-hl-caret" title="Highlight colour"
+            onmousedown="event.preventDefault(); toggleIntentionHlPalette();"
+            ontouchend="event.preventDefault(); toggleIntentionHlPalette();">▾</button>
+          <div class="intention-hl-palette" id="intention-hl-palette" style="display:none;">
+            <div class="hl-dot" data-hl="gold"  style="background:rgba(232,190,90,0.85);"  title="Gold"></div>
+            <div class="hl-dot" data-hl="mint"  style="background:rgba(120,190,140,0.85);" title="Mint"></div>
+            <div class="hl-dot" data-hl="sky"   style="background:rgba(110,170,212,0.85);" title="Sky"></div>
+            <div class="hl-dot" data-hl="lilac" style="background:rgba(160,145,205,0.85);" title="Lilac"></div>
+            <div class="hl-dot" data-hl="rose"  style="background:rgba(224,132,132,0.85);" title="Rose"></div>
+          </div>
           <div style="width:0.5px;height:14px;background:var(--mist);margin:0 2px;flex-shrink:0;"></div>
           <span style="font-size:10px;color:var(--steel);font-family:'Outfit',sans-serif;margin-right:2px;">Color:</span>
           <div class="swatch" data-color="#6B7C8F" style="background:#6B7C8F;" title="Steel"></div>
@@ -10073,11 +10129,6 @@ function sanitizeIntentionHtml(html) {
   var tmp = document.createElement('div');
   tmp.innerHTML = String(html == null ? '' : html);
   var out = '';
-  function isTransparentBg(v) {
-    v = String(v || '').trim().toLowerCase();
-    return v === '' || v === 'transparent' || v === 'initial' || v === 'inherit' ||
-           /rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0\s*\)/.test(v);
-  }
   (function walk(node, bold, hl) {
     for (var i = 0; i < node.childNodes.length; i++) {
       var n = node.childNodes[i];
@@ -10085,12 +10136,12 @@ function sanitizeIntentionHtml(html) {
         var t = escHtml(n.nodeValue).replace(/[\r\n]+/g, ' ');
         if (!t) continue;
         var piece = bold ? '<b>' + t + '</b>' : t;
-        out += hl ? '<mark>' + piece + '</mark>' : piece;
+        out += hl ? '<mark class="hl-' + hl + '">' + piece + '</mark>' : piece;
       } else if (n.nodeType === 1) {
         if (n.tagName === 'BR') { continue; }
         var b = bold, h = hl;
         if (n.tagName === 'B' || n.tagName === 'STRONG') b = true;
-        if (n.tagName === 'MARK') h = true;
+        if (n.tagName === 'MARK') h = hlKeyFromMark(n);
         // Browsers may emit <span style="..."> rather than <b>/<mark>. An
         // explicit style OVERRIDES an inherited one, so un-bolding or
         // un-highlighting inside an existing tag is handled correctly.
@@ -10101,11 +10152,11 @@ function sanitizeIntentionHtml(html) {
           b = (w === 'bold' || w === 'bolder' || parseInt(w, 10) >= 600);
         }
         var mb = /background(?:-color)?\s*:\s*([^;]+)/i.exec(st);
-        if (mb) h = !isTransparentBg(mb[1]);
+        if (mb) h = hlKeyFromBg(mb[1]);
         walk(n, b, h);
       }
     }
-  })(tmp, false, false);
+  })(tmp, false, null);
   return out;
 }
 
@@ -10142,39 +10193,70 @@ function toggleIntentionBold() {
   updateIntentionBoldState();
 }
 
-// Translucent so it reads over both the light and dark backgrounds, and so the
-// live editing view matches how <mark> renders once saved.
-var INTENTION_HL = 'rgba(232, 190, 90, 0.38)';
+// Fixed palette. Tints are translucent so they read over both backgrounds and
+// under any text colour. Stored as a class (hl-<key>), never a raw colour.
+var INTENTION_HL_COLORS = {
+  gold:  'rgba(232, 190, 90, 0.38)',
+  mint:  'rgba(120, 190, 140, 0.34)',
+  sky:   'rgba(110, 170, 212, 0.32)',
+  lilac: 'rgba(160, 145, 205, 0.32)',
+  rose:  'rgba(224, 132, 132, 0.30)'
+};
+// rgb triplet -> palette key, for reading back what execCommand wrote inline
+var INTENTION_HL_RGB = {
+  '232,190,90': 'gold',
+  '120,190,140': 'mint',
+  '110,170,212': 'sky',
+  '160,145,205': 'lilac',
+  '224,132,132': 'rose'
+};
+var _intentionHlColor = 'gold';
+try {
+  var _savedHl = localStorage.getItem('jettana_hl_color');
+  if (_savedHl && INTENTION_HL_COLORS[_savedHl]) _intentionHlColor = _savedHl;
+} catch (e) {}
 
-function intentionHighlightActive() {
+function hlKeyFromBg(v) {
+  var s = String(v || '').trim().toLowerCase();
+  if (!s || s === 'transparent' || /rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0\s*\)/.test(s)) return null;
+  var m = /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/.exec(s);
+  if (m) return INTENTION_HL_RGB[m[1] + ',' + m[2] + ',' + m[3]] || 'gold';
+  return 'gold'; // some other colour (e.g. pasted) — normalise to the default
+}
+
+function hlKeyFromMark(el) {
+  var cls = (el.getAttribute && el.getAttribute('class')) || '';
+  var m = /\bhl-(gold|mint|sky|lilac|rose)\b/.exec(cls);
+  return m ? m[1] : 'gold'; // legacy <mark> with no class
+}
+
+// Which palette colour the cursor is sitting in, or null if not highlighted
+function intentionHighlightClass() {
   var inp = document.getElementById('intention-input');
   var sel = window.getSelection();
-  if (!inp || !sel || !sel.rangeCount || !sel.anchorNode) return false;
-  if (!inp.contains(sel.anchorNode)) return false;
+  if (!inp || !sel || !sel.rangeCount || !sel.anchorNode) return null;
+  if (!inp.contains(sel.anchorNode)) return null;
   var n = sel.anchorNode;
   while (n && n !== inp) {
     if (n.nodeType === 1) {
-      if (n.tagName === 'MARK') return true;
       var st = (n.getAttribute('style') || '');
       var m = /background(?:-color)?\s*:\s*([^;]+)/i.exec(st);
-      if (m) {
-        var bg = m[1].trim().toLowerCase();
-        // nearest explicit background wins — transparent means un-highlighted
-        return !(bg === '' || bg === 'transparent' ||
-                 /rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0\s*\)/.test(bg));
-      }
+      // nearest explicit background wins — transparent means un-highlighted
+      if (m) return hlKeyFromBg(m[1]);
+      if (n.tagName === 'MARK') return hlKeyFromMark(n);
     }
     n = n.parentNode;
   }
-  return false;
+  return null;
 }
 
-function toggleIntentionHighlight() {
+function intentionHighlightActive() { return !!intentionHighlightClass(); }
+
+function applyIntentionHighlight(turnOff) {
   var inp = document.getElementById('intention-input');
   if (!inp) return;
   if (document.activeElement !== inp) inp.focus();
-  var on = intentionHighlightActive();
-  var val = on ? 'transparent' : INTENTION_HL;
+  var val = turnOff ? 'transparent' : INTENTION_HL_COLORS[_intentionHlColor];
   // hiliteColor needs styleWithCSS; fall back to backColor where unsupported
   try { document.execCommand('styleWithCSS', false, true); } catch (e) {}
   var ok = false;
@@ -10182,6 +10264,35 @@ function toggleIntentionHighlight() {
   if (!ok) { try { document.execCommand('backColor', false, val); } catch (e) {} }
   try { document.execCommand('styleWithCSS', false, false); } catch (e) {}
   saveIntention(inp.innerHTML);
+}
+
+function toggleIntentionHighlight() {
+  hideIntentionHlPalette();
+  applyIntentionHighlight(intentionHighlightActive());
+  updateIntentionBoldState();
+}
+
+function toggleIntentionHlPalette() {
+  var pal = document.getElementById('intention-hl-palette');
+  if (!pal) return;
+  if (pal.style.display === 'flex') { pal.style.display = 'none'; return; }
+  document.querySelectorAll('.hl-dot').forEach(function(d) {
+    d.classList.toggle('active', d.dataset.hl === _intentionHlColor);
+  });
+  pal.style.display = 'flex';
+}
+
+function hideIntentionHlPalette() {
+  var pal = document.getElementById('intention-hl-palette');
+  if (pal) pal.style.display = 'none';
+}
+
+function pickIntentionHl(key) {
+  if (!INTENTION_HL_COLORS[key]) return;
+  _intentionHlColor = key;
+  try { localStorage.setItem('jettana_hl_color', key); } catch (e) {}
+  hideIntentionHlPalette();
+  applyIntentionHighlight(false); // choosing a colour always applies it
   updateIntentionBoldState();
 }
 
@@ -10193,7 +10304,12 @@ function updateIntentionBoldState() {
     btn.classList.toggle('active', !!on);
   }
   var hlBtn = document.getElementById('intention-hl-btn');
-  if (hlBtn) hlBtn.classList.toggle('active', intentionHighlightActive());
+  if (hlBtn) {
+    var key = intentionHighlightClass();
+    hlBtn.classList.toggle('active', !!key);
+    // show the tint the cursor is actually sitting in
+    hlBtn.style.background = key ? INTENTION_HL_COLORS[key].replace(/0\.\d+\)$/, '0.75)') : '';
+  }
 }
 
 document.addEventListener('selectionchange', function() {
@@ -10315,6 +10431,7 @@ function dismissIntention() {
   var inp      = document.getElementById('intention-input');
   if (field) field.classList.remove('open');
   if (swatches) swatches.style.display = 'none';
+  hideIntentionHlPalette();
   var val = inp ? sanitizeIntentionHtml(inp.innerHTML) : '';
   if (!intentionText(val).trim()) {
     if (trigger) { trigger.textContent = 'Add intention'; trigger.classList.remove('has-content'); trigger.style.color = ''; trigger.style.fontFamily = ''; trigger.style.fontStyle = ''; trigger.style.fontSize = ''; trigger.style.fontWeight = ''; }
@@ -10410,6 +10527,11 @@ window.addEventListener('load', function() {
   if (dismissBtn) {
     dismissBtn.addEventListener('click', function() { dismissIntention(); });
   }
+  // Highlight palette dots — mousedown so the field keeps focus/selection
+  document.querySelectorAll('.hl-dot').forEach(function(d) {
+    d.addEventListener('mousedown', function(e) { e.preventDefault(); pickIntentionHl(this.dataset.hl); });
+    d.addEventListener('touchend', function(e) { e.preventDefault(); pickIntentionHl(this.dataset.hl); });
+  });
   // Swatch clicks — use mousedown to fire before input blur
   document.querySelectorAll('.swatch').forEach(function(s) {
     s.addEventListener('mousedown', function(e) {
