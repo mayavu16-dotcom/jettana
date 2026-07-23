@@ -1873,6 +1873,21 @@ mark.hl-rose  { --hl: rgba(224, 132, 132, 0.30); }
   line-height: 1;
 }
 .hl-dot.hl-none:hover { color: var(--blush); border-color: var(--blush); }
+.swatch.swatch-none {
+  background: var(--white);
+  border: 2px solid var(--mist);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Outfit', sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--steel);
+  line-height: 1;
+}
+.swatch.swatch-none:hover { color: var(--blush); border-color: var(--blush); }
+/* colour spans inside the intention */
+.intention-input span[data-c], .intention-trigger span[data-c] { color: inherit; }
 .intention-dismiss {
   background: none;
   border: none;
@@ -4174,6 +4189,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
             style="width:14px;height:14px;border:none;padding:0;border-radius:50%;cursor:pointer;flex-shrink:0;"
             title="Custom color" onmousedown="event.stopPropagation()" oninput="setIntentionCustomColor(this.value)" onchange="setIntentionCustomColor(this.value)">
           <div class="swatch" data-color="#1A2332" style="background:#1A2332;" title="Ink"></div>
+          <div class="swatch swatch-none" data-color="" title="Default colour">✕</div>
           <div style="width:0.5px;height:14px;background:var(--mist);margin:0 2px;flex-shrink:0;"></div>
           <select id="intention-font-select" title="Font style"
             style="font-family:'Outfit',sans-serif;font-size:11px;border:1px solid var(--mist);border-radius:4px;padding:2px 4px;background:var(--white);color:var(--ink);cursor:pointer;max-width:110px;"
@@ -10147,17 +10163,19 @@ function sanitizeIntentionHtml(html) {
   var tmp = document.createElement('div');
   tmp.innerHTML = String(html == null ? '' : html);
   var out = '';
-  (function walk(node, bold, hl, cleared) {
+  (function walk(node, bold, hl, cleared, col) {
     for (var i = 0; i < node.childNodes.length; i++) {
       var n = node.childNodes[i];
       if (n.nodeType === 3) {
         var t = escHtml(String(n.nodeValue).replace(/\u200B/g, '')).replace(/[\r\n]+/g, ' ');
         if (!t) continue;
-        var piece = bold ? '<b>' + t + '</b>' : t;
+        // canonical nesting: <mark><b><span data-c></span></b></mark>
+        var piece = col ? '<span data-c="' + col + '">' + t + '</span>' : t;
+        if (bold) piece = '<b>' + piece + '</b>';
         out += hl ? '<mark class="hl-' + hl + '">' + piece + '</mark>' : piece;
       } else if (n.nodeType === 1) {
         if (n.tagName === 'BR') { continue; }
-        var b = bold, h = hl, c = cleared;
+        var b = bold, h = hl, c = cleared, cl = col;
         if (n.tagName === 'B' || n.tagName === 'STRONG') b = true;
         // A <mark> must not resurrect a highlight that an ancestor explicitly
         // cleared — browsers sometimes wrap the old <mark> in the clearing span.
@@ -10177,10 +10195,24 @@ function sanitizeIntentionHtml(html) {
           h = key;
           c = (key === null); // explicit transparent clears the whole subtree
         }
-        walk(n, b, h, c);
+        // Text colour. Our own storage form is data-c; browsers/pastes may use
+        // <font color> or an inline color style. Explicit always overrides.
+        var dc = (n.getAttribute && n.getAttribute('data-c')) || '';
+        if (dc) cl = normHexColor(dc);
+        if (n.tagName === 'FONT') {
+          var fc = normHexColor(n.getAttribute('color'));
+          if (fc) cl = fc;
+        }
+        // (?:^|;) so background-color never matches here
+        var mc = /(?:^|;)\s*color\s*:\s*([^;]+)/i.exec(st);
+        if (mc) {
+          var cv = normHexColor(mc[1]);
+          if (cv) cl = cv;
+        }
+        walk(n, b, h, c, cl);
       }
     }
-  })(tmp, false, null, false);
+  })(tmp, false, null, false, null);
   return out;
 }
 
@@ -10387,6 +10419,7 @@ function applyIntentionHighlight(turnOff) {
     var clean = sanitizeIntentionHtml(inp.innerHTML);
     if (clean !== inp.innerHTML) {
       inp.innerHTML = clean;
+      paintIntentionColors(inp);
       placeIntentionCaretEnd(inp);
     }
   }
@@ -10464,13 +10497,13 @@ function loadIntention() {
   var trigger = document.getElementById('intention-trigger');
   var swatches = document.getElementById('intention-swatches');
   var html = sanitizeIntentionHtml(val);
-  if (inp) inp.innerHTML = html;
+  if (inp) { inp.innerHTML = html; paintIntentionColors(inp); }
   _lastIntentionHtml = html;
   // Always start closed — user opens by clicking
   if (field) field.classList.remove('open');
   if (swatches) swatches.style.display = 'none';
   if (intentionText(html).trim()) {
-    if (trigger) { trigger.innerHTML = html; trigger.classList.add('has-content'); }
+    if (trigger) { trigger.innerHTML = html; paintIntentionColors(trigger); trigger.classList.add('has-content'); }
   } else {
     if (trigger) { trigger.textContent = 'Add intention'; trigger.classList.remove('has-content'); }
   }
@@ -10493,6 +10526,7 @@ function saveIntention(val, color) {
   if (trigger) {
     if (intentionText(clean).trim()) {
       trigger.innerHTML = clean;
+      paintIntentionColors(trigger);
       trigger.classList.add('has-content');
     } else {
       trigger.textContent = 'Add intention';
@@ -10532,8 +10566,86 @@ function applyIntentionColor(forceColor) {
   if (customInp && color) customInp.value = color;
 }
 
+// Normalise any colour the browser hands us to #rrggbb, or null if unusable
+function normHexColor(v) {
+  var s = String(v == null ? '' : v).trim().toLowerCase();
+  if (!s) return null;
+  var m;
+  if ((m = /^#([0-9a-f]{3})$/.exec(s))) {
+    return '#' + m[1][0] + m[1][0] + m[1][1] + m[1][1] + m[1][2] + m[1][2];
+  }
+  if ((m = /^#([0-9a-f]{6})$/.exec(s))) return '#' + m[1];
+  if ((m = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/.exec(s))) {
+    var hx = function(n) {
+      n = Math.max(0, Math.min(255, parseInt(n, 10) || 0));
+      return ('0' + n.toString(16)).slice(-2);
+    };
+    return '#' + hx(m[1]) + hx(m[2]) + hx(m[3]);
+  }
+  return null;
+}
+
+// Stored spans keep the colour the user actually picked; the on-screen colour
+// is computed here so dark mode can flip a near-black pick to white without
+// destroying the original choice.
+function paintIntentionColors(root) {
+  if (!root || !root.querySelectorAll) return;
+  root.querySelectorAll('span[data-c]').forEach(function(sp) {
+    sp.style.color = darkModeColor(sp.getAttribute('data-c')) || '';
+  });
+}
+
+// Transient marker so we can find the spans execCommand just created
+var COLOR_TAG = '#0b0c0d';
+
+function unwrapEl(el) {
+  var p = el.parentNode;
+  if (!p) return;
+  while (el.firstChild) p.insertBefore(el.firstChild, el);
+  p.removeChild(el);
+}
+
+// Colour just the selected text. `color` empty means "back to default".
+function applyIntentionTextColor(color) {
+  var inp = document.getElementById('intention-input');
+  if (!inp) return;
+  if (document.activeElement !== inp) inp.focus();
+
+  // Apply a marker colour first, then rewrite those spans ourselves — that way
+  // the stored value is the user's real pick, not a dark-mode-adjusted one.
+  try { document.execCommand('styleWithCSS', false, true); } catch (e) {}
+  try { document.execCommand('foreColor', false, COLOR_TAG); } catch (e) {}
+  try { document.execCommand('styleWithCSS', false, false); } catch (e) {}
+
+  var marked = [];
+  inp.querySelectorAll('span, font').forEach(function(el) {
+    var c = normHexColor(el.style && el.style.color) ||
+            normHexColor(el.getAttribute && el.getAttribute('color'));
+    if (c === COLOR_TAG) marked.push(el);
+  });
+  marked.forEach(function(el) {
+    if (color) {
+      el.removeAttribute('color');
+      el.setAttribute('data-c', color);
+      el.style.color = darkModeColor(color) || '';
+    } else {
+      unwrapEl(el); // "default" — drop the colour wrapper entirely
+    }
+  });
+
+  saveIntention(inp.innerHTML);
+  updateIntentionBoldState();
+}
 function pickIntentionColor(color) {
-  // Apply color instantly without waiting for storage round-trip
+  var inp = document.getElementById('intention-input');
+  var sel = window.getSelection();
+  var hasSelection = !!(inp && sel && sel.rangeCount && !sel.isCollapsed &&
+                        sel.anchorNode && inp.contains(sel.anchorNode));
+  if (hasSelection) {
+    applyIntentionTextColor(color); // colour just the selected words
+    return;
+  }
+  // Nothing selected — set the base colour for the whole intention (unchanged)
   applyIntentionColor(color);
   saveIntention(currentIntentionHtml(), color);
 }
@@ -10573,7 +10685,7 @@ function dismissIntention() {
     saveIntention('');
   } else {
     // Set trigger text and has-content BEFORE applying styles so applyIntentionColor works
-    if (trigger) { trigger.innerHTML = val; trigger.classList.add('has-content'); }
+    if (trigger) { trigger.innerHTML = val; paintIntentionColors(trigger); trigger.classList.add('has-content'); }
     // Re-read stored color and apply it directly to avoid any race condition
     var all = loadAll();
     var storedColor = (all[currentMonthKey] && all[currentMonthKey]._intentionColor) || '';
@@ -16022,6 +16134,8 @@ function generateReport() {
       + insightsHtml
       + '<div class="report-footer">Generated ' + dateStr + ' · jettana.app</div>'
     + '</div>';
+  // the intention can carry coloured spans — resolve them for the report too
+  paintIntentionColors(el);
 }
 
 
