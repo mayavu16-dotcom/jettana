@@ -5752,7 +5752,7 @@ async function signOut() {
   if (_sb) await _sb.auth.signOut();
   _currentUser = null;
   localStorage.removeItem(activeStorageKey());
-  localStorage.removeItem('intentra_last_month');
+  localStorage.removeItem(nsKey('intentra_last_month'));
   showAuthModal();
 }
 
@@ -5833,6 +5833,7 @@ function _handleAuthReady() {
     clearTimeout(_authTimeout);
     _currentUser = null;
     hideAuthModal();
+    if (!enforceSandboxIsolation()) return;   // never render a leaky sandbox
     if (!_demoLoaded) {
       _demoLoaded = true;
       setTimeout(function() { _runLoadDemo(); }, 300);
@@ -5983,6 +5984,66 @@ function activeSnapKey() {
   return (typeof _demoIsolated !== 'undefined' && _demoIsolated)
     ? 'jettana_demo_snapshots' : 'jettana_snapshots';
 }
+// ── The rule, not a list ──────────────────────────────────────
+// Any key holding user content goes through nsKey(). In the sandbox every one
+// of them is prefixed, so a NEW feature that stores something is isolated by
+// default instead of only when someone remembers to namespace it.
+// Backstop: if the sandbox can still reach anything belonging to a real
+// account, stop rather than display it. This is what makes the guarantee hold
+// even when I add a feature and forget to isolate it.
+var REAL_ACCOUNT_KEYS = [
+  'intentra_v1', 'jettana_snapshots', 'intentra_legend_cards',
+  'intentra_budget_overrides', 'intentra_section_names',
+  'intentra_ft_highlights', 'intentra_last_month'
+];
+
+function sandboxLeakCheck() {
+  if (!inDemoSandbox()) return { ok: true, leaked: [] };
+  var leaked = [];
+  REAL_ACCOUNT_KEYS.forEach(function(k) {
+    var real = null, sandboxed = null;
+    try { real = localStorage.getItem(k); } catch (e) {}
+    if (!real) return;                       // nothing of theirs stored under it
+    try { sandboxed = localStorage.getItem('demo__' + k); } catch (e) {}
+    // A leak means the value the demo would use IS the real one.
+    var inUse = (k === 'intentra_v1')
+      ? JSON.stringify(loadAll())
+      : (sandboxed !== null ? sandboxed : null);
+    if (k === 'intentra_v1') { if (inUse === real) leaked.push(k); }
+    else if (sandboxed === null && real !== null) {
+      // key isn't namespaced at all — would fall through to the real one
+      leaked.push(k);
+    }
+  });
+  return { ok: leaked.length === 0, leaked: leaked };
+}
+
+function enforceSandboxIsolation() {
+  if (!inDemoSandbox()) return true;
+  var res = sandboxLeakCheck();
+  if (res.ok) return true;
+  console.error('[jettana] demo isolation failed for:', res.leaked.join(', '));
+  var shell = document.querySelector('.app-shell');
+  if (shell) {
+    shell.innerHTML =
+      '<div style="max-width:520px;margin:80px auto;padding:28px;font-family:Outfit,sans-serif;' +
+      'background:var(--white);border:1px solid var(--mist);border-radius:14px;text-align:center;">' +
+      '<div style="font-size:34px;margin-bottom:10px;">🔒</div>' +
+      '<h2 style="font-size:19px;margin:0 0 8px;">Demo unavailable on this device</h2>' +
+      '<p style="font-size:13.5px;color:var(--steel);line-height:1.6;margin:0 0 16px;">' +
+      'The demo could not start in a clean sandbox here, so it has been stopped rather than ' +
+      'risk showing account data. Your own budget is untouched.</p>' +
+      '<a href="/app" style="display:inline-block;font-weight:600;font-size:13.5px;color:#fff;' +
+      'background:var(--sage);padding:10px 18px;border-radius:9px;text-decoration:none;">Open Jettana</a>' +
+      '</div>';
+  }
+  return false;
+}
+
+function nsKey(name) {
+  return inDemoSandbox() ? 'demo__' + name : name;
+}
+
 function inDemoSandbox() {
   return (typeof _demoIsolated !== 'undefined' && _demoIsolated) ||
          new URLSearchParams(window.location.search).get('demo') === 'true';
@@ -6234,14 +6295,14 @@ var _secLongPress = null; // global names: { sectionKey: name }
 
 function loadSectionNames() {
   try {
-    var saved = localStorage.getItem('intentra_section_names');
+    var saved = localStorage.getItem(nsKey('intentra_section_names'));
     _sectionNames = saved ? JSON.parse(saved) : {};
   } catch(e) { _sectionNames = {}; }
   applySectionNames();
 }
 
 function saveSectionNames() {
-  try { localStorage.setItem('intentra_section_names', JSON.stringify(_sectionNames)); } catch(e) {}
+  try { localStorage.setItem(nsKey('intentra_section_names'), JSON.stringify(_sectionNames)); } catch(e) {}
 }
 
 function applySectionNames() {
@@ -6410,7 +6471,7 @@ function renameMonth(oldKey) {
     overlay.remove();
     if (currentMonthKey === oldKey) {
       currentMonthKey = newKey;
-      localStorage.setItem('intentra_last_month', newKey);
+      localStorage.setItem(nsKey('intentra_last_month'), newKey);
     }
     renderSidebar();
     if (currentMonthKey === newKey) switchMonth(newKey);
@@ -6779,7 +6840,7 @@ function switchMonth(key) {
     var cmp = document.getElementById('compare-overlay');
     if (cmp && cmp.style.display !== 'none') renderCompare();
   }, 0);
-  localStorage.setItem('intentra_last_month', key);
+  localStorage.setItem(nsKey('intentra_last_month'), key);
   _momCompareKey = null; // reset to auto (previous month) on switch
   // Reset collapsed sections on month switch
   document.querySelectorAll('.sec-card.collapsed').forEach(function(c) {
@@ -9042,7 +9103,7 @@ function init() {
   const all = loadAll();
   const isFirst = !all._seeded;
   // Restore last viewed month, fall back to current month
-  const savedMonth = localStorage.getItem('intentra_last_month');
+  const savedMonth = localStorage.getItem(nsKey('intentra_last_month'));
   const key = (savedMonth && all[savedMonth]) ? savedMonth : todayKey;
   if (isFirst) {
     all._seeded = true;
@@ -11888,8 +11949,8 @@ window.addEventListener('load', function() {
   loadCollapsedSections();
   // One-time migration: move old flat highlight/override keys into current month data
   (function migrateFlatKeys() {
-    var oldHighlights = localStorage.getItem('intentra_ft_highlights');
-    var oldOverrides  = localStorage.getItem('intentra_budget_overrides');
+    var oldHighlights = localStorage.getItem(nsKey('intentra_ft_highlights'));
+    var oldOverrides  = localStorage.getItem(nsKey('intentra_budget_overrides'));
     if (!oldHighlights && !oldOverrides) return;
     var all = loadAll();
     if (!currentMonthKey || !all[currentMonthKey]) return;
@@ -11901,7 +11962,7 @@ window.addEventListener('load', function() {
     }
     saveAll(all);
     localStorage.removeItem('intentra_ft_highlights');
-    localStorage.removeItem('intentra_budget_overrides');
+    localStorage.removeItem(nsKey('intentra_budget_overrides'));
   })();
   loadFooterBudgets();
   loadFtHighlights();
@@ -12215,7 +12276,7 @@ function doUndo() {
     saveAll(all);
     if (currentMonthKey === entry.fromKey) {
       currentMonthKey = entry.toKey;
-      localStorage.setItem('intentra_last_month', entry.toKey);
+      localStorage.setItem(nsKey('intentra_last_month'), entry.toKey);
     }
     renderSidebar();
     if (currentMonthKey === entry.toKey) switchMonth(entry.toKey);
@@ -16350,7 +16411,7 @@ function loadLegend() {
     _legendCollapsed = all._legendCollapsed || false;
   } else {
     // Fall back to legacy localStorage keys
-    var saved = localStorage.getItem('intentra_legend_cards');
+    var saved = localStorage.getItem(nsKey('intentra_legend_cards'));
     _legendCards = saved ? JSON.parse(saved) : [];
     var collapsed = localStorage.getItem('intentra_legend_collapsed');
     _legendCollapsed = collapsed === 'true';
@@ -16363,7 +16424,7 @@ function loadLegend() {
 }
 
 function saveLegend() {
-  localStorage.setItem('intentra_legend_cards', JSON.stringify(_legendCards));
+  localStorage.setItem(nsKey('intentra_legend_cards'), JSON.stringify(_legendCards));
   // Also save into main data object so it syncs to Supabase
   var all = loadAll();
   all._legendCards = _legendCards;
