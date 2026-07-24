@@ -2175,6 +2175,33 @@ mark.hl-rose  { --hl: rgba(224, 132, 132, 0.30); }
 /* ── Debt carried-balance caption + popup ────────────────── */
 /* Sits inline beside the label so the row keeps its normal height — a taller
    row left the column dividers short of the border, which read as a gap. */
+/* ── Outstanding Debt double-count panel ─────────────────── */
+.ft-debt-label { cursor: help; }
+.ft-debt-label:hover { text-decoration: underline dotted var(--steel); text-underline-offset: 3px; }
+#debt-total-pop {
+  position: fixed; z-index: 10050; display: none;
+  background: var(--white); color: var(--ink);
+  border: 1px solid var(--mist); border-radius: 12px;
+  font-family: 'Outfit', sans-serif; font-size: 12.5px; line-height: 1.5;
+  padding: 12px 14px; min-width: 264px; max-width: min(330px, calc(100vw - 24px));
+  box-shadow: 0 8px 30px rgba(0,0,0,0.16); pointer-events: none;
+}
+#debt-total-pop .dtp-title { font-size: 10.5px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--steel); margin-bottom: 7px; }
+#debt-total-pop .dtp-row { display: flex; justify-content: space-between; gap: 14px; padding: 2px 0; }
+#debt-total-pop .dtp-row.dtp-sub { color: var(--steel); }
+#debt-total-pop .dtp-neg { color: var(--blush); }
+#debt-total-pop .dtp-row.dtp-total { border-top: 1px solid var(--mist); margin-top: 6px; padding-top: 7px; font-weight: 700; }
+#debt-total-pop .dtp-cards { margin-top: 10px; border-top: 1px solid var(--mist); padding-top: 8px; }
+#debt-total-pop .dtp-card { margin-bottom: 7px; }
+#debt-total-pop .dtp-card-head { display: flex; align-items: center; gap: 6px; }
+#debt-total-pop .dtp-swatch { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+#debt-total-pop .dtp-card-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#debt-total-pop .dtp-card-amt { font-variant-numeric: tabular-nums; }
+#debt-total-pop .dtp-card-sub { font-size: 10.5px; color: var(--steel); padding-left: 15px; }
+#debt-total-pop .dtp-note { font-size: 10.5px; color: var(--steel); font-style: italic; margin-top: 9px; line-height: 1.45; }
+.dark #debt-total-pop { background: #1E2A38; border-color: #2A3A4A; }
+#debt-total-pop.brk-pinned { pointer-events: auto; box-shadow: 0 14px 44px rgba(0,0,0,0.26); border-color: var(--steel); padding-top: 0; }
+
 /* ── Debt: carried-balance banner inside the note ─────────── */
 .carry-banner {
   padding: 10px 12px;
@@ -2188,8 +2215,12 @@ mark.hl-rose  { --hl: rgba(224, 132, 132, 0.30); }
   text-transform: uppercase; color: var(--steel); margin-bottom: 6px;
 }
 .carry-banner .cb-row { display: flex; justify-content: space-between; gap: 16px; padding: 2px 0; }
+/* The figure that answers "what's actually mine this month" gets the weight;
+   Current is just the reconciliation line — it's already large on the row. */
+.carry-banner .cb-row.cb-key { font-weight: 700; color: var(--ink); }
 .carry-banner .cb-row.cb-total {
-  border-top: 1px solid var(--mist); margin-top: 5px; padding-top: 6px; font-weight: 700;
+  border-top: 1px solid var(--mist); margin-top: 5px; padding-top: 6px;
+  font-weight: 500; color: var(--steel);
 }
 .carry-banner .cb-note {
   font-size: 10.5px; color: var(--steel); font-style: italic;
@@ -4437,9 +4468,9 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <div class="bulk-bar" id="bulk-bar-debt"><span class="bulk-bar-count" id="bulk-count-debt">0 selected</span><button class="bulk-bar-btn" onclick="selectAllBulk('debt')">Select all</button><button class="bulk-bar-btn danger" onclick="deleteSelectedBulk('debt')">Delete selected</button><button class="bulk-bar-btn" onclick="cancelBulk('debt')">Cancel</button></div><div class="entry-list" id="rows-debt" data-hint="Add credit cards, loans, or any balances you're paying down"></div>
           <button class="add-row-btn" onclick="addRow('debt')"><span class="plus">+</span> Add account</button>
           <div class="sec-footer sec-footer-debt">
-            <span>Outstanding Debt</span>
-            <span id="ft-debt-0" class="ft-actual-cell" data-section="debt-current" onclick="showFtColorPicker(event,'debt-current')" oncontextmenu="showFtColorPicker(event,'debt-current')" title="Click to highlight">$0</span>
-            <span id="ft-debt-1" class="ft-actual-cell" data-section="debt" onclick="showFtColorPicker(event,'debt')" oncontextmenu="showFtColorPicker(event,'debt')" title="Click to highlight">$0</span>
+            <span class="ft-debt-label" onmouseenter="showDebtTotalBreakdown(this)" onmouseleave="hideDebtTotalBreakdown()" onclick="toggleDebtTotalBreakdown(this)" title="What's already counted in your categories">Outstanding Debt</span>
+            <span id="ft-debt-0" class="ft-actual-cell" data-section="debt-current" onmouseenter="showDebtTotalBreakdown(this)" onmouseleave="hideDebtTotalBreakdown()" onclick="showFtColorPicker(event,'debt-current')" oncontextmenu="showFtColorPicker(event,'debt-current')" title="Click to highlight">$0</span>
+            <span id="ft-debt-1" class="ft-actual-cell" data-section="debt" onmouseenter="showDebtTotalBreakdown(this)" onmouseleave="hideDebtTotalBreakdown()" onclick="showFtColorPicker(event,'debt')" oncontextmenu="showFtColorPicker(event,'debt')" title="Click to highlight">$0</span>
           </div>
           </div>
         </div>
@@ -5988,6 +6019,48 @@ function prevMonthShortLabel(key) {
 }
 
 // What a debt row's Current figure is actually made of
+// How much of Outstanding Debt is money already counted inside the expense
+// sections. A card-linked debt row's Current is built from those same charges,
+// so adding Housing + Debt double-counts them.
+function debtDoubleCount() {
+  var all = loadAll();
+  var d = all[currentMonthKey] || {};
+  var EXPENSE_SECTIONS = ['housing', 'transport', 'food', 'health', 'subscriptions', 'gifts', 'misc'];
+  var cards = [], total = 0, counted = 0;
+
+  (d.debt || []).forEach(function(row) {
+    var current = parseAmt(row.current) || 0;
+    if (current <= 0) return;
+    total += current;
+
+    var linked = 0;
+    if (row._cardLink) {
+      var lc = String(row._cardLink).toLowerCase();
+      EXPENSE_SECTIONS.forEach(function(sec) {
+        var cfg = CONFIGS[sec];
+        (d[sec] || []).forEach(function(r) {
+          if (r.exempt) return;
+          var nc = (r.numColor || '').toLowerCase();
+          if (!nc || nc !== lc) return;
+          var a = parseAmt(r[cfg.k2]);
+          if (a > 0) linked += a;
+        });
+      });
+    }
+    linked = Math.min(linked, current);
+    counted += linked;
+    cards.push({
+      label: row.label || 'Account',
+      color: row._cardLink || '',
+      current: current,
+      linked: linked,
+      other: Math.max(0, current - linked)
+    });
+  });
+
+  return { total: total, counted: counted, net: Math.max(0, total - counted), cards: cards };
+}
+
 function debtSplit(row) {
   var carried = parseAmt(row && row._carriedBalance) || 0;
   var current = parseAmt(row && row.current) || 0;
@@ -7847,6 +7920,81 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape' && _pinnedBreakdown) unpinBreakdown();
 });
 
+/* ── Outstanding Debt: what's already counted elsewhere ───── */
+function _debtTotalPop() {
+  var pop = document.getElementById('debt-total-pop');
+  if (!pop) {
+    pop = document.createElement('div');
+    pop.id = 'debt-total-pop';
+    document.body.appendChild(pop);
+  }
+  return pop;
+}
+
+function showDebtTotalBreakdown(el) {
+  var b = debtDoubleCount();
+  if (!b.total) return;
+  var pop = _debtTotalPop();
+  var pinned = breakdownIsPinned('debt-total-pop');
+
+  var html = pinned ? breakdownHeader('Avoiding double-counting')
+                    : '<div class="dtp-title">Avoiding double-counting</div>';
+
+  html += '<div class="dtp-row"><span>Total outstanding debt</span><span>' + fmt(b.total) + '</span></div>';
+  html += '<div class="dtp-row dtp-sub"><span>− Already in your expense categories</span><span class="dtp-neg">−' + fmt(b.counted) + '</span></div>';
+  html += '<div class="dtp-row dtp-total"><span>Adds to your total</span><span>' + fmt(b.net) + '</span></div>';
+
+  if (b.cards.length) {
+    html += '<div class="dtp-cards">';
+    b.cards.forEach(function(c) {
+      html += '<div class="dtp-card">' +
+        '<div class="dtp-card-head">' +
+          (c.color ? '<span class="dtp-swatch" style="background:' + c.color + '"></span>' : '') +
+          '<span class="dtp-card-name">' + escHtml(c.label) + '</span>' +
+          '<span class="dtp-card-amt">' + fmt(c.current) + '</span>' +
+        '</div>' +
+        (c.linked > 0
+          ? '<div class="dtp-card-sub">' + fmt(c.linked) + ' already in your categories' +
+            (c.other > 0 ? ' · ' + fmt(c.other) + ' not' : '') + '</div>'
+          : '<div class="dtp-card-sub">not linked to any category charges</div>') +
+      '</div>';
+    });
+    html += '</div>';
+  }
+
+  html += '<div class="dtp-note">Card charges already appear under Housing, Food and so on. ' +
+          'Only the remainder is new money on top of your category totals.</div>';
+
+  pop.innerHTML = html;
+  pop.style.display = 'block';
+  if (pinned) return;   // stay where it was dragged
+
+  var r = el.getBoundingClientRect();
+  var pw = pop.offsetWidth, ph = pop.offsetHeight;
+  var left = Math.max(12, Math.min(window.innerWidth - pw - 12, r.left));
+  var top = r.bottom + 8;
+  if (top + ph > window.innerHeight - 12) top = Math.max(12, r.top - ph - 8);
+  pop.style.left = left + 'px';
+  pop.style.top = top + 'px';
+}
+
+function hideDebtTotalBreakdown() {
+  if (breakdownIsPinned('debt-total-pop')) return;
+  var pop = document.getElementById('debt-total-pop');
+  if (pop) pop.style.display = 'none';
+}
+
+// Click the label to pin it open for cross-referencing
+function toggleDebtTotalBreakdown(el) {
+  if (breakdownIsPinned('debt-total-pop')) { unpinBreakdown(); return; }
+  if (!debtDoubleCount().total) return;
+  pinBreakdown('debt-total-pop');
+  showDebtTotalBreakdown(el);
+}
+
+document.addEventListener('scroll', hideDebtTotalBreakdown, true);
+window.addEventListener('resize', hideDebtTotalBreakdown);
+
 function _incomeBreakdownPop() {
   var pop = document.getElementById('income-breakdown-pop');
   if (!pop) {
@@ -9321,7 +9469,7 @@ function toggleNote(section, id) {
             carryDiv.innerHTML =
               '<div class="cb-title">What makes up Current</div>' +
               '<div class="cb-row"><span>Carried from ' + prevMonthShortLabel(currentMonthKey) + '</span><span>' + fmt(_sp.carried) + '</span></div>' +
-              '<div class="cb-row"><span>New charges this month</span><span>' + fmt(_sp.fresh) + '</span></div>' +
+              '<div class="cb-row cb-key"><span>New charges this month</span><span>' + fmt(_sp.fresh) + '</span></div>' +
               '<div class="cb-row cb-total"><span>Current</span><span>' + fmt(_sp.current) + '</span></div>' +
               '<div class="cb-note">Only the new charges count as this month\'s spending.</div>';
             noteInner.insertBefore(carryDiv, noteInner.firstChild);
