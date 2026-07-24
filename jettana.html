@@ -6873,7 +6873,7 @@ function renderRowEl(section, row, animate = false) {
         onkeydown="labelKeyDown(event,this); acKeyDown(event,this,'${section}')"
         onblur="setTimeout(hideAutocomplete, 150)"
         >
-      <span class="note-indicator ${(row.note || row.alloc || (row._template && row._template !== 'general')) ? 'has-note' : ''}" id="note-dot-${row.id}" title="Has note" onclick="event.stopPropagation();event.preventDefault();toggleNote('${section}','${row.id}')" ontouchstart="event.stopPropagation();event.preventDefault();toggleNote('${section}','${row.id}')" ontouchend="event.stopPropagation();event.preventDefault()"></span>
+      <span class="note-indicator ${rowHasNote(row) ? 'has-note' : ''}" id="note-dot-${row.id}" title="Has note" onclick="event.stopPropagation();event.preventDefault();toggleNote('${section}','${row.id}')" ontouchstart="event.stopPropagation();event.preventDefault();toggleNote('${section}','${row.id}')" ontouchend="event.stopPropagation();event.preventDefault()"></span>
       <span class="exempt-badge" id="exempt-badge-${row.id}" title="Exempt — not included in totals">exempt</span>
 
 
@@ -9210,7 +9210,7 @@ function setSavingsTemplate(section, id, template) {
   var row = rows.find(function(r) { return r.id === id; });
   if (row) { row._template = template; saveAll(all); scheduleSave(); }
   var dot = document.getElementById('note-dot-' + id);
-  if (dot) dot.classList.toggle('has-note', !!(template && template !== 'general') || !!(row && row.note) || !!(row && row.alloc && row.alloc.trim()));
+  if (dot) dot.classList.toggle('has-note', !!(template && template !== 'general') || rowHasNote(row));
   renderSavingsTemplateFields(section, id, template, row);
 }
 
@@ -9539,6 +9539,7 @@ function saveEntry(section, id, idx) {
   if (!row) return;
   if (!row._entries) row._entries = [{}];
   while (row._entries.length <= idx) row._entries.push({});
+  setTimeout(function() { refreshNoteDot(section, id, row); }, 0);
 
   // Collect all inputs from this entry's div
   var container = document.getElementById('st-fields-' + id);
@@ -9558,6 +9559,32 @@ function saveEntry(section, id, idx) {
   scheduleSave();
 }
 
+// Single source of truth for whether a row's note dot should be filled in.
+// Covers: a written note, an allocation, a chosen template, and template
+// entries added via the "+ Add:" pills (which previously showed no dot).
+function rowHasNote(row) {
+  if (!row) return false;
+  if (row.note && String(row.note).trim()) return true;
+  if (row.alloc && String(row.alloc).trim()) return true;
+  if (row._template && row._template !== 'general') return true;
+  if (row._entries && row._entries.length) {
+    for (var i = 0; i < row._entries.length; i++) {
+      var e = row._entries[i];
+      if (!e) continue;
+      if (e._type) return true;            // deliberately added via a pill
+      for (var k in e) {                    // or filled in with anything
+        if (k !== '_type' && String(e[k] == null ? '' : e[k]).trim()) return true;
+      }
+    }
+  }
+  return false;
+}
+
+function refreshNoteDot(section, id, row) {
+  var dot = document.getElementById('note-dot-' + id);
+  if (dot) dot.classList.toggle('has-note', rowHasNote(row));
+}
+
 function addTypedEntry(section, id, type) {
   var all = loadAll();
   var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
@@ -9566,6 +9593,7 @@ function addTypedEntry(section, id, type) {
   if (!row._entries) row._entries = [];
   row._entries.push({ _type: type });
   saveAll(all);
+  refreshNoteDot(section, id, row);   // the row now has template content
   // Re-render without recalculating totals — new entry is empty
   var container = document.getElementById('st-fields-' + id);
   if (!container) return;
@@ -9582,6 +9610,7 @@ function addEntry(section, id, template) {
   if (!row._entries) row._entries = [{}];
   row._entries.push({});
   saveAll(all);
+  refreshNoteDot(section, id, row);
   renderAllEntries(section, id, template, row._entries);
 }
 
@@ -9907,7 +9936,7 @@ function saveNote(section, id, val) {
   scheduleSave();
   // Update dot indicator
   var dot = document.getElementById('note-dot-' + id);
-  if (dot) dot.classList.toggle('has-note', val.trim().length > 0 || !!(row.alloc && row.alloc.trim()) || !!(row._template && row._template !== 'general'));
+  if (dot) dot.classList.toggle('has-note', val.trim().length > 0 || rowHasNote(row));
   // If textarea is expanded, grow it to fit new content
   var ta = document.getElementById('note-ta-' + id);
   if (ta && ta.classList.contains('expanded')) {
@@ -9969,7 +9998,7 @@ function toggleBulletMode(section, id) {
   saveAll(all);
   scheduleSave();
   var dot = document.getElementById('note-dot-' + id);
-  if (dot) dot.classList.toggle('has-note', ta.value.trim().length > 0 || !!(row.alloc && row.alloc.trim()) || !!(row._template && row._template !== 'general'));
+  if (dot) dot.classList.toggle('has-note', ta.value.trim().length > 0 || rowHasNote(row));
   ta.focus();
 }
 
@@ -10044,7 +10073,7 @@ function saveAlloc(section, id, val) {
   scheduleSave();
   // Show note dot when alloc is set
   var dot = document.getElementById('note-dot-' + id);
-  if (dot) dot.classList.toggle('has-note', !!(val.trim() || row.note || (row._template && row._template !== 'general')));
+  if (dot) dot.classList.toggle('has-note', !!val.trim() || rowHasNote(row));
 }
 
 
