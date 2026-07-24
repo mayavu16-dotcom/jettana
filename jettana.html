@@ -5751,7 +5751,7 @@ document.addEventListener('keydown', function(e) {
 async function signOut() {
   if (_sb) await _sb.auth.signOut();
   _currentUser = null;
-  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(activeStorageKey());
   localStorage.removeItem('intentra_last_month');
   showAuthModal();
 }
@@ -5909,11 +5909,11 @@ async function syncFromSupabase() {
   }
 
   if (row && row.data && Object.keys(row.data).length > 0) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(row.data));
+    localStorage.setItem(activeStorageKey(), JSON.stringify(row.data));
     _lastGood = snapWeight(row.data);   // this is the state we must not shrink
   } else {
     // Genuinely no row for this user — a real new account
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(activeStorageKey());
     _lastGood = { months: 0, rows: 0 };
   }
 
@@ -5972,6 +5972,22 @@ async function syncToSupabase(data) {
 
 const STORAGE_KEY = _demoIsolated ? 'jettana_demo_sandbox' : 'intentra_v1';
 
+// Resolved at CALL time, not parse time. A const captured during parsing can be
+// wrong if anything about load order shifts; this cannot. Every read and write
+// of budget data goes through these.
+function activeStorageKey() {
+  return (typeof _demoIsolated !== 'undefined' && _demoIsolated)
+    ? 'jettana_demo_sandbox' : 'intentra_v1';
+}
+function activeSnapKey() {
+  return (typeof _demoIsolated !== 'undefined' && _demoIsolated)
+    ? 'jettana_demo_snapshots' : 'jettana_snapshots';
+}
+function inDemoSandbox() {
+  return (typeof _demoIsolated !== 'undefined' && _demoIsolated) ||
+         new URLSearchParams(window.location.search).get('demo') === 'true';
+}
+
 /* ── Local safety snapshots ──────────────────────────────────
    Rolling copies of the budget kept under their own key, which the
    Supabase sync never clears. If a bad write ever empties the account
@@ -6007,19 +6023,20 @@ function snapWeight(data) {
 }
 
 function loadSnapshots() {
-  if (_demoIsolated) return [];   // the sandbox has no backups to show
-  try { return JSON.parse(localStorage.getItem(SNAP_KEY)) || []; } catch (e) { return []; }
+  if (inDemoSandbox()) return [];   // the sandbox never has backups to show
+  try { return JSON.parse(localStorage.getItem(activeSnapKey())) || []; } catch (e) { return []; }
 }
 
 function saveSnapshots(list) {
   try {
-    localStorage.setItem(SNAP_KEY, JSON.stringify(list));
+    if (inDemoSandbox()) return false;
+    localStorage.setItem(activeSnapKey(), JSON.stringify(list));
     return true;
   } catch (e) {
     // Out of space — drop the oldest and retry a couple of times
     while (list.length > 1) {
       list.shift();
-      try { localStorage.setItem(SNAP_KEY, JSON.stringify(list)); return true; } catch (e2) {}
+      try { localStorage.setItem(activeSnapKey(), JSON.stringify(list)); return true; } catch (e2) {}
     }
     return false;
   }
@@ -6027,10 +6044,10 @@ function saveSnapshots(list) {
 
 // Take a snapshot of what's in local storage right now.
 function takeSnapshot(reason, opts) {
-  if (_demoIsolated) return false;      // never snapshot the sandbox
+  if (inDemoSandbox()) return false;    // never snapshot the sandbox
   opts = opts || {};
   var raw;
-  try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) { return false; }
+  try { raw = localStorage.getItem(activeStorageKey()); } catch (e) { return false; }
   if (!raw) return false;
 
   var data;
@@ -6052,12 +6069,17 @@ function takeSnapshot(reason, opts) {
 }
 
 function loadAll() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
+  if (inDemoSandbox()) {
+    // Hard stop: the sandbox must never surface real account data, whatever
+    // else happens elsewhere in the file.
+    try { return JSON.parse(localStorage.getItem('jettana_demo_sandbox')) || {}; } catch { return {}; }
+  }
+  try { return JSON.parse(localStorage.getItem(activeStorageKey())) || {}; } catch { return {}; }
 }
 function saveAll(data) {
   // snapshot the PREVIOUS state before overwriting it (throttled)
   takeSnapshot('save', { throttle: true });
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  localStorage.setItem(activeStorageKey(), JSON.stringify(data));
   syncToSupabase(data);
 }
 
@@ -15031,7 +15053,7 @@ function restoreSnapshot(i) {
 
   takeSnapshot('before-restore');       // always reversible
   try {
-    localStorage.setItem(STORAGE_KEY, s.raw);
+    localStorage.setItem(activeStorageKey(), s.raw);
   } catch (e) { alert('Restore failed — could not write to storage.'); return; }
 
   var restored = JSON.parse(s.raw);
