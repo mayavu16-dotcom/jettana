@@ -89,6 +89,11 @@ body {
 .month-nav {
   padding: 18px 16px 10px;
   border-bottom: 1px solid rgba(255,255,255,0.07);
+  /* fill the sidebar so the month list has a bounded height to scroll within */
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 .month-nav .label {
   font-size: 11px;
@@ -97,7 +102,22 @@ body {
   color: rgba(255,255,255,0.4);
   margin-bottom: 10px;
 }
-.month-list { display: flex; flex-direction: column; gap: 2px; }
+.month-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  /* only the list scrolls; overscroll-behavior stops the scroll from
+     chaining through to the budget behind it */
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.month-list::-webkit-scrollbar { width: 6px; }
+.month-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 3px; }
+.month-list::-webkit-scrollbar-track { background: transparent; }
 
 /* Year groups */
 .year-group { margin-bottom: 4px; }
