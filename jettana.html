@@ -2488,6 +2488,9 @@ body.theme-custom .mom-hdr      { background: var(--custom-accent-dark, #2A4A7A)
   font-family: 'Outfit', sans-serif;
   overflow: hidden;
 }
+.more-chev { margin-left: auto; color: var(--steel); font-size: 17px; line-height: 1; }
+.more-back { color: var(--steel); }
+.more-back strong { color: var(--ink); font-size: 13px; }
 .more-menu-title {
   font-size: 10px;
   font-weight: 700;
@@ -3983,141 +3986,155 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <button class="btn btn-ghost" id="more-btn" onclick="toggleMoreMenu(event); dismissMoreHint()" title="More options" style="font-size:18px;width:34px;padding:0;letter-spacing:1px;position:relative;">⋯<span id="more-hint-dot" style="display:none;position:absolute;top:4px;right:4px;width:7px;height:7px;background:#6B9E70;border-radius:50%;animation:hint-pulse 1.5s ease-in-out infinite;"></span></button>
           <div class="more-menu" id="more-menu" style="display:none;">
 
-            <!-- Upgrade CTA -->
-            <button class="more-menu-item" onclick="window.open('https://buy.stripe.com/6oU28q6j084G2sI2ExfQI00','_blank'); hideMoreMenu()" style="background:linear-gradient(135deg,#6B9E70,#4d7a52);color:white;border-radius:8px;margin:4px 0 8px;">
-              <span>✦</span> Support Jettana — $6/mo
-            </button>
+            <!-- ═══ MAIN PANEL ═══ -->
+            <div id="more-panel-main">
 
-            <!-- Appearance -->
-            <div class="more-menu-title">Appearance</div>
-            <button class="more-menu-item" id="bold-toggle-btn" onclick="toggleBoldText()">
-              <span>𝐁</span> <span id="bold-toggle-label">Bold text: Off</span>
-            </button>
-            <div class="more-menu-item" style="gap:6px;cursor:default;">
-              <span style="font-size:11px;">A</span>
-              <span style="font-size:13px;font-weight:500;">Text size</span>
-              <div style="display:flex;gap:4px;margin-left:auto;">
-                <button onclick="setFontSize('small')" id="fs-small" class="fs-btn" title="Small">S</button>
-                <button onclick="setFontSize('medium')" id="fs-medium" class="fs-btn fs-active" title="Medium">M</button>
-                <button onclick="setFontSize('large')" id="fs-large" class="fs-btn" title="Large">L</button>
-              </div>
-            </div>
-            <div class="more-menu-item" style="gap:8px;cursor:default;padding-top:0;">
-              <span style="font-size:10px;color:var(--steel);flex-shrink:0;">A</span>
-              <input type="range" id="font-size-range" min="10" max="16" value="13.5" step="0.5"
-                style="flex:1;accent-color:var(--sage);cursor:pointer;"
-                oninput="setFontSizeExact(parseFloat(this.value))"
-                ontouchend="setFontSizeExact(parseFloat(this.value))">
-              <span style="font-size:14px;color:var(--steel);flex-shrink:0;">A</span>
-            </div>
-            <div class="more-menu-section">
-              <button class="more-menu-item" onclick="toggleThemeExpand()" style="color:var(--steel);padding:6px 12px;">
-                <span>🎨</span> <span id="theme-expand-label">Color theme ▾</span>
+              <button class="more-menu-item" onclick="window.open('https://buy.stripe.com/6oU28q6j084G2sI2ExfQI00','_blank'); hideMoreMenu()" style="background:linear-gradient(135deg,#6B9E70,#4d7a52);color:white;border-radius:8px;margin:4px 0 8px;">
+                <span>✦</span> Support Jettana — $6/mo
               </button>
-              <div id="theme-expanded" style="display:none;">
-                <button class="theme-opt active" data-theme="" onclick="setTheme(this,'')">
-                  <span class="theme-swatch-row"><span style="background:#6B9E70"></span><span style="background:#C0736A"></span><span style="background:#4A85A0"></span><span style="background:#7B72AA"></span></span>
-                  Classic
-                </button>
-                <button class="theme-opt" data-theme="minimal" onclick="setTheme(this,'minimal')">
-                  <span class="theme-swatch-row"><span style="background:#4A6FA5"></span><span style="background:#4A6FA5"></span><span style="background:#4A6FA5"></span><span style="background:#4A6FA5"></span></span>
-                  Minimal
-                </button>
-                <button class="theme-opt" data-theme="mono" onclick="setTheme(this,'mono')">
-                  <span class="theme-swatch-row"><span style="background:#2C3E50"></span><span style="background:#2C3E50"></span><span style="background:#2C3E50"></span><span style="background:#2C3E50"></span></span>
-                  Monochrome
-                </button>
-                <div class="theme-custom-row">
-                  <span>Custom color</span>
-                  <input type="color" id="custom-color" value="#4A6FA5" oninput="setCustomTheme(this.value)">
+
+              <button class="more-menu-item" onclick="showMorePanel('appearance')">
+                <span>🎨</span> Appearance <span class="more-chev">›</span>
+              </button>
+              <button class="more-menu-item" onclick="showMorePanel('learn')">
+                <span>📖</span> Learn <span class="more-chev">›</span>
+              </button>
+              <button class="more-menu-item" onclick="showMorePanel('io')">
+                <span>⬍</span> Import / Export <span class="more-chev">›</span>
+              </button>
+
+              <div class="more-divider"></div>
+              <div class="more-menu-title">Analytics</div>
+              <button class="more-menu-item" onclick="showCalendar(); hideMoreMenu()">
+                <span>📅</span> Spending calendar
+              </button>
+              <button class="more-menu-item" onclick="showTrends(); hideMoreMenu()">
+                <span>📊</span> Spending trends
+              </button>
+              <button class="more-menu-item" onclick="showNetWorthTrend(); hideMoreMenu()">
+                <span>📈</span> Net worth trend
+              </button>
+              <button class="more-menu-item" onclick="showGrowthProjection(); hideMoreMenu()">
+                <span>🌱</span> Growth projection
+              </button>
+
+              <div class="more-divider"></div>
+              <button class="more-menu-item" onclick="showBackups(); hideMoreMenu()">
+                <span>🛟</span> Backups
+              </button>
+              <button class="more-menu-item danger" onclick="clearMonth(); hideMoreMenu()">
+                <span>✕</span> Clear month
+              </button>
+              <button class="more-menu-item" onclick="showManageAccount(); hideMoreMenu()" style="color:var(--steel);">
+                <span>⚙</span> Manage account
+              </button>
+            </div>
+
+            <!-- ═══ APPEARANCE ═══ -->
+            <div id="more-panel-appearance" style="display:none;">
+              <button class="more-menu-item more-back" onclick="showMorePanel('main')">
+                <span>‹</span> <strong>Appearance</strong>
+              </button>
+              <div class="more-divider"></div>
+              <button class="more-menu-item" id="bold-toggle-btn" onclick="toggleBoldText()">
+                <span>𝐁</span> <span id="bold-toggle-label">Bold text: Off</span>
+              </button>
+              <div class="more-menu-item" style="gap:6px;cursor:default;">
+                <span style="font-size:11px;">A</span>
+                <span style="font-size:13px;font-weight:500;">Text size</span>
+                <div style="display:flex;gap:4px;margin-left:auto;">
+                  <button onclick="setFontSize('small')" id="fs-small" class="fs-btn" title="Small">S</button>
+                  <button onclick="setFontSize('medium')" id="fs-medium" class="fs-btn fs-active" title="Medium">M</button>
+                  <button onclick="setFontSize('large')" id="fs-large" class="fs-btn" title="Large">L</button>
                 </div>
               </div>
+              <div class="more-menu-item" style="gap:8px;cursor:default;padding-top:0;">
+                <span style="font-size:10px;color:var(--steel);flex-shrink:0;">A</span>
+                <input type="range" id="font-size-range" min="10" max="16" value="13.5" step="0.5"
+                  style="flex:1;accent-color:var(--sage);cursor:pointer;"
+                  oninput="setFontSizeExact(parseFloat(this.value))"
+                  ontouchend="setFontSizeExact(parseFloat(this.value))">
+                <span style="font-size:14px;color:var(--steel);flex-shrink:0;">A</span>
+              </div>
+              <div class="more-menu-section">
+                <button class="more-menu-item" onclick="toggleThemeExpand()" style="color:var(--steel);padding:6px 12px;">
+                  <span>🎨</span> <span id="theme-expand-label">Color theme ▾</span>
+                </button>
+                <div id="theme-expanded" style="display:none;">
+                  <button class="theme-opt active" data-theme="" onclick="setTheme(this,'')">
+                    <span class="theme-swatch-row"><span style="background:#6B9E70"></span><span style="background:#C0736A"></span><span style="background:#4A85A0"></span><span style="background:#7B72AA"></span></span>
+                    Classic
+                  </button>
+                  <button class="theme-opt" data-theme="minimal" onclick="setTheme(this,'minimal')">
+                    <span class="theme-swatch-row"><span style="background:#4A6FA5"></span><span style="background:#4A6FA5"></span><span style="background:#4A6FA5"></span><span style="background:#4A6FA5"></span></span>
+                    Minimal
+                  </button>
+                  <button class="theme-opt" data-theme="mono" onclick="setTheme(this,'mono')">
+                    <span class="theme-swatch-row"><span style="background:#2C3E50"></span><span style="background:#2C3E50"></span><span style="background:#2C3E50"></span><span style="background:#2C3E50"></span></span>
+                    Monochrome
+                  </button>
+                  <div class="theme-custom-row">
+                    <span>Custom color</span>
+                    <input type="color" id="custom-color" value="#4A6FA5" oninput="setCustomTheme(this.value)">
+                  </div>
+                </div>
+              </div>
+              <button class="more-menu-item" onclick="toggleLegendPanel(); hideMoreMenu()">
+                <span>🃏</span> My Cards legend
+              </button>
             </div>
-            <button class="more-menu-item" onclick="toggleLegendPanel(); hideMoreMenu()">
-              <span>🃏</span> My Cards legend
-            </button>
 
-            <!-- Learn (merged with power features) -->
-            <div class="more-divider"></div>
-            <div class="more-menu-title">Learn</div>
-            <button class="more-menu-item" onclick="showAbout(); hideMoreMenu()">
-              <span>💚</span> About Jettana
-            </button>
-            <button class="more-menu-item" onclick="showWelcome(); hideMoreMenu()">
-              <span>👋</span> Getting started
-            </button>
-            <button class="more-menu-item" onclick="loadDemo(); hideMoreMenu()">
-              <span>▶</span> Try demo
-            </button>
-            <button class="more-menu-item" onclick="showBackups(); hideMoreMenu()">
-              <span>🛟</span> Backups
-            </button>
-            <button class="more-menu-item" onclick="toggleReferenceExpand()" style="color:var(--steel);">
-              <span>📖</span> <span id="reference-expand-label">Reference ▾</span>
-            </button>
-            <div id="reference-expanded" style="display:none;">
-              <button class="more-menu-item" onclick="showChecklist(); hideMoreMenu()" style="padding-left:24px;">
+            <!-- ═══ LEARN ═══ -->
+            <div id="more-panel-learn" style="display:none;">
+              <button class="more-menu-item more-back" onclick="showMorePanel('main')">
+                <span>‹</span> <strong>Learn</strong>
+              </button>
+              <div class="more-divider"></div>
+              <button class="more-menu-item" onclick="showAbout(); hideMoreMenu()">
+                <span>💚</span> About Jettana
+              </button>
+              <button class="more-menu-item" onclick="showWelcome(); hideMoreMenu()">
+                <span>👋</span> Getting started
+              </button>
+              <button class="more-menu-item" onclick="loadDemo(); hideMoreMenu()">
+                <span>▶</span> Try demo
+              </button>
+              <button class="more-menu-item" onclick="showChecklist(); hideMoreMenu()">
                 <span>✅</span> Setup checklist
               </button>
-              <button class="more-menu-item" onclick="showFeatures(); hideMoreMenu()" style="padding-left:24px;">
+              <button class="more-menu-item" onclick="showFeatures(); hideMoreMenu()">
                 <span>✦</span> Features
               </button>
-              <button class="more-menu-item" id="shortcuts-menu-item" onclick="showShortcuts(); hideMoreMenu()" style="display:none;padding-left:24px;">
+              <button class="more-menu-item" id="shortcuts-menu-item" onclick="showShortcuts(); hideMoreMenu()" style="display:none;">
                 <span>⌨</span> Keyboard shortcuts
               </button>
+              <button class="more-menu-item" id="restart-tour-btn" onclick="startTour(); hideMoreMenu()" style="display:none;">
+                <span>🗺</span> Restart tour
+              </button>
+              <button class="more-menu-item" id="restart-personalize-tour-btn" onclick="startPersonalizeTour(); hideMoreMenu()" style="display:none;">
+                <span>🎨</span> Personalize tour
+              </button>
             </div>
-            <button class="more-menu-item" id="restart-tour-btn" onclick="startTour(); hideMoreMenu()" style="display:none;">
-              <span>🗺</span> Restart tour
-            </button>
-            <button class="more-menu-item" id="restart-personalize-tour-btn" onclick="startPersonalizeTour(); hideMoreMenu()" style="display:none;">
-              <span>🎨</span> Personalize tour
-            </button>
 
-            <!-- Import / Export -->
-            <div class="more-divider"></div>
-            <div class="more-menu-title">Import / Export</div>
-            <button class="more-menu-item" onclick="showImportModal(); hideMoreMenu()">
-              <span>⬆</span> Import bank statement
-            </button>
-            <button class="more-menu-item" onclick="toggleExportExpand()" style="color:var(--steel);">
-              <span>⬇</span> <span id="export-expand-label">Export ▾</span>
-            </button>
-            <div id="export-expanded" style="display:none;">
-              <button class="more-menu-item" onclick="window.print(); hideMoreMenu()" style="padding-left:24px;">
+            <!-- ═══ IMPORT / EXPORT ═══ -->
+            <div id="more-panel-io" style="display:none;">
+              <button class="more-menu-item more-back" onclick="showMorePanel('main')">
+                <span>‹</span> <strong>Import / Export</strong>
+              </button>
+              <div class="more-divider"></div>
+              <button class="more-menu-item" onclick="showImportModal(); hideMoreMenu()">
+                <span>⬆</span> Import bank statement
+              </button>
+              <button class="more-menu-item" onclick="window.print(); hideMoreMenu()">
                 <span>⬇</span> Export PDF
               </button>
-              <button class="more-menu-item" onclick="exportCSV(); hideMoreMenu()" style="padding-left:24px;">
+              <button class="more-menu-item" onclick="exportCSV(); hideMoreMenu()">
                 <span>⬇</span> Export CSV
               </button>
-              <button class="more-menu-item" onclick="showReport(); hideMoreMenu()" style="padding-left:24px;">
+              <button class="more-menu-item" onclick="showReport(); hideMoreMenu()">
                 <span>📄</span> Generate Report
               </button>
             </div>
-
-            <!-- Analytics -->
-            <div class="more-divider"></div>
-            <div class="more-menu-title">Analytics</div>
-            <button class="more-menu-item" onclick="showCalendar(); hideMoreMenu()">
-              <span>📅</span> Spending calendar
-            </button>
-            <button class="more-menu-item" onclick="showTrends(); hideMoreMenu()">
-              <span>📊</span> Spending trends
-            </button>
-            <button class="more-menu-item" onclick="showNetWorthTrend(); hideMoreMenu()">
-              <span>📈</span> Net worth trend
-            </button>
-            <button class="more-menu-item" onclick="showGrowthProjection(); hideMoreMenu()">
-              <span>🌱</span> Growth projection
-            </button>
-
-            <!-- Account -->
-            <div class="more-divider"></div>
-            <button class="more-menu-item danger" onclick="clearMonth(); hideMoreMenu()">
-              <span>✕</span> Clear month
-            </button>
-            <button class="more-menu-item" onclick="showManageAccount(); hideMoreMenu()" style="color:var(--steel);">
-              <span>⚙</span> Manage account
-            </button>
 
           </div>
         </div>
@@ -12344,6 +12361,8 @@ var TOUR_STEPS_PERSONALIZE = [
             toggleMoreMenu(fakeE);
           }
         }
+        // Color theme now lives in the Appearance sub-panel — go there first
+        showMorePanel('appearance');
         // Expand the Color theme sub-menu so the options are visible
         var expanded = document.getElementById('theme-expanded');
         if (expanded && expanded.style.display === 'none') {
@@ -13097,9 +13116,18 @@ function toggleMoreExpand() {
   if (label) label.textContent = isOpen ? 'Power features' : 'Hide power features';
 }
 
+// Drill-down panels inside the ⋯ menu
+function showMorePanel(name) {
+  ['main', 'appearance', 'learn', 'io'].forEach(function(p) {
+    var el = document.getElementById('more-panel-' + p);
+    if (el) el.style.display = (p === name) ? 'block' : 'none';
+  });
+}
+
 function hideMoreMenu() {
   var menu = document.getElementById('more-menu');
   if (menu) menu.style.display = 'none';
+  showMorePanel('main');   // always reopen at the top level
   // Reset expanded state
   var expanded = document.getElementById('more-expanded');
   var label = document.getElementById('more-expand-label');
