@@ -13157,7 +13157,9 @@ function toggleCalc() {
   if (!panel) return;
   var isOpen = panel.style.display !== 'none';
   panel.style.display = isOpen ? 'none' : 'block';
-  if (!isOpen) calcReset();
+  // Deliberately NOT resetting on open. Clicking a month (or anywhere outside)
+  // closes the panel, so resetting here wiped whatever had been typed. Only C
+  // and ⌫ clear it now.
 }
 
 function calcReset() {
@@ -13245,20 +13247,19 @@ function calcInput(val) {
   disp.textContent = _calcDisplay;
 }
 
-// Close calculator when clicking outside
-document.addEventListener('click', function(e) {
-  var panel = document.getElementById('calc-panel');
-  var fab = document.getElementById('calc-fab');
-  if (!panel || panel.style.display === 'none') return;
-  if (!panel.contains(e.target) && !fab.contains(e.target)) {
-    panel.style.display = 'none';
-  }
-});
+// The calculator deliberately stays open while you work — switching months or
+// clicking rows no longer dismisses it. Close it with the calculator button or Escape.
 
 // Keyboard support for calculator
 document.addEventListener('keydown', function(e) {
   var panel = document.getElementById('calc-panel');
   if (!panel || panel.style.display === 'none') return;
+  // Now that the panel stays open, it must never swallow keys meant for a
+  // budget cell, note or search box — only drive the calculator when the
+  // typing isn't going somewhere else.
+  var t = e.target;
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' ||
+            t.tagName === 'SELECT' || t.isContentEditable)) return;
   var key = e.key;
   if ('0123456789'.indexOf(key) !== -1) { calcInput(key); e.preventDefault(); }
   else if (key === '+') { calcInput('+'); e.preventDefault(); }
