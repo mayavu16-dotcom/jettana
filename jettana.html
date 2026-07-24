@@ -1150,8 +1150,11 @@ body {
   }
 
   /* Always print in the light theme. With dark mode on, print-color-adjust:exact
-     faithfully reproduced the dark UI — which comes out as solid black blocks. */
-  .dark {
+     faithfully reproduced the dark UI — which comes out as solid black blocks.
+     NOTE the selector: `.dark` is redefined later in this stylesheet (line ~1539)
+     and media queries add no specificity, so a plain `.dark` here would lose on
+     source order. html.dark / body.dark are more specific and win regardless. */
+  html.dark, body.dark, html.dark body {
     --ink:        #1A2332;
     --slate:      #3D4F63;
     --steel:      #6B7C8F;
@@ -4316,7 +4319,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
               <button class="more-menu-item" onclick="showImportModal(); hideMoreMenu()">
                 <span>⬆</span> Import bank statement
               </button>
-              <button class="more-menu-item" onclick="window.print(); hideMoreMenu()">
+              <button class="more-menu-item" onclick="hideMoreMenu(); exportPDF();">
                 <span>⬇</span> Export PDF
               </button>
               <button class="more-menu-item" onclick="exportCSV(); hideMoreMenu()">
@@ -4998,7 +5001,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
   <div class="report-modal" id="report-modal">
     <div id="report-content"></div>
     <div class="report-actions">
-      <button class="report-print-btn" onclick="window.print()">🖨 Print / Save as PDF</button>
+      <button class="report-print-btn" onclick="exportPDF()">🖨 Print / Save as PDF</button>
       <button class="report-close-btn" onclick="closeReport()">Close</button>
     </div>
   </div>
@@ -13479,6 +13482,41 @@ function showMoreHintIfNeeded() {
 var _calcExpr = '';
 var _calcDisplay = '0';
 var _calcNewNum = true;
+
+/* ── Printing always uses the light theme ─────────────────────
+   There are ~160 .dark rules and some hard-code colours, so overriding CSS
+   variables isn't enough. Dropping the class for the duration of the print is
+   comprehensive: every dark rule simply stops matching. */
+var _printWasDark = false;
+
+function beginLightPrint() {
+  _printWasDark = document.documentElement.classList.contains('dark') ||
+                  document.body.classList.contains('dark');
+  if (_printWasDark) {
+    document.documentElement.classList.remove('dark');
+    document.body.classList.remove('dark');
+  }
+}
+function endLightPrint() {
+  if (!_printWasDark) return;
+  document.documentElement.classList.add('dark');
+  document.body.classList.add('dark');
+  _printWasDark = false;
+}
+
+// Fires for Cmd/Ctrl+P and the browser's own print
+window.addEventListener('beforeprint', beginLightPrint);
+window.addEventListener('afterprint', endLightPrint);
+
+// Used by ⋯ → Export PDF, so it works even where those events aren't supported
+// (iOS Safari in particular).
+function exportPDF() {
+  beginLightPrint();
+  setTimeout(function() {
+    window.print();
+    setTimeout(endLightPrint, 800);   // restore if afterprint never fires
+  }, 60);
+}
 
 function closeCalc() {
   var panel = document.getElementById('calc-panel');
