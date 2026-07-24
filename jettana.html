@@ -3508,11 +3508,16 @@ body.font-large.text-bold .erow-label-input {
   .report-actions { padding: 12px 16px; }
 }
 @media print {
-  body > *:not(#report-overlay) { display: none !important; }
-  #report-overlay {
+  /* These apply ONLY while the Report modal is open. Without the scoping they
+     hit every print — which made Export PDF produce a blank page, because the
+     whole app was hidden and an empty report container was forced visible. */
+  body.report-open > *:not(#report-overlay) { display: none !important; }
+  body.report-open #report-overlay {
     position: static !important; background: none !important;
     padding: 0 !important; display: block !important;
   }
+  /* printing the normal view: keep the (closed) report container out of it */
+  body:not(.report-open) #report-overlay { display: none !important; }
   .report-modal { max-height: none !important; box-shadow: none !important; border-radius: 0 !important; }
   .report-actions { display: none !important; }
 }
@@ -16372,12 +16377,14 @@ function filterAskMe(q) {
 function showReport() {
   var el = document.getElementById('report-overlay');
   if (el) el.style.display = 'flex';
+  document.body.classList.add('report-open');   // scopes the print stylesheet
   generateReport();
 }
 
 function closeReport() {
   var el = document.getElementById('report-overlay');
   if (el) el.style.display = 'none';
+  document.body.classList.remove('report-open');
   var modal = document.getElementById('report-modal');
   if (modal) { modal.style.position = ''; modal.style.left = ''; modal.style.top = ''; modal.style.margin = ''; }
   var overlay = document.getElementById('report-overlay');
