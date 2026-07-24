@@ -5611,6 +5611,67 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 </div>
 
 <script>
+/* ══════════════════════════════════════════════════════════════════
+   Demo isolation — runs before anything else in the app.
+
+   The demo does not read or write browser storage at all. It runs against
+   an in-memory store that vanishes on refresh, and the browser's own storage
+   is made inert for the rest of the page. That means a call site I forget to
+   isolate later still cannot reach a real account — there is nothing to reach.
+
+   Verify it yourself: open the demo, then devtools → Application →
+   Local Storage. Nothing should appear or change while you use it.
+   ══════════════════════════════════════════════════════════════════ */
+var _isDemoURL = (function () {
+  try { return new URLSearchParams(window.location.search).get('demo') === 'true'; }
+  catch (e) { return false; }
+})();
+
+// Captured before the demo makes browser storage inert, so the real app still works.
+var _realLS = (function () {
+  try {
+    var ls = window.localStorage;
+    return {
+      getItem: ls.getItem.bind(ls), setItem: ls.setItem.bind(ls),
+      removeItem: ls.removeItem.bind(ls), clear: ls.clear.bind(ls)
+    };
+  } catch (e) {
+    return { getItem: function () { return null; }, setItem: function () {},
+             removeItem: function () {}, clear: function () {} };
+  }
+})();
+
+var _memStore = {};
+
+// Every persistent read/write in the app goes through this.
+var appStore = {
+  getItem: function (k) {
+    if (_isDemoURL) return Object.prototype.hasOwnProperty.call(_memStore, k) ? _memStore[k] : null;
+    try { return _realLS.getItem(k); } catch (e) { return null; }
+  },
+  setItem: function (k, v) {
+    if (_isDemoURL) { _memStore[k] = String(v); return; }
+    try { _realLS.setItem(k, String(v)); } catch (e) {}
+  },
+  removeItem: function (k) {
+    if (_isDemoURL) { delete _memStore[k]; return; }
+    try { _realLS.removeItem(k); } catch (e) {}
+  },
+  clear: function () {
+    if (_isDemoURL) { _memStore = {}; return; }
+    try { _realLS.clear(); } catch (e) {}
+  }
+};
+
+// In the demo, neuter the browser's storage for everything else on the page.
+if (_isDemoURL) {
+  try {
+    window.localStorage.getItem    = function () { return null; };
+    window.localStorage.setItem    = function (k) { console.warn('[jettana] demo blocked a storage write:', k); };
+    window.localStorage.removeItem = function () {};
+    window.localStorage.clear      = function () {};
+  } catch (e) {}
+}
 // ── Supabase ──────────────────────────────────────────────────
 var _sb = null;
 var _currentUser = null;
@@ -5751,8 +5812,8 @@ document.addEventListener('keydown', function(e) {
 async function signOut() {
   if (_sb) await _sb.auth.signOut();
   _currentUser = null;
-  localStorage.removeItem(activeStorageKey());
-  localStorage.removeItem(nsKey('intentra_last_month'));
+  appStore.removeItem(activeStorageKey());
+  appStore.removeItem(nsKey('intentra_last_month'));
   showAuthModal();
 }
 
@@ -5788,7 +5849,7 @@ function confirmDeleteAccount() {
         // Sign out immediately after deletion
         await _sb.auth.signOut();
       }
-      localStorage.clear();
+      appStore.clear();
       _currentUser = null;
       modal.remove();
       showAuthModal();
@@ -5796,7 +5857,7 @@ function confirmDeleteAccount() {
     } catch(e) {
       // Even if RPC fails, sign out and clear data
       try { if (_sb) await _sb.auth.signOut(); } catch(e2) {}
-      localStorage.clear();
+      appStore.clear();
       _currentUser = null;
       modal.remove();
       showAuthModal();
@@ -5812,7 +5873,7 @@ function confirmDeleteAccount() {
 // a real account: it gets its own storage key (see STORAGE_KEY) and never signs
 // anyone in, so cloud sync can't run. Driven by the URL only — the old
 // sessionStorage flag leaked demo mode into later loads in the same tab.
-var _demoIsolated = new URLSearchParams(window.location.search).get('demo') === 'true';
+var _demoIsolated = _isDemoURL;   // resolved at the top of the script
 var _demoLoaded = false;
 // Never push to the cloud until we've pulled the account's data down, or a
 // half-initialised local state could overwrite the real thing.
@@ -5910,11 +5971,11 @@ async function syncFromSupabase() {
   }
 
   if (row && row.data && Object.keys(row.data).length > 0) {
-    localStorage.setItem(activeStorageKey(), JSON.stringify(row.data));
+    appStore.setItem(activeStorageKey(), JSON.stringify(row.data));
     _lastGood = snapWeight(row.data);   // this is the state we must not shrink
   } else {
     // Genuinely no row for this user — a real new account
-    localStorage.removeItem(activeStorageKey());
+    appStore.removeItem(activeStorageKey());
     _lastGood = { months: 0, rows: 0 };
   }
 
@@ -5991,38 +6052,15 @@ function activeSnapKey() {
 // Backstop: if the sandbox can still reach anything belonging to a real
 // account, stop rather than display it. This is what makes the guarantee hold
 // even when I add a feature and forget to isolate it.
-var REAL_ACCOUNT_KEYS = [
-  'intentra_v1', 'jettana_snapshots', 'intentra_legend_cards',
-  'intentra_budget_overrides', 'intentra_section_names',
-  'intentra_ft_highlights', 'intentra_last_month'
-];
-
-function sandboxLeakCheck() {
-  if (!inDemoSandbox()) return { ok: true, leaked: [] };
-  var leaked = [];
-  REAL_ACCOUNT_KEYS.forEach(function(k) {
-    var real = null, sandboxed = null;
-    try { real = localStorage.getItem(k); } catch (e) {}
-    if (!real) return;                       // nothing of theirs stored under it
-    try { sandboxed = localStorage.getItem('demo__' + k); } catch (e) {}
-    // A leak means the value the demo would use IS the real one.
-    var inUse = (k === 'intentra_v1')
-      ? JSON.stringify(loadAll())
-      : (sandboxed !== null ? sandboxed : null);
-    if (k === 'intentra_v1') { if (inUse === real) leaked.push(k); }
-    else if (sandboxed === null && real !== null) {
-      // key isn't namespaced at all — would fall through to the real one
-      leaked.push(k);
-    }
-  });
-  return { ok: leaked.length === 0, leaked: leaked };
-}
-
 function enforceSandboxIsolation() {
   if (!inDemoSandbox()) return true;
-  var res = sandboxLeakCheck();
-  if (res.ok) return true;
-  console.error('[jettana] demo isolation failed for:', res.leaked.join(', '));
+  // Assert it rather than assume it: if anything belonging to a real account is
+  // reachable from the demo, stop instead of rendering it.
+  var reachable = null;
+  try { reachable = appStore.getItem('intentra_v1') || appStore.getItem('jettana_snapshots'); } catch (e) {}
+  if (!reachable) return true;
+
+  console.error('[jettana] demo isolation failed — refusing to render');
   var shell = document.querySelector('.app-shell');
   if (shell) {
     shell.innerHTML =
@@ -6044,10 +6082,7 @@ function nsKey(name) {
   return inDemoSandbox() ? 'demo__' + name : name;
 }
 
-function inDemoSandbox() {
-  return (typeof _demoIsolated !== 'undefined' && _demoIsolated) ||
-         new URLSearchParams(window.location.search).get('demo') === 'true';
-}
+function inDemoSandbox() { return _isDemoURL; }
 
 /* ── Local safety snapshots ──────────────────────────────────
    Rolling copies of the budget kept under their own key, which the
@@ -6085,19 +6120,19 @@ function snapWeight(data) {
 
 function loadSnapshots() {
   if (inDemoSandbox()) return [];   // the sandbox never has backups to show
-  try { return JSON.parse(localStorage.getItem(activeSnapKey())) || []; } catch (e) { return []; }
+  try { return JSON.parse(appStore.getItem(activeSnapKey())) || []; } catch (e) { return []; }
 }
 
 function saveSnapshots(list) {
   try {
     if (inDemoSandbox()) return false;
-    localStorage.setItem(activeSnapKey(), JSON.stringify(list));
+    appStore.setItem(activeSnapKey(), JSON.stringify(list));
     return true;
   } catch (e) {
     // Out of space — drop the oldest and retry a couple of times
     while (list.length > 1) {
       list.shift();
-      try { localStorage.setItem(activeSnapKey(), JSON.stringify(list)); return true; } catch (e2) {}
+      try { appStore.setItem(activeSnapKey(), JSON.stringify(list)); return true; } catch (e2) {}
     }
     return false;
   }
@@ -6108,7 +6143,7 @@ function takeSnapshot(reason, opts) {
   if (inDemoSandbox()) return false;    // never snapshot the sandbox
   opts = opts || {};
   var raw;
-  try { raw = localStorage.getItem(activeStorageKey()); } catch (e) { return false; }
+  try { raw = appStore.getItem(activeStorageKey()); } catch (e) { return false; }
   if (!raw) return false;
 
   var data;
@@ -6133,14 +6168,14 @@ function loadAll() {
   if (inDemoSandbox()) {
     // Hard stop: the sandbox must never surface real account data, whatever
     // else happens elsewhere in the file.
-    try { return JSON.parse(localStorage.getItem('jettana_demo_sandbox')) || {}; } catch { return {}; }
+    try { return JSON.parse(appStore.getItem('jettana_demo_sandbox')) || {}; } catch { return {}; }
   }
-  try { return JSON.parse(localStorage.getItem(activeStorageKey())) || {}; } catch { return {}; }
+  try { return JSON.parse(appStore.getItem(activeStorageKey())) || {}; } catch { return {}; }
 }
 function saveAll(data) {
   // snapshot the PREVIOUS state before overwriting it (throttled)
   takeSnapshot('save', { throttle: true });
-  localStorage.setItem(activeStorageKey(), JSON.stringify(data));
+  appStore.setItem(activeStorageKey(), JSON.stringify(data));
   syncToSupabase(data);
 }
 
@@ -6295,14 +6330,14 @@ var _secLongPress = null; // global names: { sectionKey: name }
 
 function loadSectionNames() {
   try {
-    var saved = localStorage.getItem(nsKey('intentra_section_names'));
+    var saved = appStore.getItem(nsKey('intentra_section_names'));
     _sectionNames = saved ? JSON.parse(saved) : {};
   } catch(e) { _sectionNames = {}; }
   applySectionNames();
 }
 
 function saveSectionNames() {
-  try { localStorage.setItem(nsKey('intentra_section_names'), JSON.stringify(_sectionNames)); } catch(e) {}
+  try { appStore.setItem(nsKey('intentra_section_names'), JSON.stringify(_sectionNames)); } catch(e) {}
 }
 
 function applySectionNames() {
@@ -6471,7 +6506,7 @@ function renameMonth(oldKey) {
     overlay.remove();
     if (currentMonthKey === oldKey) {
       currentMonthKey = newKey;
-      localStorage.setItem(nsKey('intentra_last_month'), newKey);
+      appStore.setItem(nsKey('intentra_last_month'), newKey);
     }
     renderSidebar();
     if (currentMonthKey === newKey) switchMonth(newKey);
@@ -6840,7 +6875,7 @@ function switchMonth(key) {
     var cmp = document.getElementById('compare-overlay');
     if (cmp && cmp.style.display !== 'none') renderCompare();
   }, 0);
-  localStorage.setItem(nsKey('intentra_last_month'), key);
+  appStore.setItem(nsKey('intentra_last_month'), key);
   _momCompareKey = null; // reset to auto (previous month) on switch
   // Reset collapsed sections on month switch
   document.querySelectorAll('.sec-card.collapsed').forEach(function(c) {
@@ -6905,7 +6940,7 @@ function renderSidebar() {
     // Collapse past years by default unless they contain the active month
     var collapsed = !isCurrentYear && !hasActive;
     // Restore saved collapse state
-    var savedState = localStorage.getItem('intentra_year_' + year);
+    var savedState = appStore.getItem('intentra_year_' + year);
     if (savedState !== null) collapsed = savedState === '1';
 
     var group = document.createElement('div');
@@ -6921,7 +6956,7 @@ function renderSidebar() {
     header.onclick = function() {
       var isNowCollapsed = group.classList.toggle('collapsed');
       monthsDiv.style.maxHeight = isNowCollapsed ? '0' : (yearKeys.length * itemHeight + 20) + 'px';
-      localStorage.setItem('intentra_year_' + year, isNowCollapsed ? '1' : '0');
+      appStore.setItem('intentra_year_' + year, isNowCollapsed ? '1' : '0');
     };
     group.appendChild(header);
 
@@ -9033,7 +9068,7 @@ document.getElementById('hamburger-btn').addEventListener('click', () => {
   var isDesktop = window.innerWidth > 900;
   if (isDesktop) {
     document.body.classList.toggle('sidebar-collapsed');
-    try { localStorage.setItem('intentra_sidebar_collapsed', document.body.classList.contains('sidebar-collapsed') ? '1' : '0'); } catch(e) {}
+    try { appStore.setItem('intentra_sidebar_collapsed', document.body.classList.contains('sidebar-collapsed') ? '1' : '0'); } catch(e) {}
     // Update calc-fab position via inline style so drag can override it
     var fabEl = document.getElementById('calc-fab');
     if (fabEl && !fabEl.dataset.dragged) {
@@ -9052,7 +9087,7 @@ function closeSidebar() {
 }
 // Restore desktop sidebar state on load
 try {
-  if (localStorage.getItem('intentra_sidebar_collapsed') === '1' && window.innerWidth > 900) {
+  if (appStore.getItem('intentra_sidebar_collapsed') === '1' && window.innerWidth > 900) {
     document.body.classList.add('sidebar-collapsed');
   }
 } catch(e) {}
@@ -9103,7 +9138,7 @@ function init() {
   const all = loadAll();
   const isFirst = !all._seeded;
   // Restore last viewed month, fall back to current month
-  const savedMonth = localStorage.getItem(nsKey('intentra_last_month'));
+  const savedMonth = appStore.getItem(nsKey('intentra_last_month'));
   const key = (savedMonth && all[savedMonth]) ? savedMonth : todayKey;
   if (isFirst) {
     all._seeded = true;
@@ -10632,7 +10667,7 @@ function applyDark(dark) {
   document.body.classList.toggle('dark', dark);
   var btn = document.getElementById('dark-toggle');
   if (btn) btn.textContent = dark ? '☀️' : '🌙';
-  try { localStorage.setItem('intentra_dark', dark ? '1' : '0'); } catch(e) {}
+  try { appStore.setItem('intentra_dark', dark ? '1' : '0'); } catch(e) {}
   // Refresh intention color so dark/light flip applies
   loadIntention();
   // Same for the month title — a near-black colour needs to flip to white
@@ -10657,7 +10692,7 @@ function toggleDark() {
 // Init: check localStorage override, else default to light mode
 (function() {
   var stored = null;
-  try { stored = localStorage.getItem('intentra_dark'); } catch(e) {}
+  try { stored = appStore.getItem('intentra_dark'); } catch(e) {}
   if (stored !== null) {
     applyDark(stored === '1');
   } else {
@@ -11062,7 +11097,7 @@ var INTENTION_HL_RGB = {
 };
 var _intentionHlColor = 'gold';
 try {
-  var _savedHl = localStorage.getItem('jettana_hl_color');
+  var _savedHl = appStore.getItem('jettana_hl_color');
   if (_savedHl && INTENTION_HL_COLORS[_savedHl]) _intentionHlColor = _savedHl;
 } catch (e) {}
 
@@ -11352,7 +11387,7 @@ function pickIntentionHl(key) {
   }
   if (!INTENTION_HL_COLORS[key]) return;
   _intentionHlColor = key;
-  try { localStorage.setItem('jettana_hl_color', key); } catch (e) {}
+  try { appStore.setItem('jettana_hl_color', key); } catch (e) {}
   hideIntentionHlPalette();
   applyIntentionHighlight(false); // choosing a colour always applies it
   updateIntentionBoldState();
@@ -11918,7 +11953,7 @@ function showCtxMenu(e, section, id) {
   var hasNum = row && row.numColor;
   var hasStrike = row && row.strikeColor;
   var hasAnyColor = hasText || hasNum || hasStrike;
-  var hasAnyPaste = !!localStorage.getItem('intentra_copied_any_color');
+  var hasAnyPaste = !!appStore.getItem('intentra_copied_any_color');
 
   var d = function(id, show) { var el = document.getElementById(id); if (el) el.style.display = show ? 'flex' : 'none'; };
   d('ctx-color-divider', hasAnyColor || hasAnyPaste);
@@ -11949,8 +11984,8 @@ window.addEventListener('load', function() {
   loadCollapsedSections();
   // One-time migration: move old flat highlight/override keys into current month data
   (function migrateFlatKeys() {
-    var oldHighlights = localStorage.getItem(nsKey('intentra_ft_highlights'));
-    var oldOverrides  = localStorage.getItem(nsKey('intentra_budget_overrides'));
+    var oldHighlights = appStore.getItem(nsKey('intentra_ft_highlights'));
+    var oldOverrides  = appStore.getItem(nsKey('intentra_budget_overrides'));
     if (!oldHighlights && !oldOverrides) return;
     var all = loadAll();
     if (!currentMonthKey || !all[currentMonthKey]) return;
@@ -11961,14 +11996,14 @@ window.addEventListener('load', function() {
       try { all[currentMonthKey]._budgetOverrides = JSON.parse(oldOverrides); } catch(e) {}
     }
     saveAll(all);
-    localStorage.removeItem('intentra_ft_highlights');
-    localStorage.removeItem(nsKey('intentra_budget_overrides'));
+    appStore.removeItem('intentra_ft_highlights');
+    appStore.removeItem(nsKey('intentra_budget_overrides'));
   })();
   loadFooterBudgets();
   loadFtHighlights();
   // Show welcome if never seen (only once signed in, and not during demo load)
-  if (!_demoIsolated && _currentUser && !localStorage.getItem('intentra_welcomed') && !localStorage.getItem('intentra_v1')) {
-    localStorage.setItem('intentra_welcomed', '1');
+  if (!_demoIsolated && _currentUser && !appStore.getItem('intentra_welcomed') && !appStore.getItem('intentra_v1')) {
+    appStore.setItem('intentra_welcomed', '1');
     setTimeout(showWelcome, 600);
     setTimeout(function() {
       showToast('Tap ⋯ → About Jettana to learn the story behind this app.', true, 6000);
@@ -12069,7 +12104,7 @@ window.addEventListener('load', function() {
       e.stopPropagation();
       var sec = _savedCtxSection || ctxSection;
       var id = _savedCtxId || ctxId;
-      var color = localStorage.getItem(storageKey) || localStorage.getItem('intentra_copied_any_color');
+      var color = appStore.getItem(storageKey) || appStore.getItem('intentra_copied_any_color');
       hideCtxMenu();
       hideCtxSubmenus();
       if (sec && id && color) applyFn(sec, id, color, null);
@@ -12179,7 +12214,7 @@ window.addEventListener('load', function() {
         picker.querySelectorAll('.paid-swatch').forEach(function(s) {
           s.classList.toggle('active', row && s.dataset.color === row.paidColor);
         });
-        var lc = localStorage.getItem('intentra_last_custom_color');
+        var lc = appStore.getItem('intentra_last_custom_color');
         var ci = document.getElementById('paid-custom-color');
         if (ci && lc) ci.value = lc;
         if (lc) updateLastCustomSwatch(lc);
@@ -12276,7 +12311,7 @@ function doUndo() {
     saveAll(all);
     if (currentMonthKey === entry.fromKey) {
       currentMonthKey = entry.toKey;
-      localStorage.setItem(nsKey('intentra_last_month'), entry.toKey);
+      appStore.setItem(nsKey('intentra_last_month'), entry.toKey);
     }
     renderSidebar();
     if (currentMonthKey === entry.toKey) switchMonth(entry.toKey);
@@ -12518,7 +12553,7 @@ function setTheme(btn, theme) {
   document.querySelectorAll('.theme-opt').forEach(function(b) { b.classList.remove('active'); });
   if (btn) btn.classList.add('active');
   // Save to localStorage
-  localStorage.setItem('intentra_theme', theme);
+  appStore.setItem('intentra_theme', theme);
   // Close more menu after selecting theme
   hideMoreMenu();
 }
@@ -12531,8 +12566,8 @@ function setCustomTheme(color) {
   document.documentElement.style.setProperty('--custom-accent-dark', adjustColor(color, -40));
   document.documentElement.style.setProperty('--custom-accent-light', adjustColor(color, 30));
   document.documentElement.style.setProperty('--custom-accent-mid', adjustColor(color, 15));
-  localStorage.setItem('intentra_theme', 'custom');
-  localStorage.setItem('intentra_custom_color', color);
+  appStore.setItem('intentra_theme', 'custom');
+  appStore.setItem('intentra_custom_color', color);
 }
 
 function adjustColor(hex, amount) {
@@ -12546,11 +12581,11 @@ function adjustColor(hex, amount) {
 }
 
 function loadTheme() {
-  var saved = localStorage.getItem('intentra_theme') || '';
+  var saved = appStore.getItem('intentra_theme') || '';
   var btn = document.querySelector('[data-theme="' + saved + '"]');
   setTheme(btn, saved);
   if (saved === 'custom') {
-    var color = localStorage.getItem('intentra_custom_color') || '#4A6FA5';
+    var color = appStore.getItem('intentra_custom_color') || '#4A6FA5';
     document.getElementById('custom-color').value = color;
     setCustomTheme(color);
   }
@@ -13110,7 +13145,7 @@ function startTour(stepsArray, opts) {
 function dismissPersonalizeOffer() {
   var el = document.getElementById('personalize-offer');
   if (el) el.style.display = 'none';
-  try { localStorage.setItem('intentra_personalize_offer_seen', '1'); } catch(e) {}
+  try { appStore.setItem('intentra_personalize_offer_seen', '1'); } catch(e) {}
 }
 
 function startPersonalizeTour() {
@@ -13142,7 +13177,7 @@ function endTour() {
   // Offer the optional Personalize tour after finishing the main tour naturally
   if (finishedMainTourNaturally) {
     var alreadySeen = false;
-    try { alreadySeen = !!localStorage.getItem('intentra_personalize_offer_seen'); } catch(e) {}
+    try { alreadySeen = !!appStore.getItem('intentra_personalize_offer_seen'); } catch(e) {}
     if (!alreadySeen) {
       setTimeout(function() {
         var el = document.getElementById('personalize-offer');
@@ -13346,12 +13381,12 @@ document.addEventListener('click', function(e) {
 function dismissRowMenuHint() {
   // Hide all hint dots and mark as seen
   document.querySelectorAll('#row-menu-hint-dot').forEach(function(d) { d.style.display = 'none'; });
-  try { localStorage.setItem('intentra_row_hint_seen', '1'); } catch(e) {}
+  try { appStore.setItem('intentra_row_hint_seen', '1'); } catch(e) {}
 }
 
 function showRowMenuHintIfNeeded() {
   try {
-    if (localStorage.getItem('intentra_row_hint_seen')) return;
+    if (appStore.getItem('intentra_row_hint_seen')) return;
     // Show hint on first drag handle found
     setTimeout(function() {
       var dot = document.getElementById('row-menu-hint-dot');
@@ -13363,12 +13398,12 @@ function showRowMenuHintIfNeeded() {
 function dismissMoreHint() {
   var dot = document.getElementById('more-hint-dot');
   if (dot) dot.style.display = 'none';
-  try { localStorage.setItem('intentra_more_hint_seen', '1'); } catch(e) {}
+  try { appStore.setItem('intentra_more_hint_seen', '1'); } catch(e) {}
 }
 
 function showMoreHintIfNeeded() {
   try {
-    if (!localStorage.getItem('intentra_more_hint_seen')) {
+    if (!appStore.getItem('intentra_more_hint_seen')) {
       var dot = document.getElementById('more-hint-dot');
       if (dot) dot.style.display = 'block';
     }
@@ -13860,10 +13895,10 @@ var CHECKLIST_STEPS = [
 ];
 
 function loadChecklistState() {
-  try { return JSON.parse(localStorage.getItem('intentra_checklist') || '{}'); } catch { return {}; }
+  try { return JSON.parse(appStore.getItem('intentra_checklist') || '{}'); } catch { return {}; }
 }
 function saveChecklistState(state) {
-  localStorage.setItem('intentra_checklist', JSON.stringify(state));
+  appStore.setItem('intentra_checklist', JSON.stringify(state));
 }
 
 function renderChecklist() {
@@ -14229,7 +14264,7 @@ function togglePaidColorPicker(id, e) {
     picker.querySelectorAll('.paid-swatch').forEach(function(s) {
       s.classList.toggle('active', s.dataset.color === currentColor);
     });
-    var lc2 = localStorage.getItem('intentra_last_custom_color');
+    var lc2 = appStore.getItem('intentra_last_custom_color');
     var ci2 = document.getElementById('paid-custom-color');
     if (ci2 && lc2) ci2.value = lc2;
     if (lc2) updateLastCustomSwatch(lc2);
@@ -14248,7 +14283,7 @@ function setPaidColor(section, id, color, e) {
   // Save as sticky default for future rows
   if (color) {
     _defaultTextColor = color;
-    localStorage.setItem('intentra_default_text_color', color);
+    appStore.setItem('intentra_default_text_color', color);
   }
   // Close picker
   var picker = document.getElementById('global-paid-picker');
@@ -14649,7 +14684,7 @@ window.addEventListener('load', function() {
   var customInput = document.getElementById('paid-custom-color');
   if (customInput) customInput.addEventListener('change', function(e) {
     if (_pickerSection && _pickerId) {
-      localStorage.setItem('intentra_last_custom_color', this.value);
+      appStore.setItem('intentra_last_custom_color', this.value);
       updateLastCustomSwatch(this.value);
       setPaidColor(_pickerSection, _pickerId, this.value, e);
     }
@@ -14657,7 +14692,7 @@ window.addEventListener('load', function() {
   var lastSwatch = document.getElementById('last-custom-swatch');
   if (lastSwatch) lastSwatch.addEventListener('mousedown', function(e) {
     e.preventDefault();
-    var lc = localStorage.getItem('intentra_last_custom_color');
+    var lc = appStore.getItem('intentra_last_custom_color');
     if (lc && _pickerSection && _pickerId) setPaidColor(_pickerSection, _pickerId, lc, e);
   });
   var clearBtn = document.getElementById('paid-color-clear-btn');
@@ -14682,14 +14717,14 @@ document.addEventListener('click', function(e) {
 // ── Bold text toggle ──────────────────────────────────────────
 function toggleBoldText() {
   var isBold = document.body.classList.toggle('text-bold');
-  localStorage.setItem('intentra_bold', isBold ? '1' : '');
+  appStore.setItem('intentra_bold', isBold ? '1' : '');
   var label = document.getElementById('bold-toggle-label');
   if (label) label.textContent = isBold ? 'Bold text: On' : 'Bold text: Off';
   hideMoreMenu();
 }
 
 function loadBoldText() {
-  var saved = localStorage.getItem('intentra_bold');
+  var saved = appStore.getItem('intentra_bold');
   if (saved) {
     document.body.classList.add('text-bold');
     var label = document.getElementById('bold-toggle-label');
@@ -14702,8 +14737,8 @@ function loadBoldText() {
 function setFontSize(size) {
   document.body.classList.remove('font-small', 'font-large');
   if (size !== 'medium') document.body.classList.add('font-' + size);
-  localStorage.setItem('intentra_fontsize', size);
-  localStorage.removeItem('intentra_fontsize_exact');
+  appStore.setItem('intentra_fontsize', size);
+  appStore.removeItem('intentra_fontsize_exact');
   // Clear exact style override
   var style = document.getElementById('font-size-exact-style');
   if (style) style.textContent = '';
@@ -14745,7 +14780,7 @@ function setFontSizeExact(size) {
     '.bs-col-row { font-size: ' + Math.round(size * 0.78) + 'px !important; }',
     '#notes-textarea { font-size: ' + size + 'px !important; }'
   ].join('\n');
-  localStorage.setItem('intentra_fontsize_exact', size);
+  appStore.setItem('intentra_fontsize_exact', size);
   var range = document.getElementById('font-size-range');
   if (range) range.value = size;
   // Clear S/M/L active state
@@ -14758,17 +14793,17 @@ function setFontSizeExact(size) {
 }
 
 function loadFontSizeExact() {
-  var saved = localStorage.getItem('intentra_fontsize_exact');
+  var saved = appStore.getItem('intentra_fontsize_exact');
   if (saved) setFontSizeExact(parseFloat(saved));
 }
 
 function loadFontSize() {
-  var exact = localStorage.getItem('intentra_fontsize_exact');
+  var exact = appStore.getItem('intentra_fontsize_exact');
   if (exact) {
     // Exact size takes priority over S/M/L
     setFontSizeExact(parseFloat(exact));
   } else {
-    var saved = localStorage.getItem('intentra_fontsize') || 'medium';
+    var saved = appStore.getItem('intentra_fontsize') || 'medium';
     setFontSize(saved);
   }
 }
@@ -14787,18 +14822,18 @@ function addRowMobile(e, section) {
 var _defaultNumColor  = '';
 
 function loadDefaultColors() {
-  _defaultTextColor = localStorage.getItem('intentra_default_text_color') || '';
-  _defaultNumColor  = localStorage.getItem('intentra_default_num_color')  || '';
+  _defaultTextColor = appStore.getItem('intentra_default_text_color') || '';
+  _defaultNumColor  = appStore.getItem('intentra_default_num_color')  || '';
 }
 
 function setDefaultTextColor(color) {
   _defaultTextColor = color;
-  localStorage.setItem('intentra_default_text_color', color);
+  appStore.setItem('intentra_default_text_color', color);
 }
 
 function setDefaultNumColor(color) {
   _defaultNumColor = color;
-  localStorage.setItem('intentra_default_num_color', color);
+  appStore.setItem('intentra_default_num_color', color);
 }
 
 
@@ -14968,13 +15003,13 @@ function saveSectionOrder() {
   var order = Array.from(grid.querySelectorAll('.sec-card')).map(function(c) {
     return c.dataset.sectionId;
   });
-  localStorage.setItem('intentra_section_order', JSON.stringify(order));
+  appStore.setItem('intentra_section_order', JSON.stringify(order));
 }
 
 function loadSectionOrder() {
   var grid = document.querySelector('.tracker-grid');
   if (!grid) return;
-  var saved = localStorage.getItem('intentra_section_order');
+  var saved = appStore.getItem('intentra_section_order');
   if (saved) {
     try {
       var order = JSON.parse(saved);
@@ -15021,11 +15056,11 @@ function loadCollapsedSections() {
 function dismissStartBanner() {
   var el = document.getElementById('start-here-banner');
   if (el) el.style.display = 'none';
-  try { localStorage.setItem('jettana_start_dismissed', '1'); } catch(e) {}
+  try { appStore.setItem('jettana_start_dismissed', '1'); } catch(e) {}
 }
 
 function maybeShowStartBanner() {
-  try { if (localStorage.getItem('jettana_start_dismissed')) return; } catch(e) { return; }
+  try { if (appStore.getItem('jettana_start_dismissed')) return; } catch(e) { return; }
   // Only show if user has no real month data
   var realKeys = allMonthKeys().filter(function(k) { return k !== 'demo-month'; });
   if (realKeys.length > 0) return;
@@ -15114,7 +15149,7 @@ function restoreSnapshot(i) {
 
   takeSnapshot('before-restore');       // always reversible
   try {
-    localStorage.setItem(activeStorageKey(), s.raw);
+    appStore.setItem(activeStorageKey(), s.raw);
   } catch (e) { alert('Restore failed — could not write to storage.'); return; }
 
   var restored = JSON.parse(s.raw);
@@ -15134,7 +15169,7 @@ function showWelcome() {
 function hideWelcome() {
   var el = document.getElementById('welcome-overlay');
   if (el) el.style.display = 'none';
-  localStorage.setItem('intentra_welcomed', '1');
+  appStore.setItem('intentra_welcomed', '1');
 }
 
 
@@ -15146,11 +15181,11 @@ function toggleLegendPanel() {
   if (!panel) return;
   if (panel.style.display === 'none') {
     panel.style.display = 'block';
-    localStorage.setItem('intentra_legend_open', 'true');
+    appStore.setItem('intentra_legend_open', 'true');
     if (!_legendCards.length) addLegendCard();
   } else {
     panel.style.display = 'none';
-    localStorage.setItem('intentra_legend_open', 'false');
+    appStore.setItem('intentra_legend_open', 'false');
   }
 }
 
@@ -15206,14 +15241,14 @@ function convertImportDate(dateStr) {
 }
 function saveApiKey(val) {
   if (val) {
-    localStorage.setItem('intentra_api_key', val);
+    appStore.setItem('intentra_api_key', val);
     var status = document.getElementById('api-key-status');
     if (status) status.style.display = 'inline';
   }
 }
 
 function getApiKey() {
-  return localStorage.getItem('intentra_api_key') || '';
+  return appStore.getItem('intentra_api_key') || '';
 }
 
 function toggleApiKeyVisibility() {
@@ -15923,7 +15958,7 @@ function setNumColor(section, id, color, e) {
   // Save as sticky default for future rows
   if (color) {
     _defaultNumColor = color;
-    localStorage.setItem('intentra_default_num_color', color);
+    appStore.setItem('intentra_default_num_color', color);
   }
   var picker = document.getElementById('global-num-picker');
   if (picker) picker.style.display = 'none';
@@ -16316,11 +16351,11 @@ function copyToolbarColor() {
   var storageKey = _tbType === 'text' ? 'intentra_copied_text_color' : _tbType === 'num' ? 'intentra_copied_num_color' : 'intentra_copied_strike_color';
   var color = row[colorKey];
   if (!color) { showToast('No color set to copy', false); return; }
-  localStorage.removeItem('intentra_copied_text_color');
-  localStorage.removeItem('intentra_copied_num_color');
-  localStorage.removeItem('intentra_copied_strike_color');
-  localStorage.setItem(storageKey, color);
-  localStorage.setItem('intentra_copied_any_color', color);
+  appStore.removeItem('intentra_copied_text_color');
+  appStore.removeItem('intentra_copied_num_color');
+  appStore.removeItem('intentra_copied_strike_color');
+  appStore.setItem(storageKey, color);
+  appStore.setItem('intentra_copied_any_color', color);
   var btn = document.querySelector('.ct-copy-btn');
   if (btn) {
     btn.textContent = 'Copied!';
@@ -16332,7 +16367,7 @@ function copyToolbarColor() {
 function pasteToolbarColor() {
   if (!_tbSection || !_tbId) return;
   var storageKey = _tbType === 'text' ? 'intentra_copied_text_color' : _tbType === 'num' ? 'intentra_copied_num_color' : 'intentra_copied_strike_color';
-  var color = localStorage.getItem(storageKey) || localStorage.getItem('intentra_copied_any_color');
+  var color = appStore.getItem(storageKey) || appStore.getItem('intentra_copied_any_color');
   if (!color) { showToast('Nothing to paste — copy a color first', false); return; }
   if (_tbType === 'text') { setPaidColor(_tbSection, _tbId, color, null); applyTextColor(_tbId, color); }
   else if (_tbType === 'num') { setNumColor(_tbSection, _tbId, color, null); applyNumColor(_tbId, color); }
@@ -16411,20 +16446,20 @@ function loadLegend() {
     _legendCollapsed = all._legendCollapsed || false;
   } else {
     // Fall back to legacy localStorage keys
-    var saved = localStorage.getItem(nsKey('intentra_legend_cards'));
+    var saved = appStore.getItem(nsKey('intentra_legend_cards'));
     _legendCards = saved ? JSON.parse(saved) : [];
-    var collapsed = localStorage.getItem('intentra_legend_collapsed');
+    var collapsed = appStore.getItem('intentra_legend_collapsed');
     _legendCollapsed = collapsed === 'true';
   }
   renderLegend();
   // Always start closed — user opens manually
   var panel = document.getElementById('legend-panel');
   if (panel) panel.style.display = 'none';
-  localStorage.setItem('intentra_legend_open', 'false');
+  appStore.setItem('intentra_legend_open', 'false');
 }
 
 function saveLegend() {
-  localStorage.setItem(nsKey('intentra_legend_cards'), JSON.stringify(_legendCards));
+  appStore.setItem(nsKey('intentra_legend_cards'), JSON.stringify(_legendCards));
   // Also save into main data object so it syncs to Supabase
   var all = loadAll();
   all._legendCards = _legendCards;
@@ -16445,14 +16480,14 @@ function renderLegend() {
     if (toggle) toggle.classList.remove('collapsed');
   }
   container.innerHTML = _legendCards.map(function(card, i) {
-    var hasCopied = !!localStorage.getItem('intentra_copied_any_color');
+    var hasCopied = !!appStore.getItem('intentra_copied_any_color');
     return '<div class="legend-row" data-idx="' + i + '">' +
       '<div class="legend-color-dot" style="background:' + card.color + ';" onclick="openLegendPicker(' + i + ',this)" title="Change color"></div>' +
       '<input class="legend-name-input" value="' + escHtml(card.name) + '" placeholder="Card name…" ' +
         'onchange="updateLegendName(' + i + ',this.value)" ' +
         'onblur="updateLegendName(' + i + ',this.value)">' +
       '<button class="legend-copy-btn" onclick="copyLegendColor(' + i + ')" title="Copy color">⎘</button>' +
-      (hasCopied ? '<button class="legend-paste-btn" onclick="pasteLegendColor(' + i + ')" title="Paste color" style="background:' + (localStorage.getItem('intentra_copied_any_color') || '#ccc') + '"></button>' : '') +
+      (hasCopied ? '<button class="legend-paste-btn" onclick="pasteLegendColor(' + i + ')" title="Paste color" style="background:' + (appStore.getItem('intentra_copied_any_color') || '#ccc') + '"></button>' : '') +
       '<button class="legend-del" onclick="deleteLegendCard(' + i + ')">×</button>' +
     '</div>';
   }).join('');
@@ -16460,7 +16495,7 @@ function renderLegend() {
 
 function toggleLegend() {
   _legendCollapsed = !_legendCollapsed;
-  localStorage.setItem('intentra_legend_collapsed', _legendCollapsed);
+  appStore.setItem('intentra_legend_collapsed', _legendCollapsed);
   renderLegend();
 }
 
@@ -16515,14 +16550,14 @@ function openLegendPicker(idx, dotEl) {
 function copyLegendColor(idx) {
   if (!_legendCards[idx]) return;
   var color = _legendCards[idx].color;
-  localStorage.setItem('intentra_copied_any_color', color);
-  localStorage.setItem('intentra_copied_text_color', color);
+  appStore.setItem('intentra_copied_any_color', color);
+  appStore.setItem('intentra_copied_text_color', color);
   showToast('Card color copied ✓', false);
   renderLegend(); // refresh to show paste button
 }
 
 function pasteLegendColor(idx) {
-  var color = localStorage.getItem('intentra_copied_any_color');
+  var color = appStore.getItem('intentra_copied_any_color');
   if (!color || !_legendCards[idx]) return;
   _legendCards[idx].color = color;
   saveLegend();
@@ -17519,8 +17554,8 @@ function gpAge() {
 function gpAgeInput() {
   try {
     var v = gpAge();
-    if (v === null) localStorage.removeItem(GP_AGE_KEY);
-    else localStorage.setItem(GP_AGE_KEY, String(v));
+    if (v === null) appStore.removeItem(GP_AGE_KEY);
+    else appStore.setItem(GP_AGE_KEY, String(v));
   } catch (e) {}
   renderGPChart();
 }
@@ -17756,7 +17791,7 @@ function showGrowthProjection() {
 
   var ageInp = document.getElementById('gp-age');
   if (ageInp && !ageInp.value) {
-    try { var saved = localStorage.getItem(GP_AGE_KEY); if (saved) ageInp.value = saved; } catch (e) {}
+    try { var saved = appStore.getItem(GP_AGE_KEY); if (saved) ageInp.value = saved; } catch (e) {}
   }
 
   renderGPChart();
