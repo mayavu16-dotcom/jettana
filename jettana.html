@@ -1149,27 +1149,15 @@ body {
     border: none !important;
   }
 
-  /* Always print in the light theme. With dark mode on, print-color-adjust:exact
-     faithfully reproduced the dark UI — which comes out as solid black blocks.
-     NOTE the selector: `.dark` is redefined later in this stylesheet (line ~1539)
-     and media queries add no specificity, so a plain `.dark` here would lose on
-     source order. html.dark / body.dark are more specific and win regardless. */
-  html.dark, body.dark, html.dark body {
-    --ink:        #1A2332;
-    --slate:      #3D4F63;
-    --steel:      #6B7C8F;
-    --mist:       #C8D4DC;
-    --mist-light: #EEF2F5;
-    --cream:      #F8F7F4;
-    --white:      #FFFFFF;
-    --yellow:     #F5E55A;
-    --sage-light: #EAF3EB;
-    --blush-light:#FAEDEB;
-    --gold-light: #FAF3E6;
-    --teal-light: #E8F3F8;
-    --lav-light:  #EEEDF7;
+  /* iOS Safari doesn't render CSS masks when printing — it paints the masked
+     element as a solid black rectangle. The label field is the only input with
+     a mask (the long-text fade), which is why only that column came out black.
+     The fade is a screen affordance and isn't needed on paper. */
+  .erow-label-wrap .erow-label-input {
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
   }
-  .dark body, body.dark { background: #fff !important; color: #1A2332 !important; }
+
   .main-content { margin-left: 0; }
   body { background: white; }
   * {
@@ -4319,7 +4307,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
               <button class="more-menu-item" onclick="showImportModal(); hideMoreMenu()">
                 <span>⬆</span> Import bank statement
               </button>
-              <button class="more-menu-item" onclick="hideMoreMenu(); exportPDF();">
+              <button class="more-menu-item" onclick="window.print(); hideMoreMenu()">
                 <span>⬇</span> Export PDF
               </button>
               <button class="more-menu-item" onclick="exportCSV(); hideMoreMenu()">
@@ -5001,7 +4989,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
   <div class="report-modal" id="report-modal">
     <div id="report-content"></div>
     <div class="report-actions">
-      <button class="report-print-btn" onclick="exportPDF()">🖨 Print / Save as PDF</button>
+      <button class="report-print-btn" onclick="window.print()">🖨 Print / Save as PDF</button>
       <button class="report-close-btn" onclick="closeReport()">Close</button>
     </div>
   </div>
@@ -13482,41 +13470,6 @@ function showMoreHintIfNeeded() {
 var _calcExpr = '';
 var _calcDisplay = '0';
 var _calcNewNum = true;
-
-/* ── Printing always uses the light theme ─────────────────────
-   There are ~160 .dark rules and some hard-code colours, so overriding CSS
-   variables isn't enough. Dropping the class for the duration of the print is
-   comprehensive: every dark rule simply stops matching. */
-var _printWasDark = false;
-
-function beginLightPrint() {
-  _printWasDark = document.documentElement.classList.contains('dark') ||
-                  document.body.classList.contains('dark');
-  if (_printWasDark) {
-    document.documentElement.classList.remove('dark');
-    document.body.classList.remove('dark');
-  }
-}
-function endLightPrint() {
-  if (!_printWasDark) return;
-  document.documentElement.classList.add('dark');
-  document.body.classList.add('dark');
-  _printWasDark = false;
-}
-
-// Fires for Cmd/Ctrl+P and the browser's own print
-window.addEventListener('beforeprint', beginLightPrint);
-window.addEventListener('afterprint', endLightPrint);
-
-// Used by ⋯ → Export PDF, so it works even where those events aren't supported
-// (iOS Safari in particular).
-function exportPDF() {
-  beginLightPrint();
-  setTimeout(function() {
-    window.print();
-    setTimeout(endLightPrint, 800);   // restore if afterprint never fires
-  }, 60);
-}
 
 function closeCalc() {
   var panel = document.getElementById('calc-panel');
