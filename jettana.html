@@ -4044,6 +4044,9 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
             <button class="more-menu-item" onclick="loadDemo(); hideMoreMenu()">
               <span>▶</span> Try demo
             </button>
+            <button class="more-menu-item" onclick="showBackups(); hideMoreMenu()">
+              <span>🛟</span> Backups
+            </button>
             <button class="more-menu-item" onclick="toggleReferenceExpand()" style="color:var(--steel);">
               <span>📖</span> <span id="reference-expand-label">Reference ▾</span>
             </button>
@@ -4872,6 +4875,21 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
   </div>
 </div>
 
+<!-- Local Backups Modal -->
+<div class="trends-overlay" id="backups-overlay" style="display:none;" onclick="if(event.target===this)hideBackups()">
+  <div class="trends-modal" id="backups-modal" style="max-width:560px;">
+    <div class="trends-header">
+      <h3>🛟 Local backups</h3>
+      <button class="trends-close" onclick="hideBackups()">×</button>
+    </div>
+    <div class="trends-subtitle" style="display:block;">
+      Automatic copies kept on this device. They're saved before every sync, so they
+      survive even if something goes wrong with your account.
+    </div>
+    <div id="backups-list" style="padding:6px 20px 18px;"></div>
+  </div>
+</div>
+
 <!-- About Jettana Modal -->
 <div class="welcome-overlay" id="about-overlay" style="display:none;" onclick="hideAbout()">
   <div class="welcome-modal" onclick="event.stopPropagation()" style="max-width:520px;max-height:85vh;overflow-y:auto;">
@@ -5675,17 +5693,38 @@ setTimeout(function() {
 async function syncFromSupabase() {
   if (_demoIsolated) return;
   if (!_currentUser || !_sb) return;
-  // ALWAYS clear localStorage first — never show another user's data
-  localStorage.removeItem(STORAGE_KEY);
+  if (_syncing) return;                 // don't stack pulls on top of each other
+  _syncing = true;
+  takeSnapshot('before-sync');
+
+  // Fetch FIRST. Clearing before the await left a window where local storage was
+  // empty while the app was live — which is how the account got emptied twice.
+  var row = null, fetchFailed = false;
   try {
-    var { data: row } = await _sb.from('user_data').select('data').eq('user_id', _currentUser.id).single();
-    if (row && row.data && Object.keys(row.data).length > 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(row.data));
-    }
+    var res = await _sb.from('user_data').select('data').eq('user_id', _currentUser.id).maybeSingle();
+    if (res && res.error) fetchFailed = true; else row = res ? res.data : null;
   } catch(e) {
-    // No data found for this user (new account) — start fresh
+    fetchFailed = true;
   }
-  // Cloud state is now reflected locally, so it's safe to push again
+
+  if (fetchFailed) {
+    // A failed request is NOT an empty account. Leave local data alone and never
+    // allow a push — otherwise a network blip overwrites everything.
+    _syncing = false;
+    console.warn('[jettana] could not reach the server — keeping local data, sync paused');
+    return;
+  }
+
+  if (row && row.data && Object.keys(row.data).length > 0) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(row.data));
+    _lastGood = snapWeight(row.data);   // this is the state we must not shrink
+  } else {
+    // Genuinely no row for this user — a real new account
+    localStorage.removeItem(STORAGE_KEY);
+    _lastGood = { months: 0, rows: 0 };
+  }
+
+  _syncing = false;
   _initialSyncDone = true;
   migrateZeros();
   migrateFormattedNumbers();
@@ -5701,10 +5740,34 @@ async function syncFromSupabase() {
 }
 
 // Push data to Supabase in background
+// Weight of the last dataset we KNOW was good (pulled from, or accepted by, the
+// cloud). Guarding on content rather than timing — every previous guard I wrote
+// was about ordering, and there is always another ordering.
+var _lastGood = { months: 0, rows: 0 };
+var _syncing = false;        // a pull is in flight
+var _allowShrink = false;    // set only when the user deliberately deletes a month
+
 async function syncToSupabase(data) {
   if (!_currentUser || !_sb) return;
   if (_demoIsolated) return;      // sandbox must never write to an account
   if (!_initialSyncDone) return;  // don't overwrite the cloud before we've read it
+  if (_syncing) return;           // never write while a pull is in flight
+
+  // ── The guard that matters ──────────────────────────────────────────
+  // Refuse to replace a known-good account with an empty or drastically
+  // smaller one. No sequence of events can get past this.
+  var w = snapWeight(data);
+  if (_lastGood.rows > 0 && w.rows === 0) {
+    console.warn('[jettana] blocked cloud write: would empty an account holding ' +
+                 _lastGood.rows + ' rows');
+    return;
+  }
+  if (!_allowShrink && _lastGood.months > 0 && w.months < _lastGood.months) {
+    console.warn('[jettana] blocked cloud write: month count would drop from ' +
+                 _lastGood.months + ' to ' + w.months);
+    return;
+  }
+  if (w.rows > 0) _lastGood = w;  // high-water mark
   try {
     await _sb.from('user_data').upsert({
       user_id: _currentUser.id,
@@ -5716,10 +5779,88 @@ async function syncToSupabase(data) {
 
 const STORAGE_KEY = _demoIsolated ? 'jettana_demo_sandbox' : 'intentra_v1';
 
+/* ── Local safety snapshots ──────────────────────────────────
+   Rolling copies of the budget kept under their own key, which the
+   Supabase sync never clears. If a bad write ever empties the account
+   again, the last few good states are still sitting on the device. */
+const SNAP_KEY = 'jettana_snapshots';
+const SNAP_MAX = 6;                    // keep the most recent few
+const SNAP_MIN_GAP_MS = 30 * 60 * 1000; // routine saves: at most one per 30 min
+
+// How much real content a dataset holds — used so an empty or broken
+// state can never quietly replace a healthy snapshot.
+function snapWeight(data) {
+  if (!data || typeof data !== 'object') return { months: 0, rows: 0 };
+  var months = 0, rows = 0;
+  Object.keys(data).forEach(function(k) {
+    if (!/^\d{4}-\d{2}$/.test(k)) return; // ignore demo-month and settings
+    months++;
+    var m = data[k];
+    if (m && typeof m === 'object') {
+      Object.keys(m).forEach(function(sec) {
+        if (Array.isArray(m[sec])) {
+          m[sec].forEach(function(r) {
+            // only count rows that actually carry something
+            if (r && (r.label || r.actual || r.received || r.budget ||
+                      r.planned || r.current || r.ending || r.beginning)) rows++;
+          });
+        }
+      });
+    }
+  });
+  return { months: months, rows: rows };
+}
+
+function loadSnapshots() {
+  try { return JSON.parse(localStorage.getItem(SNAP_KEY)) || []; } catch (e) { return []; }
+}
+
+function saveSnapshots(list) {
+  try {
+    localStorage.setItem(SNAP_KEY, JSON.stringify(list));
+    return true;
+  } catch (e) {
+    // Out of space — drop the oldest and retry a couple of times
+    while (list.length > 1) {
+      list.shift();
+      try { localStorage.setItem(SNAP_KEY, JSON.stringify(list)); return true; } catch (e2) {}
+    }
+    return false;
+  }
+}
+
+// Take a snapshot of what's in local storage right now.
+function takeSnapshot(reason, opts) {
+  if (_demoIsolated) return false;      // never snapshot the sandbox
+  opts = opts || {};
+  var raw;
+  try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) { return false; }
+  if (!raw) return false;
+
+  var data;
+  try { data = JSON.parse(raw); } catch (e) { return false; }
+  var w = snapWeight(data);
+  if (w.rows === 0) return false;       // nothing worth protecting
+
+  var list = loadSnapshots();
+  var last = list[list.length - 1];
+
+  // Routine saves are throttled; risky moments (pre-sync, pre-demo) always run
+  if (opts.throttle && last && (Date.now() - last.t) < SNAP_MIN_GAP_MS) return false;
+  // Skip if identical to the newest snapshot
+  if (last && last.raw === raw) return false;
+
+  list.push({ t: Date.now(), reason: reason || 'save', months: w.months, rows: w.rows, raw: raw });
+  while (list.length > SNAP_MAX) list.shift();
+  return saveSnapshots(list);
+}
+
 function loadAll() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
 }
 function saveAll(data) {
+  // snapshot the PREVIOUS state before overwriting it (throttled)
+  takeSnapshot('save', { throttle: true });
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   syncToSupabase(data);
 }
@@ -6518,8 +6659,11 @@ function deleteMonth(e, key) {
     const snapshot = JSON.stringify(all[key] || {});
     const deletedKey = key;
     const deletedLabel = label;
+    _allowShrink = true;   // user asked for this one
     delete all[key];
     saveAll(all);
+    _allowShrink = false;  // one-shot — re-arm the guard immediately
+    _lastGood = snapWeight(all);
     const remaining = allMonthKeys();
     if (remaining.length === 0) { createFreshMonth(); }
     else if (key === currentMonthKey) { switchMonth(remaining[0]); }
@@ -13158,6 +13302,7 @@ function loadDemo() {
 }
 
 function _runLoadDemo() {
+  takeSnapshot('before-demo');
   var demoKey = 'demo-month';
   var all = loadAll();
 
@@ -14254,6 +14399,90 @@ function maybeShowStartBanner() {
   if (realKeys.length > 0) return;
   var el = document.getElementById('start-here-banner');
   if (el) el.style.display = 'flex';
+}
+
+function showBackups() {
+  var el = document.getElementById('backups-overlay');
+  if (el) el.style.display = 'flex';
+  renderBackups();
+}
+
+function hideBackups() {
+  var el = document.getElementById('backups-overlay');
+  if (el) el.style.display = 'none';
+}
+
+function snapAgo(t) {
+  var m = Math.floor((Date.now() - t) / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return m + ' min ago';
+  var h = Math.floor(m / 60);
+  if (h < 24) return h + ' hr ago';
+  return Math.floor(h / 24) + ' day' + (Math.floor(h / 24) > 1 ? 's' : '') + ' ago';
+}
+
+function renderBackups() {
+  var box = document.getElementById('backups-list');
+  if (!box) return;
+  var list = loadSnapshots().slice().reverse(); // newest first
+  if (!list.length) {
+    box.innerHTML = '<div style="color:var(--steel);font-size:13px;padding:10px 0;">' +
+      'No backups yet. One is saved automatically before each sync, and periodically as you work.</div>';
+    return;
+  }
+  var cur = snapWeight(loadAll());
+  var html = '<div style="font-size:11.5px;color:var(--steel);margin-bottom:10px;">' +
+    'Right now: <strong style="color:var(--ink);">' + cur.months + ' months · ' + cur.rows + ' rows</strong></div>';
+  list.forEach(function(s, i) {
+    html += '<div style="border:1px solid var(--mist);border-radius:10px;padding:10px 12px;margin-bottom:8px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">' +
+        '<div>' +
+          '<div style="font-size:13.5px;font-weight:600;">' + s.months + ' months · ' + s.rows + ' rows</div>' +
+          '<div style="font-size:11px;color:var(--steel);">' + snapAgo(s.t) +
+            ' · ' + new Date(s.t).toLocaleString() + ' · ' + s.reason + '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:6px;flex-shrink:0;">' +
+          '<button onclick="downloadSnapshot(' + i + ')" style="font:inherit;font-size:12px;font-weight:600;background:var(--white);color:var(--ink);border:1px solid var(--mist);border-radius:8px;padding:6px 10px;cursor:pointer;">Download</button>' +
+          '<button onclick="restoreSnapshot(' + i + ')" style="font:inherit;font-size:12px;font-weight:600;background:var(--sage);color:#fff;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;">Restore</button>' +
+        '</div>' +
+      '</div></div>';
+  });
+  box.innerHTML = html;
+}
+
+function downloadSnapshot(i) {
+  var list = loadSnapshots().slice().reverse();
+  var s = list[i];
+  if (!s) return;
+  try {
+    var blob = new Blob([s.raw], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'jettana-backup-' + new Date(s.t).toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  } catch (e) {}
+}
+
+function restoreSnapshot(i) {
+  var list = loadSnapshots().slice().reverse();
+  var s = list[i];
+  if (!s) return;
+  var cur = snapWeight(loadAll());
+  var msg = 'Restore this backup?\n\n' +
+    'Backup:  ' + s.months + ' months · ' + s.rows + ' rows (' + snapAgo(s.t) + ')\n' +
+    'Current: ' + cur.months + ' months · ' + cur.rows + ' rows\n\n' +
+    'Your current data is saved as a new backup first, so this can be undone.';
+  if (!confirm(msg)) return;
+
+  takeSnapshot('before-restore');       // always reversible
+  try {
+    localStorage.setItem(STORAGE_KEY, s.raw);
+  } catch (e) { alert('Restore failed — could not write to storage.'); return; }
+
+  var restored = JSON.parse(s.raw);
+  syncToSupabase(restored);             // push the good state back up
+  hideBackups();
+  location.reload();
 }
 
 function showWelcome() {
