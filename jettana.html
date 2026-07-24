@@ -2172,6 +2172,32 @@ mark.hl-rose  { --hl: rgba(224, 132, 132, 0.30); }
 #expense-breakdown-pop .ebp-bar > span { display: block; height: 100%; background: var(--blush); border-radius: 2px; }
 #expense-breakdown-pop .ebp-total { display: flex; justify-content: space-between; gap: 12px; border-top: 1px solid var(--mist); margin-top: 7px; padding-top: 7px; font-weight: 700; }
 .dark #expense-breakdown-pop { background: #1E2A38; border-color: #2A3A4A; }
+/* ── Pinned breakdown panels ─────────────────────────────── */
+#income-breakdown-pop.brk-pinned,
+#expense-breakdown-pop.brk-pinned {
+  pointer-events: auto;                 /* interactive once pinned */
+  box-shadow: 0 14px 44px rgba(0,0,0,0.26);
+  border-color: var(--steel);
+  padding-top: 0;
+}
+.brk-pinned.brk-dragging { user-select: none; opacity: 0.96; }
+.brk-head {
+  display: flex; align-items: center; gap: 8px;
+  margin: 0 -14px 8px; padding: 8px 12px;
+  border-bottom: 1px solid var(--mist);
+  cursor: move; border-radius: 12px 12px 0 0;
+  background: rgba(128,128,128,0.06);
+}
+.brk-grip { color: var(--mist); font-size: 13px; line-height: 1; letter-spacing: -2px; }
+.brk-head-title {
+  flex: 1; font-size: 10.5px; font-weight: 700; letter-spacing: 0.4px;
+  text-transform: uppercase; color: var(--steel);
+}
+.brk-close {
+  font: inherit; font-size: 16px; line-height: 1; color: var(--steel);
+  background: none; border: none; cursor: pointer; padding: 0 2px;
+}
+.brk-close:hover { color: var(--blush); }
 /* Hide the hover ✕ when the label text reaches its position (delete stays in the row menu) */
 .erow.label-crowded .del-btn { opacity: 0 !important; visibility: hidden; pointer-events: none; transition: none; }
 /* Exempt rows: keep hover controls left of the badge */
@@ -7705,6 +7731,82 @@ function set(id, val) {
 
 var _incomeBreakdown = null;
 
+/* ── Pinning + dragging the summary breakdowns ────────────────
+   Hovering gives a quick peek. Clicking pins the panel open so it can be
+   dragged around and read alongside the rows it's describing. */
+var _pinnedBreakdown = null;   // id of the pinned popup, if any
+
+function breakdownIsPinned(id) { return _pinnedBreakdown === id; }
+
+function pinBreakdown(id) {
+  var pop = document.getElementById(id);
+  if (!pop) return;
+  // only one pinned at a time
+  if (_pinnedBreakdown && _pinnedBreakdown !== id) unpinBreakdown();
+  _pinnedBreakdown = id;
+  pop.classList.add('brk-pinned');
+}
+
+function unpinBreakdown() {
+  if (!_pinnedBreakdown) return;
+  var pop = document.getElementById(_pinnedBreakdown);
+  if (pop) {
+    pop.classList.remove('brk-pinned');
+    pop.style.display = 'none';
+  }
+  _pinnedBreakdown = null;
+}
+
+// Header bar shown once pinned: title, drag handle, close
+function breakdownHeader(title) {
+  return '<div class="brk-head">' +
+           '<span class="brk-grip">⠿</span>' +
+           '<span class="brk-head-title">' + title + '</span>' +
+           '<button class="brk-close" onclick="unpinBreakdown()" title="Close">×</button>' +
+         '</div>';
+}
+
+// Drag by the header — same approach as the other draggable panels
+(function() {
+  var dragging = null, offX = 0, offY = 0;
+  function start(e, touch) {
+    var head = e.target.closest ? e.target.closest('.brk-head') : null;
+    if (!head) return;
+    if (e.target.closest('.brk-close')) return;
+    var pop = head.parentNode;
+    if (!pop || !pop.classList.contains('brk-pinned')) return;
+    var pt = touch ? e.touches[0] : e;
+    var rect = pop.getBoundingClientRect();
+    dragging = pop;
+    offX = pt.clientX - rect.left;
+    offY = pt.clientY - rect.top;
+    pop.classList.add('brk-dragging');
+    if (!touch) e.preventDefault();
+  }
+  function move(e, touch) {
+    if (!dragging) return;
+    var pt = touch ? e.touches[0] : e;
+    var w = dragging.offsetWidth, h = dragging.offsetHeight;
+    dragging.style.left = Math.max(4, Math.min(pt.clientX - offX, window.innerWidth - w - 4)) + 'px';
+    dragging.style.top  = Math.max(4, Math.min(pt.clientY - offY, window.innerHeight - 40)) + 'px';
+    if (touch) e.preventDefault();
+  }
+  function end() {
+    if (dragging) dragging.classList.remove('brk-dragging');
+    dragging = null;
+  }
+  document.addEventListener('mousedown', function(e) { start(e, false); });
+  document.addEventListener('mousemove', function(e) { move(e, false); });
+  document.addEventListener('mouseup', end);
+  document.addEventListener('touchstart', function(e) { start(e, true); }, { passive: true });
+  document.addEventListener('touchmove', function(e) { move(e, true); }, { passive: false });
+  document.addEventListener('touchend', end);
+})();
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && _pinnedBreakdown) unpinBreakdown();
+});
+
 function _incomeBreakdownPop() {
   var pop = document.getElementById('income-breakdown-pop');
   if (!pop) {
@@ -7724,7 +7826,9 @@ function showIncomeBreakdown(card) {
   // Only worth showing when a paycheck contributes a gross figure
   if (!b || !b.hasPaycheck) return;
   var pop = _incomeBreakdownPop();
-  var rows = '<div class="ibp-title">Gross → take-home</div>';
+  var pinned = breakdownIsPinned('income-breakdown-pop');
+  var rows = pinned ? breakdownHeader('Gross → take-home')
+                    : '<div class="ibp-title">Gross → take-home</div>';
   rows += '<div class="ibp-row"><span>Gross pay</span><span>' + _fmtMoney(b.gross) + '</span></div>';
   if (b.taxes > 0) rows += '<div class="ibp-row ibp-sub"><span>− Taxes</span><span class="ibp-neg">−' + _fmtMoney(b.taxes) + '</span></div>';
   if (b.deductions > 0) rows += '<div class="ibp-row ibp-sub"><span>− Deductions</span><span class="ibp-neg">−' + _fmtMoney(b.deductions) + '</span></div>';
@@ -7732,6 +7836,7 @@ function showIncomeBreakdown(card) {
   rows += '<div class="ibp-row ibp-total"><span>Received</span><span>' + _fmtMoney(b.net) + '</span></div>';
   pop.innerHTML = rows;
   pop.style.display = 'block';
+  if (pinned) return;   // keep wherever the user dragged it
   // Position under the card, clamped to viewport
   var r = card.getBoundingClientRect();
   var pw = pop.offsetWidth, ph = pop.offsetHeight;
@@ -7743,21 +7848,25 @@ function showIncomeBreakdown(card) {
 }
 
 function hideIncomeBreakdown() {
+  if (breakdownIsPinned('income-breakdown-pop')) return;  // pinned stays put
   var pop = document.getElementById('income-breakdown-pop');
   if (pop) pop.style.display = 'none';
 }
 
 // Tap toggle for touch devices (hover doesn't fire)
+// Click pins the panel open so it can be dragged and read alongside the rows
 function toggleIncomeBreakdown(card) {
-  if (!('ontouchstart' in window)) return; // desktop uses hover
-  var pop = document.getElementById('income-breakdown-pop');
-  if (pop && pop.style.display === 'block') { hideIncomeBreakdown(); }
-  else { showIncomeBreakdown(card); }
+  if (breakdownIsPinned('income-breakdown-pop')) { unpinBreakdown(); return; }
+  var b = _incomeBreakdown;
+  if (!b || !b.hasPaycheck) return;
+  pinBreakdown('income-breakdown-pop');
+  showIncomeBreakdown(card);
 }
 
 document.addEventListener('scroll', hideIncomeBreakdown, true);
 window.addEventListener('resize', hideIncomeBreakdown);
 document.addEventListener('touchstart', function(e) {
+  if (breakdownIsPinned('income-breakdown-pop')) return;   // pinned survives taps elsewhere
   if ('ontouchstart' in window && !e.target.closest('#income-sum-card')) hideIncomeBreakdown();
 }, { passive: true });
 
@@ -7777,8 +7886,10 @@ function showExpenseBreakdown(card) {
   var b = _expenseBreakdown;
   if (!b || !b.cats.length) return;
   var pop = _expenseBreakdownPop();
+  var pinned = breakdownIsPinned('expense-breakdown-pop');
   var maxAmt = b.cats[0].amt || 1;
-  var rows = '<div class="ebp-title">Where it went</div>';
+  var rows = pinned ? breakdownHeader('Where it went')
+                    : '<div class="ebp-title">Where it went</div>';
   b.cats.forEach(function(c) {
     var pct = b.total > 0 ? Math.round((c.amt / b.total) * 100) : 0;
     var barW = Math.max(3, Math.round((c.amt / maxAmt) * 100));
@@ -7791,6 +7902,7 @@ function showExpenseBreakdown(card) {
   rows += '<div class="ebp-total"><span>Total</span><span>' + _fmtMoney(b.total) + '</span></div>';
   pop.innerHTML = rows;
   pop.style.display = 'block';
+  if (pinned) return;   // keep wherever the user dragged it
   var r = card.getBoundingClientRect();
   var pw = pop.offsetWidth, ph = pop.offsetHeight;
   var left = Math.max(12, Math.min(window.innerWidth - pw - 12, r.left));
@@ -7801,20 +7913,24 @@ function showExpenseBreakdown(card) {
 }
 
 function hideExpenseBreakdown() {
+  if (breakdownIsPinned('expense-breakdown-pop')) return;  // pinned stays put
   var pop = document.getElementById('expense-breakdown-pop');
   if (pop) pop.style.display = 'none';
 }
 
+// Click pins the panel open so it can be dragged and read alongside the rows
 function toggleExpenseBreakdown(card) {
-  if (!('ontouchstart' in window)) return;
-  var pop = document.getElementById('expense-breakdown-pop');
-  if (pop && pop.style.display === 'block') { hideExpenseBreakdown(); }
-  else { showExpenseBreakdown(card); }
+  if (breakdownIsPinned('expense-breakdown-pop')) { unpinBreakdown(); return; }
+  var b = _expenseBreakdown;
+  if (!b || !b.cats.length) return;
+  pinBreakdown('expense-breakdown-pop');
+  showExpenseBreakdown(card);
 }
 
 document.addEventListener('scroll', hideExpenseBreakdown, true);
 window.addEventListener('resize', hideExpenseBreakdown);
 document.addEventListener('touchstart', function(e) {
+  if (breakdownIsPinned('expense-breakdown-pop')) return;  // pinned survives taps elsewhere
   if ('ontouchstart' in window && !e.target.closest('#expense-sum-card')) hideExpenseBreakdown();
 }, { passive: true });
 
