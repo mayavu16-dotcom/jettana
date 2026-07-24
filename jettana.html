@@ -1126,9 +1126,47 @@ body {
 .toast-icon { font-size: 16px; }
 
 @media print {
+  /* Chrome / on-screen chrome that shouldn't reach paper. The calculator is
+     position:fixed so it printed on top of the page. */
   .sidebar, .topbar-right, .add-row-btn, .del-btn, .paid-checkbox,
-  .row-date-btn, .hamburger-btn, .theme-wrap, .drag-handle,
-  .rec-dot, .note-indicator { display: none !important; }
+  .hamburger-btn, .theme-wrap, .drag-handle,
+  .rec-dot, .note-indicator,
+  #calc-fab, #calc-panel,
+  #income-breakdown-pop, #expense-breakdown-pop, #debt-total-pop,
+  #label-peek, .intention-swatches, .intention-dismiss { display: none !important; }
+
+  /* Dates were being hidden along with the chrome. They're content — print them
+     as plain text rather than as a button. */
+  /* Only real dates print. Without this the empty "+ date" placeholder — which
+     is invisible on screen until hover — appeared on every undated row. */
+  .row-date-wrap { display: none !important; }
+  .row-date-wrap:has(.row-date-btn.has-date) { display: flex !important; }
+  .row-date-btn { display: none !important; }
+  .row-date-btn.has-date {
+    display: inline-block !important;
+    opacity: 1 !important;              /* normally only shown on hover */
+    background: none !important;
+    border: none !important;
+  }
+
+  /* Always print in the light theme. With dark mode on, print-color-adjust:exact
+     faithfully reproduced the dark UI — which comes out as solid black blocks. */
+  .dark {
+    --ink:        #1A2332;
+    --slate:      #3D4F63;
+    --steel:      #6B7C8F;
+    --mist:       #C8D4DC;
+    --mist-light: #EEF2F5;
+    --cream:      #F8F7F4;
+    --white:      #FFFFFF;
+    --yellow:     #F5E55A;
+    --sage-light: #EAF3EB;
+    --blush-light:#FAEDEB;
+    --gold-light: #FAF3E6;
+    --teal-light: #E8F3F8;
+    --lav-light:  #EEEDF7;
+  }
+  .dark body, body.dark { background: #fff !important; color: #1A2332 !important; }
   .main-content { margin-left: 0; }
   body { background: white; }
   * {
