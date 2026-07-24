@@ -5135,7 +5135,12 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 </div>
 
 <div id="calc-panel" style="display:none;width:220px;background:var(--white);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.2);z-index:1500;overflow:hidden;font-family:'Outfit',sans-serif;">
-  <div style="background:#1A2332;padding:12px 16px 10px;">
+  <div style="background:#1A2332;padding:12px 16px 10px;position:relative;">
+    <button id="calc-close" aria-label="Close calculator"
+      ontouchstart="event.stopPropagation();"
+      ontouchend="event.preventDefault();event.stopPropagation();closeCalc();"
+      onclick="event.stopPropagation();closeCalc();"
+      style="position:absolute;top:5px;right:7px;background:none;border:none;color:rgba(255,255,255,0.45);font-size:19px;line-height:1;padding:5px 7px;cursor:pointer;font-family:inherit;">×</button>
     <div id="calc-expr" style="font-size:11px;color:rgba(255,255,255,0.4);min-height:18px;text-align:right;letter-spacing:0.3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px;"></div>
     <div id="calc-display" style="font-size:36px;font-weight:700;color:white;text-align:right;letter-spacing:-0.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.1;">0</div>
   </div>
@@ -13437,6 +13442,11 @@ var _calcExpr = '';
 var _calcDisplay = '0';
 var _calcNewNum = true;
 
+function closeCalc() {
+  var panel = document.getElementById('calc-panel');
+  if (panel) panel.style.display = 'none';
+}
+
 function toggleCalc() {
   var panel = document.getElementById('calc-panel');
   if (!panel) return;
@@ -13617,6 +13627,9 @@ document.addEventListener('keydown', function(e) {
   }
 
   function startFabDragTouch(e) {
+    // Without this the browser also fires synthetic mousedown/mouseup after the
+    // tap, so toggleCalc() ran twice and the panel never appeared to change.
+    if (e.cancelable) e.preventDefault();
     fabMoved = false;
     var touch = e.touches[0];
     var initX = touch.clientX, initY = touch.clientY;
