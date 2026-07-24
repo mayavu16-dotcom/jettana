@@ -2172,6 +2172,30 @@ mark.hl-rose  { --hl: rgba(224, 132, 132, 0.30); }
 #expense-breakdown-pop .ebp-bar > span { display: block; height: 100%; background: var(--blush); border-radius: 2px; }
 #expense-breakdown-pop .ebp-total { display: flex; justify-content: space-between; gap: 12px; border-top: 1px solid var(--mist); margin-top: 7px; padding-top: 7px; font-weight: 700; }
 .dark #expense-breakdown-pop { background: #1E2A38; border-color: #2A3A4A; }
+/* ── Debt carried-balance caption + popup ────────────────── */
+/* Sits inline beside the label so the row keeps its normal height — a taller
+   row left the column dividers short of the border, which read as a gap. */
+/* ── Debt: carried-balance banner inside the note ─────────── */
+.carry-banner {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--mist);
+  background: rgba(232, 190, 90, 0.10);
+  font-family: 'Outfit', sans-serif;
+  font-size: 12.5px;
+}
+.carry-banner .cb-title {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.4px;
+  text-transform: uppercase; color: var(--steel); margin-bottom: 6px;
+}
+.carry-banner .cb-row { display: flex; justify-content: space-between; gap: 16px; padding: 2px 0; }
+.carry-banner .cb-row.cb-total {
+  border-top: 1px solid var(--mist); margin-top: 5px; padding-top: 6px; font-weight: 700;
+}
+.carry-banner .cb-note {
+  font-size: 10.5px; color: var(--steel); font-style: italic;
+  margin-top: 7px; line-height: 1.45;
+}
+
 /* ── Pinned breakdown panels ─────────────────────────────── */
 #income-breakdown-pop.brk-pinned,
 #expense-breakdown-pop.brk-pinned {
@@ -5954,6 +5978,22 @@ let saveTimer = null;
 var _footerBudgetOverrides = {};
 
 function monthKey(year, month) { return `${year}-${String(month+1).padStart(2,'0')}`; }
+// Short name of the month before the one given — used to label carried debt
+function prevMonthShortLabel(key) {
+  if (!key || !/^\d{4}-\d{2}$/.test(key)) return 'last month';
+  var parts = key.split('-');
+  var d = new Date(+parts[0], +parts[1] - 1, 1);
+  d.setMonth(d.getMonth() - 1);
+  return d.toLocaleDateString('en-US', { month: 'long' });
+}
+
+// What a debt row's Current figure is actually made of
+function debtSplit(row) {
+  var carried = parseAmt(row && row._carriedBalance) || 0;
+  var current = parseAmt(row && row.current) || 0;
+  return { carried: carried, fresh: Math.max(0, current - carried), current: current };
+}
+
 function monthLabel(key) {
   if (key === 'demo-month') return '✦ Demo Month';
   const [y, m] = key.split('-');
@@ -9270,6 +9310,22 @@ function toggleNote(section, id) {
           cardLinkDiv.id = 'card-link-wrap-' + id;
           cardLinkDiv.innerHTML = buildCardLinkHtml(section, id, row);
           noteInner.insertBefore(cardLinkDiv, noteInner.firstChild);
+
+          // If part of Current was carried over, explain the split up top —
+          // there's no room for this on the row itself.
+          var _sp = debtSplit(row);
+          if (_sp.carried > 0) {
+            var carryDiv = document.createElement('div');
+            carryDiv.className = 'carry-banner';
+            carryDiv.id = 'carry-banner-' + id;
+            carryDiv.innerHTML =
+              '<div class="cb-title">What makes up Current</div>' +
+              '<div class="cb-row"><span>Carried from ' + prevMonthShortLabel(currentMonthKey) + '</span><span>' + fmt(_sp.carried) + '</span></div>' +
+              '<div class="cb-row"><span>New charges this month</span><span>' + fmt(_sp.fresh) + '</span></div>' +
+              '<div class="cb-row cb-total"><span>Current</span><span>' + fmt(_sp.current) + '</span></div>' +
+              '<div class="cb-note">Only the new charges count as this month\'s spending.</div>';
+            noteInner.insertBefore(carryDiv, noteInner.firstChild);
+          }
         }
 
         noteInner.insertBefore(pillDiv, noteInner.lastChild);
@@ -9683,6 +9739,7 @@ function rowHasNote(row) {
   if (row.note && String(row.note).trim()) return true;
   if (row.alloc && String(row.alloc).trim()) return true;
   if (row._template && row._template !== 'general') return true;
+  if (parseAmt(row._carriedBalance) > 0) return true;   // carried-balance banner
   if (row._entries && row._entries.length) {
     for (var i = 0; i < row._entries.length; i++) {
       var e = row._entries[i];
