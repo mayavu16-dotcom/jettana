@@ -2175,6 +2175,24 @@ mark.hl-rose  { --hl: rgba(224, 132, 132, 0.30); }
 /* ── Debt carried-balance caption + popup ────────────────── */
 /* Sits inline beside the label so the row keeps its normal height — a taller
    row left the column dividers short of the border, which read as a gap. */
+/* ── Contribution monthly summary ────────────────────────── */
+.contrib-summary {
+  margin: 8px 0 2px; padding: 9px 11px;
+  border: 1px solid var(--mist); border-radius: 10px;
+  background: rgba(107, 158, 112, 0.07);
+  font-family: 'Outfit', sans-serif; font-size: 12.5px;
+}
+.contrib-summary .cs-title {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.4px;
+  text-transform: uppercase; color: var(--steel); margin-bottom: 5px;
+}
+.contrib-summary .cs-row { display: flex; justify-content: space-between; gap: 14px; padding: 2px 0; }
+.contrib-summary .cs-row.cs-sub { color: var(--steel); }
+.contrib-summary .cs-rate { font-style: normal; color: var(--sage-dark, #4d7a52); font-weight: 700; }
+.contrib-summary .cs-row.cs-total {
+  border-top: 1px solid var(--mist); margin-top: 5px; padding-top: 6px; font-weight: 700;
+}
+
 /* ── Compare months ──────────────────────────────────────── */
 #compare-section, #compare-month-b {
   font-family: 'Outfit', sans-serif; font-size: 11.5px; padding: 3px 6px;
@@ -9608,6 +9626,60 @@ function renderSavingsTemplateFields(section, id, template, row) {
   }
 }
 
+// "15.00" -> "15", "4.50" -> "4.5"
+function trimRate(v) {
+  var n = parseAmt(v);
+  if (!n) return '';
+  return String(Math.round(n * 100) / 100);
+}
+
+// Monthly roll-up under a contribution row's entries
+function renderContributionSummary(section, id, entries) {
+  var container = document.getElementById('st-fields-' + id);
+  if (!container) return;
+  var old = document.getElementById('contrib-summary-' + id);
+  if (old) old.parentNode.removeChild(old);
+  if (!entries || !entries.length) return;
+
+  var myc = 0, emp = 0, rates = [], empRates = [];
+  entries.forEach(function(e) {
+    if (!e) return;
+    if (e._type && e._type !== 'contribution') return;
+    myc += parseAmt(e.myc);
+    emp += parseAmt(e.emp);
+    var r = parseAmt(e.rate);
+    if (r > 0 && rates.indexOf(r) === -1) rates.push(r);
+    var er = parseAmt(e.emprate);
+    if (er > 0 && empRates.indexOf(er) === -1) empRates.push(er);
+  });
+  if (myc <= 0 && emp <= 0) return;
+
+  // A rate that changed partway through the month shows as a range
+  function rateLabelFor(list) {
+    if (!list.length) return '';
+    list.sort(function(a, b) { return a - b; });
+    return list.length === 1
+      ? 'at ' + trimRate(list[0]) + '%'
+      : 'at ' + trimRate(list[0]) + '–' + trimRate(list[list.length - 1]) + '%';
+  }
+  var rateLabel = rateLabelFor(rates);
+  var empRateLabel = rateLabelFor(empRates);
+
+  var box = document.createElement('div');
+  box.id = 'contrib-summary-' + id;
+  box.className = 'contrib-summary';
+  box.innerHTML =
+    '<div class="cs-title">This month</div>' +
+    '<div class="cs-row"><span>Your contributions' +
+      (rateLabel ? ' <em class="cs-rate">' + rateLabel + '</em>' : '') +
+      '</span><span>' + fmt(myc) + '</span></div>' +
+    (emp > 0 ? '<div class="cs-row cs-sub"><span>Employer match' +
+      (empRateLabel ? ' <em class="cs-rate">' + empRateLabel + '</em>' : '') +
+      '</span><span>' + fmt(emp) + '</span></div>' : '') +
+    '<div class="cs-row cs-total"><span>Total added</span><span>' + fmt(myc + emp) + '</span></div>';
+  container.appendChild(box);
+}
+
 function renderAllEntries(section, id, template, entries, skipTotal) {
   var container = document.getElementById('st-fields-' + id);
   if (!container) return;
@@ -9662,6 +9734,7 @@ function renderAllEntries(section, id, template, entries, skipTotal) {
 
   // Total across all entries
   if (!skipTotal) updateEntryTotal(section, id, template);
+  if (template === 'contribution') renderContributionSummary(section, id, entries);
 }
 
 function renderEntryFields(section, id, template, entry, idx) {
@@ -9755,8 +9828,12 @@ function renderEntryFields(section, id, template, entry, idx) {
       '<input type="date" data-key="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">My contribution</label>' +
       '<input type="text" data-key="myc" value="' + (entry.myc ? '$' + parseFloat(String(entry.myc).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'myc\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + ';max-width:72px;"><label style="' + labelStyle + '">My %</label>' +
+      '<input type="text" inputmode="decimal" data-key="rate" value="' + (entry.rate || '') + '" placeholder="15" style="' + inputStyle + '" oninput="this.dataset.key=\'rate\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Employer match</label>' +
       '<input type="text" data-key="emp" value="' + (entry.emp ? '$' + parseFloat(String(entry.emp).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'emp\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + ';max-width:72px;"><label style="' + labelStyle + '">Match %</label>' +
+      '<input type="text" inputmode="decimal" data-key="emprate" value="' + (entry.emprate || '') + '" placeholder="4" style="' + inputStyle + '" oninput="this.dataset.key=\'emprate\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
       '<div style="align-self:flex-end;padding-bottom:4px;min-width:80px;" id="contrib-entry-total-' + id + '-' + idx + '"></div>' +
       '</div>';
   }
@@ -10120,8 +10197,16 @@ function updateEntryTotal(section, id, template) {
       var entryTotalEl = document.getElementById('contrib-entry-total-' + id + '-' + idx);
       if (entryTotalEl && entryTotal > 0) {
         entryTotalEl.style.cssText = 'font-size:11px;color:var(--sage);font-weight:600;align-self:flex-end;padding-bottom:4px;';
-        entryTotalEl.textContent = '= $' + entryTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        var rateTxt = parseAmt(vals.rate) > 0 ? ' · ' + trimRate(vals.rate) + '%' : '';
+        entryTotalEl.textContent = '= $' + entryTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + rateTxt;
       } else if (entryTotalEl) { entryTotalEl.textContent = ''; }
+      // keep the monthly roll-up in step while typing
+      setTimeout(function() {
+        var a = loadAll();
+        var rws = (a[currentMonthKey] && a[currentMonthKey][section]) || [];
+        var rw = rws.find(function(r) { return r.id === id; });
+        if (rw) renderContributionSummary(section, id, rw._entries || []);
+      }, 0);
     } else if (entryType === 'investment') {
       entryTotal = parseAmt(vals.shares) * parseAmt(vals.price);
     } else if (entryType === 'transaction') {
