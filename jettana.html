@@ -4178,7 +4178,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
               <button class="more-menu-item danger" onclick="clearMonth(); hideMoreMenu()">
                 <span>✕</span> Clear month
               </button>
-              <button class="more-menu-item" onclick="showManageAccount(); hideMoreMenu()" style="color:var(--steel);">
+              <button class="more-menu-item" id="manage-account-item" onclick="showManageAccount(); hideMoreMenu()" style="color:var(--steel);">
                 <span>⚙</span> Manage account
               </button>
             </div>
@@ -5677,7 +5677,11 @@ var _sb = null;
 var _currentUser = null;
 var _authTab = 'login';
 
+// The demo has no relationship to accounts: no client is created, so there is
+// no session to sign into, sign out of, or delete. The `if (_sb)` branch below
+// already handles a null client by loading the demo.
 try {
+  if (_isDemoURL) throw new Error('demo sandbox — no auth client');
   _sb = supabase.createClient(
     'https://mekgupfxzfzqantjouhn.supabase.co',
     'sb_publishable_AwEduMlIeYU8o9HVRof2Rw_MuyMKiOc',
@@ -5810,6 +5814,7 @@ document.addEventListener('keydown', function(e) {
 
 // Sign out
 async function signOut() {
+  if (inDemoSandbox()) return;   // nothing to sign out of in the demo
   if (_sb) await _sb.auth.signOut();
   _currentUser = null;
   appStore.removeItem(activeStorageKey());
@@ -5819,6 +5824,7 @@ async function signOut() {
 
 // Delete account
 function confirmDeleteAccount() {
+  if (inDemoSandbox()) return;   // there is no account here to delete
   var modal = document.createElement('div');
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;';
   modal.innerHTML = '<div style="background:var(--white);border-radius:16px;padding:32px;width:100%;max-width:380px;margin:16px;font-family:\'Outfit\',sans-serif;">' +
@@ -6052,6 +6058,22 @@ function activeSnapKey() {
 // Backstop: if the sandbox can still reach anything belonging to a real
 // account, stop rather than display it. This is what makes the guarantee hold
 // even when I add a feature and forget to isolate it.
+// Strip anything account-related from the demo's UI. There is no session
+// behind these, so they should not be offered at all.
+function stripAccountUIForDemo() {
+  if (!inDemoSandbox()) return;
+  ['manage-account-item'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el && el.parentNode) el.parentNode.removeChild(el);
+  });
+  document.querySelectorAll('.shortcut-row').forEach(function(row) {
+    if (/Sign out|Delete account/i.test(row.textContent || '')) {
+      if (row.parentNode) row.parentNode.removeChild(row);
+    }
+  });
+}
+document.addEventListener('DOMContentLoaded', stripAccountUIForDemo);
+
 function enforceSandboxIsolation() {
   if (!inDemoSandbox()) return true;
   // Assert it rather than assume it: if anything belonging to a real account is
@@ -13851,6 +13873,7 @@ function labelKeyDown(e, el) {
 
 // ── Features Modal ────────────────────────────────────────────
 function showManageAccount() {
+  if (inDemoSandbox()) return;   // the demo has no account
   var email = _currentUser ? _currentUser.email : '';
   var modal = document.createElement('div');
   modal.id = 'manage-account-modal';
