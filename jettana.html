@@ -17367,6 +17367,15 @@ var COMPARE_UP_IS_GOOD = { income: true, savings: true, checking: true };
 
 // Labels are retyped each month, so match on letters and digits only —
 // "Trader Joe's", "trader joes" and "Trader Joes" are all the same shop.
+// Column headers need the year — "June" vs "January" is ambiguous once you
+// have several years of months.
+function compareShortMonth(key) {
+  if (!key || !/^\d{4}-\d{2}$/.test(key)) return key || '';
+  var p = key.split('-');
+  var d = new Date(+p[0], +p[1] - 1, 1);
+  return d.toLocaleDateString('en-US', { month: 'short' }) + " '" + p[0].slice(2);
+}
+
 function compareKey(label) {
   return String(label || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 }
@@ -17524,8 +17533,8 @@ function renderCompare() {
   rows.forEach(function(r) { totA += (r.a || 0); totB += (r.b || 0); });
 
   var html = '<div class="cmp-head">' +
-    '<span>Item</span><span>' + monthLabel(currentMonthKey).replace(/ \d{4}$/, '') + '</span>' +
-    '<span>' + monthLabel(keyB).replace(/ \d{4}$/, '') + '</span><span>Change</span></div>';
+    '<span>Item</span><span>' + compareShortMonth(currentMonthKey) + '</span>' +
+    '<span>' + compareShortMonth(keyB) + '</span><span>Change</span></div>';
 
   rows.forEach(function(r) {
     html += '<div class="cmp-row">' +
