@@ -5976,7 +5976,9 @@ const STORAGE_KEY = _demoIsolated ? 'jettana_demo_sandbox' : 'intentra_v1';
    Rolling copies of the budget kept under their own key, which the
    Supabase sync never clears. If a bad write ever empties the account
    again, the last few good states are still sitting on the device. */
-const SNAP_KEY = 'jettana_snapshots';
+// Namespaced exactly like STORAGE_KEY — otherwise the demo reads (and shows)
+// the real account's backups, each of which contains the whole budget.
+const SNAP_KEY = _demoIsolated ? 'jettana_demo_snapshots' : 'jettana_snapshots';
 const SNAP_MAX = 6;                    // keep the most recent few
 const SNAP_MIN_GAP_MS = 30 * 60 * 1000; // routine saves: at most one per 30 min
 
@@ -6005,6 +6007,7 @@ function snapWeight(data) {
 }
 
 function loadSnapshots() {
+  if (_demoIsolated) return [];   // the sandbox has no backups to show
   try { return JSON.parse(localStorage.getItem(SNAP_KEY)) || []; } catch (e) { return []; }
 }
 
@@ -14971,6 +14974,12 @@ function renderBackups() {
   var box = document.getElementById('backups-list');
   if (!box) return;
   var list = loadSnapshots().slice().reverse(); // newest first
+  if (_demoIsolated) {
+    box.innerHTML = '<div style="color:var(--steel);font-size:13px;padding:10px 0;">' +
+      'Backups aren\'t kept for the demo — it\'s a sandbox and nothing here is saved to an account. ' +
+      'In your own account, a copy is saved automatically before every sync.</div>';
+    return;
+  }
   if (!list.length) {
     box.innerHTML = '<div style="color:var(--steel);font-size:13px;padding:10px 0;">' +
       'No backups yet. One is saved automatically before each sync, and periodically as you work.</div>';
