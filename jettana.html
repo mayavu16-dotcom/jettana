@@ -3075,6 +3075,11 @@ body.font-large.text-bold .erow-label-input {
 /* Drag hint on draggable modal headers — pointless on phones where modals are near full-width */
 .modal-drag-hint { font-size: 10.5px; font-weight: 400; color: var(--steel); letter-spacing: 0.3px; white-space: nowrap; }
 @media (max-width: 600px) { .modal-drag-hint { display: none; } }
+/* While the demo guide spotlights a hover-revealed control (⋯, trash, ≡),
+   force it visible — ringing an invisible button teaches nothing.
+   Late in the file on purpose: it must win the !important tie with the
+   pointer:coarse hide rule above. */
+.dguide-reveal { opacity: 1 !important; }
 .sec-body {
   overflow: hidden;
   transition: max-height 0.3s ease, opacity 0.2s ease;
@@ -13025,7 +13030,7 @@ var TOUR_STEPS = [
   {
     target: '.sec-card[data-section-id="debt"]',
     title: 'Debt tracks your card balances',
-    desc: 'Discover auto-calculates from orange expenses. Watch the note open to see the card link in action.',
+    desc: 'Discover auto-calculates from orange expenses. Watch the note open to see the card link in action. And that little pill in the header? Log your credit score there each month — Jettana tracks how it changes.',
     position: 'left',
     action: function() {
       setTimeout(function() {
@@ -13102,6 +13107,19 @@ var TOUR_STEPS = [
     desc: 'Compare this month against any previous month using the dropdown. Great for spotting spending trends and seeing your progress over time.',
     position: 'top',
     scrollBlock: 'nearest'
+  },
+  {
+    target: '.sec-card[data-section-id="housing"] .sec-collapse-btn',
+    title: 'Collapse to scan your month',
+    desc: 'Tap ▾ on any section to fold it away — a collapsed header shows that section\'s total (and % of budget). Collapse everything and you can read your whole month in one screen.',
+    position: 'right',
+    scrollBlock: 'center'
+  },
+  {
+    target: '#more-btn',
+    title: 'Your analytics live under ⋯',
+    desc: 'Once you have a month or two of data: Compare months puts any two months side by side (and shows how far apart they are), Net worth trend charts your growth — add your birth month to see it by age — and Growth projection shows what your savings could become over any number of years.',
+    position: 'bottom'
   },
   {
     target: '#more-btn',
@@ -17053,8 +17071,23 @@ window.addEventListener('load', function() {
 // ── Demo Guide ────────────────────────────────────────────────
 var _dguideStep = 0;
 var _dguideEl = null;
+var _dguideRevealEl = null;
 
 var DEMO_GUIDE_STEPS = [
+  {
+    target: function() { return document.getElementById('income-sum-card'); },
+    fallback: function() { return document.querySelector('.summary-strip'); },
+    label: 'Total Income',
+    desc: 'Hover or tap this card to see your gross → take-home breakdown — paycheck gross, taxes, deductions, and other income. Click to pin it open, then drag it anywhere while you work.',
+    tipSide: 'auto',
+  },
+  {
+    target: function() { return document.getElementById('expense-sum-card'); },
+    fallback: function() { return document.querySelector('.summary-strip'); },
+    label: 'Total Expenses',
+    desc: 'Same trick here — hover or tap for a per-category breakdown of where the month went. Pin and drag it next to a section to cross-reference as you fill things in.',
+    tipSide: 'auto',
+  },
   {
     target: function() { return document.querySelector('.sec-clear-btn'); },
     fallback: function() { return document.querySelector('.sec-hdr-right'); },
@@ -17099,10 +17132,22 @@ function startDemoGuide() {
 
 function _showDguideStep() {
   _clearDguide();
+  // Close anything the previous step's exploration left open, so it can't
+  // sit on top of the next step's target.
+  try { unpinBreakdown(); } catch (e) {}
+  try { hideIncomeBreakdown(); hideExpenseBreakdown(); } catch (e) {}
+  try { hideCtxMenu(); } catch (e) {}
+  var _dp = document.getElementById('debt-total-pop'); if (_dp) _dp.style.display = 'none';
+  var _sp = document.getElementById('sec-popover'); if (_sp) _sp.remove();
+  document.body.classList.remove('sidebar-open');   // mobile overlay from the sidebar step
   if (_dguideStep >= DEMO_GUIDE_STEPS.length) { _clearDguide(); return; }
   var step = DEMO_GUIDE_STEPS[_dguideStep];
   var el = step.target() || step.fallback();
   if (!el) { _dguideStep++; _showDguideStep(); return; }
+
+  // If the target is a hover-revealed control, force it visible for this step
+  el.classList.add('dguide-reveal');
+  _dguideRevealEl = el;
 
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
@@ -17170,17 +17215,13 @@ function _showDguideStep() {
     }
   }, 150);
 
-  // Tooltip — opposite quadrant from highlighted element
-  var rect = el.getBoundingClientRect();
-  var inTopHalf  = (rect.top  + rect.height / 2) < (window.innerHeight / 2);
-  var inLeftHalf = (rect.left + rect.width  / 2) < (window.innerWidth  / 2);
-  var tipTopVal  = inTopHalf  ? '75%' : '25%';
-  var tipLeftVal = inLeftHalf ? '65%' : '35%';
-
+  // Tooltip — anchored to the highlighted element (below when there's room,
+  // above otherwise), clamped to the viewport, and live-tracked like the ring
+  // so it stays attached through the smooth scroll and layout shifts.
   var tip = document.createElement('div');
   tip.className = 'dguide-tooltip';
   tip.id = 'dguide-tip';
-  tip.style.cssText = 'position:fixed;top:' + tipTopVal + ';left:' + tipLeftVal + ';transform:translate(-50%,-50%);max-width:360px;width:calc(100vw - 32px);z-index:99998;';
+  tip.style.cssText = 'position:fixed;top:0;left:0;max-width:360px;width:calc(100vw - 32px);z-index:99998;';
   tip.innerHTML =
     '<div class="dguide-label">' + step.label + '</div>' +
     '<div class="dguide-desc">'  + step.desc  + '</div>' +
@@ -17194,12 +17235,58 @@ function _showDguideStep() {
       '</div>' +
     '</div>';
   document.body.appendChild(tip);
+  (function trackTip() {
+    if (!tracking) return;
+    var tr = el.getBoundingClientRect();
+    var r = { top: tr.top, left: tr.left, bottom: tr.bottom, right: tr.right };
+    // If the step's control opened a menu/panel (the popWatcher rings it),
+    // anchor around the UNION of target + popup so the tip never covers
+    // what the user just opened. Includes the summary-card breakdown popups
+    // and, on the sidebar step, the sidebar itself.
+    function _vis(id) { var p = document.getElementById(id); return (p && p.offsetWidth > 0 && p.offsetParent !== null) ? p : null; }
+    var ctxEl = document.getElementById('ctx-menu');
+    var popEl = document.getElementById('sec-popover')
+             || (ctxEl && ctxEl.style.display !== 'none' ? ctxEl : null)
+             || document.querySelector('.bulk-bar.visible')
+             || document.querySelector('.note-wrap[style*="block"]')
+             || _vis('income-breakdown-pop')
+             || _vis('expense-breakdown-pop')
+             || _vis('debt-total-pop');
+    if (!popEl && el.id === 'hamburger-btn') {
+      var sb = document.querySelector('.sidebar');
+      if (sb) { var sr = sb.getBoundingClientRect(); if (sr.width > 50 && sr.right > 40) popEl = sb; }
+    }
+    if (popEl) {
+      var pr = popEl.getBoundingClientRect();
+      if (pr.width && pr.height) {
+        r.top = Math.min(r.top, pr.top); r.left = Math.min(r.left, pr.left);
+        r.bottom = Math.max(r.bottom, pr.bottom); r.right = Math.max(r.right, pr.right);
+      }
+    }
+    var th = tip.offsetHeight, tw = tip.offsetWidth, pad = 14;
+    var top = null, left;
+    if (r.bottom + pad + th <= window.innerHeight - 12) top = r.bottom + pad;        // below
+    else if (r.top - pad - th >= 12) top = r.top - pad - th;                         // above
+    if (top !== null) {
+      left = Math.max(16, Math.min((r.left + r.right) / 2 - tw / 2, window.innerWidth - tw - 16));
+    } else {
+      // No vertical room (tall union, e.g. open sidebar) — go beside, roomier side
+      var spaceRight = window.innerWidth - r.right, spaceLeft = r.left;
+      if (spaceRight >= spaceLeft) left = Math.min(r.right + pad, window.innerWidth - tw - 16);
+      else left = Math.max(16, r.left - pad - tw);
+      top = Math.max(12, Math.min(window.innerHeight - th - 12, r.top));
+    }
+    tip.style.top = top + 'px';
+    tip.style.left = left + 'px';
+    requestAnimationFrame(trackTip);
+  })();
 
   _dguideEl = { ring: ring, tip: tip, stopTracking: function() { tracking = false; clearInterval(_popWatcher); } };
 }
 
 function _clearDguide() {
   if (_dguideEl && _dguideEl.stopTracking) _dguideEl.stopTracking();
+  if (_dguideRevealEl) { _dguideRevealEl.classList.remove('dguide-reveal'); _dguideRevealEl = null; }
   ['dguide-ring','dguide-ring-2','dguide-tip'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.remove();
   });
