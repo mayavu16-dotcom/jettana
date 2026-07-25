@@ -6416,6 +6416,21 @@ function allMonthKeys() {
   return Object.keys(all).filter(k => /^\d{4}-\d{2}$/.test(k)).sort().reverse();
 }
 
+/* Human-readable gap between two YYYY-MM keys: "2 years, 6 months apart".
+   Returns '' for same month or non-month keys. Shared by Compare months
+   and Net Worth Trend so the wording can never drift apart. */
+function monthGapLabel(a, b) {
+  if (!a || !b || a === b) return '';
+  if (!/^\d{4}-\d{2}$/.test(a) || !/^\d{4}-\d{2}$/.test(b)) return '';
+  var pa = a.split('-'), pb = b.split('-');
+  var t = Math.abs((+pa[0] * 12 + (+pa[1])) - (+pb[0] * 12 + (+pb[1])));
+  var y = Math.floor(t / 12), mo = t % 12;
+  var parts = [];
+  if (y) parts.push(y + (y === 1 ? ' year' : ' years'));
+  if (mo) parts.push(mo + (mo === 1 ? ' month' : ' months'));
+  return parts.length ? parts.join(', ') + ' apart' : '';
+}
+
 /* ── Credit score (per month, stored on the month object) ────── */
 function saveCreditScore(val) {
   var all = loadAll();
@@ -17635,8 +17650,9 @@ function renderNWChart() {
   var pct = first.v !== 0 ? (delta / Math.abs(first.v)) * 100 : null;
   var col = delta >= 0 ? 'var(--sage-dark)' : 'var(--blush)';
   var sign = delta >= 0 ? '+' : '−';
-  summary.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;font-size:12.5px;padding:6px 2px;">'
-    + '<span style="color:var(--steel);">' + monthLabel(first.key) + ' → ' + monthLabel(last.key) + '</span>'
+  summary.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;font-size:12.5px;padding:6px 2px;gap:8px;flex-wrap:wrap;">'
+    + '<span style="color:var(--steel);">' + monthLabel(first.key) + ' → ' + monthLabel(last.key)
+    + (function(){ var g = monthGapLabel(first.key, last.key); return g ? ' <span style="opacity:0.65;">· ' + g + '</span>' : ''; })() + '</span>'
     + '<span style="font-weight:700;color:' + col + ';">' + sign + fmt(Math.abs(delta)).replace('$', '$')
     + (pct !== null ? ' <span style="font-weight:600;opacity:0.8;">(' + sign + Math.abs(pct).toFixed(1) + '%)</span>' : '') + '</span>'
     + '</div>';
@@ -17887,19 +17903,7 @@ function renderCompare() {
 
   // Time gap between the two months, e.g. "2 years, 6 months apart"
   var gapEl = document.getElementById('compare-gap');
-  if (gapEl) {
-    gapEl.textContent = '';
-    if (keyB && keyB !== currentMonthKey &&
-        /^\d{4}-\d{2}$/.test(currentMonthKey) && /^\d{4}-\d{2}$/.test(keyB)) {
-      var pa = currentMonthKey.split('-'), pb = keyB.split('-');
-      var totalMonths = Math.abs((+pa[0] * 12 + (+pa[1])) - (+pb[0] * 12 + (+pb[1])));
-      var y = Math.floor(totalMonths / 12), mo = totalMonths % 12;
-      var parts = [];
-      if (y) parts.push(y + (y === 1 ? ' year' : ' years'));
-      if (mo) parts.push(mo + (mo === 1 ? ' month' : ' months'));
-      if (parts.length) gapEl.textContent = parts.join(', ') + ' apart';
-    }
-  }
+  if (gapEl) gapEl.textContent = monthGapLabel(currentMonthKey, keyB);
 
   if (!keyB || keyB === currentMonthKey) {
     body.innerHTML = '<div class="cmp-empty">Pick a different month to compare against.</div>';
