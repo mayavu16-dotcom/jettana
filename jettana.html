@@ -3072,6 +3072,8 @@ body.font-large.text-bold .erow-label-input {
    that matches the theme (dark mode was rendering a near-black icon). */
 .dark #nw-birth { color-scheme: dark; }
 #nw-birth::-webkit-calendar-picker-indicator { opacity: 0.75; cursor: pointer; }
+/* Checklist drag hint — pointless on phones where the modal is near full-width */
+@media (max-width: 600px) { .checklist-drag-hint { display: none; } }
 .sec-body {
   overflow: hidden;
   transition: max-height 0.3s ease, opacity 0.2s ease;
@@ -5334,6 +5336,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
   <div class="shortcuts-modal" id="checklist-modal" onclick="event.stopPropagation()" style="max-width:480px;display:flex;flex-direction:column;max-height:85vh;max-height:85dvh;">
     <div class="shortcuts-title" id="checklist-header" style="cursor:grab;user-select:none;flex-shrink:0;">
       Setup checklist
+      <span class="checklist-drag-hint" style="font-size:10.5px;font-weight:400;color:var(--steel);letter-spacing:0.3px;">⠿ drag to move</span>
       <button class="shortcuts-close" onclick="hideChecklist()">×</button>
     </div>
     <div style="padding:4px 0 12px;font-size:13px;color:var(--steel);flex-shrink:0;">Work through these steps to get the most out of Jettana.</div>
