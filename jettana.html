@@ -5137,6 +5137,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <strong id="compare-month-a" style="color:var(--ink);">—</strong>
       <span style="color:var(--steel);">vs</span>
       <select id="compare-month-b" onchange="renderCompare()"></select>
+      <span id="compare-gap" style="margin-left:auto;font-size:12px;color:var(--steel);white-space:nowrap;"></span>
     </div>
     <div id="compare-body"></div>
   </div>
@@ -17883,6 +17884,22 @@ function renderCompare() {
   var keyB = bSel.value;
   var labelA = document.getElementById('compare-month-a');
   if (labelA) labelA.textContent = monthLabel(currentMonthKey);
+
+  // Time gap between the two months, e.g. "2 years, 6 months apart"
+  var gapEl = document.getElementById('compare-gap');
+  if (gapEl) {
+    gapEl.textContent = '';
+    if (keyB && keyB !== currentMonthKey &&
+        /^\d{4}-\d{2}$/.test(currentMonthKey) && /^\d{4}-\d{2}$/.test(keyB)) {
+      var pa = currentMonthKey.split('-'), pb = keyB.split('-');
+      var totalMonths = Math.abs((+pa[0] * 12 + (+pa[1])) - (+pb[0] * 12 + (+pb[1])));
+      var y = Math.floor(totalMonths / 12), mo = totalMonths % 12;
+      var parts = [];
+      if (y) parts.push(y + (y === 1 ? ' year' : ' years'));
+      if (mo) parts.push(mo + (mo === 1 ? ' month' : ' months'));
+      if (parts.length) gapEl.textContent = parts.join(', ') + ' apart';
+    }
+  }
 
   if (!keyB || keyB === currentMonthKey) {
     body.innerHTML = '<div class="cmp-empty">Pick a different month to compare against.</div>';
