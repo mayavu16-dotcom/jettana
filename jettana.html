@@ -1410,11 +1410,9 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
 .hdr-pct-label.pct-over        { background: rgba(0,0,0,0.30); color: #ffd5d0; }
 .hdr-pct-label.pct-approaching { color: #fff2cc; }
 
-/* ── Expense header: hide dollar total, show % pill only ─── */
-#hdr-housing, #hdr-transport, #hdr-food,
-#hdr-health, #hdr-gifts, #hdr-misc {
-  display: none;
-}
+/* ── Expense headers: the old always-hide-$ rule is superseded by the
+   collapse-aware rule (.sec-card:not(.collapsed) …) — expanded headers
+   show nothing, collapsed headers show BOTH the $ total and the % pill. ─── */
 /* Uniform header height across all sections */
 .sec-hdr { box-sizing: border-box; }
 .hdr-pct-label {
@@ -3066,11 +3064,10 @@ body.font-large.text-bold .erow-label-input {
 }
 .sec-collapse-btn:hover { color: white; }
 .sec-card.collapsed .sec-collapse-btn { transform: rotate(-90deg); }
-/* Header total only earns its place when the section is collapsed —
-   expanded sections already show the total in their footer. The %-of-income
-   label rides along with it. */
-.sec-card:not(.collapsed) .sec-hdr .sec-total,
-.sec-card:not(.collapsed) .sec-hdr .hdr-pct-label { display: none; }
+/* Header $ total only earns its place when the section is collapsed —
+   expanded sections already show the total in their footer. The %-of-budget
+   pill stays visible in BOTH states (it pairs with the header fill bar). */
+.sec-card:not(.collapsed) .sec-hdr .sec-total { display: none; }
 .sec-body {
   overflow: hidden;
   transition: max-height 0.3s ease, opacity 0.2s ease;
