@@ -5072,6 +5072,9 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
         <span style="color:var(--steel);">to</span>
         <select id="nw-to" onchange="setNWTo(this.value)"><option value="">now</option></select>
       </span>
+      <span style="display:inline-flex;align-items:center;gap:5px;" title="Optional — enter your birth month and year to see your age alongside your growth. Month + year only; Jettana never asks for your full birthdate. Clear the field to remove it.">🎂
+        <input type="month" id="nw-birth" onchange="setNWBirth(this.value)" style="font-family:inherit;font-size:11.5px;padding:2px 5px;border-radius:7px;border:1px solid var(--steel);background:transparent;color:var(--ink);max-width:130px;">
+      </span>
     </div>
     <div class="trends-chart-wrap">
       <svg id="nw-svg" viewBox="0 0 520 230" preserveAspectRatio="xMidYMid meet" style="overflow:visible;"></svg>
@@ -6429,6 +6432,30 @@ function monthGapLabel(a, b) {
   if (y) parts.push(y + (y === 1 ? ' year' : ' years'));
   if (mo) parts.push(mo + (mo === 1 ? ' month' : ' months'));
   return parts.length ? parts.join(', ') + ' apart' : '';
+}
+
+/* ── Optional birth month (month + year ONLY — deliberately never a full
+   date of birth) for age annotations on the Net Worth Trend. Stored as a
+   top-level _birthMonth key in the normal data object, so it syncs and is
+   sandbox-isolated like everything else. Clearing the field deletes it. */
+function getNWBirth() {
+  var all = loadAll();
+  return (typeof all._birthMonth === 'string' && /^\d{4}-\d{2}$/.test(all._birthMonth)) ? all._birthMonth : '';
+}
+function setNWBirth(v) {
+  var all = loadAll();
+  if (v && /^\d{4}-\d{2}$/.test(v)) { all._birthMonth = v; }
+  else { delete all._birthMonth; }
+  saveAll(all);
+  renderNWChart();
+}
+function ageAtMonth(key) {
+  var b = getNWBirth();
+  if (!b || !/^\d{4}-\d{2}$/.test(key)) return null;
+  var pb = b.split('-'), pk = key.split('-');
+  var months = (+pk[0] * 12 + (+pk[1])) - (+pb[0] * 12 + (+pb[1]));
+  if (months < 0) return null;
+  return Math.floor(months / 12);
 }
 
 /* ── Credit score (per month, stored on the month object) ────── */
@@ -17589,6 +17616,8 @@ function hideNetWorthTrend() {
 }
 
 function renderNWChart() {
+  var birthInput = document.getElementById('nw-birth');
+  if (birthInput && birthInput !== document.activeElement) birthInput.value = getNWBirth();
   var svg = document.getElementById('nw-svg');
   var summary = document.getElementById('nw-summary');
   if (!svg || !summary) return;
@@ -17652,7 +17681,12 @@ function renderNWChart() {
   var sign = delta >= 0 ? '+' : '−';
   summary.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;font-size:12.5px;padding:6px 2px;gap:8px;flex-wrap:wrap;">'
     + '<span style="color:var(--steel);">' + monthLabel(first.key) + ' → ' + monthLabel(last.key)
-    + (function(){ var g = monthGapLabel(first.key, last.key); return g ? ' <span style="opacity:0.65;">· ' + g + '</span>' : ''; })() + '</span>'
+    + (function(){ var g = monthGapLabel(first.key, last.key); return g ? ' <span style="opacity:0.65;">· ' + g + '</span>' : ''; })()
+    + (function(){
+        var a1 = ageAtMonth(first.key), a2 = ageAtMonth(last.key);
+        if (a1 == null || a2 == null) return '';
+        return ' <span style="opacity:0.65;">· ' + (a1 === a2 ? 'age ' + a1 : 'age ' + a1 + ' → ' + a2) + '</span>';
+      })() + '</span>'
     + '<span style="font-weight:700;color:' + col + ';">' + sign + fmt(Math.abs(delta)).replace('$', '$')
     + (pct !== null ? ' <span style="font-weight:600;opacity:0.8;">(' + sign + Math.abs(pct).toFixed(1) + '%)</span>' : '') + '</span>'
     + '</div>';
