@@ -17243,7 +17243,7 @@ function _showDguideStep() {
     // anchor around the UNION of target + popup so the tip never covers
     // what the user just opened. Includes the summary-card breakdown popups
     // and, on the sidebar step, the sidebar itself.
-    function _vis(id) { var p = document.getElementById(id); return (p && p.offsetWidth > 0 && p.offsetParent !== null) ? p : null; }
+    function _vis(id) { var p = document.getElementById(id); if (!p) return null; var b = p.getBoundingClientRect(); return (b.width > 0 && b.height > 0) ? p : null; }
     var ctxEl = document.getElementById('ctx-menu');
     var popEl = document.getElementById('sec-popover')
              || (ctxEl && ctxEl.style.display !== 'none' ? ctxEl : null)
