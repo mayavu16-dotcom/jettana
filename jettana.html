@@ -3072,8 +3072,9 @@ body.font-large.text-bold .erow-label-input {
    that matches the theme (dark mode was rendering a near-black icon). */
 .dark #nw-birth { color-scheme: dark; }
 #nw-birth::-webkit-calendar-picker-indicator { opacity: 0.75; cursor: pointer; }
-/* Checklist drag hint — pointless on phones where the modal is near full-width */
-@media (max-width: 600px) { .checklist-drag-hint { display: none; } }
+/* Drag hint on draggable modal headers — pointless on phones where modals are near full-width */
+.modal-drag-hint { font-size: 10.5px; font-weight: 400; color: var(--steel); letter-spacing: 0.3px; white-space: nowrap; }
+@media (max-width: 600px) { .modal-drag-hint { display: none; } }
 .sec-body {
   overflow: hidden;
   transition: max-height 0.3s ease, opacity 0.2s ease;
@@ -5336,7 +5337,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
   <div class="shortcuts-modal" id="checklist-modal" onclick="event.stopPropagation()" style="max-width:480px;display:flex;flex-direction:column;max-height:85vh;max-height:85dvh;">
     <div class="shortcuts-title" id="checklist-header" style="cursor:grab;user-select:none;flex-shrink:0;">
       Setup checklist
-      <span class="checklist-drag-hint" style="font-size:10.5px;font-weight:400;color:var(--steel);letter-spacing:0.3px;">⠿ drag to move</span>
+      <span class="modal-drag-hint">⠿ drag to move</span>
       <button class="shortcuts-close" onclick="hideChecklist()">×</button>
     </div>
     <div style="padding:4px 0 12px;font-size:13px;color:var(--steel);flex-shrink:0;">Work through these steps to get the most out of Jettana.</div>
@@ -17708,6 +17709,22 @@ function renderNWChart() {
     + (pct !== null ? ' <span style="font-weight:600;opacity:0.8;">(' + sign + Math.abs(pct).toFixed(1) + '%)</span>' : '') + '</span>'
     + '</div>';
 }
+
+// One shared "⠿ drag to move" hint across every draggable modal header, so the
+// behavior is taught the same way everywhere. Injected before the header's
+// close button (or appended for headers without one).
+document.addEventListener('DOMContentLoaded', function() {
+  ['trends-header', 'nw-header', 'gp-header', 'compare-header', 'features-header', 'cal-header'].forEach(function(id) {
+    var hdr = document.getElementById(id);
+    if (!hdr || hdr.querySelector('.modal-drag-hint')) return;
+    var hint = document.createElement('span');
+    hint.className = 'modal-drag-hint';
+    hint.textContent = '⠿ drag to move';
+    var closeBtn = hdr.querySelector('.trends-close, .shortcuts-close, .cal-close');
+    if (closeBtn) hdr.insertBefore(hint, closeBtn);
+    else hdr.appendChild(hint);
+  });
+});
 
 // Drag support for the Setup checklist modal (mirrors the Net Worth modal) —
 // once dragged, the overlay becomes click-through so the user can follow the
