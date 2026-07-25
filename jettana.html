@@ -5024,7 +5024,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <button class="askme-q" onclick="toggleAskMe(this)">How do I see my net worth over time?<span class="askme-q-arrow">▾</span></button>
           <div class="askme-a">Open <strong>⋯ → Net worth trend</strong>. It draws a line chart of your net worth by month (checking + savings − debt). Pick a period with the <strong>6M / YTD / 1Y / All</strong> chips, or choose any starting month from the <strong>From</strong> dropdown. Green dots mean your net worth rose that month; the summary below shows your total change for the period.</div>
           <button class="askme-q" onclick="toggleAskMe(this)">Can I see how my savings might grow over time?<span class="askme-q-arrow">▾</span></button>
-          <div class="askme-a">Open <strong>⋯ → Growth projection</strong>. It starts from your <strong>current savings</strong> and your <strong>average monthly contribution</strong> so far, then shows how that could compound over <strong>5, 10, 20, or 30 years</strong>. Every field is editable — change the starting amount, the monthly contribution, or the annual return (7% is a common long-term average) to try different what-ifs. You can also enter your <strong>age</strong> (optional) to see how old you'd be at the end of the projection — it's saved on your device only. The solid line is your projected balance and the dashed line is what you actually deposited; the space between them is growth. It only looks at savings — checking and debt aren't included, since they don't grow at a market rate. And it's a <strong>hypothetical illustration, not a guarantee</strong> — real returns move up and down year to year.</div>
+          <div class="askme-a">Open <strong>⋯ → Growth projection</strong>. It starts from your <strong>current savings</strong> and your <strong>average monthly contribution</strong> so far, then shows how that could compound over <strong>5, 10, 20, or 30 years — or any number of years you type into the custom chip</strong>. Every field is editable — change the starting amount, the monthly contribution, or the annual return (7% is a common long-term average) to try different what-ifs. You can also enter your <strong>age</strong> (optional) to see how old you'd be at the end of the projection — it's saved on your device only. The solid line is your projected balance and the dashed line is what you actually deposited; the space between them is growth. It only looks at savings — checking and debt aren't included, since they don't grow at a market rate. And it's a <strong>hypothetical illustration, not a guarantee</strong> — real returns move up and down year to year.</div>
         </div>
       </div>
 
@@ -5375,6 +5375,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <div class="shortcut-row"><span>📝 <strong>Notes</strong> — free-form notes per month with bullet points and checkable to-dos; syncs across devices</span></div>
       <div class="shortcut-row"><span>🎨 <strong>Footer highlight</strong> — click the Actual/Received total in any section footer to set a background and number color; supports copy, paste and clear</span></div>
       <div class="shortcut-row"><span>🎯 <strong>Net worth goal</strong> — click the Goal cell in the Net Worth Overview to set a target</span></div>
+      <div class="shortcut-row"><span>💳 <strong>Credit score</strong> — type your score (300–850) in the pill on the Debt section header; each month keeps its own, with a ▲/▼ change vs the last month you logged one</span></div>
     </div>
 
     <div class="shortcuts-group">
@@ -5453,7 +5454,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <div class="shortcuts-group-title">Layout</div>
       <div class="shortcut-row"><span>✎ <strong>Rename sections</strong> — double-click (desktop) or long-press (mobile) any section header; save for this month only or all months</span></div>
       <div class="shortcut-row"><span>⠿ <strong>Reorder sections</strong> — hover any section header to reveal ⠿; drag on desktop, long-press on mobile</span></div>
-      <div class="shortcut-row"><span>▾ <strong>Collapse sections</strong> — click ▾ on any section header to hide its rows; click again to expand</span></div>
+      <div class="shortcut-row"><span>▾ <strong>Collapse sections</strong> — click ▾ on any section header to hide its rows; click again to expand. Collapsed headers show the section's $ total (and its % of budget), so you can collapse everything and read your whole month at a glance.</span></div>
     </div>
 
     <div class="shortcuts-group">
@@ -5468,8 +5469,10 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <div class="shortcuts-group-title">Analytics</div>
       <div class="shortcut-row"><span>📅 <strong>Spending Calendar</strong> — ⋯ → Spending Calendar; see daily spending laid out on a calendar grid with weekly totals. Filter by section, search by transaction name, and tap any day for a breakdown. Drag to reposition over the tracker.</span></div>
       <div class="shortcut-row"><span>📊 <strong>Spending Trends</strong> — ⋯ → Spending Trends; bar chart of your last 6 months of expenses. Tap any bar to see a category breakdown with amounts and percentages. Drag to reposition.</span></div>
-      <div class="shortcut-row"><span>📈 <strong>Net Worth Trend</strong> — ⋯ → Net worth trend; a line chart of your net worth (checking + savings − debt) by month. Pick 6M, YTD, 1Y, All, or a custom start month. Drag to reposition.</span></div>
-      <div class="shortcut-row"><span>🌱 <strong>Growth Projection</strong> — ⋯ → Growth projection; a hypothetical compound-growth view seeded from your current savings and average monthly contribution. Adjust the amount, contribution, or return rate; pick 5Y / 10Y / 20Y / 30Y. Drag to reposition.</span></div>
+      <div class="shortcut-row"><span>📈 <strong>Net Worth Trend</strong> — ⋯ → Net worth trend; a line chart of your net worth (checking + savings − debt) by month. Pick 6M, YTD, 1Y, All, or a custom start month. The summary shows your growth, how far apart the months are, and — optionally — your age across the range. Drag to reposition.</span></div>
+      <div class="shortcut-row"><span>🎂 <strong>Age on your trend</strong> — enter your birth month + year in the Net Worth Trend (optional) to see "age 23 → 25" alongside your growth. Month and year only — Jettana never asks for your full birthdate. Clear the field anytime to remove it.</span></div>
+      <div class="shortcut-row"><span>🌱 <strong>Growth Projection</strong> — ⋯ → Growth projection; a hypothetical compound-growth view seeded from your current savings and average monthly contribution. Adjust the amount, contribution, or return rate; pick 5Y / 10Y / 20Y / 30Y, or type any number of years (1–60) in the custom chip. Drag to reposition.</span></div>
+      <div class="shortcut-row"><span>⇄ <strong>Compare months</strong> — ⋯ → Compare months; any section line-by-line against a baseline month, with color-coded changes and how far apart the two months are (e.g. "2 years, 6 months apart"). The left column follows the month you're viewing. Drag to reposition.</span></div>
     </div>
 
     <div class="shortcuts-group">
