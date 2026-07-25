@@ -3068,6 +3068,10 @@ body.font-large.text-bold .erow-label-input {
    expanded sections already show the total in their footer. The %-of-budget
    pill stays visible in BOTH states (it pairs with the header fill bar). */
 .sec-card:not(.collapsed) .sec-hdr .sec-total { display: none; }
+/* Birth-month picker: let the browser draw its calendar icon in a colour
+   that matches the theme (dark mode was rendering a near-black icon). */
+.dark #nw-birth { color-scheme: dark; }
+#nw-birth::-webkit-calendar-picker-indicator { opacity: 0.75; cursor: pointer; }
 .sec-body {
   overflow: hidden;
   transition: max-height 0.3s ease, opacity 0.2s ease;
