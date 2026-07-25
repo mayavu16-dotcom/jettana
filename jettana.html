@@ -6014,6 +6014,21 @@ async function syncFromSupabase() {
     appStore.setItem(activeStorageKey(), JSON.stringify(row.data));
     _lastGood = snapWeight(row.data);   // this is the state we must not shrink
   } else {
+    // Empty result — but under RLS a request whose session isn't attached yet
+    // ALSO comes back empty with no error, indistinguishable from a new
+    // account. That mistake is what disarmed the guard on July 25. Only trust
+    // "genuinely new account" when a signed-in session is confirmed;
+    // otherwise treat it like a failed fetch: keep local, keep sync paused.
+    var _sess = null;
+    try {
+      var _sr = await _sb.auth.getSession();
+      _sess = (_sr && _sr.data) ? _sr.data.session : null;
+    } catch(e) {}
+    if (!_sess) {
+      _syncing = false;
+      console.warn('[jettana] empty fetch without a confirmed session — keeping local data, sync paused');
+      return;
+    }
     // Genuinely no row for this user — a real new account
     appStore.removeItem(activeStorageKey());
     _lastGood = { months: 0, rows: 0 };
@@ -6052,7 +6067,18 @@ async function syncToSupabase(data) {
   // Refuse to replace a known-good account with an empty or drastically
   // smaller one. No sequence of events can get past this.
   var w = snapWeight(data);
-  if (_lastGood.rows > 0 && w.rows === 0) {
+  var deliberate = _allowShrink;  // capture now — the flag is one-shot and reset by the caller
+
+  // Never push a dataset with no real rows unless the user deliberately
+  // emptied it. A just-seeded account has nothing worth saving — and an
+  // auto-pushed seed is exactly the write that overwrote a real account
+  // when a fetch wrongly looked empty (July 25 incident).
+  if (w.rows === 0 && !deliberate) {
+    console.warn('[jettana] skipped cloud write: dataset has no real rows');
+    return;
+  }
+
+  if (_lastGood.rows > 0 && w.rows === 0 && !deliberate) {
     console.warn('[jettana] blocked cloud write: would empty an account holding ' +
                  _lastGood.rows + ' rows');
     return;
@@ -6064,9 +6090,12 @@ async function syncToSupabase(data) {
   }
   if (w.rows > 0) _lastGood = w;  // high-water mark
   try {
+    // Deliberate shrink → tell the database-side guard, which strips the
+    // marker before storing. Cloned so the marker never lands in local data.
+    var payload = deliberate ? Object.assign({}, data, { _allowShrink: true }) : data;
     await _sb.from('user_data').upsert({
       user_id: _currentUser.id,
-      data: data,
+      data: payload,
       updated_at: new Date().toISOString()
     }, { onConflict: 'user_id' });
   } catch(e) {}
@@ -7502,6 +7531,7 @@ function delRow(section, id) {
 function clearMonth() {
   if (!confirm(`Clear all data for ${monthLabel(currentMonthKey)}?`)) return;
   pushUndo('Clear month');
+  _allowShrink = true;   // user asked for this one — lets the DB shrink guard through
   SECTIONS.forEach(s => {
     const all = loadAll();
     all[currentMonthKey][s] = [];
@@ -7509,6 +7539,7 @@ function clearMonth() {
     const c = document.getElementById(`rows-${s}`);
     if (c) c.innerHTML = '';
   });
+  _allowShrink = false;  // one-shot — re-arm immediately
   recalc();
   renderSidebar();
   showUndoToast('Month cleared');
