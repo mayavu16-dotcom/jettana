@@ -441,6 +441,49 @@ body {
   font-weight: 700;
 }
 
+/* ── Credit score pill (debt header) ─────────────────────────── */
+.credit-score-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255,255,255,0.16);
+  border-radius: 999px;
+  padding: 2px 9px 2px 10px;
+  line-height: 1;
+}
+.credit-score-pill .cs-label {
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.75);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.credit-score-pill .cs-input {
+  width: 32px;
+  height: 18px;
+  background: none;
+  border: none;
+  outline: none;
+  color: white;
+  font-family: 'Playfair Display', serif;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  padding: 0;
+  line-height: 1;
+  position: relative;
+  top: -1px;   /* Playfair renders low in inputs — optical centering */
+}
+.credit-score-pill .cs-input::placeholder { color: rgba(255,255,255,0.4); font-weight: 400; }
+.credit-score-pill .cs-delta { font-size: 11px; font-weight: 700; }
+.credit-score-pill .cs-delta.up { color: #CBE7C4; }
+.credit-score-pill .cs-delta.down { color: #F5C9C0; }
+@media (max-width: 480px) {
+  .credit-score-pill .cs-label { display: none; }  /* keep header uncrowded on phones */
+  .credit-score-pill { padding: 2px 7px; }
+}
+
 /* ── Clear section button ────────────────────────────────────── */
 .sec-clear-btn, .sec-trash-btn {
   opacity: 0;
@@ -3023,6 +3066,11 @@ body.font-large.text-bold .erow-label-input {
 }
 .sec-collapse-btn:hover { color: white; }
 .sec-card.collapsed .sec-collapse-btn { transform: rotate(-90deg); }
+/* Header total only earns its place when the section is collapsed —
+   expanded sections already show the total in their footer. The %-of-income
+   label rides along with it. */
+.sec-card:not(.collapsed) .sec-hdr .sec-total,
+.sec-card:not(.collapsed) .sec-hdr .hdr-pct-label { display: none; }
 .sec-body {
   overflow: hidden;
   transition: max-height 0.3s ease, opacity 0.2s ease;
@@ -4543,7 +4591,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
         <div class="sec-card" data-section-id="debt">
           <div class="sec-hdr bg-debt">
             <div class="sec-hdr-left"><h3 id="sec-title-debt" ondblclick="renameSectionPrompt('debt')" ontouchstart="_secLongPress=setTimeout(function(){renameSectionPrompt('debt');},600)" ontouchend="clearTimeout(_secLongPress)" ontouchmove="clearTimeout(_secLongPress)" title="Double-click or long-press to rename">Debt</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
-            <div class="sec-hdr-right"><button class="sec-clear-btn" onclick="event.stopPropagation();clearSection('debt',this)" title="Section actions">⋯</button><button class="sec-trash-btn" onclick="confirmClearSection('debt')" title="Clear all rows"><svg width="11" height="12" viewBox="0 0 11 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 3h9M4 3V2h3v1M2 3l.6 7h5.8L9 3" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="sec-total" id="hdr-debt">$0</span><button class="sec-collapse-btn" onclick="toggleSection('debt')" title="Collapse section">▾</button></div></div>
+            <div class="sec-hdr-right"><button class="sec-clear-btn" onclick="event.stopPropagation();clearSection('debt',this)" title="Section actions">⋯</button><button class="sec-trash-btn" onclick="confirmClearSection('debt')" title="Clear all rows"><svg width="11" height="12" viewBox="0 0 11 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 3h9M4 3V2h3v1M2 3l.6 7h5.8L9 3" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="credit-score-pill" onclick="event.stopPropagation()" title="Your credit score this month (300–850)"><span class="cs-label">Credit score</span><input id="credit-score-input" class="cs-input" type="text" inputmode="numeric" maxlength="3" placeholder="—" onclick="event.stopPropagation()" onchange="saveCreditScore(this.value)"><span id="cs-delta" class="cs-delta"></span></span><span class="sec-total" id="hdr-debt">$0</span><button class="sec-collapse-btn" onclick="toggleSection('debt')" title="Collapse section">▾</button></div></div>
           <div class="sec-body">
           <div class="col-lbl-row"><span>Account</span><span>Current</span><span>Remaining</span></div>
           <div class="bulk-bar" id="bulk-bar-debt"><span class="bulk-bar-count" id="bulk-count-debt">0 selected</span><button class="bulk-bar-btn" onclick="selectAllBulk('debt')">Select all</button><button class="bulk-bar-btn danger" onclick="deleteSelectedBulk('debt')">Delete selected</button><button class="bulk-bar-btn" onclick="cancelBulk('debt')">Cancel</button></div><div class="entry-list" id="rows-debt" data-hint="Add credit cards, loans, or any balances you're paying down"></div>
@@ -6370,6 +6418,42 @@ function allMonthKeys() {
   return Object.keys(all).filter(k => /^\d{4}-\d{2}$/.test(k)).sort().reverse();
 }
 
+/* ── Credit score (per month, stored on the month object) ────── */
+function saveCreditScore(val) {
+  var all = loadAll();
+  if (!all[currentMonthKey]) return;
+  var n = parseInt(String(val).replace(/[^\d]/g, ''), 10);
+  if (isNaN(n)) {
+    delete all[currentMonthKey].creditScore;   // cleared the field
+  } else {
+    n = Math.max(300, Math.min(850, n));       // clamp to the real score range
+    all[currentMonthKey].creditScore = n;
+  }
+  saveAll(all);
+  renderCreditScore();
+}
+
+function renderCreditScore() {
+  var input = document.getElementById('credit-score-input');
+  var delta = document.getElementById('cs-delta');
+  if (!input || !delta) return;
+  var all = loadAll();
+  var m = all[currentMonthKey] || {};
+  input.value = (m.creditScore != null) ? m.creditScore : '';
+  // delta vs the nearest earlier month that has a score
+  delta.textContent = '';
+  delta.className = 'cs-delta';
+  if (m.creditScore == null) return;
+  var prev = Object.keys(all)
+    .filter(function(k) { return /^\d{4}-\d{2}$/.test(k) && k < currentMonthKey && all[k] && all[k].creditScore != null; })
+    .sort().pop();
+  if (!prev) return;
+  var d = m.creditScore - all[prev].creditScore;
+  if (d === 0) return;
+  delta.textContent = (d > 0 ? '▲ +' : '▼ −') + Math.abs(d);
+  delta.classList.add(d > 0 ? 'up' : 'down');
+}
+
 function hasData(key) {
   const d = loadAll()[key];
   if (!d) return false;
@@ -6980,6 +7064,7 @@ function switchMonth(key) {
   renderSidebar();
   loadFooterBudgets();
   recalc();
+  renderCreditScore();
   loadNwGoal();
   loadFtHighlights();
   applyFtHighlights();
