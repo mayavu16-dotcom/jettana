@@ -5099,6 +5099,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <span id="gp-chip-10" class="nw-chip active" onclick="setGPYears(10)">10Y</span>
       <span id="gp-chip-20" class="nw-chip" onclick="setGPYears(20)">20Y</span>
       <span id="gp-chip-30" class="nw-chip" onclick="setGPYears(30)">30Y</span>
+      <span id="gp-chip-custom" class="nw-chip" style="display:inline-flex;align-items:center;gap:3px;padding-right:8px;" title="Project over any number of years (1–60)"><input id="gp-custom-years" type="text" inputmode="numeric" maxlength="2" placeholder="#" style="width:24px;background:none;border:none;outline:none;color:inherit;font:inherit;font-weight:700;text-align:center;padding:0;" onclick="event.stopPropagation()" onchange="setGPCustomYears(this.value)" onkeydown="if(event.key==='Enter'){this.blur();}">Y</span>
     </div>
     <div class="gp-controls">
       <div class="gp-field">
@@ -17795,11 +17796,25 @@ function gpAgeInput() {
 
 function setGPYears(y) {
   _gpYears = y;
+  var isPreset = [5, 10, 20, 30].indexOf(y) !== -1;
   [5, 10, 20, 30].forEach(function(x) {
     var c = document.getElementById('gp-chip-' + x);
     if (c) c.classList.toggle('active', x === y);
   });
+  var custom = document.getElementById('gp-chip-custom');
+  if (custom) custom.classList.toggle('active', !isPreset);
+  var ci = document.getElementById('gp-custom-years');
+  if (ci && isPreset) ci.value = '';   // presets clear the custom field
   renderGPChart();
+}
+
+function setGPCustomYears(val) {
+  var n = parseInt(String(val).replace(/[^\d]/g, ''), 10);
+  if (isNaN(n)) { setGPYears(10); return; }        // cleared → back to default
+  n = Math.max(1, Math.min(60, n));                // 1–60 years
+  var ci = document.getElementById('gp-custom-years');
+  if (ci) ci.value = n;                            // reflect the clamp
+  setGPYears(n);
 }
 
 /* ── Compare months ───────────────────────────────────────────
