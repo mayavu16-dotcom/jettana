@@ -4717,6 +4717,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
         <div id="mchk-header" style="display:flex;align-items:center;gap:6px;padding:10px 12px;border-bottom:1px solid var(--mist);cursor:grab;user-select:none;">
           <span style="font-size:12.5px;font-weight:700;">☑ <span id="mchk-title">Checklist</span></span>
           <span class="modal-drag-hint" style="margin-left:auto;">⠿ drag to move</span>
+          <button id="mchk-expand-btn" onclick="toggleMonthChecklistSize()" title="Expand / shrink" style="background:none;border:none;font-size:13px;color:var(--steel);cursor:pointer;padding:0 2px;line-height:1;">⤢</button>
           <button onclick="toggleMonthChecklist()" title="Hide (your items are saved)" style="background:none;border:none;font-size:15px;color:var(--steel);cursor:pointer;padding:0 2px;line-height:1;">×</button>
         </div>
         <div id="mchk-items" style="max-height:44vh;overflow-y:auto;overscroll-behavior:contain;padding:6px 8px;"></div>
@@ -6519,12 +6520,35 @@ function toggleMonthChecklist() {
     if (inp && !('ontouchstart' in window)) inp.focus();
   }
 }
+function _applyMonthChecklistSize(big) {
+  var pop = document.getElementById('mchk-pop');
+  var items = document.getElementById('mchk-items');
+  var btn = document.getElementById('mchk-expand-btn');
+  if (!pop || !items) return;
+  pop.style.width = big ? 'min(440px, calc(100vw - 24px))' : 'min(290px, calc(100vw - 24px))';
+  items.style.maxHeight = big ? '68vh' : '44vh';
+  if (btn) { btn.textContent = big ? '⤡' : '⤢'; btn.title = big ? 'Shrink' : 'Expand'; }
+  renderMonthChecklist();   // row text is inline-styled, so re-render picks up the size
+  // If growing pushed it past the right/bottom edge, nudge it back on screen
+  var r = pop.getBoundingClientRect();
+  if (r.right > window.innerWidth) { pop.style.left = Math.max(0, window.innerWidth - r.width - 8) + 'px'; pop.style.right = 'auto'; }
+  if (r.bottom > window.innerHeight) { pop.style.top = Math.max(0, window.innerHeight - r.height - 8) + 'px'; }
+}
+function toggleMonthChecklistSize() {
+  var big = appStore.getItem(nsKey('intentra_mchk_big')) === '1';
+  big = !big;
+  appStore.setItem(nsKey('intentra_mchk_big'), big ? '1' : '0');
+  _applyMonthChecklistSize(big);
+}
 function renderMonthChecklist() {
   var wrap = document.getElementById('mchk-items');
   if (!wrap) return;
   var title = document.getElementById('mchk-title');
   if (title) title.textContent = /^\d{4}-\d{2}$/.test(currentMonthKey) ? monthLabel(currentMonthKey) + ' checklist' : 'Checklist';
   var items = _mchkItems();
+  var _big = false;
+  try { _big = appStore.getItem(nsKey('intentra_mchk_big')) === '1'; } catch (e) {}
+  var _fs = _big ? '14px' : '12.5px';
   wrap.innerHTML = '';
   if (!items.length) {
     var empty = document.createElement('div');
@@ -6542,7 +6566,7 @@ function renderMonthChecklist() {
     cb.onchange = function() { toggleMonthChecklistItem(it.id); };
     var txt = document.createElement('span');
     txt.textContent = it.text;
-    txt.style.cssText = 'flex:1;font-size:12.5px;line-height:1.45;word-break:break-word;' + (it.done ? 'text-decoration:line-through;color:var(--steel);' : '');
+    txt.style.cssText = 'flex:1;font-size:' + _fs + ';line-height:1.45;word-break:break-word;' + (it.done ? 'text-decoration:line-through;color:var(--steel);' : '');
     var del = document.createElement('button');
     del.textContent = '×';
     del.title = 'Remove';
@@ -6601,6 +6625,7 @@ function removeMonthChecklistItem(id) {
         var p = document.getElementById('mchk-pop');
         if (p) { p.style.display = 'block'; renderMonthChecklist(); }
       }
+      _applyMonthChecklistSize(appStore.getItem(nsKey('intentra_mchk_big')) === '1');
     } catch (e) {}
   });
 })();
