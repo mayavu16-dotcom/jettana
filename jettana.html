@@ -9322,6 +9322,36 @@ function commitDate(section, id, dateVal) {
   const bar = document.getElementById('date-confirm-bar-' + id);
   if (bar) bar.remove();
   scheduleSave();
+  autoSortSectionByDate(section);
+}
+
+/* ── Auto-sort a section's rows by date (earliest → latest) ──────
+   Runs after a row's date is set or changed. Dated rows order
+   chronologically (using date, falling back to the second date —
+   same fallback the calendar uses); undated rows keep their
+   relative order below the dated ones. Only reorders + re-renders
+   when the order actually changed, so nothing jumps needlessly. */
+function autoSortSectionByDate(section) {
+  var all = loadAll();
+  var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
+  if (rows.length < 2) return;
+  var sorted = rows.slice().sort(function(a, b) {
+    var da = a.date || a.date2 || '', db = b.date || b.date2 || '';
+    if (da && db) return da < db ? -1 : (da > db ? 1 : 0);  // YYYY-MM-DD compares chronologically
+    if (da) return -1;
+    if (db) return 1;
+    return 0;  // both undated — stable sort keeps their relative order
+  });
+  var changed = sorted.some(function(r, i) { return r !== rows[i]; });
+  if (!changed) return;
+  all[currentMonthKey][section] = sorted;
+  saveAll(all);
+  var container = document.getElementById('rows-' + section);
+  if (container) {
+    container.innerHTML = '';
+    sorted.forEach(function(row) { renderRowEl(section, row, false); });
+  }
+  recalc();
 }
 
 function saveDate(section, id, dateVal) {
@@ -9418,6 +9448,7 @@ function commitDate2(section, id, dateVal) {
   const bar2 = document.getElementById('date-confirm-bar-' + id + '-2');
   if (bar2) bar2.remove();
   scheduleSave();
+  autoSortSectionByDate(section);
 }
 
 function saveDate2(section, id, dateVal) {
