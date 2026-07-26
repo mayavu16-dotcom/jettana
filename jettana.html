@@ -9054,16 +9054,22 @@ function autoCalcDebtFromCards() {
     }
   });
 
-  // For debt rows without a _cardLink, still apply _carriedBalance to current
+  // For debt rows without a _cardLink, still apply _carriedBalance to current —
+  // but NEVER fight the user: skip while either cell is being edited, and
+  // respect any value they typed that differs from the carried amount.
+  // (Unlinked rows are manual rows; carried only fills the blanks.)
   debtRows.forEach(function(debtRow) {
     if (debtRow._cardLink) return; // already handled above
     var carried = parseAmt(debtRow['_carriedBalance']) || 0;
     if (!carried) return;
+    var inp1 = document.querySelector('input[data-id="' + debtRow.id + '"][data-col="1"]');
+    var inp2 = document.querySelector('input[data-id="' + debtRow.id + '"][data-col="2"]');
+    if ((inp1 && document.activeElement === inp1) || (inp2 && document.activeElement === inp2)) return;
+    var existing = parseAmt(debtRow['current']) || 0;
+    if (existing && existing !== carried) return; // user-entered value wins
     debtRow['current'] = String(carried);
     debtRow['remaining'] = String(carried);
-    var inp1 = document.querySelector('input[data-id="' + debtRow.id + '"][data-col="1"]');
     if (inp1) { inp1.value = '$' + carried.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); inp1.dataset.raw = String(carried); }
-    var inp2 = document.querySelector('input[data-id="' + debtRow.id + '"][data-col="2"]');
     if (inp2) { inp2.value = '$' + carried.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); inp2.dataset.raw = String(carried); }
   });
 
