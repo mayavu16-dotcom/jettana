@@ -481,8 +481,10 @@ body {
 .credit-score-pill .cs-delta.up { color: #CBE7C4; }
 .credit-score-pill .cs-delta.down { color: #F5C9C0; }
 @media (max-width: 480px) {
-  .credit-score-pill .cs-label { display: none; }  /* keep header uncrowded on phones */
-  .credit-score-pill { padding: 2px 7px; }
+  /* Keep the label on phones — DEBT is the shortest section title, so it fits,
+     and a bare "500" pill is meaningless without it. Just tighten the padding. */
+  .credit-score-pill { padding: 2px 8px; gap: 4px; }
+  .credit-score-pill .cs-label { font-size: 9px; letter-spacing: 0.4px; }
 }
 
 /* ── Clear section button ────────────────────────────────────── */
