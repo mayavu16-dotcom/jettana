@@ -5407,6 +5407,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
     <div class="shortcuts-group">
       <div class="shortcuts-group-title">Templates</div>
+      <div class="shortcut-row"><span>🧾 <strong>Itemize (expenses)</strong> — open the note on any expense row → 🧾 Itemize; add an entry per item with its price (tax can be its own line). Perfect for orders that bundle several purchases into one charge — the row shows "Amazon $40", the note shows what the $40 was. The note totals your items so you can check it matches the Actual.</span></div>
       <div class="shortcut-row"><span>💵 <strong>Paycheck (Income)</strong> — open the note on any income row → Paycheck; enter pay date, hours, hourly rate, gross pay, taxes and deductions; net pay auto-fills the Received column. Gross pay is black, taxes red, deductions green for easy reading.</span></div>
       <div class="shortcut-row"><span>💳 <strong>Payment (Debt)</strong> — open the note on any debt row → Payment; log date paid, amount, type, interest charged and due date; remaining balance auto-fills the Remaining column</span></div>
       <div class="shortcut-row"><span>📈 <strong>Performance (Savings)</strong> — open the note on any savings row → Performance; enter account value and cost basis; market gain/loss and cumulative return % are auto-calculated and fill the Actual and Growth columns</span></div>
@@ -10060,20 +10061,23 @@ function toggleNote(section, id) {
           templates = ['general', 'paycheck'];
           templateLabels = { general: 'General', paycheck: 'Paycheck' };
         } else if (section === 'housing') {
-          templates = ['general', 'due'];
-          templateLabels = { general: 'General', due: '📋 Due date' };
+          templates = ['general', 'due', 'itemize'];
+          templateLabels = { general: 'General', due: '📋 Due date', itemize: '🧾 Itemize' };
         } else if (section === 'debt') {
           templates = ['general', 'payment'];
           templateLabels = { general: 'General', payment: 'Payment' };
         } else if (section === 'transport') {
-          templates = ['general', 'fuel'];
-          templateLabels = { general: 'General', fuel: '⛽ Fuel' };
+          templates = ['general', 'fuel', 'itemize'];
+          templateLabels = { general: 'General', fuel: '⛽ Fuel', itemize: '🧾 Itemize' };
         } else if (section === 'subscriptions') {
-          templates = ['general', 'subscription'];
-          templateLabels = { general: 'General', subscription: 'Manage' };
+          templates = ['general', 'subscription', 'itemize'];
+          templateLabels = { general: 'General', subscription: 'Manage', itemize: '🧾 Itemize' };
         } else if (section === 'checking') {
           templates = ['general', 'transaction'];
           templateLabels = { general: 'General', transaction: 'Transaction' };
+        } else if (section === 'food' || section === 'health' || section === 'gifts' || section === 'misc') {
+          templates = ['general', 'itemize'];
+          templateLabels = { general: 'General', itemize: '🧾 Itemize' };
         } else {
           templates = ['general','transfer','contribution','investment','interest','dividend','performance'];
           templateLabels = { general: 'General', transfer: 'Transfer', contribution: 'Contribution', investment: 'Investment', interest: 'Interest', dividend: 'Dividend', performance: 'Performance' };
@@ -10268,7 +10272,7 @@ function renderAllEntries(section, id, template, entries, skipTotal) {
     }
   }
 
-  var TYPE_LABELS = { contribution: 'Contribution', transfer: 'Transfer', investment: 'Investment', interest: 'Interest', dividend: 'Dividend', performance: 'Performance', payment: 'Payment', paycheck: 'Paycheck', transaction: 'Transaction', fuel: 'Fuel', manage: 'Manage', due: 'Due date' };
+  var TYPE_LABELS = { contribution: 'Contribution', transfer: 'Transfer', investment: 'Investment', interest: 'Interest', dividend: 'Dividend', performance: 'Performance', payment: 'Payment', paycheck: 'Paycheck', transaction: 'Transaction', fuel: 'Fuel', manage: 'Manage', due: 'Due date', itemize: 'Item' };
   var TYPE_COLORS = {
     contribution: 'var(--sage-dark)',
     investment:   'var(--sage-dark)',
@@ -10282,6 +10286,7 @@ function renderAllEntries(section, id, template, entries, skipTotal) {
     fuel:         '#7B72AA',
     manage:       'var(--steel)',
     due:          '#C0736A',
+    itemize:      '#A8823E',
   };
 
   entries.forEach(function(entry, idx) {
@@ -10496,6 +10501,16 @@ function renderEntryFields(section, id, template, entry, idx) {
       '<input type="date" data-key="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
       '</div>';
   }
+  if (template === 'itemize') {
+    var itBlurCb = 'templateMoneyBlur(this,\'' + section + '\',\'' + id + '\',\'' + template + '\')';
+    return '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+      '<div style="flex:2;min-width:120px;"><label style="' + labelStyle + '">Item</label>' +
+      '<input type="text" data-key="itname" value="' + String(entry.itname || '').replace(/"/g, '&quot;').replace(/</g, '&lt;') + '" placeholder="e.g. USB cable, Tax…" style="' + inputStyle + '" oninput="this.dataset.key=\'itname\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Price</label>' +
+      '<input type="text" data-key="itprice" value="' + (entry.itprice ? '$' + parseAmt(entry.itprice).toFixed(2) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + itBlurCb + '" oninput="this.dataset.key=\'itprice\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '</div>';
+  }
+
   if (template === 'fuel') {
     var blurCb = 'templateMoneyBlur(this,\'' + section + '\',\'' + id + '\',\'' + template + '\')';
     var fuelPrice = parseFloat(String(entry.fuelprice || '').replace(/[$,]/g, '')) || 0;
@@ -10782,6 +10797,8 @@ function updateEntryTotal(section, id, template) {
       var fp = parseAmt(vals.fuelprice);
       var fg = parseFloat(String(vals.fuelgal || '').replace(/[,]/g, '')) || 0;
       entryTotal = (fp && fg) ? fp * fg : 0;
+    } else if (entryType === 'itemize') {
+      entryTotal = parseAmt(vals.itprice);
     } else if (entryType === 'performance') {
       entryTotal = parseAmt(vals.perfvalue);
       hasPerfEntry = true;
