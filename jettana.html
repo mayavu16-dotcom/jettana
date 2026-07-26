@@ -6506,6 +6506,18 @@ function _mchkItems() {
   var m = all[currentMonthKey];
   return (m && Array.isArray(m._reminders)) ? m._reminders : [];
 }
+function _mchkHist() {
+  var all = loadAll();
+  var m = all[currentMonthKey];
+  return (m && Array.isArray(m._remindersHist)) ? m._remindersHist : [];
+}
+function _mchkSaveHist(items) {
+  var all = loadAll();
+  if (!all[currentMonthKey]) return;
+  all[currentMonthKey]._remindersHist = items.slice(0, 200);   // sanity cap
+  saveAll(all);
+}
+var _mchkShowHist = false;   // view state only — not persisted
 function _mchkSave(items) {
   var all = loadAll();
   if (!all[currentMonthKey]) return;
@@ -6561,7 +6573,10 @@ function renderMonthChecklist() {
     wrap.appendChild(empty);
     return;
   }
-  items.forEach(function(it) {
+  // Unchecked first, completed sink to the bottom (stable — order within
+  // each group is preserved; stored order stays untouched)
+  var display = items.slice().sort(function(a, b) { return (a.done ? 1 : 0) - (b.done ? 1 : 0); });
+  display.forEach(function(it) {
     var row = document.createElement('div');
     row.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:5px 4px;border-radius:6px;';
     var cb = document.createElement('input');
@@ -6596,6 +6611,71 @@ function renderMonthChecklist() {
     row.appendChild(cb); row.appendChild(txt); row.appendChild(del);
     wrap.appendChild(row);
   });
+  var doneCount = items.filter(function(i) { return i.done; }).length;
+  if (doneCount) {
+    var clr = document.createElement('button');
+    clr.textContent = 'Move to history (' + doneCount + ')';
+    clr.title = 'Tuck completed items into this month\'s history — you can view or restore them anytime';
+    clr.style.cssText = 'display:block;margin:6px 4px 2px auto;background:none;border:none;color:var(--steel);font-size:11px;cursor:pointer;font-family:inherit;text-decoration:underline;padding:2px 4px;';
+    clr.onclick = archiveCompletedChecklistItems;
+    wrap.appendChild(clr);
+  }
+  // History — collapsed behind a toggle; per month, restorable
+  var hist = _mchkHist();
+  if (hist.length) {
+    var ht = document.createElement('button');
+    ht.textContent = (_mchkShowHist ? '▾' : '▸') + ' History (' + hist.length + ')';
+    ht.style.cssText = 'display:block;margin:4px 0 0 4px;background:none;border:none;color:var(--steel);font-size:11px;cursor:pointer;font-family:inherit;padding:2px 4px;';
+    ht.onclick = function() { _mchkShowHist = !_mchkShowHist; renderMonthChecklist(); };
+    wrap.appendChild(ht);
+    if (_mchkShowHist) {
+      hist.forEach(function(it) {
+        var hr = document.createElement('div');
+        hr.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:4px 4px 4px 12px;opacity:0.72;';
+        var htxt = document.createElement('span');
+        htxt.textContent = it.text;
+        htxt.style.cssText = 'flex:1;font-size:' + _fs + ';line-height:1.4;word-break:break-word;color:var(--steel);';
+        var hdate = document.createElement('span');
+        hdate.textContent = it.ts || '';
+        hdate.style.cssText = 'font-size:10px;color:var(--steel);flex-shrink:0;padding-top:2px;';
+        var back = document.createElement('button');
+        back.textContent = '↩';
+        back.title = 'Restore to the list';
+        back.style.cssText = 'background:none;border:none;color:var(--steel);font-size:12px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0;';
+        back.onclick = function() { restoreChecklistHistoryItem(it.id); };
+        var hdel = document.createElement('button');
+        hdel.textContent = '×';
+        hdel.title = 'Delete permanently';
+        hdel.style.cssText = 'background:none;border:none;color:var(--steel);font-size:13px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0;';
+        hdel.onclick = function() { deleteChecklistHistoryItem(it.id); };
+        hr.appendChild(htxt); hr.appendChild(hdate); hr.appendChild(back); hr.appendChild(hdel);
+        wrap.appendChild(hr);
+      });
+    }
+  }
+}
+function archiveCompletedChecklistItems() {
+  var items = _mchkItems();
+  var done = items.filter(function(it) { return it.done; });
+  if (!done.length) return;
+  var today = new Date();
+  var ts = (today.getMonth() + 1) + '/' + today.getDate();
+  var hist = done.map(function(it) { return { id: it.id, text: it.text, ts: ts }; }).concat(_mchkHist());
+  _mchkSaveHist(hist);
+  _mchkSave(items.filter(function(it) { return !it.done; }));
+  renderMonthChecklist();
+}
+function restoreChecklistHistoryItem(id) {
+  var hist = _mchkHist();
+  var it = hist.find(function(h) { return h.id === id; });
+  if (!it) return;
+  _mchkSave(_mchkItems().concat([{ id: it.id, text: it.text, done: false }]));
+  _mchkSaveHist(hist.filter(function(h) { return h.id !== id; }));
+  renderMonthChecklist();
+}
+function deleteChecklistHistoryItem(id) {
+  _mchkSaveHist(_mchkHist().filter(function(h) { return h.id !== id; }));
+  renderMonthChecklist();
 }
 function addMonthChecklistItem() {
   var inp = document.getElementById('mchk-input');
