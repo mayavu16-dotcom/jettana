@@ -6566,7 +6566,24 @@ function renderMonthChecklist() {
     cb.onchange = function() { toggleMonthChecklistItem(it.id); };
     var txt = document.createElement('span');
     txt.textContent = it.text;
-    txt.style.cssText = 'flex:1;font-size:' + _fs + ';line-height:1.45;word-break:break-word;' + (it.done ? 'text-decoration:line-through;color:var(--steel);' : '');
+    txt.title = 'Tap to edit';
+    txt.style.cssText = 'flex:1;font-size:' + _fs + ';line-height:1.45;word-break:break-word;cursor:text;' + (it.done ? 'text-decoration:line-through;color:var(--steel);' : '');
+    txt.onclick = function() {
+      var input = document.createElement('input');
+      input.type = 'text'; input.value = it.text; input.maxLength = 200;
+      input.style.cssText = 'flex:1;font-family:inherit;font-size:' + _fs + ';border:1px solid var(--mist);border-radius:6px;padding:3px 6px;background:transparent;color:var(--ink);outline:none;min-width:0;';
+      input.onkeydown = function(e) {
+        if (e.key === 'Enter') { input.blur(); }
+        if (e.key === 'Escape') { input.dataset.cancel = '1'; renderMonthChecklist(); }
+      };
+      input.onblur = function() {
+        if (input.dataset.cancel) return;
+        editMonthChecklistItem(it.id, input.value);
+      };
+      row.replaceChild(input, txt);
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+    };
     var del = document.createElement('button');
     del.textContent = '×';
     del.title = 'Remove';
@@ -6590,6 +6607,12 @@ function addMonthChecklistItem() {
 }
 function toggleMonthChecklistItem(id) {
   _mchkSave(_mchkItems().map(function(it) { return it.id === id ? { id: it.id, text: it.text, done: !it.done } : it; }));
+  renderMonthChecklist();
+}
+function editMonthChecklistItem(id, newText) {
+  var t = String(newText || '').trim();
+  if (!t) { renderMonthChecklist(); return; }   // emptied → keep the original text
+  _mchkSave(_mchkItems().map(function(it) { return it.id === id ? { id: it.id, text: t, done: it.done } : it; }));
   renderMonthChecklist();
 }
 function removeMonthChecklistItem(id) {
