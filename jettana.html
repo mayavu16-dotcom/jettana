@@ -10503,10 +10503,15 @@ function renderEntryFields(section, id, template, entry, idx) {
   }
   if (template === 'itemize') {
     var itBlurCb = 'templateMoneyBlur(this,\'' + section + '\',\'' + id + '\',\'' + template + '\')';
+    var itKind = entry.itkind || 'item';
+    var _opt = function(v, label) { return '<option value="' + v + '"' + (itKind === v ? ' selected' : '') + '>' + label + '</option>'; };
     return '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
-      '<div style="flex:2;min-width:120px;"><label style="' + labelStyle + '">Item</label>' +
-      '<input type="text" data-key="itname" value="' + String(entry.itname || '').replace(/"/g, '&quot;').replace(/</g, '&lt;') + '" placeholder="e.g. USB cable, Tax…" style="' + inputStyle + '" oninput="this.dataset.key=\'itname\';' + cb + '" onclick="event.stopPropagation()"></div>' +
-      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Price</label>' +
+      '<div style="flex:0 0 84px;"><label style="' + labelStyle + '">Type</label>' +
+      '<select data-key="itkind" style="' + inputStyle + 'cursor:pointer;" onchange="this.dataset.key=\'itkind\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()">' +
+      _opt('item', 'Item') + _opt('tax', 'Tax') + _opt('shipping', 'Shipping') + _opt('coupon', 'Coupon') + '</select></div>' +
+      '<div style="flex:2;min-width:110px;"><label style="' + labelStyle + '">' + (itKind === 'coupon' ? 'Coupon / discount' : itKind === 'tax' ? 'Tax' : itKind === 'shipping' ? 'Shipping & handling' : 'Item') + '</label>' +
+      '<input type="text" data-key="itname" value="' + String(entry.itname || '').replace(/"/g, '&quot;').replace(/</g, '&lt;') + '" placeholder="' + (itKind === 'coupon' ? 'e.g. promo code' : itKind === 'tax' ? 'e.g. sales tax' : itKind === 'shipping' ? 'e.g. standard shipping' : 'e.g. USB cable') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'itname\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">' + (itKind === 'coupon' ? 'Amount off' : 'Price') + '</label>' +
       '<input type="text" data-key="itprice" value="' + (entry.itprice ? '$' + parseAmt(entry.itprice).toFixed(2) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + itBlurCb + '" oninput="this.dataset.key=\'itprice\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
       '</div>';
   }
@@ -10743,6 +10748,7 @@ function updateEntryTotal(section, id, template) {
 
   var grandTotal = 0;
   var hasPerfEntry = false;
+  var itSub = 0, itTax = 0, itShip = 0, itCoupon = 0, hasItemize = false;
   var idx = 0;
   entryDivs.forEach(function(entryDiv) {
     var vals = {};
@@ -10798,7 +10804,12 @@ function updateEntryTotal(section, id, template) {
       var fg = parseFloat(String(vals.fuelgal || '').replace(/[,]/g, '')) || 0;
       entryTotal = (fp && fg) ? fp * fg : 0;
     } else if (entryType === 'itemize') {
-      entryTotal = parseAmt(vals.itprice);
+      var itAmt = parseAmt(vals.itprice);
+      hasItemize = true;
+      if (vals.itkind === 'coupon') { itCoupon += itAmt; entryTotal = -itAmt; }
+      else if (vals.itkind === 'tax') { itTax += itAmt; entryTotal = itAmt; }
+      else if (vals.itkind === 'shipping') { itShip += itAmt; entryTotal = itAmt; }
+      else { itSub += itAmt; entryTotal = itAmt; }
     } else if (entryType === 'performance') {
       entryTotal = parseAmt(vals.perfvalue);
       hasPerfEntry = true;
@@ -10857,6 +10868,17 @@ function updateEntryTotal(section, id, template) {
       totalEl.style.color = grandTotal >= 0 ? '#27AE60' : '#C0392B';
       totalEl.textContent = 'Net: ' + txSign + '$' + abs.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + ((txBeginning || txPaidAdj) ? '  →  Ending: $' + txEnding.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '');
       recalc();
+    } else if (hasItemize) {
+      // Receipt-style breakdown: items + tax − coupons = total
+      var _f2 = function(v) { return '$' + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+      var parts = ['Items: ' + _f2(itSub)];
+      if (itTax) parts.push('Tax: ' + _f2(itTax));
+      if (itShip) parts.push('Shipping: ' + _f2(itShip));
+      if (itCoupon) parts.push('Coupon: −' + _f2(itCoupon));
+      totalEl.style.color = grandTotal >= 0 ? 'var(--sage)' : 'var(--blush)';
+      totalEl.innerHTML = '<span style="display:block;font-weight:400;font-size:11px;color:var(--steel);padding-bottom:2px;">' + parts.join(' · ') + '</span>' +
+        'Total: ' + (grandTotal < 0 ? '−' : '') + _f2(grandTotal);
+      applyToColumn(section, id, grandTotal, 'Auto-calculated from entries');
     } else {
       var sign = grandTotal >= 0 ? '+' : '−';
       totalEl.style.color = grandTotal >= 0 ? 'var(--sage)' : 'var(--blush)';
