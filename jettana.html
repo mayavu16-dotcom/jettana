@@ -10048,7 +10048,7 @@ function toggleNote(section, id) {
   if (opening) {
     // Snapshot before the user edits anything in this note
     pushUndo('Edit note/template');
-    if (section === 'savings' || section === 'income' || section === 'debt' || section === 'transport' || section === 'subscriptions' || section === 'checking' || section === 'housing') {
+    if (section === 'savings' || section === 'income' || section === 'debt' || section === 'transport' || section === 'subscriptions' || section === 'checking' || section === 'housing' || section === 'food' || section === 'health' || section === 'gifts' || section === 'misc') {
       var noteInner = wrap.querySelector('.note-inner');
       if (noteInner && !noteInner.querySelector('.savings-template')) {
         var all = loadAll();
