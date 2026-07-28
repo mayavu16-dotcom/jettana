@@ -3077,9 +3077,11 @@ body.font-large.text-bold .erow-label-input {
    that matches the theme (dark mode was rendering a near-black icon). */
 .dark #nw-birth { color-scheme: dark; }
 #nw-birth::-webkit-calendar-picker-indicator { opacity: 0.75; cursor: pointer; }
-/* Drag hint on draggable modal headers — pointless on phones where modals are near full-width */
+/* Drag hint on draggable modal headers — shown on phones too (touch drag
+   works, and dragging a modal down to peek at the tracker underneath is
+   exactly the follow-along use case), just a touch smaller there */
 .modal-drag-hint { font-size: 10.5px; font-weight: 400; color: var(--steel); letter-spacing: 0.3px; white-space: nowrap; }
-@media (max-width: 600px) { .modal-drag-hint { display: none; } }
+@media (max-width: 600px) { .modal-drag-hint { font-size: 9px; letter-spacing: 0.2px; } }
 /* While the demo guide spotlights a hover-revealed control (⋯, trash, ≡),
    force it visible — ringing an invisible button teaches nothing.
    Late in the file on purpose: it must win the !important tie with the
