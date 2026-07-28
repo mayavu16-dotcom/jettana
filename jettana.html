@@ -5081,7 +5081,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
     </div>
     <div class="trends-subtitle" style="display:flex;align-items:center;gap:8px;"><span>Last 6 months of expenses · tap a bar for details</span><button id="trends-peaks-btn" onclick="toggleTrendsPeaks()" title="Each category's highest month in this window" style="margin-left:auto;background:none;border:1px solid var(--mist);border-radius:999px;padding:3px 10px;font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;color:var(--steel);cursor:pointer;white-space:nowrap;">⭐ Peaks</button></div>
     <div class="trends-chart-wrap">
-      <svg id="trends-svg" viewBox="0 0 520 214" preserveAspectRatio="xMidYMid meet" style="overflow:visible;"></svg>
+      <svg id="trends-svg" viewBox="0 0 520 200" preserveAspectRatio="xMidYMid meet" style="overflow:visible;"></svg>
     </div>
     <div class="trends-breakdown" id="trends-breakdown"></div>
   </div>
@@ -18834,7 +18834,6 @@ function trendsNiceMax(val) {
 
 function renderTrendsChart() {
   _trendsData = getTrendsData();
-  var _trendsAllData = loadAll();   // for per-month section renames in bar labels
   var svg = document.getElementById('trends-svg');
   var breakdown = document.getElementById('trends-breakdown');
   if (!svg) return;
@@ -18845,8 +18844,8 @@ function renderTrendsChart() {
     return;
   }
 
-  var W = 520, H = 214;
-  var pad = { left: 48, right: 12, top: 24, bottom: 50 };
+  var W = 520, H = 200;
+  var pad = { left: 48, right: 12, top: 24, bottom: 36 };
   var chartW = W - pad.left - pad.right;
   var chartH = H - pad.top - pad.bottom;
   var n = _trendsData.length;
@@ -18894,6 +18893,24 @@ function renderTrendsChart() {
 
     if (d.total === 0) {
       html += '<rect x="' + bx + '" y="' + (pad.top + chartH - 4) + '" width="' + barW + '" height="4" rx="2" fill="' + gridColor + '" data-idx="' + i + '" style="cursor:pointer"/>';
+    } else if (i === _trendsSelectedIdx && d.bySection) {
+      // Selected bar: stacked category segments, largest at the bottom,
+      // sized by share of the month — same colors as the breakdown below,
+      // which doubles as the legend. Clipped to keep the rounded silhouette.
+      var segs = TREND_EXPENSE_SECTIONS
+        .map(function(sec) { return { sec: sec, amt: (d.bySection[sec] || 0) }; })
+        .filter(function(sg) { return sg.amt > 0; })
+        .sort(function(a, b) { return b.amt - a.amt; });
+      html += '<defs><clipPath id="trends-barclip-' + i + '"><rect x="' + bx + '" y="' + by + '" width="' + barW + '" height="' + barH + '" rx="4"/></clipPath></defs>';
+      html += '<g clip-path="url(#trends-barclip-' + i + ')">';
+      var yCursor = pad.top + chartH;
+      segs.forEach(function(sg) {
+        var segH = (sg.amt / d.total) * barH;
+        yCursor -= segH;
+        html += '<rect x="' + bx + '" y="' + yCursor + '" width="' + barW + '" height="' + (segH + 0.6) + '" fill="' + (TREND_SEC_COLORS[sg.sec] || barSelected) + '" data-idx="' + i + '" style="cursor:pointer"/>';
+      });
+      html += '</g>';
+      html += '<text x="' + cx + '" y="' + (by - 5) + '" text-anchor="middle" font-size="9" fill="' + inkColor + '" font-family="Outfit,sans-serif">' + trendsFormatShort(d.total) + '</text>';
     } else {
       html += '<rect class="trends-bar-r" x="' + bx + '" y="' + by + '" width="' + barW + '" height="' + barH + '" rx="4" fill="' + fill + '" data-idx="' + i + '" style="cursor:pointer"/>';
       html += '<text x="' + cx + '" y="' + (by - 5) + '" text-anchor="middle" font-size="9" fill="' + inkColor + '" font-family="Outfit,sans-serif">' + trendsFormatShort(d.total) + '</text>';
@@ -18903,21 +18920,6 @@ function renderTrendsChart() {
     var mkParts = d.mk.split('-');
     var mLabel = TREND_MONTHS[parseInt(mkParts[1]) - 1] + ' \'' + mkParts[0].slice(2);
     html += '<text x="' + cx + '" y="' + (pad.top + chartH + 18) + '" text-anchor="middle" font-size="9" fill="' + steelColor + '" font-family="Outfit,sans-serif">' + mLabel + '</text>';
-
-    // Top category at a glance — the section that drove this month's spending
-    if (d.total > 0 && d.bySection) {
-      var topSec = null, topVal = 0;
-      Object.keys(d.bySection).forEach(function(sec) {
-        if (d.bySection[sec] > topVal) { topVal = d.bySection[sec]; topSec = sec; }
-      });
-      if (topSec) {
-        // Honor renames: this month's rename → global rename → default
-        var _mNames = (_trendsAllData[d.mk] && _trendsAllData[d.mk]._sectionNames) || {};
-        var topName = _mNames[topSec] || _sectionNames[topSec] || DEFAULT_SECTION_NAMES[topSec] || TREND_SEC_LABELS[topSec] || topSec;
-        if (topName.length > 9) topName = topName.slice(0, 9).trim();
-        html += '<text x="' + cx + '" y="' + (pad.top + chartH + 31) + '" text-anchor="middle" font-size="8.5" font-weight="600" fill="' + (TREND_SEC_COLORS[topSec] || steelColor) + '" font-family="Outfit,sans-serif">' + topName + ' ' + trendsFormatShort(topVal) + '</text>';
-      }
-    }
   });
 
   svg.innerHTML = html;
