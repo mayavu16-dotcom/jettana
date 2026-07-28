@@ -18978,7 +18978,13 @@ function jumpToMonthSection(mk, sec) {
     var card = document.querySelector('.sec-card[data-section-id="' + sec + '"]');
     if (!card) return;
     if (card.classList.contains('collapsed')) toggleSection(sec);
-    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // The topbar is position:sticky — plain scrollIntoView slides the section
+    // header underneath it. Scroll to the card's position minus the bar height
+    // so the colored header (FOOD & DINING etc.) lands fully visible.
+    var topbar = document.querySelector('.topbar');
+    var offset = (topbar ? topbar.getBoundingClientRect().height : 0) + 14;
+    var y = card.getBoundingClientRect().top + window.pageYOffset - offset;
+    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
     card.style.transition = 'box-shadow 0.35s';
     card.style.boxShadow = '0 0 0 3px rgba(217,182,74,0.85)';
     setTimeout(function() { card.style.boxShadow = ''; }, 1700);
