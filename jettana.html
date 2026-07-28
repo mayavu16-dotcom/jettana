@@ -18891,7 +18891,7 @@ function renderTrendsChart() {
         // Honor renames: this month's rename → global rename → default
         var _mNames = (_trendsAllData[d.mk] && _trendsAllData[d.mk]._sectionNames) || {};
         var topName = _mNames[topSec] || _sectionNames[topSec] || DEFAULT_SECTION_NAMES[topSec] || TREND_SEC_LABELS[topSec] || topSec;
-        if (topName.length > 9) topName = topName.slice(0, 8) + '…';
+        if (topName.length > 9) topName = topName.slice(0, 9).trim();
         html += '<text x="' + cx + '" y="' + (pad.top + chartH + 31) + '" text-anchor="middle" font-size="8.5" font-weight="600" fill="' + (TREND_SEC_COLORS[topSec] || steelColor) + '" font-family="Outfit,sans-serif">' + topName + ' ' + trendsFormatShort(topVal) + '</text>';
       }
     }
@@ -18975,7 +18975,7 @@ function renderTrendsPeaks() {
       + '<div style="text-align:right;min-width:122px;line-height:1.4;white-space:nowrap;">'
       + '<span style="font-weight:700;">' + peak$ + '</span> '
       + '<button onclick="jumpToMonthSection(\'' + g.best.mk + '\',\'' + g.sec + '\')" title="Open ' + mLabel + ' and jump to this section" style="background:none;border:none;padding:0;font-family:inherit;font-size:12px;font-weight:700;color:' + TREND_SEC_COLORS[g.sec] + ';cursor:pointer;text-decoration:underline;text-underline-offset:2px;">' + mLabel + '</button>'
-      + '<div style="font-size:9.5px;font-weight:400;color:var(--steel);">avg ' + avg$ + '/mo</div>'
+      + '<div style="font-size:9.5px;font-weight:400;color:var(--steel);">' + (g.activeMonths <= 1 ? 'one-time' : 'avg ' + avg$ + '/mo') + '</div>'
       + '</div>'
       + '</div>';
   });
