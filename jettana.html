@@ -18154,13 +18154,13 @@ function renderNWChart() {
 // behavior is taught the same way everywhere. Injected before the header's
 // close button (or appended for headers without one).
 document.addEventListener('DOMContentLoaded', function() {
-  ['trends-header', 'nw-header', 'gp-header', 'compare-header', 'features-header', 'cal-header'].forEach(function(id) {
+  ['trends-header', 'nw-header', 'gp-header', 'compare-header', 'features-header', 'cal-header', 'askme-header'].forEach(function(id) {
     var hdr = document.getElementById(id);
     if (!hdr || hdr.querySelector('.modal-drag-hint')) return;
     var hint = document.createElement('span');
     hint.className = 'modal-drag-hint';
     hint.textContent = '⠿ drag to move';
-    var closeBtn = hdr.querySelector('.trends-close, .shortcuts-close, .cal-close');
+    var closeBtn = hdr.querySelector('.trends-close, .shortcuts-close, .cal-close, .askme-close');
     if (closeBtn) hdr.insertBefore(hint, closeBtn);
     else hdr.appendChild(hint);
   });
