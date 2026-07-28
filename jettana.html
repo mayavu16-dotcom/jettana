@@ -18824,6 +18824,7 @@ function trendsNiceMax(val) {
 
 function renderTrendsChart() {
   _trendsData = getTrendsData();
+  var _trendsAllData = loadAll();   // for per-month section renames in bar labels
   var svg = document.getElementById('trends-svg');
   var breakdown = document.getElementById('trends-breakdown');
   if (!svg) return;
@@ -18887,8 +18888,10 @@ function renderTrendsChart() {
         if (d.bySection[sec] > topVal) { topVal = d.bySection[sec]; topSec = sec; }
       });
       if (topSec) {
-        var topName = (TREND_SEC_LABELS[topSec] || topSec);
-        if (topName.length > 9) topName = topName.slice(0, 8) + '…';   // "Subscriptions" → "Subscrip…"
+        // Honor renames: this month's rename → global rename → default
+        var _mNames = (_trendsAllData[d.mk] && _trendsAllData[d.mk]._sectionNames) || {};
+        var topName = _mNames[topSec] || _sectionNames[topSec] || DEFAULT_SECTION_NAMES[topSec] || TREND_SEC_LABELS[topSec] || topSec;
+        if (topName.length > 9) topName = topName.slice(0, 8) + '…';
         html += '<text x="' + cx + '" y="' + (pad.top + chartH + 31) + '" text-anchor="middle" font-size="8.5" font-weight="600" fill="' + (TREND_SEC_COLORS[topSec] || steelColor) + '" font-family="Outfit,sans-serif">' + topName + ' ' + trendsFormatShort(topVal) + '</text>';
       }
     }
@@ -18950,6 +18953,10 @@ function renderTrendsPeaks() {
   }
   var maxAmt = peaks.length ? peaks[0].amt : 0;
   var allData = loadAll();
+  // Months in the window that actually have expense data — the fair
+  // denominator for "average per month" (a just-started account isn't
+  // dragged down by empty months)
+  var activeMonths = _trendsData.filter(function(d) { return d.total > 0; }).length || 1;
   peaks.forEach(function(p) {
     var mkParts = p.mk.split('-');
     var mLabel = TREND_MONTHS[parseInt(mkParts[1]) - 1] + ' \'' + mkParts[0].slice(2);
@@ -18958,10 +18965,13 @@ function renderTrendsPeaks() {
     // then the global rename, then the default)
     var peakMonthNames = (allData[p.mk] && allData[p.mk]._sectionNames) || {};
     var secLabel = peakMonthNames[p.sec] || _sectionNames[p.sec] || DEFAULT_SECTION_NAMES[p.sec] || (TREND_SEC_LABELS[p.sec] || p.sec);
+    var catSum = _trendsData.reduce(function(t, d) { return t + ((d.bySection && d.bySection[p.sec]) || 0); }, 0);
+    var avg = catSum / activeMonths;
     html += '<div class="trends-sec-row">'
       + '<div class="trends-sec-label">' + secLabel + '</div>'
       + '<div class="trends-sec-bar-wrap"><div class="trends-sec-bar" style="width:' + barPct + '%;background:' + TREND_SEC_COLORS[p.sec] + '"></div></div>'
-      + '<div class="trends-sec-amt">$' + p.amt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</div>'
+      + '<div class="trends-sec-amt">$' + p.amt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      + '<div style="font-size:9.5px;font-weight:400;color:var(--steel);line-height:1.3;">avg $' + avg.toLocaleString('en-US', { maximumFractionDigits: 0 }) + '/mo</div></div>'
       + '<div class="trends-sec-pct"><button onclick="jumpToMonthSection(\'' + p.mk + '\',\'' + p.sec + '\')" title="Open ' + mLabel + ' and jump to this section" style="background:none;border:none;padding:0;font-family:inherit;font-size:inherit;font-weight:700;color:' + TREND_SEC_COLORS[p.sec] + ';cursor:pointer;text-decoration:underline;text-underline-offset:2px;">' + mLabel + '</button></div>'
       + '</div>';
   });
