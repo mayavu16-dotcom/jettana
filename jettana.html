@@ -5079,7 +5079,12 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <h3>📊 Spending Trends</h3>
       <button class="trends-close" onclick="hideTrends()">×</button>
     </div>
-    <div class="trends-subtitle" style="display:flex;align-items:center;gap:8px;"><span>Last 6 months of expenses · tap a bar for details</span><button id="trends-peaks-btn" onclick="toggleTrendsPeaks()" title="Each category's highest month in this window" style="margin-left:auto;background:none;border:1px solid var(--mist);border-radius:999px;padding:3px 10px;font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;color:var(--steel);cursor:pointer;white-space:nowrap;">⭐ Peaks</button></div>
+    <div class="trends-subtitle" style="display:flex;align-items:center;gap:8px;"><span>Last 6 months of expenses · tap a bar for details</span><button id="trends-help-btn" onclick="toggleTrendsHelp()" title="How to read this chart" style="margin-left:auto;background:none;border:1px solid var(--mist);border-radius:999px;width:24px;height:24px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:var(--steel);cursor:pointer;line-height:1;flex-shrink:0;">?</button><button id="trends-peaks-btn" onclick="toggleTrendsPeaks()" title="Each category's highest month in this window" style="background:none;border:1px solid var(--mist);border-radius:999px;padding:3px 10px;font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;color:var(--steel);cursor:pointer;white-space:nowrap;">⭐ Peaks</button></div>
+    <div id="trends-help" style="display:none;margin:2px 0 6px;padding:10px 14px;background:var(--mist-light);border-radius:10px;font-size:11.5px;line-height:1.75;color:var(--steel);">
+      <div><strong style="color:var(--ink);">Bars</strong> — each bar is one month's total spending. <strong style="color:var(--ink);">Tap a bar</strong> and it splits into colored blocks, one per category, sized by its share — colors match the list below.</div>
+      <div><span style="color:#A8823E;font-weight:700;">┄┄ gold dashes</span> — your average monthly spend, so you can see which months ran above or below normal.</div>
+      <div><strong style="color:var(--ink);">⭐ Peaks</strong> — flips the list below to each category's <em>highest</em> month. Tap the underlined month to jump straight to those rows. The last line shows what a month would cost if everything peaked at once.</div>
+    </div>
     <div class="trends-chart-wrap">
       <svg id="trends-svg" viewBox="0 0 520 200" preserveAspectRatio="xMidYMid meet" style="overflow:visible;"></svg>
     </div>
@@ -18942,6 +18947,19 @@ function renderTrendsChart() {
 }
 
 var _trendsPeaksMode = false;
+
+function toggleTrendsHelp() {
+  var help = document.getElementById('trends-help');
+  var btn = document.getElementById('trends-help-btn');
+  if (!help) return;
+  var open = help.style.display !== 'none';
+  help.style.display = open ? 'none' : 'block';
+  if (btn) {
+    btn.style.background = open ? 'none' : 'var(--sage)';
+    btn.style.color = open ? 'var(--steel)' : 'white';
+    btn.style.borderColor = open ? 'var(--mist)' : 'var(--sage)';
+  }
+}
 
 function toggleTrendsPeaks() {
   _trendsPeaksMode = !_trendsPeaksMode;
