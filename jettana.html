@@ -11323,18 +11323,28 @@ function renderMoM() {
     return (rows || []).reduce(function(t, r) { return t + (parseFloat(r[key]) || 0); }, 0);
   }
 
+  // Labels follow the viewed month's rename (then global, then default) —
+  // same chain the Trends chart and Peaks use
+  function secName(sec, fallback) {
+    var mNames = (cur && cur._sectionNames) || {};
+    return mNames[sec] || _sectionNames[sec] || DEFAULT_SECTION_NAMES[sec] || fallback;
+  }
+
   var categories = [
-    { label: 'Income',       cur: s(cur.income,    'received'), prev: s(prev.income,    'received'), good: 'up'   },
-    { label: 'Savings',      cur: s(cur.savings,   'actual'),   prev: s(prev.savings,   'actual'),   good: 'up'   },
-    { label: 'Housing',      cur: s(cur.housing,   'actual'),   prev: s(prev.housing,   'actual'),   good: 'down' },
-    { label: 'Food',         cur: s(cur.food,      'actual'),   prev: s(prev.food,      'actual'),   good: 'down' },
-    { label: 'Transport',    cur: s(cur.transport, 'actual'),   prev: s(prev.transport, 'actual'),   good: 'down' },
-    { label: 'Misc',          cur: s(cur.misc,          'actual'),   prev: s(prev.misc,          'actual'),   good: 'down' },
-    { label: 'Subscriptions', cur: s(cur.subscriptions, 'actual'),   prev: s(prev.subscriptions, 'actual'),   good: 'down' },
+    { label: secName('income', 'Income'),               cur: s(cur.income,        'received'), prev: s(prev.income,        'received'), good: 'up'   },
+    { label: secName('savings', 'Savings'),             cur: s(cur.savings,       'actual'),   prev: s(prev.savings,       'actual'),   good: 'up'   },
+    { label: secName('housing', 'Housing'),             cur: s(cur.housing,       'actual'),   prev: s(prev.housing,       'actual'),   good: 'down' },
+    { label: secName('food', 'Food'),                   cur: s(cur.food,          'actual'),   prev: s(prev.food,          'actual'),   good: 'down' },
+    { label: secName('transport', 'Transport'),         cur: s(cur.transport,     'actual'),   prev: s(prev.transport,     'actual'),   good: 'down' },
+    { label: secName('health', 'Health'),               cur: s(cur.health,        'actual'),   prev: s(prev.health,        'actual'),   good: 'down' },
+    { label: secName('subscriptions', 'Subscriptions'), cur: s(cur.subscriptions, 'actual'),   prev: s(prev.subscriptions, 'actual'),   good: 'down' },
+    { label: secName('gifts', 'Gifts'),                 cur: s(cur.gifts,         'actual'),   prev: s(prev.gifts,         'actual'),   good: 'down' },
+    { label: secName('misc', 'Misc'),                   cur: s(cur.misc,          'actual'),   prev: s(prev.misc,          'actual'),   good: 'down' },
   ];
 
-  // Only show categories where at least one month has data
-  categories = categories.filter(function(c) { return c.cur > 0; });
+  // Show any category with data in EITHER month — a category that dropped to
+  // zero is the best possible news and must not vanish from the comparison
+  categories = categories.filter(function(c) { return c.cur > 0 || c.prev > 0; });
 
   if (categories.length === 0) {
     body.innerHTML = '<div class="mom-no-data">Add data to both months to see a comparison.</div>';
