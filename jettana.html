@@ -18949,19 +18949,40 @@ function renderTrendsPeaks() {
     html += '<div style="padding:10px 4px;font-size:12px;color:var(--steel);">No expense data in this window yet.</div>';
   }
   var maxAmt = peaks.length ? peaks[0].amt : 0;
+  var allData = loadAll();
   peaks.forEach(function(p) {
     var mkParts = p.mk.split('-');
     var mLabel = TREND_MONTHS[parseInt(mkParts[1]) - 1] + ' \'' + mkParts[0].slice(2);
     var barPct = maxAmt > 0 ? (p.amt / maxAmt * 100) : 0;
-    var secLabel = _sectionNames[p.sec] || DEFAULT_SECTION_NAMES[p.sec] || (TREND_SEC_LABELS[p.sec] || p.sec);
+    // Use the name the section had IN ITS PEAK MONTH (per-month rename wins,
+    // then the global rename, then the default)
+    var peakMonthNames = (allData[p.mk] && allData[p.mk]._sectionNames) || {};
+    var secLabel = peakMonthNames[p.sec] || _sectionNames[p.sec] || DEFAULT_SECTION_NAMES[p.sec] || (TREND_SEC_LABELS[p.sec] || p.sec);
     html += '<div class="trends-sec-row">'
       + '<div class="trends-sec-label">' + secLabel + '</div>'
       + '<div class="trends-sec-bar-wrap"><div class="trends-sec-bar" style="width:' + barPct + '%;background:' + TREND_SEC_COLORS[p.sec] + '"></div></div>'
       + '<div class="trends-sec-amt">$' + p.amt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</div>'
-      + '<div class="trends-sec-pct" style="font-weight:700;color:' + TREND_SEC_COLORS[p.sec] + ';">' + mLabel + '</div>'
+      + '<div class="trends-sec-pct"><button onclick="jumpToMonthSection(\'' + p.mk + '\',\'' + p.sec + '\')" title="Open ' + mLabel + ' and jump to this section" style="background:none;border:none;padding:0;font-family:inherit;font-size:inherit;font-weight:700;color:' + TREND_SEC_COLORS[p.sec] + ';cursor:pointer;text-decoration:underline;text-underline-offset:2px;">' + mLabel + '</button></div>'
       + '</div>';
   });
   el.innerHTML = html;
+}
+
+/* Jump from a Peaks row to the actual section in that month — close the
+   modal, switch months, expand the section if collapsed, scroll to it,
+   and flash it so the eye lands in the right place. */
+function jumpToMonthSection(mk, sec) {
+  hideTrends();
+  if (currentMonthKey !== mk) switchMonth(mk);
+  setTimeout(function() {
+    var card = document.querySelector('.sec-card[data-section-id="' + sec + '"]');
+    if (!card) return;
+    if (card.classList.contains('collapsed')) toggleSection(sec);
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    card.style.transition = 'box-shadow 0.35s';
+    card.style.boxShadow = '0 0 0 3px rgba(217,182,74,0.85)';
+    setTimeout(function() { card.style.boxShadow = ''; }, 1700);
+  }, 280);
 }
 
 function renderTrendsBreakdown(d) {
