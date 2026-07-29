@@ -3695,6 +3695,20 @@ body.font-large.text-bold .erow-label-input {
 .dark .askme-search { background: #263545; border-color: #2A3A4A; }
 
 /* ── Monthly Report ──────────────────────────────────────── */
+/* The report card is a document — it stays light even in dark mode
+   (it becomes a printed/PDF page). Re-pin the light-theme variables
+   inside it so dark mode's light text can't wash out on the white card. */
+.dark .report-modal {
+  --ink:        #1A2332;
+  --slate:      #3D4F63;
+  --steel:      #6B7C8F;
+  --mist:       #C8D4DC;
+  --mist-light: #EEF2F5;
+  --white:      #FFFFFF;
+  --sage-light: #EAF3EB;
+  --blush-light:#FAEDEB;
+  --gold-light: #FAF3E6;
+}
 .report-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.5);
   z-index: 99999; display: flex; align-items: center; justify-content: center;
