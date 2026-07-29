@@ -15252,6 +15252,7 @@ function applyMonthEmoji() {
     btn.classList.add('has-emoji');
     btn.style.opacity = '1';
     btn.title = 'Change emoji';
+    btn.style.fontSize = '22px';   // explicit: the no-emoji branch's 14px must never stick
   } else {
     btn.textContent = '✦';
     btn.classList.remove('has-emoji');
@@ -17018,6 +17019,15 @@ function showColorToolbar(section, id, anchorEl) {
   setToolbarType(_tbType);
   // Populate legend card swatches
   updateLegendSwatches();
+  // Final clamp AFTER the tabs/dots/swatches are populated — that's when the
+  // toolbar has its true width; the earlier measurement ran on a leaner bar
+  if (window.innerWidth >= 600) {
+    var _tw2 = toolbar.offsetWidth;
+    var _curLeft = parseFloat(toolbar.style.left) || 0;
+    if (_curLeft + _tw2 > window.innerWidth - 8) {
+      toolbar.style.left = Math.max(8, window.innerWidth - _tw2 - 8) + 'px';
+    }
+  }
 }
 
 function hideColorToolbar() {
