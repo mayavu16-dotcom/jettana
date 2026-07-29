@@ -4159,14 +4159,17 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
   border: 0.5px solid var(--mist);
   border-radius: 20px;
   box-shadow: 0 3px 12px rgba(0,0,0,0.12);
-  padding: 5px 10px;
+  padding: 6px 12px;
   display: none;
   align-items: center;
   gap: 5px;
+  row-gap: 7px;
   font-family: 'Outfit', sans-serif;
-  overflow-x: auto;
-  white-space: nowrap;
-  flex-wrap: nowrap;
+  /* Wrap instead of clip — same rule as the row toolbar: when the window is
+     narrower than the full bar, the trailing buttons drop to a second line */
+  flex-wrap: wrap;
+  max-width: calc(100vw - 16px);
+  overflow-x: visible;
 }
 .ft-tabs { display: flex; gap: 2px; }
 .ft-tab {
@@ -17455,10 +17458,10 @@ function showFtColorPicker(e, section) {
   if (!picker) return;
   picker.style.display = 'flex';
   updateFtSwatches();
-  // Position like color toolbar
+  // Position like color toolbar — measured, not the old hardcoded 380px guess
   var target = e.target.closest('.ft-actual-cell') || e.target;
   var rect = target.getBoundingClientRect();
-  var pw = 380;
+  var pw = picker.offsetWidth || 380;
   var top = rect.bottom + 6;
   var left = rect.left;
   if (left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8;
