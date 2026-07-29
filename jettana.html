@@ -1178,7 +1178,7 @@ body {
   .hamburger-btn, .theme-wrap, .drag-handle,
   .rec-dot, .note-indicator,
   #calc-fab, #calc-panel,
-  #income-breakdown-pop, #expense-breakdown-pop, #debt-total-pop, #mchk-pop,
+  #income-breakdown-pop, #expense-breakdown-pop, #debt-total-pop, #mchk-pop, #savings-breakdown-pop,
   #label-peek, .intention-swatches, .intention-dismiss { display: none !important; }
 
   /* Dates were being hidden along with the chrome. They're content — print them
@@ -2213,7 +2213,8 @@ mark.hl-rose  { --hl: rgba(224, 132, 132, 0.30); }
   pointer-events: none; word-break: break-word;
 }
 .dark #label-peek { background: #EEF2F5; color: #1A2332; }
-#income-breakdown-pop {
+#income-breakdown-pop,
+#savings-breakdown-pop {
   position: fixed; z-index: 10050; display: none;
   background: var(--white); color: var(--ink);
   border: 1px solid var(--mist); border-radius: 12px;
@@ -2221,12 +2222,12 @@ mark.hl-rose  { --hl: rgba(224, 132, 132, 0.30); }
   padding: 12px 14px; min-width: 210px; max-width: min(280px, calc(100vw - 24px));
   box-shadow: 0 8px 30px rgba(0,0,0,0.16); pointer-events: none;
 }
-#income-breakdown-pop .ibp-row { display: flex; justify-content: space-between; gap: 16px; padding: 2px 0; }
-#income-breakdown-pop .ibp-row.ibp-sub { color: var(--steel); }
-#income-breakdown-pop .ibp-row.ibp-total { border-top: 1px solid var(--mist); margin-top: 6px; padding-top: 7px; font-weight: 700; }
-#income-breakdown-pop .ibp-neg { color: var(--blush); }
-#income-breakdown-pop .ibp-title { font-size: 10.5px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--steel); margin-bottom: 7px; }
-.dark #income-breakdown-pop { background: #1E2A38; border-color: #2A3A4A; }
+#income-breakdown-pop .ibp-row, #savings-breakdown-pop .ibp-row { display: flex; justify-content: space-between; gap: 16px; padding: 2px 0; }
+#income-breakdown-pop .ibp-row.ibp-sub, #savings-breakdown-pop .ibp-row.ibp-sub { color: var(--steel); }
+#income-breakdown-pop .ibp-row.ibp-total, #savings-breakdown-pop .ibp-row.ibp-total { border-top: 1px solid var(--mist); margin-top: 6px; padding-top: 7px; font-weight: 700; }
+#income-breakdown-pop .ibp-neg, #savings-breakdown-pop .ibp-neg { color: var(--blush); }
+#income-breakdown-pop .ibp-title, #savings-breakdown-pop .ibp-title { font-size: 10.5px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--steel); margin-bottom: 7px; }
+.dark #income-breakdown-pop, .dark #savings-breakdown-pop { background: #1E2A38; border-color: #2A3A4A; }
 .dark #mchk-pop { background: #1E2A38; border-color: #2A3A4A; }
 .dark #mchk-pop input[type="text"] { border-color: #2A3A4A; }
 #expense-breakdown-pop {
@@ -2353,7 +2354,8 @@ mark.hl-rose  { --hl: rgba(224, 132, 132, 0.30); }
 
 /* ── Pinned breakdown panels ─────────────────────────────── */
 #income-breakdown-pop.brk-pinned,
-#expense-breakdown-pop.brk-pinned {
+#expense-breakdown-pop.brk-pinned,
+#savings-breakdown-pop.brk-pinned {
   pointer-events: auto;                 /* interactive once pinned */
   box-shadow: 0 14px 44px rgba(0,0,0,0.26);
   border-color: var(--steel);
@@ -4563,8 +4565,8 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <div class="bulk-bar" id="bulk-bar-savings"><span class="bulk-bar-count" id="bulk-count-savings">0 selected</span><button class="bulk-bar-btn" onclick="selectAllBulk('savings')">Select all</button><button class="bulk-bar-btn danger" onclick="deleteSelectedBulk('savings')">Delete selected</button><button class="bulk-bar-btn" onclick="cancelBulk('savings')">Cancel</button></div><div class="entry-list" id="rows-savings" data-hint="Add your HYSA, Roth IRA, 401(k), or any accounts you're building"></div>
           <button class="add-row-btn" onclick="addRow('savings')"><span class="plus">+</span> Add account</button>
           <div class="sec-footer sec-footer-savings">
-            <span>Total Savings</span>
-            <span id="ft-savings-0" class="ft-actual-cell" data-section="savings" onclick="showFtColorPicker(event,'savings')" oncontextmenu="showFtColorPicker(event,'savings')" title="Click to highlight">$0</span>
+            <span id="ft-savings-label" style="cursor:help;" title="Saved vs invested — hover the total, or click here to pin the breakdown" onclick="toggleSavingsBreakdown(document.getElementById('ft-savings-0'))">Total Savings</span>
+            <span id="ft-savings-0" class="ft-actual-cell" data-section="savings" onmouseenter="showSavingsBreakdown(this)" onmouseleave="hideSavingsBreakdown()" onclick="showFtColorPicker(event,'savings')" oncontextmenu="showFtColorPicker(event,'savings')" title="Click to highlight">$0</span>
             <span id="ft-savings-1" class="ft-actual-cell" data-section="savings-growth" onclick="showFtColorPicker(event,'savings-growth')" oncontextmenu="showFtColorPicker(event,'savings-growth')" title="Click to highlight">$0</span>
           </div>
           </div>
@@ -8560,6 +8562,105 @@ var _incomeBreakdown = null;
 var _pinnedBreakdown = null;   // id of the pinned popup, if any
 
 function breakdownIsPinned(id) { return _pinnedBreakdown === id; }
+
+/* ── Saved vs Invested breakdown (Total Savings footer) ──────────
+   Auto-detects each savings row from its name; the user can pin the
+   panel (click the "Total Savings" label) and tap any account to flip
+   it Saved ↔ Invested — the override is stored on the row (_invClass)
+   and always wins over the guess. */
+var INVEST_RX = /(ira|roth|401|403|457|529|hsa|brokerage|stock|share|etf|index|mutual|invest|crypto|bitcoin|robinhood|fidelity|vanguard|schwab|wealthfront|betterment|acorns)/i;
+var SAVE_RX = /(hysa|high.?yield|saving|emergency|rainy|certificate|\bcd\b|cash|vault|sinking|money market)/i;
+
+function classifySavingsRow(row) {
+  if (row._invClass === 'invest' || row._invClass === 'save') return row._invClass;
+  var n = String(row.label || '');
+  if (SAVE_RX.test(n)) return 'save';      // savings words win ties ("Emergency fund")
+  if (INVEST_RX.test(n)) return 'invest';
+  return 'save';   // unrecognized names count as saved until the user says otherwise
+}
+
+function _savingsBreakdownPop() {
+  var pop = document.getElementById('savings-breakdown-pop');
+  if (!pop) { pop = document.createElement('div'); pop.id = 'savings-breakdown-pop'; document.body.appendChild(pop); }
+  return pop;
+}
+
+function _savingsSplitData() {
+  var all = loadAll();
+  var rows = (all[currentMonthKey] && all[currentMonthKey]['savings']) || [];
+  var k = CONFIGS['savings'].k1;
+  var saved = [], invested = [], sSum = 0, iSum = 0;
+  rows.forEach(function(row) {
+    var amt = parseAmt(row[k]);
+    if (!(amt > 0) || row.exempt) return;
+    var item = { id: row.id, label: row.label || 'Untitled', amt: amt, guessed: !row._invClass };
+    if (classifySavingsRow(row) === 'invest') { invested.push(item); iSum += amt; }
+    else { saved.push(item); sSum += amt; }
+  });
+  return { saved: saved, invested: invested, sSum: sSum, iSum: iSum, total: sSum + iSum };
+}
+
+function showSavingsBreakdown(anchor) {
+  var d = _savingsSplitData();
+  if (!d.total) return;
+  var pop = _savingsBreakdownPop();
+  var pinned = breakdownIsPinned('savings-breakdown-pop');
+  var esc = function(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
+  var html = pinned ? breakdownHeader('Saved vs invested') : '<div class="ibp-title">Saved vs invested</div>';
+  var sPct = Math.round(d.sSum / d.total * 100);
+  function group(title, list, sum, pct, cls) {
+    var h = '<div class="ibp-row ibp-total" style="border-top:none;margin-top:2px;padding-top:2px;"><span>' + title + '</span><span>' + _fmtMoney(sum) + ' · ' + pct + '%</span></div>';
+    list.forEach(function(it) {
+      h += '<div class="ibp-row ibp-sub sbp-acct" data-row="' + it.id + '"' + (pinned ? ' style="cursor:pointer;" title="Tap to move to ' + (cls === 'save' ? 'Invested' : 'Saved') + '"' : '') + '><span>' + esc(it.label) + (it.guessed && pinned ? ' <span style="opacity:0.55;font-size:9px;">auto</span>' : '') + '</span><span>' + _fmtMoney(it.amt) + '</span></div>';
+    });
+    return h;
+  }
+  if (d.saved.length) html += group('💰 Saved', d.saved, d.sSum, sPct, 'save');
+  if (d.invested.length) html += group('📈 Invested', d.invested, d.iSum, 100 - sPct, 'invest');
+  html += '<div class="ibp-row ibp-total"><span>Total</span><span>' + _fmtMoney(d.total) + '</span></div>';
+  if (pinned) html += '<div style="font-size:9.5px;color:var(--steel);padding-top:5px;">Tap an account to flip Saved ↔ Invested</div>';
+  pop.innerHTML = html;
+  if (pinned) {
+    pop.querySelectorAll('.sbp-acct').forEach(function(el) {
+      el.onclick = function() { flipSavingsClass(el.getAttribute('data-row'), anchor); };
+    });
+  }
+  pop.style.display = 'block';
+  if (pinned) return;   // keep wherever the user dragged it
+  var r = anchor.getBoundingClientRect();
+  var pw = pop.offsetWidth, ph = pop.offsetHeight;
+  var left = Math.max(12, Math.min(window.innerWidth - pw - 12, r.right - pw));
+  var top = r.bottom + 8;
+  if (top + ph > window.innerHeight - 12) top = Math.max(12, r.top - ph - 8);
+  pop.style.left = left + 'px';
+  pop.style.top = top + 'px';
+}
+
+function hideSavingsBreakdown() {
+  if (breakdownIsPinned('savings-breakdown-pop')) return;
+  var pop = document.getElementById('savings-breakdown-pop');
+  if (pop) pop.style.display = 'none';
+}
+
+function toggleSavingsBreakdown(anchor) {
+  if (breakdownIsPinned('savings-breakdown-pop')) { unpinBreakdown(); return; }
+  var d = _savingsSplitData();
+  if (!d.total) return;
+  pinBreakdown('savings-breakdown-pop');
+  showSavingsBreakdown(anchor);
+}
+
+function flipSavingsClass(rowId, anchor) {
+  var all = loadAll();
+  var rows = (all[currentMonthKey] && all[currentMonthKey]['savings']) || [];
+  var row = rows.find(function(r) { return r.id === rowId; });
+  if (!row) return;
+  row._invClass = classifySavingsRow(row) === 'invest' ? 'save' : 'invest';
+  saveAll(all);
+  showSavingsBreakdown(anchor);
+}
+document.addEventListener('scroll', hideSavingsBreakdown, true);
+window.addEventListener('resize', hideSavingsBreakdown);
 
 function pinBreakdown(id) {
   var pop = document.getElementById(id);
