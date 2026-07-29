@@ -9155,9 +9155,7 @@ function autoCalcDebtFromCards() {
       });
     });
 
-    var remaining = Math.max(0, totalAll - totalPaid);
-
-    // If there are payment template entries marked to apply to remaining, subtract them
+    // Payment template entries marked "apply to remaining"
     var paymentTotal = 0;
     if (debtRow._entries && debtRow._entries.length > 0) {
       debtRow._entries.forEach(function(e) {
@@ -9170,12 +9168,18 @@ function autoCalcDebtFromCards() {
       });
     }
 
-    var finalRemaining = Math.max(0, remaining - paymentTotal);
-
-    // Add any carried balance from last month's remaining
+    // ── Single-count rule ────────────────────────────────────────
+    // ✓-marking charges as paid and logging a Payment entry usually
+    // describe the SAME real payment, so they must never both subtract.
+    // Payment money pays down last month's carried balance first; what's
+    // left covers this month's charges — and there it OVERLAPS with the
+    // ✓-paid charges (whichever covers more wins) instead of stacking.
     var carriedBalance = parseAmt(debtRow['_carriedBalance']) || 0;
+    var appliedToCarried = Math.min(paymentTotal, carriedBalance);
+    var paymentToCharges = paymentTotal - appliedToCarried;
+    var chargesCovered = Math.min(totalAll, Math.max(totalPaid, paymentToCharges));
+    var finalRemaining = Math.max(0, (carriedBalance - appliedToCarried) + (totalAll - chargesCovered));
     var totalCurrent = totalAll + carriedBalance;
-    if (carriedBalance > 0) finalRemaining = Math.max(0, carriedBalance + remaining - paymentTotal);
 
     // Write Current = this month's charges + any carried balance from last month
     debtRow['current'] = totalCurrent || '';
