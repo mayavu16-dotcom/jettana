@@ -4990,6 +4990,11 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
         </div>
 
         <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">How much of my savings is invested vs just saved?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Hover the <strong>Total Savings</strong> amount (in the section footer) to see the split — 💰 Saved vs 📈 Invested, with each account, subtotals, and percentages. Jettana guesses from your account names, so "HYSA" counts as saved and "Roth IRA" as invested. If a guess is wrong, click the <strong>Total Savings label</strong> to pin the panel, then tap the account to flip it — Jettana remembers your correction. On mobile, tapping the label is how you open it.</div>
+        </div>
+
+        <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">How do I log a debt payment?<span class="askme-q-arrow">▾</span></button>
           <div class="askme-a">Click <strong>≡</strong> on any Debt row → Add note → select <strong>Payment</strong>. Log the date, amount, type and interest charged. The Remaining balance updates automatically based on what you paid.</div>
         </div>
@@ -5416,6 +5421,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
     <div class="shortcuts-group">
       <div class="shortcuts-group-title">Tracking</div>
       <div class="shortcut-row"><span>📊 <strong>12 sections</strong> — Income, Savings, Housing, Checking, Transportation, Debt, Food, Health, Subscriptions, Gifts, Misc, and Notes</span></div>
+      <div class="shortcut-row"><span>💰 <strong>Saved vs Invested</strong> — hover the Total Savings amount to see your split: how much is parked in savings vs growing in investments, with each account, subtotals, and percentages. Jettana guesses from account names ("HYSA" → Saved, "Roth IRA" → Invested); click the "Total Savings" label to pin the panel, then tap any account to flip it — your correction is remembered.</span></div>
       <div class="shortcut-row"><span>✎ <strong>Rename sections</strong> — double-click (desktop) or long-press (mobile) any section header to rename it; choose "This month only" or "All months"</span></div>
       <div class="shortcut-row"><span>✓ <strong>Mark as paid</strong> — click ✓ on any expense row to strike it through; if a card link is set, the debt Current updates and the linked checking/savings account balance decreases</span></div>
       <div class="shortcut-row"><span>◎ <strong>Mark as exempt</strong> — row menu → Mark as exempt; shown faded with an exempt badge (badge hides if the row has a note). Expense rows: excluded from section totals — great for stipends or employer-paid expenses. Checking/Savings rows: still counted in the section's own totals, but excluded from Total Saved and Net Worth.</span></div>
@@ -16995,8 +17001,15 @@ function showColorToolbar(section, id, anchorEl) {
   } else {
     toolbar.style.transform = '';
     toolbar.style.maxWidth = '';
+    // Measure the real width (renderable but invisible for one frame) — the
+    // old hardcoded 420px guess under-clamped once the toolbar grew, cutting
+    // it off at the right edge of the screen
+    toolbar.style.visibility = 'hidden';
+    toolbar.classList.add('visible');
+    var tw = toolbar.offsetWidth || 420;
+    toolbar.style.visibility = '';
     var left = rect.left + 8;
-    if (left + 420 > window.innerWidth) left = window.innerWidth - 428;
+    if (left + tw > window.innerWidth - 8) left = Math.max(8, window.innerWidth - tw - 8);
     toolbar.style.left = left + 'px';
   }
   toolbar.classList.add('visible');
