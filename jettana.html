@@ -3930,16 +3930,21 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
   display: none;
   align-items: center;
   gap: 5px;
-  padding: 5px 10px;
+  row-gap: 7px;
+  padding: 6px 12px;
   background: var(--white);
   border: 0.5px solid var(--mist);
   border-radius: 20px;
   box-shadow: 0 3px 12px rgba(0,0,0,0.12);
   font-family: 'Outfit', sans-serif;
   pointer-events: all;
-  overflow-x: auto;
-  white-space: nowrap;
-  flex-wrap: nowrap;
+  /* Wrap instead of clip: when the window is narrower than the full bar,
+     the action buttons (Copy / Paste / Clear) drop to a second line —
+     nothing can ever be cut off, at any width */
+  flex-wrap: wrap;
+  max-width: calc(100vw - 16px);
+  overflow-x: visible;
+  white-space: normal;
 }
 .color-toolbar.visible { display: flex; }
 .ct-label { font-size: 10px; color: var(--steel); font-weight: 600; letter-spacing: 0.3px; white-space: nowrap; }
