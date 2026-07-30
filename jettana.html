@@ -19043,8 +19043,8 @@ function renderTrendsChart() {
   var inkColor = isDark ? '#E8EDF2' : '#1A2332';
   var steelColor = '#6B7C8F';
   var gridColor = isDark ? '#2A3A4A' : '#E0E8EE';
-  var barDefault = _trendsView === 'income' ? '#4A85A0' : '#6B9E70';
-  var barSelected = _trendsView === 'income' ? '#35637A' : '#4d7a52';
+  var barDefault = _trendsView === 'income' ? '#6B9E70' : '#C0736A';
+  var barSelected = _trendsView === 'income' ? '#4d7a52' : '#9A544C';
 
   var html = '';
 
@@ -19070,7 +19070,7 @@ function renderTrendsChart() {
     var _lblY = _avgY + 3.5;
     for (var _gg = 0; _gg <= 4; _gg++) {
       var _ggy = pad.top + chartH - (_gg / 4) * chartH;
-      if (Math.abs(_avgY - _ggy) < 13) {
+      if (Math.abs(_avgY - _ggy) < 9) {   // 9px ≈ the text height — only dodge on real overlap
         _lblY = (_avgY >= _ggy) ? _avgY + 14 : _avgY - 6;
         break;
       }
@@ -19157,9 +19157,9 @@ function toggleTrendsView() {
   var inc = _trendsView === 'income';
   var btn = document.getElementById('trends-income-btn');
   if (btn) {
-    btn.style.background = inc ? 'var(--teal)' : 'none';
+    btn.style.background = inc ? 'var(--sage)' : 'none';
     btn.style.color = inc ? 'white' : 'var(--steel)';
-    btn.style.borderColor = inc ? 'var(--teal)' : 'var(--mist)';
+    btn.style.borderColor = inc ? 'var(--sage)' : 'var(--mist)';
   }
   var sub = document.getElementById('trends-subtitle-text');
   if (sub) sub.textContent = inc ? 'Last 6 months of take-home income · tap a bar for details' : 'Last 6 months of expenses · tap a bar for details';
@@ -19282,7 +19282,7 @@ function renderTrendsBreakdown(d) {
     var mTitle = TREND_MONTHS_FULL[parseInt(mkP[1]) - 1] + ' ' + mkP[0];
     var esc = function(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
     var ih = '<div class="trends-breakdown-title">' + mTitle
-      + '<span class="trends-breakdown-total" style="color:var(--teal);">$' + d.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</span></div>';
+      + '<span class="trends-breakdown-total" style="color:var(--sage-dark);">$' + d.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</span></div>';
     if (!d.bySource.length) {
       ih += '<div style="padding:10px 4px;font-size:12px;color:var(--steel);">No income received this month.</div>';
     }
@@ -19290,7 +19290,7 @@ function renderTrendsBreakdown(d) {
       var pct = d.total > 0 ? Math.round(src.amt / d.total * 100) : 0;
       ih += '<div class="trends-sec-row">'
         + '<div class="trends-sec-label">' + esc(src.label) + '</div>'
-        + '<div class="trends-sec-bar-wrap"><div class="trends-sec-bar" style="width:' + pct + '%;background:var(--teal)"></div></div>'
+        + '<div class="trends-sec-bar-wrap"><div class="trends-sec-bar" style="width:' + pct + '%;background:var(--sage)"></div></div>'
         + '<div class="trends-sec-amt">$' + src.amt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</div>'
         + '<div class="trends-sec-pct">' + pct + '%</div>'
         + '</div>';
