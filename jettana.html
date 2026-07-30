@@ -5111,12 +5111,12 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <button class="trends-close" onclick="hideTrends()">×</button>
     </div>
     <div class="trends-subtitle" style="display:flex;align-items:center;gap:8px;"><span id="trends-subtitle-text">Last 6 months of expenses · tap a bar for details</span><button id="trends-help-btn" onclick="toggleTrendsHelp()" title="How to read this chart" style="margin-left:auto;background:none;border:1px solid var(--mist);border-radius:999px;width:24px;height:24px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:var(--steel);cursor:pointer;line-height:1;flex-shrink:0;">?</button><button id="trends-income-btn" onclick="toggleTrendsView()" title="Switch between expenses and take-home income" style="background:none;border:1px solid var(--mist);border-radius:999px;padding:3px 10px;font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;color:var(--steel);cursor:pointer;white-space:nowrap;">💵 Income</button><button id="trends-peaks-btn" onclick="toggleTrendsPeaks()" title="Each category's highest month in this window" style="background:none;border:1px solid var(--mist);border-radius:999px;padding:3px 10px;font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;color:var(--steel);cursor:pointer;white-space:nowrap;">⭐ Peaks</button></div>
-    <div class="trends-subtitle" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-top:0;">
+    <div class="trends-subtitle" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-top:8px;padding-bottom:8px;">
       <span id="trends-range-6m" class="nw-chip active" onclick="setTrendsRange('6m')">6M</span>
       <span id="trends-range-ytd" class="nw-chip" onclick="setTrendsRange('ytd')">YTD</span>
       <span id="trends-range-1y" class="nw-chip" onclick="setTrendsRange('1y')">1Y</span>
       <span id="trends-range-all" class="nw-chip" onclick="setTrendsRange('all')">All</span>
-      <span id="trends-window-total" style="margin-left:auto;font-size:11.5px;font-weight:600;color:var(--steel);white-space:nowrap;"></span>
+      <span id="trends-window-total" style="margin-left:auto;display:inline-flex;align-items:baseline;gap:10px;white-space:nowrap;"></span>
     </div>
     <div id="trends-help" style="display:none;margin:2px 0 6px;padding:10px 14px;background:var(--mist-light);border-radius:10px;font-size:11.5px;line-height:1.75;color:var(--steel);">
       <div><strong style="color:var(--ink);">Bars</strong> — each bar is one month's total spending. <strong style="color:var(--ink);">Tap a bar</strong> and it splits into colored blocks, one per category, sized by its share — colors match the list below.</div>
@@ -19058,8 +19058,9 @@ function renderTrendsChart() {
     if (!wt || !_trendsData.length) return;
     var lb = function(mk) { var p = mk.split('-'); return TREND_MONTHS[+p[1] - 1] + " '" + p[0].slice(2); };
     var winTotal = _trendsData.reduce(function(t, d) { return t + d.total; }, 0);
-    wt.textContent = lb(_trendsData[0].mk) + ' – ' + lb(_trendsData[_trendsData.length - 1].mk)
-      + ' · total $' + Math.round(winTotal).toLocaleString('en-US');
+    wt.innerHTML = '<span style="font-size:10px;font-weight:400;color:var(--steel);opacity:0.85;">'
+      + lb(_trendsData[0].mk) + ' – ' + lb(_trendsData[_trendsData.length - 1].mk) + '</span>'
+      + '<span style="font-size:11px;font-weight:600;color:var(--steel);">total $' + Math.round(winTotal).toLocaleString('en-US') + '</span>';
   })();
   var svg = document.getElementById('trends-svg');
   var breakdown = document.getElementById('trends-breakdown');
@@ -19150,8 +19151,10 @@ function renderTrendsChart() {
       html += '<text x="' + cx + '" y="' + (by - 5) + '" text-anchor="middle" font-size="9" fill="' + inkColor + '" font-family="Outfit,sans-serif">' + trendsFormatShort(d.total) + '</text>';
     } else {
       html += '<rect class="trends-bar-r" x="' + bx + '" y="' + by + '" width="' + barW + '" height="' + barH + '" rx="4" fill="' + fill + '" data-idx="' + i + '" style="cursor:pointer"/>';
-      if (n <= 9 || i === _trendsSelectedIdx) {
-        html += '<text x="' + cx + '" y="' + (by - 5) + '" text-anchor="middle" font-size="9" fill="' + inkColor + '" font-family="Outfit,sans-serif">' + trendsFormatShort(d.total) + '</text>';
+      var _vstep = Math.max(1, Math.ceil(n / 8));
+      var _showVal = (slotW >= 26) || (i % _vstep === 0) || (i === n - 1) || (i === _trendsSelectedIdx);
+      if (_showVal) {
+        html += '<text x="' + cx + '" y="' + (by - 5) + '" text-anchor="middle" font-size="' + (n > 9 ? 8 : 9) + '" fill="' + inkColor + '" font-family="Outfit,sans-serif">' + trendsFormatShort(d.total) + '</text>';
       }
     }
 
