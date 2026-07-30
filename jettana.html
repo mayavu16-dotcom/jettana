@@ -5110,7 +5110,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <h3>📊 Spending Trends</h3>
       <button class="trends-close" onclick="hideTrends()">×</button>
     </div>
-    <div class="trends-subtitle" style="display:flex;align-items:center;gap:8px;"><span>Last 6 months of expenses · tap a bar for details</span><button id="trends-help-btn" onclick="toggleTrendsHelp()" title="How to read this chart" style="margin-left:auto;background:none;border:1px solid var(--mist);border-radius:999px;width:24px;height:24px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:var(--steel);cursor:pointer;line-height:1;flex-shrink:0;">?</button><button id="trends-peaks-btn" onclick="toggleTrendsPeaks()" title="Each category's highest month in this window" style="background:none;border:1px solid var(--mist);border-radius:999px;padding:3px 10px;font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;color:var(--steel);cursor:pointer;white-space:nowrap;">⭐ Peaks</button></div>
+    <div class="trends-subtitle" style="display:flex;align-items:center;gap:8px;"><span id="trends-subtitle-text">Last 6 months of expenses · tap a bar for details</span><button id="trends-help-btn" onclick="toggleTrendsHelp()" title="How to read this chart" style="margin-left:auto;background:none;border:1px solid var(--mist);border-radius:999px;width:24px;height:24px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:var(--steel);cursor:pointer;line-height:1;flex-shrink:0;">?</button><button id="trends-income-btn" onclick="toggleTrendsView()" title="Switch between expenses and take-home income" style="background:none;border:1px solid var(--mist);border-radius:999px;padding:3px 10px;font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;color:var(--steel);cursor:pointer;white-space:nowrap;">💵 Income</button><button id="trends-peaks-btn" onclick="toggleTrendsPeaks()" title="Each category's highest month in this window" style="background:none;border:1px solid var(--mist);border-radius:999px;padding:3px 10px;font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;color:var(--steel);cursor:pointer;white-space:nowrap;">⭐ Peaks</button></div>
     <div id="trends-help" style="display:none;margin:2px 0 6px;padding:10px 14px;background:var(--mist-light);border-radius:10px;font-size:11.5px;line-height:1.75;color:var(--steel);">
       <div><strong style="color:var(--ink);">Bars</strong> — each bar is one month's total spending. <strong style="color:var(--ink);">Tap a bar</strong> and it splits into colored blocks, one per category, sized by its share — colors match the list below.</div>
       <div><span style="color:#A8823E;font-weight:700;">┄┄ gold dashes</span> — your average monthly spend, so you can see which months ran above or below normal.</div>
@@ -18946,6 +18946,34 @@ function renderGPChart() {
   }
 })();
 
+var _trendsView = 'expenses';   // 'expenses' | 'income'
+
+function getIncomeTrendsData() {
+  var all = loadAll();
+  var now = new Date();
+  var months = [];
+  for (var i = 5; i >= 0; i--) {
+    var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'));
+  }
+  return months.map(function(mk) {
+    var d = all[mk] || {};
+    var total = 0;
+    var bySource = [];
+    (d.income || []).forEach(function(row) {
+      if (row.exempt) return;
+      var v = row.received;
+      if (v === '' || v === null || v === undefined) return;
+      var n = parseFloat(String(v).replace(/[$,+]/g, ''));
+      if (isNaN(n) || n <= 0) return;
+      total += n;
+      bySource.push({ label: row.label || 'Untitled', amt: n });
+    });
+    bySource.sort(function(a, b) { return b.amt - a.amt; });
+    return { mk: mk, total: total, bySource: bySource };
+  });
+}
+
 function getTrendsData() {
   var all = loadAll();
   // Build last 6 months from current month backwards
@@ -18991,7 +19019,7 @@ function trendsNiceMax(val) {
 }
 
 function renderTrendsChart() {
-  _trendsData = getTrendsData();
+  _trendsData = (_trendsView === 'income') ? getIncomeTrendsData() : getTrendsData();
   var svg = document.getElementById('trends-svg');
   var breakdown = document.getElementById('trends-breakdown');
   if (!svg) return;
@@ -19015,8 +19043,8 @@ function renderTrendsChart() {
   var inkColor = isDark ? '#E8EDF2' : '#1A2332';
   var steelColor = '#6B7C8F';
   var gridColor = isDark ? '#2A3A4A' : '#E0E8EE';
-  var barDefault = '#6B9E70';
-  var barSelected = '#4d7a52';
+  var barDefault = _trendsView === 'income' ? '#4A85A0' : '#6B9E70';
+  var barSelected = _trendsView === 'income' ? '#35637A' : '#4d7a52';
 
   var html = '';
 
@@ -19112,6 +19140,26 @@ function toggleTrendsHelp() {
     btn.style.color = open ? 'var(--steel)' : 'white';
     btn.style.borderColor = open ? 'var(--mist)' : 'var(--sage)';
   }
+}
+
+function toggleTrendsView() {
+  _trendsView = (_trendsView === 'income') ? 'expenses' : 'income';
+  var inc = _trendsView === 'income';
+  var btn = document.getElementById('trends-income-btn');
+  if (btn) {
+    btn.style.background = inc ? 'var(--teal)' : 'none';
+    btn.style.color = inc ? 'white' : 'var(--steel)';
+    btn.style.borderColor = inc ? 'var(--teal)' : 'var(--mist)';
+  }
+  var sub = document.getElementById('trends-subtitle-text');
+  if (sub) sub.textContent = inc ? 'Last 6 months of take-home income · tap a bar for details' : 'Last 6 months of expenses · tap a bar for details';
+  // Peaks is an expenses tool — hide it (and exit it) in income view
+  var pk = document.getElementById('trends-peaks-btn');
+  if (pk) pk.style.display = inc ? 'none' : '';
+  if (inc && _trendsPeaksMode) toggleTrendsPeaks();
+  _trendsSelectedIdx = 5;   // reset selection to the current month
+  renderTrendsChart();
+  if (_trendsData[_trendsSelectedIdx]) renderTrendsBreakdown(_trendsData[_trendsSelectedIdx]);
 }
 
 function toggleTrendsPeaks() {
@@ -19217,6 +19265,28 @@ function renderTrendsBreakdown(d) {
     _trendsPeaksMode = false;
     var pb = document.getElementById('trends-peaks-btn');
     if (pb) { pb.style.background = 'none'; pb.style.color = 'var(--steel)'; pb.style.borderColor = 'var(--mist)'; }
+  }
+  // Income view: per-source breakdown (Bi-Weekly Pay, Freelance, …)
+  if (d.bySource) {
+    var mkP = d.mk.split('-');
+    var mTitle = TREND_MONTHS_FULL[parseInt(mkP[1]) - 1] + ' ' + mkP[0];
+    var esc = function(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
+    var ih = '<div class="trends-breakdown-title">' + mTitle
+      + '<span class="trends-breakdown-total" style="color:var(--teal);">$' + d.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</span></div>';
+    if (!d.bySource.length) {
+      ih += '<div style="padding:10px 4px;font-size:12px;color:var(--steel);">No income received this month.</div>';
+    }
+    d.bySource.forEach(function(src) {
+      var pct = d.total > 0 ? Math.round(src.amt / d.total * 100) : 0;
+      ih += '<div class="trends-sec-row">'
+        + '<div class="trends-sec-label">' + esc(src.label) + '</div>'
+        + '<div class="trends-sec-bar-wrap"><div class="trends-sec-bar" style="width:' + pct + '%;background:var(--teal)"></div></div>'
+        + '<div class="trends-sec-amt">$' + src.amt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</div>'
+        + '<div class="trends-sec-pct">' + pct + '%</div>'
+        + '</div>';
+    });
+    el.innerHTML = ih;
+    return;
   }
   var mkParts = d.mk.split('-');
   var monthName = TREND_MONTHS_FULL[parseInt(mkParts[1]) - 1] + ' ' + mkParts[0];
