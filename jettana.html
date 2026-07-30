@@ -19151,10 +19151,14 @@ function renderTrendsChart() {
       html += '<text x="' + cx + '" y="' + (by - 5) + '" text-anchor="middle" font-size="9" fill="' + inkColor + '" font-family="Outfit,sans-serif">' + trendsFormatShort(d.total) + '</text>';
     } else {
       html += '<rect class="trends-bar-r" x="' + bx + '" y="' + by + '" width="' + barW + '" height="' + barH + '" rx="4" fill="' + fill + '" data-idx="' + i + '" style="cursor:pointer"/>';
-      var _vstep = Math.max(1, Math.ceil(n / 8));
-      var _showVal = (slotW >= 26) || (i % _vstep === 0) || (i === n - 1) || (i === _trendsSelectedIdx);
-      if (_showVal) {
+      if (slotW >= 26) {
+        // Wide slots (6M / YTD / 1Y): every bar labeled on one row
         html += '<text x="' + cx + '" y="' + (by - 5) + '" text-anchor="middle" font-size="' + (n > 9 ? 8 : 9) + '" fill="' + inkColor + '" font-family="Outfit,sans-serif">' + trendsFormatShort(d.total) + '</text>';
+      } else {
+        // Dense windows (All): still label EVERY bar — alternate between two
+        // rows so neighbors never collide, and drop the $ (the axis owns it)
+        var _vy = by - 4 - ((i % 2) ? 10 : 0);
+        html += '<text x="' + cx + '" y="' + _vy + '" text-anchor="middle" font-size="7.5" fill="' + inkColor + '" font-family="Outfit,sans-serif">' + trendsFormatShort(d.total).replace('$', '') + '</text>';
       }
     }
 
