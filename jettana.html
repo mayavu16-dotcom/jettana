@@ -4287,6 +4287,9 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
               <button class="more-menu-item" onclick="showPlanSavings(); hideMoreMenu()">
                 <span>🧮</span> Plan my savings
               </button>
+              <button class="more-menu-item" onclick="showLifeElsewhere(); hideMoreMenu()">
+                <span>🌍</span> Life elsewhere
+              </button>
               <button class="more-menu-item" onclick="showCompare(); hideMoreMenu()">
                 <span>⇄</span> Compare months
               </button>
@@ -5162,6 +5165,26 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 </div>
 
 <!-- Growth Projection Modal -->
+<div class="trends-overlay" id="lel-overlay" style="display:none;" onclick="if(event.target===this)hideLifeElsewhere()">
+  <div class="trends-modal" id="lel-modal">
+    <div class="trends-header" id="lel-header">
+      <h3>🌍 Your Life Elsewhere</h3>
+      <button class="trends-close" onclick="hideLifeElsewhere()">×</button>
+    </div>
+    <div class="trends-subtitle">What your current lifestyle would cost in another country — income held fixed</div>
+    <div style="padding:14px 20px 4px;">
+      <div class="gp-controls" style="padding:0;">
+        <div class="gp-field"><label>Country</label><select id="lel-country" onchange="renderLifeElsewhere()" style="font-family:'Outfit',sans-serif;font-size:13px;padding:6px 8px;border:1.5px solid var(--mist);border-radius:8px;color:var(--ink);background:transparent;width:100%;box-sizing:border-box;"></select><span class="gp-hint">vs. the U.S. baseline</span></div>
+        <div class="gp-field"><label>Avg monthly take-home</label><input id="lel-net" type="text" inputmode="decimal" oninput="renderLifeElsewhere()"><span class="gp-hint" id="lel-net-hint"></span></div>
+        <div class="gp-field"><label>Avg monthly expenses</label><input id="lel-exp" type="text" inputmode="decimal" oninput="renderLifeElsewhere()"><span class="gp-hint" id="lel-exp-hint"></span></div>
+      </div>
+      <div id="lel-out" style="margin:12px 0 4px;"></div>
+      <div id="lel-top" style="margin:4px 0 8px;"></div>
+    </div>
+    <div class="gp-note">Rough 2026 cost-of-living estimates (national blends including rent — big cities run higher). Income is held fixed: real salaries, taxes, and visas vary hugely by country. A daydream tool, not relocation advice.</div>
+  </div>
+</div>
+
 <div class="trends-overlay" id="psav-overlay" style="display:none;" onclick="if(event.target===this)hidePlanSavings()">
   <div class="trends-modal" id="psav-modal">
     <div class="trends-header" id="psav-header">
@@ -18351,7 +18374,7 @@ function renderNWChart() {
 // behavior is taught the same way everywhere. Injected before the header's
 // close button (or appended for headers without one).
 document.addEventListener('DOMContentLoaded', function() {
-  ['trends-header', 'nw-header', 'gp-header', 'compare-header', 'features-header', 'cal-header', 'askme-header', 'psav-header'].forEach(function(id) {
+  ['trends-header', 'nw-header', 'gp-header', 'compare-header', 'features-header', 'cal-header', 'askme-header', 'psav-header', 'lel-header'].forEach(function(id) {
     var hdr = document.getElementById(id);
     if (!hdr || hdr.querySelector('.modal-drag-hint')) return;
     var hint = document.createElement('span');
@@ -18729,6 +18752,103 @@ function renderCompare() {
   body.innerHTML = html;
 }
 
+/* ── Life Elsewhere: lifestyle-cost translation ──────────────────
+   Static cost-of-living indices (US = 100), rough 2026 national
+   blends including rent. Expenses translate by the index; income is
+   deliberately held fixed (salaries/taxes/visas don't travel). */
+var LEL_INDEX = {
+  'Switzerland': 125, 'Iceland': 105, 'Singapore': 100, 'Norway': 95, 'Luxembourg': 95,
+  'Denmark': 90, 'Israel': 88, 'Ireland': 85, 'Netherlands': 82, 'Australia': 80,
+  'Canada': 78, 'United Kingdom': 78, 'New Zealand': 78, 'Finland': 76, 'Austria': 75,
+  'Germany': 74, 'France': 74, 'Belgium': 74, 'Sweden': 73, 'United Arab Emirates': 72,
+  'South Korea': 70, 'Italy': 65, 'Japan': 60, 'Cyprus': 60, 'Spain': 58,
+  'Czechia': 55, 'Estonia': 55, 'Slovenia': 55, 'Greece': 52, 'Portugal': 52,
+  'Croatia': 50, 'Panama': 50, 'Uruguay': 50, 'Costa Rica': 48, 'Poland': 45,
+  'Chile': 45, 'Mexico': 40, 'Brazil': 38, 'Thailand': 38, 'South Africa': 38,
+  'Philippines': 35, 'Ecuador': 35, 'Argentina': 35, 'Malaysia': 33, 'Indonesia': 33,
+  'Peru': 33, 'Colombia': 32, 'Turkey': 32, 'Georgia': 32, 'Vietnam': 30,
+  'Morocco': 30, 'India': 25, 'Egypt': 22
+};
+function showLifeElsewhere() {
+  var ov = document.getElementById('lel-overlay');
+  if (ov) ov.style.display = 'flex';
+  var sel = document.getElementById('lel-country');
+  if (sel && !sel.options.length) {
+    Object.keys(LEL_INDEX).sort().forEach(function(c) {
+      var o = document.createElement('option');
+      o.value = c; o.textContent = c;
+      sel.appendChild(o);
+    });
+    try {
+      var last = appStore.getItem(nsKey('intentra_lel_country'));
+      if (last && LEL_INDEX[last]) sel.value = last;
+      else sel.value = 'Thailand';
+    } catch (e) { sel.value = 'Thailand'; }
+  }
+  // Prefill from real 6-month averages (same approach as Plan My Savings)
+  try {
+    var savedR = _trendsRange; _trendsRange = '6m';
+    var inc = getIncomeTrendsData().filter(function(d) { return d.total > 0; });
+    var exp = getTrendsData().filter(function(d) { return d.total > 0; });
+    _trendsRange = savedR;
+    var incAvg = inc.length ? inc.reduce(function(t, d) { return t + d.total; }, 0) / inc.length : 0;
+    var expAvg = exp.length ? exp.reduce(function(t, d) { return t + d.total; }, 0) / exp.length : 0;
+    var netI = document.getElementById('lel-net'), expI = document.getElementById('lel-exp');
+    if (netI && !netI.value && incAvg > 0) netI.value = gpFmt(incAvg);
+    if (expI && !expI.value && expAvg > 0) expI.value = gpFmt(expAvg);
+    var nh = document.getElementById('lel-net-hint');
+    if (nh) nh.textContent = incAvg > 0 ? 'your 6-month average' : 'enter your typical take-home';
+    var eh = document.getElementById('lel-exp-hint');
+    if (eh) eh.textContent = expAvg > 0 ? 'your 6-month average' : 'enter typical monthly expenses';
+  } catch (e) {}
+  renderLifeElsewhere();
+}
+function hideLifeElsewhere() {
+  var ov = document.getElementById('lel-overlay');
+  if (ov) ov.style.display = 'none';
+}
+function renderLifeElsewhere() {
+  var out = document.getElementById('lel-out');
+  var top = document.getElementById('lel-top');
+  var sel = document.getElementById('lel-country');
+  if (!out || !sel || !sel.value) return;
+  var country = sel.value;
+  try { appStore.setItem(nsKey('intentra_lel_country'), country); } catch (e) {}
+  var idx = LEL_INDEX[country] || 100;
+  var net = _psavNum('lel-net'), exp = _psavNum('lel-exp');
+  if (!(exp > 0)) {
+    out.innerHTML = '<span style="font-size:12px;color:var(--steel);">Enter your monthly expenses to translate your lifestyle.</span>';
+    if (top) top.innerHTML = '';
+    return;
+  }
+  var costThere = exp * idx / 100;
+  var pctDiff = Math.round((idx - 100));
+  var roomHere = net - exp, roomThere = net - costThere;
+  var rateHere = net > 0 ? Math.max(0, Math.round(roomHere / net * 100)) : null;
+  var rateThere = net > 0 ? Math.max(0, Math.round(roomThere / net * 100)) : null;
+  var cheaper = idx < 100;
+  var card = function(title, cost, room, rate, accent) {
+    return '<div style="flex:1 1 150px;background:var(--mist-light);border-radius:10px;padding:10px 12px;">'
+      + '<div style="font-size:10px;font-weight:700;letter-spacing:0.4px;color:var(--steel);text-transform:uppercase;">' + title + '</div>'
+      + '<div style="font-size:15px;font-weight:700;color:var(--ink);margin-top:3px;">' + gpFmt(cost) + '<span style="font-size:10px;font-weight:400;color:var(--steel);">/mo lifestyle</span></div>'
+      + (rate !== null ? '<div style="font-size:11px;color:' + accent + ';margin-top:3px;">room to save ' + gpFmt(Math.max(0, room)) + ' · ' + rate + '%</div>' : '')
+      + '</div>';
+  };
+  out.innerHTML = '<div style="display:flex;gap:10px;flex-wrap:wrap;">'
+    + card('Here (U.S.)', exp, roomHere, rateHere, 'var(--steel)')
+    + card(country, costThere, roomThere, rateThere, cheaper ? 'var(--sage-dark)' : 'var(--blush)')
+    + '</div>'
+    + '<div style="font-size:12.5px;color:var(--ink);margin-top:9px;">Your current lifestyle would cost about <strong style="color:' + (cheaper ? 'var(--sage-dark)' : 'var(--blush)') + ';">' + Math.abs(pctDiff) + '% ' + (cheaper ? 'less' : 'more') + '</strong> in ' + country
+    + (net > 0 && cheaper && rateThere > rateHere ? ' — your savings rate would jump from <strong>' + rateHere + '%</strong> to <strong style="color:var(--sage-dark);">' + rateThere + '%</strong>.' : '.') + '</div>';
+  if (top) {
+    var cheapest = Object.keys(LEL_INDEX).sort(function(a, b) { return LEL_INDEX[a] - LEL_INDEX[b]; }).slice(0, 5);
+    top.innerHTML = '<div style="font-size:10px;font-weight:700;letter-spacing:0.4px;color:var(--steel);text-transform:uppercase;margin:8px 0 4px;">Where your money stretches furthest</div>'
+      + cheapest.map(function(c) {
+          return '<div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--steel);padding:2px 0;cursor:pointer;" onclick="document.getElementById(\'lel-country\').value=\'' + c + '\';renderLifeElsewhere()"><span>' + c + '</span><span>' + gpFmt(exp * LEL_INDEX[c] / 100) + '/mo</span></div>';
+        }).join('');
+  }
+}
+
 /* ── Plan My Savings calculator ──────────────────────────────────
    Panel 1: take-home − expenses = monthly room to save (prefilled
    from real 6-month averages). Panel 2: what a pre-tax retirement
@@ -19058,6 +19178,48 @@ function renderGPChart() {
     var hdr = document.getElementById('psav-header');
     if (!hdr) return;
     hdr.addEventListener('mousedown', function(e) { if (e.target.closest('button') || e.target.closest('input') || e.target.closest('.nw-chip')) return; startDrag(e.clientX, e.clientY); e.preventDefault(); });
+    document.addEventListener('mousemove', function(e) { onMove(e.clientX, e.clientY); });
+    document.addEventListener('mouseup', stopDrag);
+    hdr.addEventListener('touchstart', function(e) { if (e.target.closest('button') || e.target.closest('input')) return; var t = e.touches[0]; startDrag(t.clientX, t.clientY); }, { passive: true });
+    hdr.addEventListener('touchmove', function(e) { if (!dragging) return; var t = e.touches[0]; onMove(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
+    document.addEventListener('touchend', stopDrag);
+  });
+})();
+
+// Drag support for the Life Elsewhere modal (mirrors the Growth Projection modal)
+(function() {
+  var dragging = false, offX = 0, offY = 0;
+  function startDrag(clientX, clientY) {
+    var modal = document.getElementById('lel-modal');
+    if (!modal) return;
+    var rect = modal.getBoundingClientRect();
+    modal.style.position = 'fixed';
+    modal.style.left = rect.left + 'px';
+    modal.style.top  = rect.top  + 'px';
+    modal.style.margin = '0';
+    var overlay = document.getElementById('lel-overlay');
+    if (overlay) { overlay.style.background = 'transparent'; overlay.style.pointerEvents = 'none'; overlay.style.alignItems = 'flex-start'; overlay.style.justifyContent = 'flex-start'; modal.style.pointerEvents = 'auto'; }
+    offX = clientX - rect.left; offY = clientY - rect.top;
+    dragging = true;
+    var hdr = document.getElementById('lel-header');
+    if (hdr) hdr.classList.add('dragging');
+  }
+  function onMove(clientX, clientY) {
+    if (!dragging) return;
+    var modal = document.getElementById('lel-modal');
+    if (!modal) return;
+    modal.style.left = Math.max(0, Math.min(clientX - offX, window.innerWidth  - modal.offsetWidth))  + 'px';
+    modal.style.top  = Math.max(0, Math.min(clientY - offY, window.innerHeight - 60)) + 'px';
+  }
+  function stopDrag() {
+    dragging = false;
+    var hdr = document.getElementById('lel-header');
+    if (hdr) hdr.classList.remove('dragging');
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    var hdr = document.getElementById('lel-header');
+    if (!hdr) return;
+    hdr.addEventListener('mousedown', function(e) { if (e.target.closest('button') || e.target.closest('input') || e.target.closest('select')) return; startDrag(e.clientX, e.clientY); e.preventDefault(); });
     document.addEventListener('mousemove', function(e) { onMove(e.clientX, e.clientY); });
     document.addEventListener('mouseup', stopDrag);
     hdr.addEventListener('touchstart', function(e) { if (e.target.closest('button') || e.target.closest('input')) return; var t = e.touches[0]; startDrag(t.clientX, t.clientY); }, { passive: true });
