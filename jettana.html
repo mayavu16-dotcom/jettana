@@ -19122,26 +19122,26 @@ function renderTrendsChart() {
   }
 
   // Bars + labels
-  // Dense-window label rows (All): value-aware pre-pass — each label sits at
-  // its own bar's height; when neighbors would collide, the BIGGER value
-  // rides higher (elevation follows the number, not the bar's position)
+  // Dense-window label rows (All): every label anchors to ITS OWN bar top,
+  // with at most one small 9px lift when it would collide with its neighbor's
+  // label — never chained off the neighbor's position, so labels can't drift
+  // away from their bars (the earlier chained version accumulated offsets)
   var _denseLYs = null;
   if (slotW < 26) {
     _denseLYs = [];
-    var _pY = null, _pV = null;
+    var _pY = null;
     _trendsData.forEach(function(dd) {
       if (!(dd.total > 0)) { _denseLYs.push(null); return; }
       var t = pad.top + chartH - (Math.min(dd.total, niceMax) / niceMax) * chartH;
-      var nat = t - 4;
+      var nat = t - 4;          // on the bar top
+      var alt = nat - 9;        // one small lift, still hugging the bar
       var y = nat;
-      if (_pY !== null && Math.abs(y - _pY) < 9) {
-        y = (dd.total >= _pV) ? _pY - 10 : _pY + 10;
-        y = Math.min(y, nat + 8);    // at most slightly onto its own bar cap
-        y = Math.max(y, nat - 22);   // never floats absurdly high
-        if (Math.abs(y - _pY) < 9) y = _pY - 10;   // last resort: go above
+      if (_pY !== null && Math.abs(nat - _pY) < 8) {
+        y = (Math.abs(alt - _pY) >= 8) ? alt
+          : (Math.abs(alt - _pY) > Math.abs(nat - _pY) ? alt : nat);   // worst case: the farther of the two
       }
       _denseLYs.push(y);
-      _pY = y; _pV = dd.total;
+      _pY = y;
     });
   }
 
