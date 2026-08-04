@@ -19122,6 +19122,29 @@ function renderTrendsChart() {
   }
 
   // Bars + labels
+  // Dense-window label rows (All): value-aware pre-pass — each label sits at
+  // its own bar's height; when neighbors would collide, the BIGGER value
+  // rides higher (elevation follows the number, not the bar's position)
+  var _denseLYs = null;
+  if (slotW < 26) {
+    _denseLYs = [];
+    var _pY = null, _pV = null;
+    _trendsData.forEach(function(dd) {
+      if (!(dd.total > 0)) { _denseLYs.push(null); return; }
+      var t = pad.top + chartH - (Math.min(dd.total, niceMax) / niceMax) * chartH;
+      var nat = t - 4;
+      var y = nat;
+      if (_pY !== null && Math.abs(y - _pY) < 9) {
+        y = (dd.total >= _pV) ? _pY - 10 : _pY + 10;
+        y = Math.min(y, nat + 8);    // at most slightly onto its own bar cap
+        y = Math.max(y, nat - 22);   // never floats absurdly high
+        if (Math.abs(y - _pY) < 9) y = _pY - 10;   // last resort: go above
+      }
+      _denseLYs.push(y);
+      _pY = y; _pV = dd.total;
+    });
+  }
+
   _trendsData.forEach(function(d, i) {
     var cx = pad.left + i * slotW + slotW / 2;
     var bx = cx - barW / 2;
@@ -19155,9 +19178,9 @@ function renderTrendsChart() {
         // Wide slots (6M / YTD / 1Y): every bar labeled on one row
         html += '<text x="' + cx + '" y="' + (by - 5) + '" text-anchor="middle" font-size="' + (n > 9 ? 8 : 9) + '" fill="' + inkColor + '" font-family="Outfit,sans-serif">' + trendsFormatShort(d.total) + '</text>';
       } else {
-        // Dense windows (All): still label EVERY bar — alternate between two
-        // rows so neighbors never collide, and drop the $ (the axis owns it)
-        var _vy = by - 4 - ((i % 2) ? 10 : 0);
+        // Dense windows (All): every bar labeled, value-aware — bigger
+        // numbers ride higher when neighbors collide ($ dropped; axis owns it)
+        var _vy = (_denseLYs && _denseLYs[i] != null) ? _denseLYs[i] : (by - 4);
         html += '<text x="' + cx + '" y="' + _vy + '" text-anchor="middle" font-size="7.5" fill="' + inkColor + '" font-family="Outfit,sans-serif">' + trendsFormatShort(d.total).replace('$', '') + '</text>';
       }
     }
