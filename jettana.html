@@ -5174,7 +5174,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
     </div>
     <div class="gp-controls">
       <div class="gp-field">
-        <label>Starting savings</label>
+        <label>Starting savings + investments</label>
         <input type="text" inputmode="decimal" id="gp-start" oninput="renderGPChart()">
         <span class="gp-hint" id="gp-start-hint">from this month</span>
       </div>
@@ -5184,7 +5184,12 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
         <span class="gp-hint" id="gp-contrib-hint">adjust to whatever feels realistic</span>
       </div>
       <div class="gp-field">
-        <label>Annual return %</label>
+        <label>Savings rate %</label>
+        <input type="text" inputmode="decimal" id="gp-rate-save" value="4" oninput="renderGPChart()">
+        <span class="gp-hint">HYSA / cash APY</span>
+      </div>
+      <div class="gp-field">
+        <label>Investment return %</label>
         <input type="text" inputmode="decimal" id="gp-rate" value="7" oninput="renderGPChart()">
         <span class="gp-hint">a common long-term average</span>
       </div>
@@ -18702,8 +18707,8 @@ function showGrowthProjection() {
   if (startInp) startInp.value = gpFmt(start);
   var sHint = document.getElementById('gp-start-hint');
   if (sHint) sHint.textContent = start > 0
-    ? 'your savings in ' + monthLabel(currentMonthKey)
-    : 'no savings logged yet — enter an amount';
+    ? 'your savings & investments in ' + monthLabel(currentMonthKey)
+    : 'nothing logged yet — enter an amount';
 
   var avg = gpAvgContribution();
   var cInp = document.getElementById('gp-contrib');
@@ -18737,21 +18742,38 @@ function renderGPChart() {
 
   var P = Math.max(0, gpNum('gp-start'));
   var C = Math.max(0, gpNum('gp-contrib'));
-  var rate = gpNum('gp-rate');
-  if (rate > 100) rate = 100;
-  if (rate < 0) rate = 0;
-  var i = rate / 100 / 12;
+  var rateInv = gpNum('gp-rate');
+  if (rateInv > 100) rateInv = 100;
+  if (rateInv < 0) rateInv = 0;
+  var rateSave = gpNum('gp-rate-save');
+  if (rateSave > 100) rateSave = 100;
+  if (rateSave < 0) rateSave = 0;
+  var iI = rateInv / 100 / 12;
+  var iS = rateSave / 100 / 12;
 
-  // Year-by-year balances (monthly compounding, contribution at month end)
-  var pts = [], bal = P, y, m;
-  pts.push({ yr: 0, v: bal, contrib: P });
+  // Split the pot by the REAL saved/invested mix of this month's section
+  // (the same classification the Total Savings breakdown uses). Contributions
+  // split in the same proportion. No data → treat everything as savings.
+  var invShare = 0;
+  try {
+    var _sd = _savingsSplitData();
+    if (_sd.total > 0) invShare = _sd.iSum / _sd.total;
+  } catch (e) {}
+  var balS = P * (1 - invShare), balI = P * invShare;
+  var cS = C * (1 - invShare), cI = C * invShare;
+
+  // Year-by-year balances (monthly compounding, contribution at month end),
+  // each bucket compounding at its own rate
+  var pts = [], y, m;
+  pts.push({ yr: 0, v: balS + balI, contrib: P });
   var contribTotal = P;
   for (y = 1; y <= _gpYears; y++) {
     for (m = 0; m < 12; m++) {
-      bal = bal * (1 + i) + C;
+      balS = balS * (1 + iS) + cS;
+      balI = balI * (1 + iI) + cI;
       contribTotal += C;
     }
-    pts.push({ yr: y, v: bal, contrib: contribTotal });
+    pts.push({ yr: y, v: balS + balI, contrib: contribTotal });
   }
 
   if (P === 0 && C === 0) {
@@ -18811,6 +18833,11 @@ function renderGPChart() {
     + 'At this pace: <strong style="color:var(--ink);">' + gpFmt((last.v)) + '</strong> by ' + targetYear
     + (age !== null ? ', when you\'re <strong style="color:var(--ink);">' + (age + _gpYears) + '</strong>' : '')
     + ' — of which <strong style="color:var(--sage-dark);">' + gpFmt((growth)) + '</strong> is growth you didn\'t deposit.'
+    + (invShare > 0 && invShare < 1
+        ? ' <span style="opacity:0.8;">(modeled as ' + Math.round((1 - invShare) * 100) + '% savings at ' + rateSave + '% and ' + Math.round(invShare * 100) + '% investments at ' + rateInv + '%, matching your current mix)</span>'
+        : (invShare >= 1
+            ? ' <span style="opacity:0.8;">(all modeled as investments at ' + rateInv + '%)</span>'
+            : ' <span style="opacity:0.8;">(all modeled as savings at ' + rateSave + '%)</span>'))
     + '</div>';
 }
 
