@@ -4284,6 +4284,9 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
               <button class="more-menu-item" onclick="showGrowthProjection(); hideMoreMenu()">
                 <span>🌱</span> Growth projection
               </button>
+              <button class="more-menu-item" onclick="showPlanSavings(); hideMoreMenu()">
+                <span>🧮</span> Plan my savings
+              </button>
               <button class="more-menu-item" onclick="showCompare(); hideMoreMenu()">
                 <span>⇄</span> Compare months
               </button>
@@ -5159,6 +5162,36 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 </div>
 
 <!-- Growth Projection Modal -->
+<div class="trends-overlay" id="psav-overlay" style="display:none;" onclick="if(event.target===this)hidePlanSavings()">
+  <div class="trends-modal" id="psav-modal">
+    <div class="trends-header" id="psav-header">
+      <h3>🧮 Plan My Savings</h3>
+      <button class="trends-close" onclick="hidePlanSavings()">×</button>
+    </div>
+    <div class="trends-subtitle">How much you can safely save monthly — and what retirement contributions really cost</div>
+    <div style="padding:14px 20px 4px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.4px;color:var(--steel);text-transform:uppercase;margin-bottom:8px;">1 · Room to save</div>
+      <div class="gp-controls" style="padding:0;">
+        <div class="gp-field"><label>Avg monthly take-home</label><input id="psav-net" type="text" inputmode="decimal" oninput="renderPlanSavings()"><span class="gp-hint" id="psav-net-hint"></span></div>
+        <div class="gp-field"><label>Avg monthly expenses</label><input id="psav-exp" type="text" inputmode="decimal" oninput="renderPlanSavings()"><span class="gp-hint" id="psav-exp-hint"></span></div>
+      </div>
+      <div id="psav-room" style="margin:10px 0 2px;font-size:13px;color:var(--ink);"></div>
+    </div>
+    <div style="padding:10px 20px 4px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.4px;color:var(--steel);text-transform:uppercase;margin-bottom:8px;">2 · Retirement contribution <span style="font-weight:400;text-transform:none;">(optional)</span></div>
+      <div class="gp-controls" style="padding:0;">
+        <div class="gp-field"><label>Gross monthly pay</label><input id="psav-gross" type="text" inputmode="decimal" oninput="renderPlanSavings()"><span class="gp-hint">before taxes &amp; deductions</span></div>
+        <div class="gp-field"><label>Your contribution %</label><input id="psav-cpct" type="text" inputmode="decimal" oninput="renderPlanSavings()"><span class="gp-hint">of gross, pre-tax (401k etc.)</span></div>
+        <div class="gp-field"><label>Employer match up to %</label><input id="psav-mpct" type="text" inputmode="decimal" oninput="renderPlanSavings()"><span class="gp-hint">dollar-for-dollar, if offered</span></div>
+        <div class="gp-field"><label>Est. tax rate %</label><input id="psav-tax" type="text" inputmode="decimal" value="22" oninput="renderPlanSavings()"><span class="gp-hint">rough — brackets vary</span></div>
+      </div>
+      <div id="psav-retire" style="margin:10px 0 2px;font-size:12.5px;color:var(--steel);line-height:1.7;"></div>
+    </div>
+    <div id="psav-bottom" style="margin:8px 20px 14px;padding:12px 14px;background:var(--mist-light);border-radius:10px;font-size:13px;color:var(--ink);line-height:1.7;"></div>
+    <div class="gp-note">Planning estimates — taxes are simplified (pre-tax contributions reduce taxable income; your real brackets and plan rules vary).</div>
+  </div>
+</div>
+
 <div class="trends-overlay" id="gp-overlay" style="display:none;" onclick="if(event.target===this)hideGrowthProjection()">
   <div class="trends-modal" id="gp-modal">
     <div class="trends-header" id="gp-header">
@@ -18318,7 +18351,7 @@ function renderNWChart() {
 // behavior is taught the same way everywhere. Injected before the header's
 // close button (or appended for headers without one).
 document.addEventListener('DOMContentLoaded', function() {
-  ['trends-header', 'nw-header', 'gp-header', 'compare-header', 'features-header', 'cal-header', 'askme-header'].forEach(function(id) {
+  ['trends-header', 'nw-header', 'gp-header', 'compare-header', 'features-header', 'cal-header', 'askme-header', 'psav-header'].forEach(function(id) {
     var hdr = document.getElementById(id);
     if (!hdr || hdr.querySelector('.modal-drag-hint')) return;
     var hint = document.createElement('span');
@@ -18696,6 +18729,114 @@ function renderCompare() {
   body.innerHTML = html;
 }
 
+/* ── Plan My Savings calculator ──────────────────────────────────
+   Panel 1: take-home − expenses = monthly room to save (prefilled
+   from real 6-month averages). Panel 2: what a pre-tax retirement
+   contribution actually costs in take-home, plus employer match.
+   Bottom line combines both; cash room can be sent to Growth
+   Projection as its monthly contribution. Inputs persist (nsKey'd). */
+function _psavNum(id) {
+  var el = document.getElementById(id);
+  if (!el) return 0;
+  var n = parseFloat(String(el.value).replace(/[$,%\s]/g, ''));
+  return isNaN(n) ? 0 : n;
+}
+function showPlanSavings() {
+  var ov = document.getElementById('psav-overlay');
+  if (ov) ov.style.display = 'flex';
+  // Prefill from real 6-month averages (months with data)
+  try {
+    var savedR = _trendsRange; _trendsRange = '6m';
+    var inc = getIncomeTrendsData().filter(function(d) { return d.total > 0; });
+    var exp = getTrendsData().filter(function(d) { return d.total > 0; });
+    _trendsRange = savedR;
+    var incAvg = inc.length ? inc.reduce(function(t, d) { return t + d.total; }, 0) / inc.length : 0;
+    var expAvg = exp.length ? exp.reduce(function(t, d) { return t + d.total; }, 0) / exp.length : 0;
+    var netI = document.getElementById('psav-net'), expI = document.getElementById('psav-exp');
+    if (netI && !netI.value && incAvg > 0) netI.value = gpFmt(incAvg);
+    if (expI && !expI.value && expAvg > 0) expI.value = gpFmt(expAvg);
+    var nh = document.getElementById('psav-net-hint');
+    if (nh) nh.textContent = incAvg > 0 ? 'your 6-month average' : 'enter your typical take-home';
+    var eh = document.getElementById('psav-exp-hint');
+    if (eh) eh.textContent = expAvg > 0 ? 'your 6-month average' : 'enter typical monthly expenses';
+  } catch (e) {}
+  // Restore the retirement inputs from last time
+  try {
+    var saved = JSON.parse(appStore.getItem(nsKey('intentra_psav')) || '{}');
+    ['psav-gross', 'psav-cpct', 'psav-mpct', 'psav-tax'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el && saved[id] !== undefined && saved[id] !== '') el.value = saved[id];
+    });
+  } catch (e) {}
+  renderPlanSavings();
+}
+function hidePlanSavings() {
+  var ov = document.getElementById('psav-overlay');
+  if (ov) ov.style.display = 'none';
+}
+function renderPlanSavings() {
+  var net = _psavNum('psav-net'), exp = _psavNum('psav-exp');
+  var room = net - exp;
+  var roomEl = document.getElementById('psav-room');
+  if (roomEl) {
+    if (net <= 0) {
+      roomEl.innerHTML = '<span style="color:var(--steel);font-size:12px;">Enter your take-home to see your room to save.</span>';
+    } else {
+      roomEl.innerHTML = 'Room to save: <strong style="font-size:16px;color:' + (room >= 0 ? 'var(--sage-dark)' : 'var(--blush)') + ';">' + gpFmt(room) + '/mo</strong>'
+        + (room > 0 ? ' <span style="font-size:11px;color:var(--steel);">(consider planning ~90% of this and keeping a cushion)</span>'
+          : (room < 0 ? ' <span style="font-size:11px;color:var(--blush);">expenses are outrunning take-home right now</span>' : ''));
+    }
+  }
+  var gross = _psavNum('psav-gross');
+  var cpct = Math.min(100, _psavNum('psav-cpct'));
+  var mpct = Math.min(100, _psavNum('psav-mpct'));
+  var tax = Math.min(60, Math.max(0, _psavNum('psav-tax') || 22));
+  var contrib = gross * cpct / 100;
+  var match = gross * Math.min(cpct, mpct) / 100;
+  var rEl = document.getElementById('psav-retire');
+  if (rEl) {
+    if (gross > 0 && cpct > 0) {
+      var costs = contrib * (1 - tax / 100);
+      rEl.innerHTML =
+        'You put in <strong style="color:var(--ink);">' + gpFmt(contrib) + '/mo</strong> pre-tax — but your take-home only drops ≈ <strong style="color:var(--ink);">' + gpFmt(costs) + '</strong> (taxes are deferred on the rest).'
+        + (match > 0 ? '<br>Employer match adds <strong style="color:var(--sage-dark);">' + gpFmt(match) + '/mo of free money</strong>.' : '')
+        + '<br>Total into retirement: <strong style="color:var(--ink);">' + gpFmt(contrib + match) + '/mo</strong>'
+        + (mpct > 0 && cpct < mpct ? ' <span style="color:var(--gold);">— you\'re below the full match; raising to ' + mpct + '% captures more free money</span>' : '');
+    } else {
+      rEl.innerHTML = '<span style="font-size:11.5px;">Fill in gross pay and a contribution % to see what retirement saving really costs you.</span>';
+    }
+  }
+  var bEl = document.getElementById('psav-bottom');
+  if (bEl) {
+    if (net > 0 || contrib > 0) {
+      var totalFuture = Math.max(0, room) + contrib + match;
+      bEl.innerHTML = 'Going toward your future each month: <strong style="font-size:15px;">' + gpFmt(totalFuture) + '</strong>'
+        + '<span style="display:block;font-size:11px;color:var(--steel);">' + gpFmt(Math.max(0, room)) + ' cash savings' + (contrib + match > 0 ? ' + ' + gpFmt(contrib + match) + ' retirement' : '') + '</span>'
+        + (room > 0 ? '<button onclick="psavToProjection()" style="margin-top:8px;background:var(--sage);border:none;border-radius:8px;padding:7px 12px;font-family:\'Outfit\',sans-serif;font-size:12px;font-weight:600;color:white;cursor:pointer;">🌱 Project my cash savings growth</button>' : '');
+    } else {
+      bEl.innerHTML = '';
+    }
+  }
+  try {
+    var out = {};
+    ['psav-gross', 'psav-cpct', 'psav-mpct', 'psav-tax'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) out[id] = el.value;
+    });
+    appStore.setItem(nsKey('intentra_psav'), JSON.stringify(out));
+  } catch (e) {}
+}
+function psavToProjection() {
+  var room = Math.max(0, _psavNum('psav-net') - _psavNum('psav-exp'));
+  hidePlanSavings();
+  showGrowthProjection();
+  var c = document.getElementById('gp-contrib');
+  if (c) c.value = gpFmt(room);
+  var cHint = document.getElementById('gp-contrib-hint');
+  if (cHint) cHint.textContent = 'from Plan My Savings — your room to save';
+  renderGPChart();
+}
+
 function showGrowthProjection() {
   var el = document.getElementById('gp-overlay');
   if (el) el.style.display = 'flex';
@@ -18873,6 +19014,48 @@ function renderGPChart() {
   }
   document.addEventListener('DOMContentLoaded', function() {
     var hdr = document.getElementById('gp-header');
+    if (!hdr) return;
+    hdr.addEventListener('mousedown', function(e) { if (e.target.closest('button') || e.target.closest('input') || e.target.closest('.nw-chip')) return; startDrag(e.clientX, e.clientY); e.preventDefault(); });
+    document.addEventListener('mousemove', function(e) { onMove(e.clientX, e.clientY); });
+    document.addEventListener('mouseup', stopDrag);
+    hdr.addEventListener('touchstart', function(e) { if (e.target.closest('button') || e.target.closest('input')) return; var t = e.touches[0]; startDrag(t.clientX, t.clientY); }, { passive: true });
+    hdr.addEventListener('touchmove', function(e) { if (!dragging) return; var t = e.touches[0]; onMove(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
+    document.addEventListener('touchend', stopDrag);
+  });
+})();
+
+// Drag support for the Plan My Savings modal (mirrors the Growth Projection modal)
+(function() {
+  var dragging = false, offX = 0, offY = 0;
+  function startDrag(clientX, clientY) {
+    var modal = document.getElementById('psav-modal');
+    if (!modal) return;
+    var rect = modal.getBoundingClientRect();
+    modal.style.position = 'fixed';
+    modal.style.left = rect.left + 'px';
+    modal.style.top  = rect.top  + 'px';
+    modal.style.margin = '0';
+    var overlay = document.getElementById('psav-overlay');
+    if (overlay) { overlay.style.background = 'transparent'; overlay.style.pointerEvents = 'none'; overlay.style.alignItems = 'flex-start'; overlay.style.justifyContent = 'flex-start'; modal.style.pointerEvents = 'auto'; }
+    offX = clientX - rect.left; offY = clientY - rect.top;
+    dragging = true;
+    var hdr = document.getElementById('psav-header');
+    if (hdr) hdr.classList.add('dragging');
+  }
+  function onMove(clientX, clientY) {
+    if (!dragging) return;
+    var modal = document.getElementById('psav-modal');
+    if (!modal) return;
+    modal.style.left = Math.max(0, Math.min(clientX - offX, window.innerWidth  - modal.offsetWidth))  + 'px';
+    modal.style.top  = Math.max(0, Math.min(clientY - offY, window.innerHeight - 60)) + 'px';
+  }
+  function stopDrag() {
+    dragging = false;
+    var hdr = document.getElementById('psav-header');
+    if (hdr) hdr.classList.remove('dragging');
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    var hdr = document.getElementById('psav-header');
     if (!hdr) return;
     hdr.addEventListener('mousedown', function(e) { if (e.target.closest('button') || e.target.closest('input') || e.target.closest('.nw-chip')) return; startDrag(e.clientX, e.clientY); e.preventDefault(); });
     document.addEventListener('mousemove', function(e) { onMove(e.clientX, e.clientY); });
