@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Welcome to Jettana ✦</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,700;1,700&family=Cormorant+Garamond:ital,wght@0,700;1,700&family=Outfit:wght@300;400;500;600;700&family=Sarabun:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1A2332; --steel: #6B7C8F; --mist-light: #EEF2F5;
+    --sage: #6B9E70; --sage-dark: #4d7a52; --sage-light: #EAF3EB;
+    --cream: #FBF7F0; --gold: #A8823E;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Outfit', sans-serif; background: var(--cream); color: var(--ink);
+    min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  .card {
+    background: white; border-radius: 22px; padding: 52px 44px; max-width: 560px; width: 100%;
+    border: 1px solid var(--mist-light); box-shadow: 0 12px 48px rgba(26,35,50,0.08); text-align: center;
+  }
+  .spark { color: var(--gold); font-size: 22px; letter-spacing: 8px; margin-bottom: 14px; }
+  h1 { font-family: 'Cormorant Garamond', serif; font-size: 40px; font-weight: 700; margin-bottom: 8px; }
+  h1 em { color: var(--sage-dark); }
+  .sub { font-size: 15.5px; color: var(--steel); line-height: 1.7; margin-bottom: 34px; }
+  .steps { text-align: left; margin-bottom: 32px; }
+  .step { display: flex; gap: 14px; align-items: flex-start; padding: 13px 0; border-top: 1px solid var(--mist-light); }
+  .step:first-child { border-top: none; }
+  .step-n {
+    flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: var(--sage-light);
+    color: var(--sage-dark); font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; margin-top: 1px;
+  }
+  .step-t { font-size: 14.5px; color: var(--ink); line-height: 1.65; }
+  .step-t small { display: block; color: var(--steel); font-size: 13px; margin-top: 2px; }
+  .btn {
+    display: inline-block; background: var(--sage-dark); color: white; text-decoration: none;
+    font-weight: 600; font-size: 15px; padding: 14px 34px; border-radius: 12px;
+  }
+  .btn:hover { background: var(--sage); }
+  .fine { font-size: 12px; color: var(--steel); opacity: 0.8; margin-top: 22px; line-height: 1.6; }
+  .thai { font-family: 'Sarabun', sans-serif; color: var(--sage-dark); }
+  @media (max-width: 480px) {
+    .card { padding: 38px 24px; }
+    h1 { font-size: 32px; }
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="spark">✦ ✦ ✦</div>
+    <h1>Welcome to <em>Jettana</em></h1>
+    <p class="sub">Thank you for buying lifetime access — you just helped keep an independent, subscription-free budget tracker alive. <span class="thai">เจตนา</span> — with intention. 💛</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-n">1</div>
+        <div class="step-t">Open the app and sign in — or create your account — <strong>using the same email you used at checkout.</strong></div>
+      </div>
+      <div class="step">
+        <div class="step-n">2</div>
+        <div class="step-t">Cloud sync unlocks within 24 hours — usually much faster.
+          <small>Every save then backs up automatically and follows you across devices.</small></div>
+      </div>
+      <div class="step">
+        <div class="step-n">3</div>
+        <div class="step-t">Used a different email? No problem — just reply to your Stripe receipt and tell me which email your Jettana account uses.</div>
+      </div>
+    </div>
+    <a class="btn" href="https://jettana.app/app">Open Jettana →</a>
+    <p class="fine">Questions anytime: reply to your receipt email and a real human (the one who built this) answers.</p>
+  </div>
+</body>
+</html>
