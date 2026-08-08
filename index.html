@@ -180,7 +180,7 @@ nav {
 .story-inner { max-width: 640px; margin: 0 auto; }
 .story-thai { font-family: 'Sarabun', sans-serif; font-size: 48px; font-weight: 600; color: var(--gold); margin-bottom: 8px; line-height: 1; }
 .story-phonetic { font-size: 21px; color: var(--gold); opacity: 0.8; margin-bottom: 34px; letter-spacing: 4px; text-align: center; }
-.story-text { font-size: 16px; color: var(--ink); line-height: 1.75; }
+.story-text { font-family: 'Outfit', 'Sarabun', sans-serif; font-size: 17px; color: var(--ink); line-height: 1.85; }
 .story-text p { margin-bottom: 18px; }
 .story-sig { text-align: center; }
 .story-text p + p { margin-top: 22px; }
@@ -195,6 +195,18 @@ nav {
 .support-price { font-family: 'Cormorant Garamond', serif; font-size: 48px; font-weight: 900; color: var(--ink); margin-bottom: 4px; }
 .support-price-sub { font-size: 13px; color: var(--steel); margin-bottom: 32px; }
 .support-note { font-size: 12px; color: var(--steel); margin-top: 16px; opacity: 0.75; }
+    .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 880px; margin: 0 auto; }
+    .price-card { background: white; border-radius: 20px; padding: 44px 36px; border: 1px solid var(--mist-light); box-shadow: 0 8px 40px rgba(26,35,50,0.06); display: flex; flex-direction: column; text-align: left; }
+    .price-card.featured { border: 2px solid var(--sage); }
+    .price-tier { font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--steel); margin-bottom: 10px; }
+    .price-amount { font-family: 'Cormorant Garamond', serif; font-size: 46px; font-weight: 900; color: var(--ink); display: flex; align-items: baseline; gap: 10px; line-height: 1; min-height: 50px; }
+    .price-amount span { font-size: 16px; font-weight: 400; color: var(--steel); }
+    .price-list { list-style: none; padding: 0; margin: 22px 0 26px; flex: 1; }
+    .price-list li { font-size: 14.5px; color: var(--steel); line-height: 1.6; padding: 6px 0 6px 26px; position: relative; }
+    .price-list li::before { content: '\2726'; position: absolute; left: 2px; color: var(--sage); font-size: 12px; }
+    .price-founding { display: inline-block; background: #FAF3E6; color: #8a6a2e; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 4px 10px; border-radius: 20px; margin-bottom: 14px; align-self: flex-start; }
+    .price-founding.ghost { visibility: hidden; }
+    @media (max-width: 720px) { .price-grid { grid-template-columns: 1fr; } }
 
 /* ── CTA band ── */
 .cta-band { background: var(--sage); padding: 100px 5%; text-align: center; }
@@ -248,7 +260,7 @@ footer { background: var(--ink); color: rgba(255,255,255,0.55); padding: 48px 5%
   .footer-links { justify-content: center; }
 }
 </style>
-<meta name="description" content="Jettana is a free budget tracker built on intentional, manual-first budgeting. Set a monthly intention, track planned vs. actual across every category, and see where you stand — no spreadsheets, no subscription, your data stays on your device.">
+<meta name="description" content="Jettana is a budget tracker built on intentional, manual-first budgeting. Free on your device — set a monthly intention and track planned vs. actual across every category. A one-time $19 upgrade adds cloud sync. No subscription, ever.">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -272,7 +284,7 @@ footer { background: var(--ink); color: rgba(255,255,255,0.55); padding: 48px 5%
     <a href="#features">Features</a>
     <a href="#how">How it works</a>
     <a href="#story">Our story</a>
-    <a href="#support">Support</a>
+    <a href="#pricing">Pricing</a>
   </div>
   <a href="https://jettana.app/app" class="nav-cta" style="background:none;color:var(--ink);border:1.5px solid var(--mist);">Sign in</a>
 </nav>
@@ -467,7 +479,7 @@ footer { background: var(--ink); color: rgba(255,255,255,0.55); padding: 48px 5%
     </div>
     <div class="reveal d3">
       <div class="stat-num">$0</div>
-      <div class="stat-label">to get started — no credit card, no subscription required</div>
+      <div class="stat-label">to get started — sync is a one-time upgrade</div>
     </div>
   </div>
 </section>
@@ -681,38 +693,58 @@ footer { background: var(--ink); color: rgba(255,255,255,0.55); padding: 48px 5%
       <p>This app is named after a word my mom carried with her — เจตนา. She taught me that who you become matters more than what you have. To be intentional in the way you live, to choose kindness first, and to trust that everything else would follow.</p>
       <p>Growing up, I watched my family carry the quiet weight of financial stress. From an early age, I promised myself I would learn what no one had taught us — not just to change my future, but one day to help others change theirs.</p>
       <p>Those small, intentional choices eventually led me to Thailand, the home my mom left and never had the chance to return to. Standing there for the first time, I realized this journey had never been mine alone.</p>
-      <p>That's why I built Jettana. Not simply to help people budget — but to help them live with intention.</p><p>Because meaningful change doesn't happen all at once. It begins with one small, intentional decision.</p><p style="font-family:'Cormorant Garamond',serif;font-size:clamp(17px,1.6vw,20px);font-style:italic;font-weight:600;color:var(--ink);line-height:1.4;margin-top:26px;text-align:center;">You just need a place to begin. This is that place.</p>
+      <p>That's why I built Jettana. Not simply to help people budget — but to help them live with intention.</p><p>Because meaningful change doesn't happen all at once. It begins with one small, intentional decision.</p><p style="font-family:'Cormorant Garamond',serif;font-size:clamp(18px,1.8vw,22px);font-style:italic;font-weight:600;color:var(--ink);line-height:1.4;margin-top:26px;text-align:center;">You just need a place to begin. This is that place.</p>
     </div>
-    <p class="reveal d2" style="font-family:'Cormorant Garamond',serif;font-size:15.5px;font-style:italic;color:var(--steel);line-height:1.6;margin-top:28px;text-align:center;">For my mom, who taught me the meaning of intention.<br>For you, who are choosing to begin.</p><div class="story-sig reveal d2">— Maya 💚</div>
+    <p class="reveal d2" style="font-family:'Cormorant Garamond',serif;font-size:16.5px;font-style:italic;color:#8a6a2e;line-height:1.7;margin-top:28px;text-align:center;">For my mom, who taught me the meaning of intention.<br>For you, who are choosing to begin.</p><div class="story-sig reveal d2">— Maya 💚</div>
   </div>
 </section>
 
 <!-- Mid-page CTA nudge -->
 <section style="background:var(--sage);padding:60px 5%;text-align:center;">
   <p style="font-family:'Cormorant Garamond',serif;font-size:clamp(22px,3vw,36px);font-weight:700;color:white;font-style:italic;margin-bottom:20px;">"Be intentional with every dollar."</p>
-  <a href="https://jettana.app/app" style="background:white;color:var(--sage-dark);font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;padding:13px 32px;border-radius:10px;text-decoration:none;display:inline-block;box-shadow:0 4px 16px rgba(0,0,0,0.12);transition:transform 0.15s,box-shadow 0.15s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,0.18)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,0,0,0.12)'">Start tracking free →</a>
 </section>
 
 <!-- Support -->
-<section class="support" id="support">
-  <div class="section-eyebrow reveal" style="margin-bottom:16px;">Support Jettana</div>
-  <h2 class="section-headline reveal d1" style="text-align:center;margin-bottom:48px;">Keep it free for everyone.</h2>
-  <div class="support-card reveal d2">
-    <div class="support-badge">Voluntary · No features locked</div>
-    <div class="support-headline">Buy me a pad thai 🍜</div>
-    <p class="support-sub">Jettana is free because it was built for people who need it — not to make money. If it's helped you, here's a way to say thanks and keep it going.</p>
-    <div class="support-price">$6<span style="font-size:20px;font-weight:400;color:var(--steel)">/mo</span></div>
-    <div class="support-price-sub">A small thanks that keeps it going — no pressure.</div>
-    <a href="https://buy.stripe.com/6oU28q6j084G2sI2ExfQI00" class="btn-primary" style="width:100%;justify-content:center;">Support monthly ✦</a>
-    <p class="support-note">You can cancel anytime. All features remain free regardless.</p>
-    <p class="support-note" style="margin-top:10px;">Or <a href="https://buy.stripe.com/fZu7sKfTA84G7N2a6ZfQI01" style="color:var(--sage-dark);font-weight:600;text-decoration:underline;text-underline-offset:2px;">leave a one-time tip</a> — any amount, no subscription. 🍜</p>
-  </div>
-</section>
+<section class="support" id="pricing">
+      <div class="section-eyebrow reveal" style="margin-bottom:16px;">Pricing</div>
+      <h2 class="section-headline reveal d1" style="text-align:center;margin-bottom:14px;">Free on your device. <em>Sync for life — once.</em></h2>
+      <p class="support-sub reveal d1" style="text-align:center;max-width:560px;margin:0 auto 44px;">Jettana was built for people who need it — not to rent them their own budget. The tracker is free, forever. One small one-time purchase adds cloud sync.</p>
+      <div class="price-grid reveal d2">
+        <div class="price-card">
+          <div class="price-founding ghost">Founding price</div>
+          <div class="price-tier">Free</div>
+          <div class="price-amount">$0</div>
+          <ul class="price-list">
+            <li>The full tracker — every section, template, and insight</li>
+            <li>Demo mode &amp; guided tours to learn the ropes</li>
+            <li>Your data stays on your device</li>
+            <li>No account needed</li>
+          </ul>
+          <a href="https://jettana.app/app" class="btn-secondary" style="width:100%;justify-content:center;margin-top:auto;">Start tracking free →</a>
+          <p class="support-note" style="text-align:center;">No account · nothing to cancel · start right now</p>
+        </div>
+        <div class="price-card featured">
+          <div class="price-founding">Founding price</div>
+          <div class="price-tier">Lifetime</div>
+          <div class="price-amount">$19<span>once · never monthly</span></div>
+          <ul class="price-list">
+            <li>Everything in Free</li>
+            <li>Cloud sync across all your devices</li>
+            <li>Automatic backups of every save</li>
+            <li>All future updates included</li>
+            <li>Supports one indie builder — not a subscription machine</li>
+          </ul>
+          <a href="https://buy.stripe.com/3cI3cubDk98K0kAfrjfQI02" class="btn-primary" style="width:100%;justify-content:center;margin-top:auto;">Get lifetime access ✦</a>
+          <p class="support-note" style="text-align:center;">One-time payment · instant receipt · sync unlocked within 24&nbsp;hours</p>
+        </div>
+      </div>
+      <p class="support-note reveal d3" style="text-align:center;margin-top:26px;">Just want to say thanks instead? <a href="https://buy.stripe.com/fZu7sKfTA84G7N2a6ZfQI01" style="color:var(--sage-dark);font-weight:600;text-decoration:underline;text-underline-offset:2px;">Leave a tip — buy me a pad thai 🍜</a></p>
+    </section>
 
 <!-- CTA Band -->
 <section class="cta-band">
   <h2 class="cta-headline reveal">Stop guessing where it went.<br><em>Start choosing where it goes.</em></h2>
-  <p class="cta-sub reveal d1">Free to start. Syncs across devices. Start in under a minute.</p>
+  <p class="cta-sub reveal d1">No subscription, ever. Start in under a minute.</p>
   <a href="https://jettana.app/app" class="btn-white reveal d2">Start budgeting free →</a>
 </section>
 
@@ -726,7 +758,7 @@ footer { background: var(--ink); color: rgba(255,255,255,0.55); padding: 48px 5%
     <a href="#features">Features</a>
     <a href="#how">How it works</a>
     <a href="#story">Our story</a>
-    <a href="#support">Support</a>
+    <a href="#pricing">Pricing</a>
     <a href="https://jettana.app/app">Open app</a>
   </div>
   <div class="footer-right">
