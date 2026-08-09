@@ -6228,36 +6228,6 @@ setTimeout(function() {
   if (_demoIsolated && !_demoLoaded) { _demoLoaded = true; _runLoadDemo(); }
 }, 2500);
 
-// ── TEMPORARY DIAGNOSTIC #2 (remove once the vanishing-row bug is found) ──
-// Logging only, no behaviour change. Traces every write/remove/clear of the
-// budget key, and every decision the pull makes.
-var _pullCount = 0;
-(function () {
-  var _s = appStore.setItem, _r = appStore.removeItem, _c = appStore.clear;
-  function w(v) {
-    try {
-      var d = JSON.parse(v), o = [];
-      Object.keys(d || {}).forEach(function (k) {
-        if (d[k] && d[k].savings) o.push(k + ':' + d[k].savings.map(function (r) { return r.label || '(blank)'; }).join('|'));
-      });
-      return o.join('  ');
-    } catch (e) { return '(unparseable)'; }
-  }
-  appStore.setItem = function (k, v) {
-    try { if (k === activeStorageKey()) { console.warn('[DIAG] WRITE → ' + w(v)); console.trace('[DIAG] written by'); } } catch (e) {}
-    return _s.call(appStore, k, v);
-  };
-  appStore.removeItem = function (k) {
-    try { if (k === activeStorageKey()) { console.warn('[DIAG] REMOVE ' + k); console.trace('[DIAG] removed by'); } } catch (e) {}
-    return _r.call(appStore, k);
-  };
-  appStore.clear = function () {
-    try { console.warn('[DIAG] CLEAR ALL STORAGE'); console.trace('[DIAG] cleared by'); } catch (e) {}
-    return _c.call(appStore);
-  };
-  try { console.warn('[DIAG] startup storage → ' + w(appStore.getItem(activeStorageKey()))); } catch (e) {}
-})();
-
 // Sync data from Supabase → localStorage on login/refresh
 async function syncFromSupabase() {
   if (_demoIsolated) return;
@@ -6293,19 +6263,11 @@ async function syncFromSupabase() {
     var localRaw = null, localData = null;
     try { localRaw = appStore.getItem(activeStorageKey()); } catch (e) {}
     if (localRaw) { try { localData = JSON.parse(localRaw); } catch (e) { localData = null; } }
-    try {
-      console.warn('[DIAG] pull #' + (++_pullCount) +
-        ' · flag=' + appStore.getItem(nsKey('jettana_unsynced')) +
-        ' · localRows=' + (localData ? snapWeight(localData).rows : 'none') +
-        ' · cloudRows=' + snapWeight(row.data).rows);
-      console.trace('[DIAG] pull called by');
-    } catch (e) {}
     if (hasUnsyncedChanges() && localData && Object.keys(localData).length > 0) {
       _pendingUnsynced = true;
       _lastGood = snapWeight(localData);  // local is now the state we must not shrink
       console.warn('[jettana] this device holds changes the cloud never accepted — keeping local data, NOT overwriting from the cloud');
     } else {
-      console.warn('[DIAG] pull #' + _pullCount + ' decided: OVERWRITE local with the cloud copy');
       appStore.setItem(activeStorageKey(), JSON.stringify(row.data));
       _lastGood = snapWeight(row.data);   // this is the state we must not shrink
     }
@@ -7884,7 +7846,6 @@ function switchMonth(key) {
     c.classList.remove('collapsed');
   });
   const data = getMonthData(key);
-  try { console.warn('[DIAG] switchMonth(' + key + ') savings list = ' + JSON.stringify((data.savings || []).map(function (r) { return r.label || '(blank)'; }))); console.trace('[DIAG] switchMonth called by'); } catch (e) {}
   SECTIONS.forEach(s => {
     const container = document.getElementById(`rows-${s}`);
     if (container) container.innerHTML = '';
@@ -8091,7 +8052,6 @@ function addRow(section, data = {}, animate = true) {
 }
 
 function renderRowEl(section, row, animate = false) {
-  try { if (section === 'savings') console.warn('[DIAG] renderRowEl savings ← "' + (row.label || '(blank)') + '" id=' + row.id); } catch (e) {}
   const cfg = CONFIGS[section];
   const container = document.getElementById(`rows-${section}`);
   if (!container) return; // section not in DOM yet
