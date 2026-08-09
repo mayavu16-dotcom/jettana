@@ -4256,8 +4256,8 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
             <!-- ═══ MAIN PANEL ═══ -->
             <div id="more-panel-main">
 
-              <button class="more-menu-item" onclick="window.open('https://buy.stripe.com/6oU28q6j084G2sI2ExfQI00','_blank'); hideMoreMenu()" style="background:linear-gradient(135deg,#6B9E70,#4d7a52);color:white;border-radius:8px;margin:4px 0 8px;">
-                <span>✦</span> Support Jettana — $6/mo
+              <button class="more-menu-item" id="support-jettana-item" onclick="window.open('https://buy.stripe.com/3cI3cubDk98K0kAfrjfQI02','_blank'); hideMoreMenu()" style="display:none;background:linear-gradient(135deg,#6B9E70,#4d7a52);color:white;border-radius:8px;margin:4px 0 8px;">
+                <span>✦</span> Lifetime access — $19 once
               </button>
 
               <button class="more-menu-item" onclick="showMorePanel('appearance')">
@@ -5389,7 +5389,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
     <div class="welcome-header">
       <h2>Welcome to Jettana 👋</h2>
       <p>Your personal budget tracker. Add your income, track your expenses, and see exactly where your money goes.</p>
-      <p style="margin-top:8px;font-size:12px;opacity:0.85;">🔒 Your data is private and syncs securely across all your devices.</p>
+      <p id="welcome-privacy-line" style="margin-top:8px;font-size:12px;opacity:0.85;">🔒 Your data is private and syncs securely across all your devices.</p>
     </div>
     <div class="welcome-body">
       <div class="welcome-steps">
@@ -6291,6 +6291,7 @@ async function syncFromSupabase() {
   loadSectionNames();
   showRowMenuHintIfNeeded();
   setTimeout(maybeOfferLocalTransfer, 900);
+  refreshSupportItem();
 }
 
 // ── Local budget → account transfer ──────────────────────────
@@ -6464,7 +6465,7 @@ function activeSnapKey() {
 // behind these, so they should not be offered at all.
 function stripAccountUIForDemo() {
   if (!inDemoSandbox()) return;
-  ['manage-account-item'].forEach(function(id) {
+  ['manage-account-item', 'support-jettana-item'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el && el.parentNode) el.parentNode.removeChild(el);
   });
@@ -6488,10 +6489,44 @@ function swapAccountUIForLocal() {
   document.querySelectorAll('.shortcut-row').forEach(function(row) {
     if (/Sign out|Delete account/i.test(row.textContent || '')) {
       if (row.parentNode) row.parentNode.removeChild(row);
+      return;
+    }
+    // Same reason as the Welcome header: no account means no cross-device sync,
+    // so the claim shouldn't be sitting in the features list either.
+    var span = row.querySelector('span');
+    if (span && /syncs across devices/i.test(span.innerHTML)) {
+      span.innerHTML = span.innerHTML.replace(/;\s*syncs across devices/i, '');
     }
   });
 }
 document.addEventListener('DOMContentLoaded', swapAccountUIForLocal);
+
+// ── Who sees the purchase button ─────────────────────────────
+// It starts hidden in the markup and is revealed only when showing it is
+// justified. Deliberately fails toward silence: if we cannot confirm someone
+// is unpaid, we show nothing rather than risk nagging a paying customer.
+//   • demo    → removed outright by stripAccountUIForDemo (no session behind it)
+//   • local   → shown; there is no account, so nothing to have bought with
+//   • account → shown ONLY after entitlements confirms paid is not true
+// Read-only against a table whose policy allows reading your own row and
+// nothing else, so this cannot grant anything. Wrapped so a failure here can
+// never interrupt sign-in or sync.
+async function refreshSupportItem() {
+  var el = document.getElementById('support-jettana-item');
+  if (!el) return;                       // demo already removed it
+  if (inLocalMode()) { el.style.display = ''; return; }
+  if (!_currentUser || !_sb) return;     // unknown — stay hidden
+  try {
+    var res = await _sb.from('entitlements').select('paid').eq('user_id', _currentUser.id).maybeSingle();
+    if (res && res.error) return;        // unknown — stay hidden
+    var paid = !!(res && res.data && res.data.paid);
+    if (!paid) el.style.display = '';
+  } catch (e) {
+    // Offline or blocked: leave it hidden. A missing button costs a sale;
+    // a button shown to someone who already paid costs trust.
+  }
+}
+document.addEventListener('DOMContentLoaded', refreshSupportItem);
 
 function enforceSandboxIsolation() {
   if (!inDemoSandbox()) return true;
@@ -16146,6 +16181,15 @@ function showWelcome() {
   var auth = document.getElementById('auth-overlay');
   if (auth && auth.style.display !== 'none' && auth.style.display !== '') return;
   var el = document.getElementById('welcome-overlay');
+  // The header promises cloud sync. In local mode there is no account behind
+  // that promise, so say what is actually true. Set at show time rather than
+  // on DOMContentLoaded — Welcome can fire before the DOM event on a slow load.
+  var priv = document.getElementById('welcome-privacy-line');
+  if (priv) {
+    priv.textContent = inLocalMode()
+      ? '🔒 Your budget is private and saved on this device. Create a free account any time to sync it across your devices.'
+      : '🔒 Your data is private and syncs securely across all your devices.';
+  }
   if (el) el.style.display = 'flex';
 }
 function hideWelcome() {
