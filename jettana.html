@@ -6228,41 +6228,6 @@ setTimeout(function() {
   if (_demoIsolated && !_demoLoaded) { _demoLoaded = true; _runLoadDemo(); }
 }, 2500);
 
-// ── TEMPORARY DIAGNOSTIC (remove once the vanishing-row bug is found) ──
-// Behaviour-free: it only logs. Wraps the budget-key writes so we can see WHO
-// writes what, and in what order, during a page load.
-(function () {
-  var _origSet = appStore.setItem;
-  var _origRem = appStore.removeItem;
-  function labelsOf(v) {
-    try {
-      var d = JSON.parse(v), out = [];
-      Object.keys(d || {}).forEach(function (mk) {
-        if (d[mk] && d[mk].savings) out.push(mk + ':' + d[mk].savings.map(function (r) { return r.label; }).join('|'));
-      });
-      return out.join('  ');
-    } catch (e) { return '(unparseable)'; }
-  }
-  appStore.setItem = function (k, v) {
-    try {
-      if (k === activeStorageKey()) {
-        console.warn('[DIAG] WRITE ' + k + ' → ' + labelsOf(v));
-        console.trace('[DIAG] written by');
-      }
-    } catch (e) {}
-    return _origSet.call(appStore, k, v);
-  };
-  appStore.removeItem = function (k) {
-    try {
-      if (k === activeStorageKey()) { console.warn('[DIAG] REMOVE ' + k); console.trace('[DIAG] removed by'); }
-    } catch (e) {}
-    return _origRem.call(appStore, k);
-  };
-  try {
-    console.warn('[DIAG] at startup, storage holds → ' + labelsOf(appStore.getItem(activeStorageKey())));
-  } catch (e) {}
-})();
-
 // Sync data from Supabase → localStorage on login/refresh
 async function syncFromSupabase() {
   if (_demoIsolated) return;
