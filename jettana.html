@@ -6511,22 +6511,67 @@ document.addEventListener('DOMContentLoaded', swapAccountUIForLocal);
 // Read-only against a table whose policy allows reading your own row and
 // nothing else, so this cannot grant anything. Wrapped so a failure here can
 // never interrupt sign-in or sync.
-async function refreshSupportItem() {
+async function refreshSupportItem(attempt) {
   var el = document.getElementById('support-jettana-item');
   if (!el) return;                       // demo already removed it
-  if (inLocalMode()) { el.style.display = ''; return; }
-  if (!_currentUser || !_sb) return;     // unknown — stay hidden
-  try {
-    var res = await _sb.from('entitlements').select('paid').eq('user_id', _currentUser.id).maybeSingle();
-    if (res && res.error) return;        // unknown — stay hidden
-    var paid = !!(res && res.data && res.data.paid);
-    if (!paid) el.style.display = '';
-  } catch (e) {
-    // Offline or blocked: leave it hidden. A missing button costs a sale;
-    // a button shown to someone who already paid costs trust.
+  if (inLocalMode()) {
+    el.style.display = '';
+    console.log('[jettana] support button: SHOWN — local mode, no account to check');
+    return;
   }
+  if (!_currentUser || !_sb) {
+    console.log('[jettana] support button: hidden — not signed in yet, nothing to check');
+    return;
+  }
+  attempt = (typeof attempt === 'number') ? attempt : 1;
+
+  var res = null;
+  try {
+    res = await _sb.from('entitlements').select('paid').eq('user_id', _currentUser.id).maybeSingle();
+  } catch (e) {
+    console.log('[jettana] support button: hidden — entitlements read threw, treating as unknown', e);
+    return;
+  }
+  if (res && res.error) {
+    console.log('[jettana] support button: hidden — entitlements read errored, treating as unknown', res.error);
+    return;
+  }
+  if (res && res.data) {
+    if (res.data.paid) {
+      el.style.display = 'none';
+      console.log('[jettana] support button: hidden — entitlements row says paid');
+    } else {
+      el.style.display = '';
+      console.log('[jettana] support button: SHOWN — entitlements row says not paid');
+    }
+    return;
+  }
+
+  // Nothing came back. An empty result is NOT proof of "no entitlement": under
+  // RLS, a request whose session isn't attached yet also returns empty with no
+  // error, because auth.uid() is null and the policy matches no rows. That is
+  // the same false-empty that disarmed the sync guard on July 25 — and it is
+  // why a fresh sign-in (incognito) showed the button while an already-signed-in
+  // window did not. Confirm a session, then give the token a moment to attach.
+  var sess = null;
+  try {
+    var sr = await _sb.auth.getSession();
+    sess = (sr && sr.data) ? sr.data.session : null;
+  } catch (e) {}
+  if (!sess) {
+    console.log('[jettana] support button: hidden — empty result with no confirmed session, treating as unknown');
+    return;
+  }
+  if (attempt < 3) {
+    console.log('[jettana] support button: empty result on attempt ' + attempt + ', retrying shortly');
+    setTimeout(function() { refreshSupportItem(attempt + 1); }, 1200);
+    return;
+  }
+  el.style.display = '';
+  console.log('[jettana] support button: SHOWN — confirmed session and still no entitlement row after ' + attempt + ' attempts');
 }
-document.addEventListener('DOMContentLoaded', refreshSupportItem);
+// Wrapped: the DOM event object would otherwise arrive as the attempt argument.
+document.addEventListener('DOMContentLoaded', function() { refreshSupportItem(); });
 
 function enforceSandboxIsolation() {
   if (!inDemoSandbox()) return true;
