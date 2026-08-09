@@ -6255,8 +6255,22 @@ async function syncFromSupabase() {
   }
 
   if (row && row.data && Object.keys(row.data).length > 0) {
-    appStore.setItem(activeStorageKey(), JSON.stringify(row.data));
-    _lastGood = snapWeight(row.data);   // this is the state we must not shrink
+    // This device may be holding edits the cloud refused — a blocked write, or
+    // an outage. Overwriting local with the older cloud copy would throw that
+    // work away silently: the same shape of loss as July 25, from the other
+    // direction. Keep what is on the device. The cloud copy is left untouched
+    // and is still there to fall back on.
+    var localRaw = null, localData = null;
+    try { localRaw = appStore.getItem(activeStorageKey()); } catch (e) {}
+    if (localRaw) { try { localData = JSON.parse(localRaw); } catch (e) { localData = null; } }
+    if (hasUnsyncedChanges() && localData && Object.keys(localData).length > 0) {
+      _pendingUnsynced = true;
+      _lastGood = snapWeight(localData);  // local is now the state we must not shrink
+      console.warn('[jettana] this device holds changes the cloud never accepted — keeping local data, NOT overwriting from the cloud');
+    } else {
+      appStore.setItem(activeStorageKey(), JSON.stringify(row.data));
+      _lastGood = snapWeight(row.data);   // this is the state we must not shrink
+    }
   } else {
     // Empty result — but under RLS a request whose session isn't attached yet
     // ALSO comes back empty with no error, indistinguishable from a new
@@ -6453,13 +6467,33 @@ var _syncState = 'unknown';   // 'ok' | 'failed' | 'unknown'
 var _syncErrMsg = '';
 var _syncToastAt = 0;
 var _unpaidToastCount = 0;    // the paywall message is information, not a nag
+var _pendingUnsynced = false; // set by the pull when it kept local over the cloud
+
+// ── Changes the cloud never accepted ─────────────────────────
+// When a write is refused, this device is holding the only copy of that work.
+// Remembered across reloads (nsKey'd, so demo and local mode keep their own)
+// so the next pull knows not to paper over it with the older cloud copy.
+function unsyncedFlagKey() { return nsKey('jettana_unsynced'); }
+function markUnsynced(on) {
+  try {
+    if (on) appStore.setItem(unsyncedFlagKey(), '1');
+    else appStore.removeItem(unsyncedFlagKey());
+  } catch (e) {}
+}
+function hasUnsyncedChanges() {
+  try { return appStore.getItem(unsyncedFlagKey()) === '1'; } catch (e) { return false; }
+}
+
 function noteSyncResult(ok, err) {
   _syncState = ok ? 'ok' : 'failed';
   _syncErrMsg = err ? (err.message || String(err)) : '';
   if (ok) {
     console.log('[jettana] cloud save: OK');
+    markUnsynced(false);      // the cloud now has it; nothing is stranded here
+    _pendingUnsynced = false;
   } else {
     console.warn('[jettana] cloud save FAILED —', _syncErrMsg);
+    markUnsynced(true);       // this device holds work the cloud does not have
     var unpaid = (typeof _paidStatus !== 'undefined' && _paidStatus === 'unpaid');
     if (unpaid) {
       // A blocked write is a settled fact, not news that changes. Say it twice,
@@ -6645,6 +6679,10 @@ function updateSyncStatusRow() {
     msg = '📱 Saved on this device. Create an account to sync across your devices.';
   } else if (!_currentUser) {
     msg = '';
+  } else if (_pendingUnsynced && _paidStatus === 'unpaid') {
+    msg = '📱 This device has changes the cloud has not accepted. They are safe here and were not overwritten. Cloud backup comes with lifetime access — the ✦ button just above, $19 once.';
+  } else if (_pendingUnsynced) {
+    msg = '⚠️ This device has changes that never reached the cloud. They are safe here and were not overwritten.';
   } else if (_syncState === 'failed' && _paidStatus === 'unpaid') {
     msg = '📱 Saved on this device. Cloud backup comes with lifetime access — the ✦ button just above, $19 once.';
   } else if (_syncState === 'failed') {
