@@ -6452,6 +6452,7 @@ async function syncToSupabase(data) {
 var _syncState = 'unknown';   // 'ok' | 'failed' | 'unknown'
 var _syncErrMsg = '';
 var _syncToastAt = 0;
+var _unpaidToastCount = 0;    // the paywall message is information, not a nag
 function noteSyncResult(ok, err) {
   _syncState = ok ? 'ok' : 'failed';
   _syncErrMsg = err ? (err.message || String(err)) : '';
@@ -6459,14 +6460,28 @@ function noteSyncResult(ok, err) {
     console.log('[jettana] cloud save: OK');
   } else {
     console.warn('[jettana] cloud save FAILED —', _syncErrMsg);
-    // Throttled: saves fire often, and a toast per keystroke would be its own
-    // kind of broken.
-    var now = Date.now();
-    if (now - _syncToastAt > 60000) {
-      _syncToastAt = now;
-      try {
-        showToast('Not saved to the cloud — your budget is safe on this device. See ⋯ for details.', true, 6000);
-      } catch (e) {}
+    var unpaid = (typeof _paidStatus !== 'undefined' && _paidStatus === 'unpaid');
+    if (unpaid) {
+      // A blocked write is a settled fact, not news that changes. Say it twice,
+      // then let the ⋯ status row carry it — someone who has decided not to buy
+      // should not get a popup every minute inside their own budget.
+      if (_unpaidToastCount < 2) {
+        _unpaidToastCount++;
+        try {
+          showToast('Saved on this device, not to the cloud. Cloud backup comes with lifetime access — $19 once, in the ⋯ menu.', true, 7000);
+        } catch (e) {}
+      }
+    } else {
+      // A network or outage failure CAN change, so it stays worth re-raising.
+      // Throttled: saves fire often, and a toast per keystroke would be its own
+      // kind of broken.
+      var now = Date.now();
+      if (now - _syncToastAt > 60000) {
+        _syncToastAt = now;
+        try {
+          showToast('Not saved to the cloud — your budget is safe on this device. See ⋯ for details.', true, 6000);
+        } catch (e) {}
+      }
     }
   }
   updateSyncStatusRow();
@@ -6631,7 +6646,7 @@ function updateSyncStatusRow() {
   } else if (!_currentUser) {
     msg = '';
   } else if (_syncState === 'failed' && _paidStatus === 'unpaid') {
-    msg = '📱 Saved on this device — cloud sync needs lifetime access.';
+    msg = '📱 Saved on this device. Cloud backup comes with lifetime access — the ✦ button just above, $19 once.';
   } else if (_syncState === 'failed') {
     msg = '⚠️ Last cloud save did not go through. Your budget is safe on this device.';
   } else if (_syncState === 'ok') {
