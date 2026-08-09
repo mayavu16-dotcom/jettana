@@ -4301,6 +4301,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
               <button class="more-menu-item danger" onclick="clearMonth(); hideMoreMenu()">
                 <span>✕</span> Clear month
               </button>
+              <div id="sync-status-row" style="display:none;padding:9px 14px;margin:2px 0;font-size:11.5px;line-height:1.5;color:var(--steel);border-top:1px solid var(--mist);"></div>
               <button class="more-menu-item" id="manage-account-item" onclick="showManageAccount(); hideMoreMenu()" style="color:var(--steel);">
                 <span>⚙</span> Manage account
               </button>
@@ -6431,12 +6432,44 @@ async function syncToSupabase(data) {
     // Deliberate shrink → tell the database-side guard, which strips the
     // marker before storing. Cloned so the marker never lands in local data.
     var payload = deliberate ? Object.assign({}, data, { _allowShrink: true }) : data;
-    await _sb.from('user_data').upsert({
+    var upRes = await _sb.from('user_data').upsert({
       user_id: _currentUser.id,
       data: payload,
       updated_at: new Date().toISOString()
     }, { onConflict: 'user_id' });
-  } catch(e) {}
+    // This library REPORTS failures as a returned value — it does not throw. The
+    // old code discarded that value, so a refused write looked identical to a
+    // successful one. Once sync is gated, that silence is the whole danger:
+    // an unpaid account would appear to be backing up and would not be.
+    if (upRes && upRes.error) noteSyncResult(false, upRes.error);
+    else noteSyncResult(true, null);
+  } catch(e) { noteSyncResult(false, e); }
+}
+
+// ── Is the cloud actually saving? ────────────────────────────
+// Records the outcome of the last push so the app can say so out loud.
+// Observation only — it never changes whether or when a write happens.
+var _syncState = 'unknown';   // 'ok' | 'failed' | 'unknown'
+var _syncErrMsg = '';
+var _syncToastAt = 0;
+function noteSyncResult(ok, err) {
+  _syncState = ok ? 'ok' : 'failed';
+  _syncErrMsg = err ? (err.message || String(err)) : '';
+  if (ok) {
+    console.log('[jettana] cloud save: OK');
+  } else {
+    console.warn('[jettana] cloud save FAILED —', _syncErrMsg);
+    // Throttled: saves fire often, and a toast per keystroke would be its own
+    // kind of broken.
+    var now = Date.now();
+    if (now - _syncToastAt > 60000) {
+      _syncToastAt = now;
+      try {
+        showToast('Not saved to the cloud — your budget is safe on this device. See ⋯ for details.', true, 6000);
+      } catch (e) {}
+    }
+  }
+  updateSyncStatusRow();
 }
 
 const STORAGE_KEY = _demoIsolated ? 'jettana_demo_sandbox' : 'intentra_v1';
@@ -6511,12 +6544,15 @@ document.addEventListener('DOMContentLoaded', swapAccountUIForLocal);
 // Read-only against a table whose policy allows reading your own row and
 // nothing else, so this cannot grant anything. Wrapped so a failure here can
 // never interrupt sign-in or sync.
+var _paidStatus = 'unknown';   // 'paid' | 'unpaid' | 'n/a' | 'unknown'
 async function refreshSupportItem(attempt) {
   var el = document.getElementById('support-jettana-item');
   if (!el) return;                       // demo already removed it
   if (inLocalMode()) {
     el.style.display = '';
+    _paidStatus = 'n/a';
     console.log('[jettana] support button: SHOWN — local mode, no account to check');
+    updateSyncStatusRow();
     return;
   }
   if (!_currentUser || !_sb) {
@@ -6539,11 +6575,14 @@ async function refreshSupportItem(attempt) {
   if (res && res.data) {
     if (res.data.paid) {
       el.style.display = 'none';
+      _paidStatus = 'paid';
       console.log('[jettana] support button: hidden — entitlements row says paid');
     } else {
       el.style.display = '';
+      _paidStatus = 'unpaid';
       console.log('[jettana] support button: SHOWN — entitlements row says not paid');
     }
+    updateSyncStatusRow();
     return;
   }
 
@@ -6568,10 +6607,41 @@ async function refreshSupportItem(attempt) {
     return;
   }
   el.style.display = '';
+  _paidStatus = 'unpaid';
   console.log('[jettana] support button: SHOWN — confirmed session and still no entitlement row after ' + attempt + ' attempts');
+  updateSyncStatusRow();
 }
 // Wrapped: the DOM event object would otherwise arrive as the attempt argument.
 document.addEventListener('DOMContentLoaded', function() { refreshSupportItem(); });
+
+// ── Saying it out loud ───────────────────────────────────────
+// Deliberately worded from what has ACTUALLY happened, not from what we assume
+// should happen. Today an unpaid account still syncs fine, so it is told it is
+// synced. Once the paid-only rule ships, that same account's writes start
+// failing and this switches itself to the upgrade wording — no edit needed,
+// and no window where the app claims something untrue.
+function updateSyncStatusRow() {
+  var el = document.getElementById('sync-status-row');
+  if (!el) return;
+  var msg = '';
+  if (inDemoSandbox()) {
+    msg = '';                                   // sandbox saves nothing anywhere
+  } else if (inLocalMode()) {
+    msg = '📱 Saved on this device. Create an account to sync across your devices.';
+  } else if (!_currentUser) {
+    msg = '';
+  } else if (_syncState === 'failed' && _paidStatus === 'unpaid') {
+    msg = '📱 Saved on this device — cloud sync needs lifetime access.';
+  } else if (_syncState === 'failed') {
+    msg = '⚠️ Last cloud save did not go through. Your budget is safe on this device.';
+  } else if (_syncState === 'ok') {
+    msg = '☁ Synced to your account.';
+  }
+  if (!msg) { el.style.display = 'none'; return; }
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+document.addEventListener('DOMContentLoaded', updateSyncStatusRow);
 
 function enforceSandboxIsolation() {
   if (!inDemoSandbox()) return true;
