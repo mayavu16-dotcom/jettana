@@ -5900,6 +5900,45 @@ if (_isDemoURL) {
     window.localStorage.clear      = function () {};
   } catch (e) {}
 }
+// ── Local mode (no account) ───────────────────────────────────
+// A THIRD bucket alongside "real account" and "demo sandbox". Chosen
+// explicitly from the auth modal and remembered in real localStorage.
+// The flag itself is deliberately NOT namespaced — it is the thing that
+// SELECTS the namespace, so it cannot live inside one.
+// The demo outranks it: a ?demo=true visit is never in local mode.
+var LOCAL_MODE_FLAG = 'jettana_mode';
+var _isLocalMode = (function () {
+  if (_isDemoURL) return false;
+  try { return _realLS.getItem(LOCAL_MODE_FLAG) === 'local'; } catch (e) { return false; }
+})();
+function inLocalMode() { return _isLocalMode; }
+
+// Entering and leaving local mode both RELOAD, on purpose.
+// init() runs at parse time and renders from activeStorageKey(). Flipping the
+// namespace on a live page would leave rows read from one bucket on screen
+// while writes went to another — the same class of mismatch behind the earlier
+// data incidents. A reload makes the page start and finish in ONE namespace.
+function enterLocalMode() {
+  if (_isDemoURL) return;
+  try {
+    _realLS.setItem(LOCAL_MODE_FLAG, 'local');
+    if (_realLS.getItem(LOCAL_MODE_FLAG) !== 'local') throw new Error('write did not stick');
+  } catch (e) {
+    // Private windows and locked-down browsers block storage. Say so rather
+    // than drop someone into a mode that silently forgets everything.
+    showAuthError('This browser is blocking on-device storage, so nothing would be saved here. Try a normal (non-private) window, or create a free account instead.');
+    return;
+  }
+  location.reload();
+}
+
+// Leaves local mode and returns to the auth modal. Non-destructive: the
+// on-device budget stays exactly where it is, under its own key.
+function leaveLocalMode() {
+  try { _realLS.removeItem(LOCAL_MODE_FLAG); } catch (e) {}
+  location.reload();
+}
+
 // ── Supabase ──────────────────────────────────────────────────
 var _sb = null;
 var _currentUser = null;
@@ -5908,8 +5947,12 @@ var _authTab = 'login';
 // The demo has no relationship to accounts: no client is created, so there is
 // no session to sign into, sign out of, or delete. The `if (_sb)` branch below
 // already handles a null client by loading the demo.
+// Local mode gets no client either. With no client there is no session, no
+// auth event, and therefore no possible path to syncFromSupabase() writing
+// account data into the local bucket (or the reverse).
 try {
   if (_isDemoURL) throw new Error('demo sandbox — no auth client');
+  if (_isLocalMode) throw new Error('local mode — no auth client');
   _sb = supabase.createClient(
     'https://mekgupfxzfzqantjouhn.supabase.co',
     'sb_publishable_AwEduMlIeYU8o9HVRof2Rw_MuyMKiOc',
@@ -6114,6 +6157,7 @@ var _demoLoaded = false;
 var _initialSyncDone = false;
 var _authTimeout = setTimeout(function() {
   if (_demoIsolated) return; // sandbox never shows the auth modal
+  if (_isLocalMode) return;  // neither does local mode — there is no account
   showAuthModal();
 }, 5000);
 var _pendingAuth = null; // store auth result until DOM is ready
@@ -6168,6 +6212,11 @@ if (_sb) {
   if (_demoIsolated) {
     // Sandbox still works with no backend at all
     if (!_demoLoaded) { _demoLoaded = true; setTimeout(function() { _runLoadDemo(); }, 300); }
+  } else if (_isLocalMode) {
+    // No account to wait for — show the app. init() has already loaded the
+    // on-device budget from the local bucket.
+    if (document.readyState === 'complete' || document.readyState === 'interactive') hideAuthModal();
+    else document.addEventListener('DOMContentLoaded', hideAuthModal, { once: true });
   } else {
     showAuthModal();
   }
@@ -6241,6 +6290,100 @@ async function syncFromSupabase() {
   loadLegend();
   loadSectionNames();
   showRowMenuHintIfNeeded();
+  setTimeout(maybeOfferLocalTransfer, 900);
+}
+
+// ── Local budget → account transfer ──────────────────────────
+// Offered once, after a confirmed sign-in, when the account is genuinely
+// empty and an on-device budget exists. The rules are deliberately strict:
+//   • COPY, never move. The local bucket is never cleared or deleted, so a
+//     failure at any point leaves the budget exactly where it already was.
+//   • Only when the cloud came back empty WITH a confirmed session —
+//     _lastGood already encodes that distinction, and a failed fetch returns
+//     long before it is set.
+//   • Never automatic. An explicit confirm showing real month and row counts,
+//     so someone can recognise the budget as theirs before agreeing.
+// Merging into an account that ALREADY holds a budget is deliberately not
+// attempted: two budgets sharing month keys have no safe automatic answer.
+var LOCAL_MIGRATED_FLAG = 'jettana_local_migrated_at';
+
+function maybeOfferLocalTransfer() {
+  if (_demoIsolated || _isLocalMode) return;
+  if (!_currentUser || !_sb || !_initialSyncDone) return;
+  if (_lastGood.rows > 0) return;              // this account already has a budget
+  var already = null;
+  try { already = _realLS.getItem(LOCAL_MIGRATED_FLAG); } catch (e) {}
+  if (already) return;                          // offered and accepted once already
+
+  var localData = null;
+  try { localData = JSON.parse(_realLS.getItem('jettana_local')); } catch (e) {}
+  if (!localData) return;
+  var w = snapWeight(localData);
+  if (w.rows === 0) return;                     // nothing worth copying
+
+  showLocalTransferDialog(localData, w);
+}
+
+function showLocalTransferDialog(localData, w) {
+  var monthWord = w.months === 1 ? 'month' : 'months';
+  var rowWord   = w.rows === 1 ? 'entry' : 'entries';
+  var modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;';
+  // Theme variables only — hardcoded hex here would break dark mode, which has
+  // already bitten the report modal and the copy-section dialog.
+  modal.innerHTML = '<div style="background:var(--white);border-radius:16px;padding:32px;width:100%;max-width:420px;margin:16px;font-family:\'Outfit\',sans-serif;">' +
+    '<div style="font-size:22px;font-weight:700;color:var(--ink);margin-bottom:10px;">Bring your budget with you?</div>' +
+    '<div style="font-size:14px;color:var(--steel);margin-bottom:18px;line-height:1.6;">' +
+    'You have a budget saved on this device — <strong style="color:var(--ink);">' + w.months + ' ' + monthWord +
+    ', ' + w.rows + ' ' + rowWord + '</strong>. This account is empty, so it can be copied in.</div>' +
+    '<div style="font-size:12.5px;color:var(--steel);margin-bottom:22px;line-height:1.6;">' +
+    'Your on-device copy is kept either way — nothing is deleted or moved.</div>' +
+    '<div style="display:flex;gap:10px;">' +
+    '<button id="lt-skip" style="flex:1;padding:12px;background:none;border:1px solid var(--mist);border-radius:10px;font-size:14px;font-weight:600;font-family:\'Outfit\',sans-serif;cursor:pointer;color:var(--steel);">Not now</button>' +
+    '<button id="lt-go" style="flex:1;padding:12px;background:#6B9E70;color:white;border:none;border-radius:10px;font-size:14px;font-weight:600;font-family:\'Outfit\',sans-serif;cursor:pointer;">Copy it in</button>' +
+    '</div>' +
+    '<div id="lt-status" style="display:none;text-align:center;margin-top:14px;font-size:13px;color:var(--steel);line-height:1.5;"></div>' +
+    '</div>';
+  document.body.appendChild(modal);
+
+  // "Not now" is not a decline forever — the flag is only set on success, so
+  // the offer returns next sign-in while the local budget still exists.
+  document.getElementById('lt-skip').onclick = function() { modal.remove(); };
+  document.getElementById('lt-go').onclick = function() {
+    runLocalTransfer(localData, w, document.getElementById('lt-status'),
+                     document.getElementById('lt-go'), document.getElementById('lt-skip'), modal);
+  };
+}
+
+async function runLocalTransfer(localData, w, statusEl, goBtn, skipBtn, modal) {
+  goBtn.disabled = true;
+  goBtn.textContent = 'Copying…';
+  if (skipBtn) skipBtn.disabled = true;
+  statusEl.style.display = 'block';
+  statusEl.textContent = 'Copying your budget into this account…';
+  try {
+    takeSnapshot('before-local-transfer');
+    appStore.setItem(activeStorageKey(), JSON.stringify(localData));
+    await syncToSupabase(localData);
+
+    // Verify against the server. An upsert that returns without throwing is
+    // not proof the rows landed — read them back and count.
+    var res = await _sb.from('user_data').select('data').eq('user_id', _currentUser.id).maybeSingle();
+    var up = (res && res.data && res.data.data) ? snapWeight(res.data.data) : { months: 0, rows: 0 };
+    if (up.rows < w.rows) throw new Error('verify failed: ' + up.rows + ' of ' + w.rows + ' rows landed');
+
+    try { _realLS.setItem(LOCAL_MIGRATED_FLAG, new Date().toISOString()); } catch (e) {}
+    statusEl.textContent = 'Done — ' + up.rows + ' ' + (up.rows === 1 ? 'entry' : 'entries') + ' are in your account. Reloading…';
+    // Reload rather than re-render: the page then starts and finishes reading
+    // from one source (the account), with no half-swapped state on screen.
+    setTimeout(function() { location.reload(); }, 900);
+  } catch (e) {
+    console.error('[jettana] local transfer failed', e);
+    statusEl.textContent = 'That did not go through. Your on-device budget is untouched — nothing was deleted. You can try again, or keep using the account and copy it in later.';
+    goBtn.disabled = false;
+    goBtn.textContent = 'Try again';
+    if (skipBtn) skipBtn.disabled = false;
+  }
 }
 
 // Push data to Supabase in background
@@ -6301,12 +6444,14 @@ const STORAGE_KEY = _demoIsolated ? 'jettana_demo_sandbox' : 'intentra_v1';
 // wrong if anything about load order shifts; this cannot. Every read and write
 // of budget data goes through these.
 function activeStorageKey() {
-  return (typeof _demoIsolated !== 'undefined' && _demoIsolated)
-    ? 'jettana_demo_sandbox' : 'intentra_v1';
+  if (typeof _demoIsolated !== 'undefined' && _demoIsolated) return 'jettana_demo_sandbox';
+  if (typeof _isLocalMode !== 'undefined' && _isLocalMode)   return 'jettana_local';
+  return 'intentra_v1';
 }
 function activeSnapKey() {
-  return (typeof _demoIsolated !== 'undefined' && _demoIsolated)
-    ? 'jettana_demo_snapshots' : 'jettana_snapshots';
+  if (typeof _demoIsolated !== 'undefined' && _demoIsolated) return 'jettana_demo_snapshots';
+  if (typeof _isLocalMode !== 'undefined' && _isLocalMode)   return 'jettana_local_snapshots';
+  return 'jettana_snapshots';
 }
 // ── The rule, not a list ──────────────────────────────────────
 // Any key holding user content goes through nsKey(). In the sandbox every one
@@ -6331,12 +6476,32 @@ function stripAccountUIForDemo() {
 }
 document.addEventListener('DOMContentLoaded', stripAccountUIForDemo);
 
+// Local mode has no account either — but unlike the demo it is a real budget
+// someone may want to keep, so the menu offers the way UP instead of nothing.
+function swapAccountUIForLocal() {
+  if (!inLocalMode()) return;
+  var item = document.getElementById('manage-account-item');
+  if (item) {
+    item.innerHTML = '<span>☁</span> Create an account to sync';
+    item.setAttribute('onclick', 'leaveLocalMode()');
+  }
+  document.querySelectorAll('.shortcut-row').forEach(function(row) {
+    if (/Sign out|Delete account/i.test(row.textContent || '')) {
+      if (row.parentNode) row.parentNode.removeChild(row);
+    }
+  });
+}
+document.addEventListener('DOMContentLoaded', swapAccountUIForLocal);
+
 function enforceSandboxIsolation() {
   if (!inDemoSandbox()) return true;
   // Assert it rather than assume it: if anything belonging to a real account is
   // reachable from the demo, stop instead of rendering it.
   var reachable = null;
-  try { reachable = appStore.getItem('intentra_v1') || appStore.getItem('jettana_snapshots'); } catch (e) {}
+  try {
+    reachable = appStore.getItem('intentra_v1') || appStore.getItem('jettana_snapshots') ||
+                appStore.getItem('jettana_local') || appStore.getItem('jettana_local_snapshots');
+  } catch (e) {}
   if (!reachable) return true;
 
   console.error('[jettana] demo isolation failed — refusing to render');
@@ -6358,7 +6523,9 @@ function enforceSandboxIsolation() {
 }
 
 function nsKey(name) {
-  return inDemoSandbox() ? 'demo__' + name : name;
+  if (inDemoSandbox()) return 'demo__' + name;
+  if (inLocalMode())   return 'local__' + name;
+  return name;
 }
 
 function inDemoSandbox() { return _isDemoURL; }
@@ -9884,7 +10051,8 @@ function init() {
     switchMonth(todayKey);
     // Only surface Welcome/onboarding once the user is signed in — init() re-runs
     // after login, so a fresh account still gets it, without stacking on auth.
-    if (!_demoIsolated && _currentUser) {
+    // Local-mode users are past the gate already, so they qualify too.
+    if (!_demoIsolated && (_currentUser || _isLocalMode)) {
       setTimeout(showWelcome, 600);
       setTimeout(maybeShowStartBanner, 800);
     }
@@ -12788,8 +12956,8 @@ window.addEventListener('load', function() {
   loadFooterBudgets();
   loadFtHighlights();
   // Show welcome if never seen (only once signed in, and not during demo load)
-  if (!_demoIsolated && _currentUser && !appStore.getItem('intentra_welcomed') && !appStore.getItem('intentra_v1')) {
-    appStore.setItem('intentra_welcomed', '1');
+  if (!_demoIsolated && (_currentUser || _isLocalMode) && !appStore.getItem(nsKey('intentra_welcomed')) && !appStore.getItem(activeStorageKey())) {
+    appStore.setItem(nsKey('intentra_welcomed'), '1');
     setTimeout(showWelcome, 600);
     setTimeout(function() {
       showToast('Tap ⋯ → About Jettana to learn the story behind this app.', true, 6000);
@@ -15983,7 +16151,7 @@ function showWelcome() {
 function hideWelcome() {
   var el = document.getElementById('welcome-overlay');
   if (el) el.style.display = 'none';
-  appStore.setItem('intentra_welcomed', '1');
+  appStore.setItem(nsKey('intentra_welcomed'), '1');
 }
 
 
@@ -20094,6 +20262,13 @@ function hideCalPopover() {
       <button onclick="handleReset()" style="background:none;border:none;color:#8A9AB5;font-size:13px;font-family:'Outfit',sans-serif;cursor:pointer;text-decoration:underline;">Forgot password?</button>
     </div>
     <div id="auth-loading" style="display:none;text-align:center;margin-top:12px;color:#8A9AB5;font-size:13px;">Loading...</div>
+    <div style="display:flex;align-items:center;gap:10px;margin:22px 0 16px;">
+      <div style="flex:1;height:1px;background:#E8EDF2;"></div>
+      <div style="font-size:11px;color:#8A9AB5;letter-spacing:1px;">OR</div>
+      <div style="flex:1;height:1px;background:#E8EDF2;"></div>
+    </div>
+    <button onclick="enterLocalMode()" id="auth-local-btn" style="width:100%;padding:13px;background:none;color:var(--ink);border:1px solid #E8EDF2;border-radius:10px;font-size:15px;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;">Use it free on this device →</button>
+    <div style="text-align:center;margin-top:10px;font-size:12px;color:#8A9AB5;line-height:1.6;">No account, no email. Your budget is saved on this device only — you can create an account later to sync it.</div>
   </div>
 </div>
 
