@@ -6228,6 +6228,66 @@ setTimeout(function() {
   if (_demoIsolated && !_demoLoaded) { _demoLoaded = true; _runLoadDemo(); }
 }, 2500);
 
+// ── EVENT LOG (temporary — remove once the vanishing-row bug is found) ──
+// Keeps a short rolling record in its OWN storage key so evidence survives a
+// reload. Logging only: nothing here reads or writes budget data.
+var JLOG_KEY = 'jettana_evlog';
+function jlogAdd(evt, detail) {
+  try {
+    if (_isDemoURL) return;
+    var arr = [];
+    try { arr = JSON.parse(_realLS.getItem(JLOG_KEY)) || []; } catch (e) { arr = []; }
+    arr.push({ t: new Date().toISOString().slice(11, 23), e: evt, d: detail });
+    if (arr.length > 400) arr = arr.slice(-400);
+    _realLS.setItem(JLOG_KEY, JSON.stringify(arr));
+  } catch (e) {}
+}
+// Row counts per month, per section — small enough to keep, precise enough to compare.
+function jlogCounts(raw) {
+  try {
+    var d = JSON.parse(raw !== undefined ? raw : _realLS.getItem(activeStorageKey())) || {};
+    var o = {};
+    Object.keys(d).forEach(function (k) {
+      if (d[k] && typeof d[k] === 'object' && d[k].savings) o[k] = (d[k].savings || []).length;
+    });
+    return o;
+  } catch (e) { return 'none'; }
+}
+function jlogWho() {
+  try {
+    return (new Error()).stack.split('\n').slice(3, 7)
+      .map(function (l) { return l.trim().replace(/^at\s+/, '').split(' (')[0].split('@')[0]; })
+      .filter(Boolean).join(' < ');
+  } catch (e) { return '?'; }
+}
+(function () {
+  var _s = appStore.setItem, _r = appStore.removeItem, _c = appStore.clear;
+  appStore.setItem = function (k, v) {
+    try { if (k === activeStorageKey()) jlogAdd('WRITE', { rows: jlogCounts(v), by: jlogWho() }); } catch (e) {}
+    return _s.call(appStore, k, v);
+  };
+  appStore.removeItem = function (k) {
+    try { if (k === activeStorageKey()) jlogAdd('REMOVE', { by: jlogWho() }); } catch (e) {}
+    return _r.call(appStore, k);
+  };
+  appStore.clear = function () {
+    try { jlogAdd('CLEAR', { by: jlogWho() }); } catch (e) {}
+    return _c.call(appStore);
+  };
+  jlogAdd('LOAD', { rows: jlogCounts(), url: location.pathname });
+  try {
+    window.addEventListener('pagehide', function () { jlogAdd('UNLOAD', { rows: jlogCounts() }); });
+  } catch (e) {}
+})();
+// Read it from the console: jlogText() to read, copy(jlogText()) to copy, jlogClear() to reset.
+window.jlogText = function () {
+  try {
+    return (JSON.parse(_realLS.getItem(JLOG_KEY)) || [])
+      .map(function (r) { return r.t + '  ' + r.e + '  ' + JSON.stringify(r.d); }).join('\n');
+  } catch (e) { return '(no log yet)'; }
+};
+window.jlogClear = function () { try { _realLS.removeItem(JLOG_KEY); } catch (e) {} return 'cleared'; };
+
 // Sync data from Supabase → localStorage on login/refresh
 async function syncFromSupabase() {
   if (_demoIsolated) return;
@@ -6263,7 +6323,18 @@ async function syncFromSupabase() {
     var localRaw = null, localData = null;
     try { localRaw = appStore.getItem(activeStorageKey()); } catch (e) {}
     if (localRaw) { try { localData = JSON.parse(localRaw); } catch (e) { localData = null; } }
-    if (hasUnsyncedChanges() && localData && Object.keys(localData).length > 0) {
+    var _keep = hasUnsyncedChanges() && localData && Object.keys(localData).length > 0;
+    try {
+      jlogAdd('PULL', {
+        flag: appStore.getItem(nsKey('jettana_unsynced')),
+        local: localData ? snapWeight(localData).rows : 'none',
+        cloud: snapWeight(row.data).rows,
+        localSavings: jlogCounts(localRaw),
+        cloudSavings: jlogCounts(JSON.stringify(row.data)),
+        decision: _keep ? 'KEEP local' : 'OVERWRITE from cloud'
+      });
+    } catch (e) {}
+    if (_keep) {
       _pendingUnsynced = true;
       _lastGood = snapWeight(localData);  // local is now the state we must not shrink
       console.warn('[jettana] this device holds changes the cloud never accepted — keeping local data, NOT overwriting from the cloud');
@@ -7846,6 +7917,7 @@ function switchMonth(key) {
     c.classList.remove('collapsed');
   });
   const data = getMonthData(key);
+  try { jlogAdd('RENDER', { month: key, savings: (data.savings || []).length, by: jlogWho() }); } catch (e) {}
   SECTIONS.forEach(s => {
     const container = document.getElementById(`rows-${s}`);
     if (container) container.innerHTML = '';
