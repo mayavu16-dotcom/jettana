@@ -6095,6 +6095,10 @@ async function signOut() {
   _currentUser = null;
   appStore.removeItem(activeStorageKey());
   appStore.removeItem(nsKey('intentra_last_month'));
+  // The budget data is gone from this browser as of the line above, so a flag
+  // saying "this device holds unsynced work" is now false and would only
+  // mislead the next sign-in. Leaving it is what emptied the app on Aug 10.
+  appStore.removeItem(unsyncedFlagKey());
   showAuthModal();
 }
 
@@ -6637,12 +6641,26 @@ var _pendingUnsynced = false; // set by the pull when it kept local over the clo
 function unsyncedFlagKey() { return nsKey('jettana_unsynced'); }
 function markUnsynced(on) {
   try {
-    if (on) appStore.setItem(unsyncedFlagKey(), '1');
+    // Store WHO the stranded work belongs to, not just that it exists. The flag
+    // lives in the browser, but the work belongs to one account — without the
+    // id, a flag left by one account blocks the next account's pull and its
+    // budget looks empty. (That is exactly what happened on Aug 10.)
+    if (on) appStore.setItem(unsyncedFlagKey(), (_currentUser && _currentUser.id) ? _currentUser.id : '1');
     else appStore.removeItem(unsyncedFlagKey());
   } catch (e) {}
 }
 function hasUnsyncedChanges() {
-  try { return appStore.getItem(unsyncedFlagKey()) === '1'; } catch (e) { return false; }
+  try {
+    var v = appStore.getItem(unsyncedFlagKey());
+    if (!v) return false;
+    // '1' is the old format, written before the flag recorded an owner. Honour
+    // it rather than ignoring it: the alternative is overwriting local with the
+    // cloud copy, and destroying real unsynced work is far worse than showing a
+    // budget that looks stale. Sign-out clears it, so it ages out on its own.
+    if (v === '1') return true;
+    // Otherwise it counts only for the account that set it.
+    return !!(_currentUser && _currentUser.id === v);
+  } catch (e) { return false; }
 }
 
 function noteSyncResult(ok, err) {
