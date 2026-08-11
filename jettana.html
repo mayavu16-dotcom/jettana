@@ -6049,7 +6049,7 @@ async function handleAuth() {
     var { error } = await _sb.auth.signUp({ 
       email, 
       password,
-      options: { emailRedirectTo: 'https://jettana.app' }
+      options: { emailRedirectTo: 'https://jettana.app/app' }
     });
     if (error) { showAuthError(error.message); }
     else { showAuthSuccess('Account created! Check your email to confirm, then sign in.'); showAuthTab('login'); }
@@ -6063,7 +6063,9 @@ async function handleReset() {
   var email = document.getElementById('auth-email').value.trim();
   if (!email) { showAuthError('Enter your email address first.'); return; }
   var { error } = await _sb.auth.resetPasswordForEmail(email, {
-    redirectTo: 'https://jettana.app'
+    // MUST point at /app — the marketing site at / has no auth code, so a
+    // reset link landing there can never be completed.
+    redirectTo: 'https://jettana.app/app'
   });
   if (error) showAuthError(error.message);
   else showAuthSuccess('Password reset email sent!');
@@ -6072,7 +6074,9 @@ async function handleReset() {
 // Allow Enter key in auth form
 document.addEventListener('keydown', function(e) {
   var overlay = document.getElementById('auth-overlay');
-  if (overlay && overlay.style.display !== 'none' && e.key === 'Enter') handleAuth();
+  if (overlay && overlay.style.display !== 'none' && e.key === 'Enter') {
+    if (_inPasswordRecovery) handleNewPassword(); else handleAuth();
+  }
   // Arrow key navigation for tour and demo guide (desktop only)
   if (window.innerWidth >= 768) {
     if (_tourActive) {
@@ -6163,6 +6167,83 @@ var _authTimeout = setTimeout(function() {
 }, 5000);
 var _pendingAuth = null; // store auth result until DOM is ready
 
+// ── PASSWORD RECOVERY ────────────────────────────────────────────────
+// A reset link arrives at /app with #type=recovery in the URL. Read the hash
+// directly as well as listening for the event: supabase-js can fire SIGNED_IN
+// alongside PASSWORD_RECOVERY, and without this flag that would hide the auth
+// modal and drop the person into the app with no chance to set a password.
+var _inPasswordRecovery = (function () {
+  try { return /type=recovery/.test(window.location.hash || ''); } catch (e) { return false; }
+})();
+
+var _recoveryOrigDisplay = null;
+function showRecoveryPanel(on) {
+  var ids = ['auth-tabs', 'auth-email', 'auth-password', 'auth-btn',
+             'auth-reset', 'auth-or', 'auth-local-btn', 'auth-local-note'];
+  // Remember each element's own display value. Blanking style.display would
+  // drop the inline flex on the tab row and break its layout on restore.
+  if (!_recoveryOrigDisplay) {
+    _recoveryOrigDisplay = {};
+    ids.forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) _recoveryOrigDisplay[id] = el.style.display;
+    });
+  }
+  ids.forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = on ? 'none' : (_recoveryOrigDisplay[id] || '');
+  });
+  var panel = document.getElementById('auth-recovery');
+  if (panel) panel.style.display = on ? 'block' : 'none';
+  var loading = document.getElementById('auth-loading');
+  if (loading && on) loading.style.display = 'none';
+  if (on) { showAuthModal(); clearAuthMessages(); }
+}
+
+async function handleNewPassword() {
+  if (!_sb) { showAuthError('Connection error. Please refresh and try the link again.'); return; }
+  var p1 = (document.getElementById('recovery-password') || {}).value || '';
+  var p2 = (document.getElementById('recovery-password2') || {}).value || '';
+  if (p1.length < 6) { showAuthError('Password must be at least 6 characters.'); return; }
+  if (p1 !== p2) { showAuthError('Those two passwords do not match.'); return; }
+
+  var btn = document.getElementById('recovery-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  var res = await _sb.auth.updateUser({ password: p1 });
+  if (btn) { btn.disabled = false; btn.textContent = 'Save new password'; }
+
+  if (res && res.error) {
+    showAuthError(res.error.message + ' If the link is old, request a new reset email.');
+    return;
+  }
+
+  // Signed out deliberately: signing in fresh proves the new password works,
+  // and avoids loading a budget from a half-finished recovery session.
+  _inPasswordRecovery = false;
+  try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch (e) {}
+  showRecoveryPanel(false);
+  showAuthTab('login');
+  try { await _sb.auth.signOut(); } catch (e) {}
+  showAuthSuccess('Password updated. Sign in with your new password.');
+}
+
+// An expired or already-used link comes back with an error in the hash instead
+// of a session. Say so plainly rather than showing a form that cannot work.
+document.addEventListener('DOMContentLoaded', function () {
+  try {
+    var h = window.location.hash || '';
+    if (h.indexOf('error') === -1) return;
+    var m = /error_description=([^&]*)/.exec(h);
+    var msg = m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : 'That link is no longer valid.';
+    _inPasswordRecovery = false;
+    showRecoveryPanel(false);
+    showAuthModal();
+    showAuthTab('login');
+    showAuthError(msg + ' Use "Forgot password?" below to send a new one.');
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+  } catch (e) {}
+});
+
 function _handleAuthReady() {
   if (!_pendingAuth) return;
   var event = _pendingAuth.event, session = _pendingAuth.session;
@@ -6178,6 +6259,15 @@ function _handleAuthReady() {
       _demoLoaded = true;
       setTimeout(function() { _runLoadDemo(); }, 300);
     }
+    return;
+  }
+  // Recovery wins over everything else. supabase-js may fire SIGNED_IN for the
+  // recovery session too; without this the app would open normally and the
+  // person would never get to set a password.
+  if (event === 'PASSWORD_RECOVERY' || _inPasswordRecovery) {
+    clearTimeout(_authTimeout);
+    _inPasswordRecovery = true;
+    showRecoveryPanel(true);
     return;
   }
   if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
@@ -20539,6 +20629,13 @@ function hideCalPopover() {
     </div>
     <div id="auth-error" style="display:none;background:#FEF2F2;color:#C0736A;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;"></div>
     <div id="auth-success" style="display:none;background:#F0FAF4;color:#3A7A4A;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;"></div>
+    <div id="auth-recovery" style="display:none;">
+      <div style="font-size:16px;font-weight:600;color:var(--ink);margin-bottom:6px;">Choose a new password</div>
+      <div style="font-size:13px;color:#8A9AB5;line-height:1.5;margin-bottom:18px;">Type it twice so we know it's right. At least 6 characters.</div>
+      <input id="recovery-password" type="password" placeholder="New password" autocomplete="new-password" style="width:100%;padding:12px 14px;border:1px solid #E8EDF2;border-radius:10px;font-size:14px;font-family:'Outfit',sans-serif;margin-bottom:12px;outline:none;box-sizing:border-box;">
+      <input id="recovery-password2" type="password" placeholder="Repeat new password" autocomplete="new-password" style="width:100%;padding:12px 14px;border:1px solid #E8EDF2;border-radius:10px;font-size:14px;font-family:'Outfit',sans-serif;margin-bottom:20px;outline:none;box-sizing:border-box;">
+      <button onclick="handleNewPassword()" id="recovery-btn" style="width:100%;padding:13px;background:#6B9E70;color:white;border:none;border-radius:10px;font-size:15px;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;">Save new password</button>
+    </div>
     <input id="auth-email" type="email" placeholder="Email address" style="width:100%;padding:12px 14px;border:1px solid #E8EDF2;border-radius:10px;font-size:14px;font-family:'Outfit',sans-serif;margin-bottom:12px;outline:none;box-sizing:border-box;">
     <input id="auth-password" type="password" placeholder="Password" style="width:100%;padding:12px 14px;border:1px solid #E8EDF2;border-radius:10px;font-size:14px;font-family:'Outfit',sans-serif;margin-bottom:20px;outline:none;box-sizing:border-box;">
     <button onclick="handleAuth()" id="auth-btn" style="width:100%;padding:13px;background:#6B9E70;color:white;border:none;border-radius:10px;font-size:15px;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;">Sign in</button>
@@ -20546,13 +20643,13 @@ function hideCalPopover() {
       <button onclick="handleReset()" style="background:none;border:none;color:#8A9AB5;font-size:13px;font-family:'Outfit',sans-serif;cursor:pointer;text-decoration:underline;">Forgot password?</button>
     </div>
     <div id="auth-loading" style="display:none;text-align:center;margin-top:12px;color:#8A9AB5;font-size:13px;">Loading...</div>
-    <div style="display:flex;align-items:center;gap:10px;margin:22px 0 16px;">
+    <div id="auth-or" style="display:flex;align-items:center;gap:10px;margin:22px 0 16px;">
       <div style="flex:1;height:1px;background:#E8EDF2;"></div>
       <div style="font-size:11px;color:#8A9AB5;letter-spacing:1px;">OR</div>
       <div style="flex:1;height:1px;background:#E8EDF2;"></div>
     </div>
     <button onclick="enterLocalMode()" id="auth-local-btn" style="width:100%;padding:13px;background:none;color:var(--ink);border:1px solid #E8EDF2;border-radius:10px;font-size:15px;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;">Use it free on this device →</button>
-    <div style="text-align:center;margin-top:10px;font-size:12px;color:#8A9AB5;line-height:1.6;">No account, no email. Your budget is saved on this device only — you can create an account later to sync it.</div>
+    <div id="auth-local-note" style="text-align:center;margin-top:10px;font-size:12px;color:#8A9AB5;line-height:1.6;">No account, no email. Your budget is saved on this device only — you can create an account later to sync it.</div>
   </div>
 </div>
 
