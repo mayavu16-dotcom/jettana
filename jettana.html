@@ -6452,9 +6452,45 @@ async function syncFromSupabase() {
       console.warn('[jettana] empty fetch without a confirmed session — keeping local data, sync paused');
       return;
     }
-    // Genuinely no row for this user — a real new account
-    appStore.removeItem(activeStorageKey());
-    _lastGood = { months: 0, rows: 0 };
+    // A confirmed session plus no cloud row does NOT always mean a new account.
+    // An unpaid account can NEVER create a cloud row — every write is refused by
+    // the paid policy — so this branch was deleting the only copy of that
+    // budget on every reload, and init() then seeded an empty month over it.
+    // Verified live Aug 11: three rows present before a reload, gone after.
+    // Keep local only when the unsynced flag names THIS account AND local holds
+    // real rows. Deliberately stricter than the cloud-row branch above, which
+    // still honours a legacy '1' flag: there, ignoring it risked destroying an
+    // account's own unsynced work; here, honouring it would hand a brand-new
+    // account the PREVIOUS account's budget. A privacy leak is the worse
+    // failure, so an unowned flag does not qualify.
+    var _newRaw = null, _newLocal = null;
+    try { _newRaw = appStore.getItem(activeStorageKey()); } catch (e) {}
+    if (_newRaw) { try { _newLocal = JSON.parse(_newRaw); } catch (e) { _newLocal = null; } }
+    var _flagOwner = null;
+    try { _flagOwner = appStore.getItem(unsyncedFlagKey()); } catch (e) {}
+    var _ownedByMe = !!(_newLocal && _currentUser && _flagOwner && _flagOwner === _currentUser.id);
+    // A seeded month has section keys but no rows — it must not count as work.
+    var _newW = _ownedByMe ? snapWeight(_newLocal) : { months: 0, rows: 0 };
+    try {
+      jlogAdd('PULL', {
+        flag: _flagOwner,
+        local: _newLocal ? snapWeight(_newLocal).rows : 'none',
+        cloud: 0,
+        localSavings: jlogCounts(_newRaw),
+        cloudSavings: 'no row',
+        decision: (_ownedByMe && _newW.rows > 0) ? 'KEEP local (no cloud row)' : 'CLEAR (new account)'
+      });
+    } catch (e) {}
+    if (_ownedByMe && _newW.rows > 0) {
+      _pendingUnsynced = true;
+      _lastGood = _newW;                  // local is now the state we must not shrink
+      console.warn('[jettana] no cloud row, but this device holds ' + _newW.rows +
+                   ' unsynced rows belonging to this account — keeping local data');
+    } else {
+      // Genuinely no row for this user — a real new account
+      appStore.removeItem(activeStorageKey());
+      _lastGood = { months: 0, rows: 0 };
+    }
   }
 
   _syncing = false;
