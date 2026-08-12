@@ -6088,9 +6088,75 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
+// ── Signing out throws away unsynced work ────────────────────
+// signOut() deletes this browser's budget. For an account whose writes the
+// cloud refused — every unpaid account, and a paid one during an outage — that
+// local copy is the ONLY copy, so leaving silently is data loss with no notice.
+// Gated on "is there stranded work", not on paid status: the paywall is the
+// common cause but not the only one, and an outage loses just as much.
+// Resolves true when sign-out should go ahead.
+function confirmSignOutIfUnsynced() {
+  return new Promise(function (resolve) {
+    var w = { months: 0, rows: 0 };
+    try {
+      // A legacy '1' flag counts here on purpose. Over-warning costs one extra
+      // click; under-warning costs someone's budget.
+      if (hasUnsyncedChanges()) {
+        var raw = appStore.getItem(activeStorageKey());
+        if (raw) w = snapWeight(JSON.parse(raw));
+      }
+    } catch (e) {}
+    if (w.rows === 0) { resolve(true); return; }   // nothing stranded — sign out quietly
+
+    // Take the backup BEFORE the dialog, so what it promises is already true.
+    // Must also happen before _currentUser is cleared: activeSnapKey() is
+    // scoped to the signed-in account and has nowhere to write without it.
+    takeSnapshot('before-signout');
+    var haveBackup = false;
+    try { haveBackup = loadSnapshots().length > 0; } catch (e) {}
+
+    var rowWord = w.rows === 1 ? 'entry' : 'entries';
+    var monthWord = w.months === 1 ? 'month' : 'months';
+    var recovery = haveBackup
+      ? 'A copy is saved on this device. Sign back in to this same account and open ⋯ → Backups to restore it.'
+      : 'There is no local backup to fall back on, so this cannot be undone.';
+
+    var modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;';
+    // Theme variables only — hardcoded hex here would break dark mode.
+    modal.innerHTML = '<div style="background:var(--white);border-radius:16px;padding:32px;width:100%;max-width:400px;margin:16px;font-family:\'Outfit\',sans-serif;">' +
+      '<div style="font-size:22px;font-weight:700;color:var(--ink);margin-bottom:10px;">Sign out and lose these changes?</div>' +
+      '<div style="font-size:14px;color:var(--steel);margin-bottom:14px;line-height:1.6;">' +
+      'This device is holding <strong style="color:var(--ink);">' + w.rows + ' ' + rowWord +
+      '</strong> across ' + w.months + ' ' + monthWord + ' that the cloud never accepted. ' +
+      'Signing out removes them from this browser.</div>' +
+      '<div style="font-size:12.5px;color:var(--steel);margin-bottom:22px;line-height:1.6;">' + recovery + '</div>' +
+      '<div style="display:flex;gap:10px;">' +
+      '<button id="so-stay" style="flex:1;padding:12px;background:none;border:1px solid var(--mist);border-radius:10px;font-size:14px;font-weight:600;font-family:\'Outfit\',sans-serif;cursor:pointer;color:var(--ink);">Stay signed in</button>' +
+      '<button id="so-go" style="flex:1;padding:12px;background:#C0736A;color:white;border:none;border-radius:10px;font-size:14px;font-weight:600;font-family:\'Outfit\',sans-serif;cursor:pointer;">Sign out anyway</button>' +
+      '</div></div>';
+    document.body.appendChild(modal);
+
+    // Staying is the safe answer, so it is what a stray click or Escape gives.
+    function close(ok) {
+      document.removeEventListener('keydown', onKey, true);
+      modal.remove();
+      resolve(ok);
+    }
+    function onKey(e) { if (e.key === 'Escape') { e.stopPropagation(); close(false); } }
+    document.addEventListener('keydown', onKey, true);
+    modal.addEventListener('click', function (e) { if (e.target === modal) close(false); });
+    document.getElementById('so-stay').onclick = function () { close(false); };
+    document.getElementById('so-go').onclick   = function () { close(true); };
+  });
+}
+
 // Sign out
 async function signOut() {
   if (inDemoSandbox()) return;   // nothing to sign out of in the demo
+  // Ask first when this browser holds the only copy of something. Runs while
+  // _currentUser is still set — the snapshot inside it depends on that.
+  if (!(await confirmSignOutIfUnsynced())) return;
   if (_sb) await _sb.auth.signOut();
   _currentUser = null;
   appStore.removeItem(activeStorageKey());
