@@ -6749,7 +6749,16 @@ function activeStorageKey() {
 function activeSnapKey() {
   if (typeof _demoIsolated !== 'undefined' && _demoIsolated) return 'jettana_demo_snapshots';
   if (typeof _isLocalMode !== 'undefined' && _isLocalMode)   return 'jettana_local_snapshots';
-  return 'jettana_snapshots';
+  // Account mode gets ONE LIST PER ACCOUNT. A single shared 'jettana_snapshots'
+  // let any account signed in on this browser see — and restore — another
+  // account's entire budget, and let a throwaway account evict the real one's
+  // backups out of the 6-slot window. Both confirmed live Aug 11.
+  // Isolation by key, not by filtering on read: same reason nsKey() exists.
+  // The legacy shared key is deliberately left on disk and simply never read
+  // again, so nothing is deleted but its contents stop being shown to anyone.
+  var uid = (typeof _currentUser !== 'undefined' && _currentUser && _currentUser.id)
+              ? _currentUser.id : null;
+  return uid ? ('jettana_snapshots__' + uid) : null;   // null = nowhere safe to store yet
 }
 // ── The rule, not a list ──────────────────────────────────────
 // Any key holding user content goes through nsKey(). In the sandbox every one
@@ -6952,8 +6961,8 @@ function inDemoSandbox() { return _isDemoURL; }
    Rolling copies of the budget kept under their own key, which the
    Supabase sync never clears. If a bad write ever empties the account
    again, the last few good states are still sitting on the device. */
-// Namespaced exactly like STORAGE_KEY — otherwise the demo reads (and shows)
-// the real account's backups, each of which contains the whole budget.
+// Superseded by activeSnapKey(), which scopes account backups per user id.
+// Nothing reads this const; left in place only so an old reference cannot break.
 const SNAP_KEY = _demoIsolated ? 'jettana_demo_snapshots' : 'jettana_snapshots';
 const SNAP_MAX = 6;                    // keep the most recent few
 const SNAP_MIN_GAP_MS = 30 * 60 * 1000; // routine saves: at most one per 30 min
@@ -6984,19 +6993,24 @@ function snapWeight(data) {
 
 function loadSnapshots() {
   if (inDemoSandbox()) return [];   // the sandbox never has backups to show
-  try { return JSON.parse(appStore.getItem(activeSnapKey())) || []; } catch (e) { return []; }
+  var k = activeSnapKey();
+  if (!k) return [];                // account mode, no account resolved yet
+  try { return JSON.parse(appStore.getItem(k)) || []; } catch (e) { return []; }
 }
 
 function saveSnapshots(list) {
+  var k = activeSnapKey();
   try {
     if (inDemoSandbox()) return false;
-    appStore.setItem(activeSnapKey(), JSON.stringify(list));
+    if (!k) return false;           // never fall back to a shared key
+    appStore.setItem(k, JSON.stringify(list));
     return true;
   } catch (e) {
     // Out of space — drop the oldest and retry a couple of times
+    if (!k) return false;
     while (list.length > 1) {
       list.shift();
-      try { appStore.setItem(activeSnapKey(), JSON.stringify(list)); return true; } catch (e2) {}
+      try { appStore.setItem(k, JSON.stringify(list)); return true; } catch (e2) {}
     }
     return false;
   }
@@ -7005,6 +7019,7 @@ function saveSnapshots(list) {
 // Take a snapshot of what's in local storage right now.
 function takeSnapshot(reason, opts) {
   if (inDemoSandbox()) return false;    // never snapshot the sandbox
+  if (!activeSnapKey()) return false;   // account mode before sign-in resolves — no owner to file it under
   opts = opts || {};
   var raw;
   try { raw = appStore.getItem(activeStorageKey()); } catch (e) { return false; }
