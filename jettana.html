@@ -6590,7 +6590,17 @@ async function syncFromSupabase() {
 // attempted: two budgets sharing month keys have no safe automatic answer.
 var LOCAL_MIGRATED_FLAG = 'jettana_local_migrated_at';
 
-function maybeOfferLocalTransfer() {
+// An unpaid account can never complete the copy — the cloud write is refused —
+// so it is shown an explanation instead of a button that cannot work. Dismissal
+// is remembered PER ACCOUNT (same lesson as the flag and the backups: a
+// per-browser key describing a per-account fact gets read by the wrong account),
+// and only silences the unpaid explanation. If they later pay, the real offer
+// comes back.
+function ltDismissKey() {
+  return nsKey('jettana_lt_dismissed__' + ((_currentUser && _currentUser.id) ? _currentUser.id : 'none'));
+}
+
+function maybeOfferLocalTransfer(attempt) {
   if (_demoIsolated || _isLocalMode) return;
   if (!_currentUser || !_sb || !_initialSyncDone) return;
   if (_lastGood.rows > 0) return;              // this account already has a budget
@@ -6604,30 +6614,65 @@ function maybeOfferLocalTransfer() {
   var w = snapWeight(localData);
   if (w.rows === 0) return;                     // nothing worth copying
 
-  showLocalTransferDialog(localData, w);
+  // Which dialog to show depends on the paid answer, which resolves on its own
+  // schedule (refreshSupportItem retries, because an unattached session reads
+  // empty under RLS). Wait for it rather than guess: guessing paid offers a
+  // button that cannot work, guessing unpaid hides a copy that would succeed.
+  attempt = attempt || 1;
+  if (_paidStatus === 'unknown' && attempt < 5) {
+    setTimeout(function () { maybeOfferLocalTransfer(attempt + 1); }, 1200);
+    return;
+  }
+  // Still unknown after several tries → treat as unpaid. Failing toward an
+  // explanation is recoverable by reloading; failing toward a dead button is not.
+  var canCopy = (_paidStatus === 'paid');
+  if (!canCopy) {
+    var dismissed = null;
+    try { dismissed = appStore.getItem(ltDismissKey()); } catch (e) {}
+    if (dismissed) return;
+  }
+  showLocalTransferDialog(localData, w, canCopy);
 }
 
-function showLocalTransferDialog(localData, w) {
+function showLocalTransferDialog(localData, w, canCopy) {
   var monthWord = w.months === 1 ? 'month' : 'months';
   var rowWord   = w.rows === 1 ? 'entry' : 'entries';
   var modal = document.createElement('div');
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;';
   // Theme variables only — hardcoded hex here would break dark mode, which has
   // already bitten the report modal and the copy-section dialog.
+  var title = canCopy ? 'Bring your budget with you?' : 'Your device budget stays where it is';
+  var lead  = canCopy
+    ? 'This account is empty, so it can be copied in.'
+    : 'Copying it into your account means storing it in the cloud, which comes with lifetime access.';
+  var note  = canCopy
+    ? 'Your on-device copy is kept either way — nothing is deleted or moved.'
+    : 'Nothing is lost and nothing is moved. To keep working with this budget, sign out and choose the free on-device option.';
+  var buttons = canCopy
+    ? '<button id="lt-skip" style="flex:1;padding:12px;background:none;border:1px solid var(--mist);border-radius:10px;font-size:14px;font-weight:600;font-family:\'Outfit\',sans-serif;cursor:pointer;color:var(--steel);">Not now</button>' +
+      '<button id="lt-go" style="flex:1;padding:12px;background:#6B9E70;color:white;border:none;border-radius:10px;font-size:14px;font-weight:600;font-family:\'Outfit\',sans-serif;cursor:pointer;">Copy it in</button>'
+    : '<button id="lt-skip" style="flex:1;padding:12px;background:#6B9E70;color:white;border:none;border-radius:10px;font-size:14px;font-weight:600;font-family:\'Outfit\',sans-serif;cursor:pointer;">Got it</button>';
+
   modal.innerHTML = '<div style="background:var(--white);border-radius:16px;padding:32px;width:100%;max-width:420px;margin:16px;font-family:\'Outfit\',sans-serif;">' +
-    '<div style="font-size:22px;font-weight:700;color:var(--ink);margin-bottom:10px;">Bring your budget with you?</div>' +
+    '<div style="font-size:22px;font-weight:700;color:var(--ink);margin-bottom:10px;">' + title + '</div>' +
     '<div style="font-size:14px;color:var(--steel);margin-bottom:18px;line-height:1.6;">' +
     'You have a budget saved on this device — <strong style="color:var(--ink);">' + w.months + ' ' + monthWord +
-    ', ' + w.rows + ' ' + rowWord + '</strong>. This account is empty, so it can be copied in.</div>' +
-    '<div style="font-size:12.5px;color:var(--steel);margin-bottom:22px;line-height:1.6;">' +
-    'Your on-device copy is kept either way — nothing is deleted or moved.</div>' +
-    '<div style="display:flex;gap:10px;">' +
-    '<button id="lt-skip" style="flex:1;padding:12px;background:none;border:1px solid var(--mist);border-radius:10px;font-size:14px;font-weight:600;font-family:\'Outfit\',sans-serif;cursor:pointer;color:var(--steel);">Not now</button>' +
-    '<button id="lt-go" style="flex:1;padding:12px;background:#6B9E70;color:white;border:none;border-radius:10px;font-size:14px;font-weight:600;font-family:\'Outfit\',sans-serif;cursor:pointer;">Copy it in</button>' +
-    '</div>' +
+    ', ' + w.rows + ' ' + rowWord + '</strong>. ' + lead + '</div>' +
+    '<div style="font-size:12.5px;color:var(--steel);margin-bottom:22px;line-height:1.6;">' + note + '</div>' +
+    '<div style="display:flex;gap:10px;">' + buttons + '</div>' +
     '<div id="lt-status" style="display:none;text-align:center;margin-top:14px;font-size:13px;color:var(--steel);line-height:1.5;"></div>' +
     '</div>';
   document.body.appendChild(modal);
+
+  if (!canCopy) {
+    // One acknowledgement is enough. Remembered per account, and only for this
+    // explanation — paying brings the real offer back.
+    document.getElementById('lt-skip').onclick = function () {
+      try { appStore.setItem(ltDismissKey(), (_currentUser && _currentUser.id) ? _currentUser.id : '1'); } catch (e) {}
+      modal.remove();
+    };
+    return;
+  }
 
   // "Not now" is not a decline forever — the flag is only set on success, so
   // the offer returns next sign-in while the local budget still exists.
