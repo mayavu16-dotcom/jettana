@@ -738,6 +738,10 @@ body {
   text-align: center;
   min-width: 0;
 }
+/* Computed Current on a card-linked debt row: not typeable, but still
+   selectable so the figure can be copied. Tapping it opens the breakdown —
+   on mobile there is no hover, so the cell has to explain itself somehow. */
+.erow-num-input.is-autocalc { cursor: pointer; }
 /* Mute col 1 for budget/planned sections + checking (beginning) + debt (current) */
 [data-section="income"] .erow-num-input[data-col="1"],
 [data-section="housing"] .erow-num-input[data-col="1"],
@@ -8632,10 +8636,10 @@ function renderRowEl(section, row, animate = false) {
       </div>` : ''}
     </div>
     <div class="num-col-wrap">
-      <input type="text" inputmode="decimal" class="erow-num-input" placeholder="$0.00"
+      <input type="text" inputmode="decimal" class="erow-num-input${section === 'debt' && row._cardLink ? ' is-autocalc' : ''}" placeholder="$0.00"
         value="${fmtInput(row[cfg.k1])}"
         data-section="${section}" data-id="${row.id}" data-key="${cfg.k1}" data-col="1"
-        data-raw="${row[cfg.k1]||''}"
+        data-raw="${row[cfg.k1]||''}"${section === 'debt' && row._cardLink ? ` readonly title="Auto-calculated from this card&#39;s charges. Set a starting balance in the row note." onclick="toggleCardTxPop(event,'${row.id}')"` : ''}
         onfocus="numFocus(this)" onblur="numBlur(this)" oninput="numInput(this)" onkeydown="numKeyDown(event,this)">
       ${section === 'debt' && row._cardLink ? `
       <button class="card-tx-badge" id="ctb-${row.id}" data-rowid="${row.id}" style="display:none;"
@@ -8718,6 +8722,9 @@ function renderRowEl(section, row, animate = false) {
 }
 
 function numFocus(el) {
+  // A computed cell has nothing to edit: don't strip its formatting and don't
+  // push an "Edit cell" undo entry the user can never have caused.
+  if (el.readOnly) return;
   const raw = el.dataset.raw || '';
   el.value = raw ? raw : '';
   el.dataset.preEdit = raw; // stash value before editing
@@ -8730,6 +8737,7 @@ function numFocus(el) {
 }
 
 function numBlur(el) {
+  if (el.readOnly) return;
   // Auto-calculate expressions like 50+25, 1500-200-50+100, 40*3/2
   var raw0 = el.value.replace(/[$,\s]/g, '');
   if (/^-?[\d.]+(?:[\+\-\*\/]-?[\d.]+)+$/.test(raw0)) {
@@ -10184,7 +10192,12 @@ function cardLinkedCharges(debtRow, monthData) {
   });
 
   out.rows.sort(function(a, b) { return b.amount - a.amount; });
-  out.carried = parseAmt(debtRow['_carriedBalance']) || 0;
+  // Mirrors autoCalcDebtFromCards: a manually entered starting balance behaves
+  // exactly like carried money. Kept as two numbers so the panel can name them
+  // separately, but they must SUM to the same carried figure the math uses.
+  out.carriedPrev = parseAmt(debtRow['_carriedBalance']) || 0;
+  out.opening = parseAmt(debtRow['_openingBalance']) || 0;
+  out.carried = out.carriedPrev + out.opening;
   out.current = out.chargeTotal + out.carried;
   return out;
 }
@@ -10261,8 +10274,11 @@ function buildCardTxHtml(rowId, d) {
     });
     html += '<div class="ctp-foot">' +
       '<div class="ctp-fline"><span>Charges this month</span><span>' + money(info.chargeTotal) + '</span></div>';
-    if (info.carried > 0) {
-      html += '<div class="ctp-fline"><span>Carried from last month</span><span>' + money(info.carried) + '</span></div>';
+    if (info.carriedPrev > 0) {
+      html += '<div class="ctp-fline"><span>Carried from last month</span><span>' + money(info.carriedPrev) + '</span></div>';
+    }
+    if (info.opening > 0) {
+      html += '<div class="ctp-fline"><span>Starting balance</span><span>' + money(info.opening) + '</span></div>';
     }
     html += '<div class="ctp-ftotal"><span>Current</span><span>' + money(info.current) + '</span></div>' +
       '</div>';
@@ -10383,7 +10399,10 @@ function autoCalcDebtFromCards() {
     // Payment money pays down last month's carried balance first; what's
     // left covers this month's charges — and there it OVERLAPS with the
     // ✓-paid charges (whichever covers more wins) instead of stacking.
-    var carriedBalance = parseAmt(debtRow['_carriedBalance']) || 0;
+    // _openingBalance is a manually entered pre-existing balance. It behaves
+    // exactly like carried money — payments pay it down first — so it is added
+    // to carriedBalance and everything downstream is unchanged.
+    var carriedBalance = (parseAmt(debtRow['_carriedBalance']) || 0) + (parseAmt(debtRow['_openingBalance']) || 0);
     var appliedToCarried = Math.min(paymentTotal, carriedBalance);
     var paymentToCharges = paymentTotal - appliedToCarried;
     var chargesCovered = Math.min(totalAll, Math.max(totalPaid, paymentToCharges));
@@ -10437,6 +10456,25 @@ function setDebtCardLink(section, id, color) {
   row._cardLink = color;
   saveAll(all);
   scheduleSave();
+  // Current becomes computed when a card is linked and hand-editable again when
+  // it is unlinked. The row is not re-rendered here, so flip it directly —
+  // otherwise unlinking leaves a cell that silently refuses typing.
+  var inp1 = document.querySelector('input[data-id="' + id + '"][data-col="1"]');
+  if (inp1) {
+    if (color) {
+      inp1.readOnly = true;
+      inp1.classList.add('is-autocalc');
+      inp1.title = "Auto-calculated from this card's charges. Set a starting balance in the row note.";
+    } else {
+      inp1.readOnly = false;
+      inp1.classList.remove('is-autocalc');
+      inp1.removeAttribute('title');
+    }
+  }
+  // The starting-balance field only exists while a card is linked.
+  var wrap = document.getElementById('card-link-wrap-' + id);
+  if (wrap) wrap.innerHTML = buildCardLinkHtml(section, id, row);
+  if (!color) hideCardTxPop();
   autoCalcDebtFromCards();
   recalc();
 }
@@ -11455,7 +11493,44 @@ function buildCardLinkHtml(section, id, row) {
     'onchange="setDebtCardLink(\'' + section + '\',\'' + id + '\',this.value)" onclick="event.stopPropagation()">' +
     optionsHtml + '</select>' +
     (cards.length === 0 ? '<span style="font-size:10px;color:var(--steel);">Add cards in ⋯ → My Cards first</span>' : '') +
+    '</div>' +
+    buildOpeningBalanceHtml(section, id, row);
+}
+
+/* Starting balance for a card-linked debt row.
+   Current on a linked row is computed (charges + carried + this), so there is
+   no way to type an existing balance into the cell itself. This is that entry
+   point — needed when a card's first month in Jettana already has a balance,
+   or the row is new so nothing carried in.
+   Deliberately NOT part of any month carry-forward whitelist: next month gets
+   its opening figure from _carriedBalance (last month's Remaining) instead, so
+   keeping this would count the same money twice. */
+function buildOpeningBalanceHtml(section, id, row) {
+  if (section !== 'debt' || !row._cardLink) return '';
+  var carried = parseAmt(row._carriedBalance) || 0;
+  var val = (row._openingBalance === '' || row._openingBalance == null) ? '' : row._openingBalance;
+  var hint = carried > 0
+    ? 'Adds to the $' + carried.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' carried from last month'
+    : 'Balance already on this card before these charges';
+  return '<div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-bottom:1px solid var(--mist);" onclick="event.stopPropagation()">' +
+    '<span style="font-size:11px;color:var(--steel);font-weight:600;white-space:nowrap;">💳 Starting balance:</span>' +
+    '<input type="text" inputmode="decimal" id="open-bal-' + id + '" value="' + escHtml(val) + '" placeholder="$0.00" ' +
+    'style="width:82px;border:none;border-bottom:1px solid var(--mist);outline:none;font-size:11px;font-family:Outfit,sans-serif;color:var(--ink);background:transparent;padding:2px 4px;" ' +
+    'onchange="setDebtOpeningBalance(\'' + section + '\',\'' + id + '\',this.value)" onclick="event.stopPropagation()">' +
+    '<span style="font-size:10px;color:var(--steel);line-height:1.3;">' + escHtml(hint) + '</span>' +
     '</div>';
+}
+
+function setDebtOpeningBalance(section, id, val) {
+  var all = loadAll();
+  var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
+  var row = rows.find(function(r) { return r.id === id; });
+  if (!row) return;
+  var n = parseAmt(val);
+  row._openingBalance = (n > 0) ? String(n) : '';
+  saveAll(all);
+  scheduleSave();
+  recalc();
 }
 
 function setSavingsTemplate(section, id, template) {
