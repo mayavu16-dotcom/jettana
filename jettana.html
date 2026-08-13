@@ -821,8 +821,33 @@ body {
   color: var(--ink);
 }
 .ctp-head {
-  padding: 9px 11px 7px;
+  padding: 9px 30px 7px 11px;
   border-bottom: 1px solid var(--mist);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--white);
+}
+.ctp-close {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: none;
+  color: var(--steel);
+  font-family: Outfit, sans-serif;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.ctp-close:hover { background: var(--mist-light); color: var(--ink); }
+@media (pointer: coarse) {
+  .ctp-close { width: 30px; height: 30px; font-size: 18px; top: 3px; right: 3px; }
+  .ctp-head { padding-right: 38px; }
 }
 .ctp-title { font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px; }
 .ctp-sub { font-size: 10.5px; color: var(--steel); margin-top: 2px; }
@@ -9818,7 +9843,7 @@ function recalc() {
   autoCalcDebtFromCards();
   recalcCheckingBalances();
   // Badge counts describe the same pass that produced the numbers above.
-  try { refreshCardTxBadges(); } catch (e) {}
+  try { refreshCardTxBadges(); refreshCardTxPop(); } catch (e) {}
 
   const all = loadAll();
   const d = all[currentMonthKey] || {};
@@ -10192,16 +10217,14 @@ function hideCardTxPop() {
   if (p) p.remove();
   _cardTxPopId = null;
 }
-function toggleCardTxPop(ev, rowId) {
-  if (ev) { ev.stopPropagation(); ev.preventDefault(); }
-  if (_cardTxPopId === rowId) { hideCardTxPop(); return; }
-  hideCardTxPop();
 
-  var all = loadAll();
-  var d = all[currentMonthKey];
-  if (!d) return;
+/* Popover body, built separately from the popover itself so it can be rebuilt
+   in place while the panel stays open — the panel is pinned until the user
+   closes it, and its whole purpose is cross-referencing against the sections,
+   so a ✓ ticked while it is open has to show up in it. */
+function buildCardTxHtml(rowId, d) {
   var row = (d['debt'] || []).find(function(r) { return r.id === rowId; });
-  if (!row) return;
+  if (!row) return null;
   var info = cardLinkedCharges(row, d);
   var card = _legendCards && _legendCards.find(function(c) { return c.color === row._cardLink; });
   var cardName = (card && card.name) || row.label || 'this card';
@@ -10217,6 +10240,7 @@ function toggleCardTxPop(ev, rowId) {
   }
 
   var html = '<div class="ctp-head">' +
+    '<button class="ctp-close" onclick="hideCardTxPop()" title="Close" aria-label="Close">×</button>' +
     '<div class="ctp-title"><span class="ctb-dot" style="width:8px;height:8px;border-radius:50%;background:' +
       escHtml(row._cardLink || 'transparent') + ';"></span>' + escHtml(cardName) + '</div>' +
     '<div class="ctp-sub">' + info.rows.length +
@@ -10243,6 +10267,36 @@ function toggleCardTxPop(ev, rowId) {
     html += '<div class="ctp-ftotal"><span>Current</span><span>' + money(info.current) + '</span></div>' +
       '</div>';
   }
+  return html;
+}
+
+/* Refresh an open panel in place. Never repositions and never closes: the
+   position is where the user parked it, and the scroll offset is where they
+   were reading. Called from recalc() alongside the badge counts. */
+function refreshCardTxPop() {
+  if (!_cardTxPopId) return;
+  var pop = document.getElementById('card-tx-pop');
+  if (!pop) { _cardTxPopId = null; return; }
+  var all = loadAll();
+  var d = all[currentMonthKey];
+  if (!d) return;
+  var html = buildCardTxHtml(_cardTxPopId, d);
+  if (html === null) { hideCardTxPop(); return; }   // row deleted underneath it
+  var keepScroll = pop.scrollTop;
+  pop.innerHTML = html;
+  pop.scrollTop = keepScroll;
+}
+
+function toggleCardTxPop(ev, rowId) {
+  if (ev) { ev.stopPropagation(); ev.preventDefault(); }
+  if (_cardTxPopId === rowId) { hideCardTxPop(); return; }
+  hideCardTxPop();
+
+  var all = loadAll();
+  var d = all[currentMonthKey];
+  if (!d) return;
+  var html = buildCardTxHtml(rowId, d);
+  if (html === null) return;
 
   var pop = document.createElement('div');
   pop.className = 'card-tx-pop';
@@ -10261,16 +10315,21 @@ function toggleCardTxPop(ev, rowId) {
   pop.style.top = top + 'px';
   _cardTxPopId = rowId;
 }
-document.addEventListener('click', function(e) {
-  if (!_cardTxPopId) return;
-  if (e.target.closest && e.target.closest('.card-tx-badge')) return;
-  hideCardTxPop();
-});
+
+// Pinned on purpose: an outside click does NOT close it, so you can scroll to
+// Food and tick rows off while the list stays on screen. Escape still closes,
+// and clicking a different card's badge switches to that card.
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape' && _cardTxPopId) hideCardTxPop();
 });
-window.addEventListener('resize', hideCardTxPop);
-document.addEventListener('scroll', hideCardTxPop, true);
+// Resize can strand a fixed panel off-screen — clamp it back rather than close.
+window.addEventListener('resize', function() {
+  var pop = document.getElementById('card-tx-pop');
+  if (!pop) return;
+  var w = pop.offsetWidth, h = pop.offsetHeight;
+  pop.style.left = Math.min(Math.max(8, parseFloat(pop.style.left) || 8), Math.max(8, window.innerWidth - w - 8)) + 'px';
+  pop.style.top  = Math.min(Math.max(8, parseFloat(pop.style.top) || 8), Math.max(8, window.innerHeight - h - 8)) + 'px';
+});
 
 function autoCalcDebtFromCards() {
   if (!_legendCards || !_legendCards.length) return;
