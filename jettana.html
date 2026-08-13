@@ -882,6 +882,7 @@ body {
   border-top: 1px solid var(--mist-light);
 }
 .ctp-empty { padding: 12px 11px; font-size: 11px; color: var(--steel); line-height: 1.5; }
+.ctp-note { font-size: 10px; color: var(--steel); line-height: 1.45; margin-top: 6px; }
 
 
 .row-date-wrap {
@@ -8642,8 +8643,8 @@ function renderRowEl(section, row, animate = false) {
         data-raw="${row[cfg.k1]||''}"${section === 'debt' && row._cardLink ? ` readonly title="Auto-calculated from this card&#39;s charges. Set a starting balance in the row note." onclick="toggleCardTxPop(event,'${row.id}')"` : ''}
         onfocus="numFocus(this)" onblur="numBlur(this)" oninput="numInput(this)" onkeydown="numKeyDown(event,this)">
       ${section === 'debt' && row._cardLink ? `
-      <button class="card-tx-badge" id="ctb-${row.id}" data-rowid="${row.id}" style="display:none;"
-        onclick="toggleCardTxPop(event,'${row.id}')" aria-label="Charges on this card">
+      <button class="card-tx-badge" id="ctb-${row.id}" data-rowid="${row.id}" data-section="debt" style="display:none;"
+        onclick="toggleCardTxPop(event,'${row.id}','debt')" aria-label="Charges on this card">
         <span class="ctb-dot" style="background:${escHtml(row._cardLink)};"></span><span id="ctb-n-${row.id}"></span>
       </button>` : ''}
       ${(allowDate && section === 'savings') || section === 'income' || section === 'checking' || section === 'debt' ? `
@@ -8658,6 +8659,11 @@ function renderRowEl(section, row, animate = false) {
         data-section="${section}" data-id="${row.id}" data-key="${cfg.k2}" data-col="2"
         data-raw="${row[cfg.k2]||''}"
         onfocus="numFocus(this)" onblur="numBlur(this)" oninput="numInput(this)" onkeydown="numKeyDown(event,this)">
+      ${section === 'checking' && (row.paidColor || row.numColor || (row._entries || []).some(function(e){ return e._type === 'transaction'; })) ? `
+      <button class="card-tx-badge" id="ctb-${row.id}" data-rowid="${row.id}" data-section="checking" style="display:none;"
+        onclick="toggleCardTxPop(event,'${row.id}','checking')" aria-label="What came out of this account">
+        <span class="ctb-dot" style="background:${escHtml(row.paidColor || row.numColor || 'var(--steel)')};"></span><span id="ctb-n-${row.id}"></span>
+      </button>` : ''}
       ${allowDate ? `
       <div class="row-date-wrap">
         <button class="row-date-btn ${row.date2 ? 'has-date' : ''}" onclick="toggleDateInput('${row.id}-2')" id="date-btn-${row.id}-2">${row.date2 ? formatDateLabel(row.date2) : '+ date'}</button>
@@ -10152,7 +10158,72 @@ function recalc() {
   });
 }
 
-/* ── Which charges feed a card-linked debt row ────────────────
+/* ── What feeds a checking account's Ending ───────────────────
+   The checking twin of cardLinkedCharges, and deliberately a SEPARATE
+   function because recalcCheckingBalances matches on different rules:
+     • the account's own paidColor/numColor, not a _cardLink dropdown
+     • ONLY rows marked paid (money hasn't left the account otherwise)
+     • Actual, falling back to budget when Actual is empty
+     • expenses dated before _beginDate are excluded
+     • Transaction entries add (deposit) or subtract (withdrawal)
+   Pointing the debt reader at checking would list unpaid rows and miss the
+   deposits. Read-only; nothing here writes. */
+function accountLinkedCharges(acctRow, monthData) {
+  var out = { rows: [], txs: [], chargeTotal: 0, txNet: 0, beginning: 0,
+              computedEnding: 0, shortfall: 0, overridden: false, color: '' };
+  if (!acctRow) return out;
+  var d = monthData;
+  if (!d) {
+    var all = loadAll();
+    d = all[currentMonthKey];
+  }
+  if (!d) return out;
+
+  var acctColor = (acctRow.paidColor || acctRow.numColor || '').toLowerCase();
+  out.color = acctColor;
+  out.overridden = !!acctRow._endingOverride;
+  out.beginning = parseAmt(acctRow['beginning']) || 0;
+  var beginDate = acctRow._beginDate || '';
+
+  if (acctColor) {
+    var EXPENSE_SECTIONS = ['housing', 'transport', 'food', 'health', 'subscriptions', 'gifts', 'misc'];
+    EXPENSE_SECTIONS.forEach(function(sec) {
+      var cfg = CONFIGS[sec];
+      if (!cfg) return;
+      (d[sec] || []).forEach(function(row) {
+        if (!row.paid) return;
+        var numColor = (row.numColor || '').toLowerCase();
+        if (!numColor || numColor !== acctColor) return;
+        var expenseDate = row.date || row.date2 || '';
+        if (beginDate && expenseDate && expenseDate < beginDate) return;
+        var actual = parseAmt(row[cfg.k2]);
+        var budget = parseAmt(row[cfg.k1]);
+        var amount = actual > 0 ? actual : budget;
+        if (amount <= 0) return;
+        out.rows.push({ label: row.label || '(no label)', section: sec, amount: amount });
+        out.chargeTotal += amount;
+      });
+    });
+  }
+
+  (acctRow._entries || []).forEach(function(en) {
+    if (en._type !== 'transaction') return;
+    var amt = parseAmt(en.txamt);
+    if (!amt) return;
+    if (beginDate && en.date && en.date < beginDate) return;
+    var isW = en.txtype === 'withdrawal';
+    out.txs.push({ label: en.txdesc || (isW ? 'Withdrawal' : 'Deposit'), amount: amt, withdrawal: isW });
+    out.txNet += isW ? -amt : amt;
+  });
+
+  out.rows.sort(function(a, b) { return b.amount - a.amount; });
+  var raw = out.beginning - out.chargeTotal + out.txNet;
+  out.computedEnding = Math.max(0, raw);          // same clamp recalcCheckingBalances applies
+  out.shortfall = raw < 0 ? -raw : 0;             // how much the clamp is hiding
+  return out;
+}
+
+/* ── What feeds a card-linked debt row's Current ──────────────
    A READ-ONLY companion to autoCalcDebtFromCards below. It walks the same
    sections with the same match rules (numColor === _cardLink, not exempt,
    Actual > 0) and returns the rows instead of a sum, so the badge and popover
@@ -10211,20 +10282,31 @@ function refreshCardTxBadges() {
   var all = loadAll();
   var d = all[currentMonthKey];
   if (!d) return;
-  var debtRows = d['debt'] || [];
   badges.forEach(function(b) {
-    var row = debtRows.find(function(r) { return r.id === b.dataset.rowid; });
-    if (!row || !row._cardLink) { b.style.display = 'none'; return; }
-    var info = cardLinkedCharges(row, d);
-    if (!info.rows.length) { b.style.display = 'none'; return; }
+    var sec = b.dataset.section || 'debt';
+    var row = (d[sec] || []).find(function(r) { return r.id === b.dataset.rowid; });
+    if (!row) { b.style.display = 'none'; return; }
+    var count, label;
+    if (sec === 'checking') {
+      var a = accountLinkedCharges(row, d);
+      count = a.rows.length + a.txs.length;
+      label = count + (count === 1 ? ' item' : ' items') + ' in this account — click to see them';
+    } else {
+      if (!row._cardLink) { b.style.display = 'none'; return; }
+      var info = cardLinkedCharges(row, d);
+      count = info.rows.length;
+      label = count + (count === 1 ? ' charge' : ' charges') + ' on this card — click to see them';
+    }
+    if (!count) { b.style.display = 'none'; return; }
     b.style.display = '';
     var n = document.getElementById('ctb-n-' + b.dataset.rowid);
-    if (n) n.textContent = info.rows.length;
-    b.title = info.rows.length + (info.rows.length === 1 ? ' charge' : ' charges') + ' on this card — click to see them';
+    if (n) n.textContent = count;
+    b.title = label;
   });
 }
 
 var _cardTxPopId = null;
+var _cardTxPopSection = 'debt';
 function hideCardTxPop() {
   var p = document.getElementById('card-tx-pop');
   if (p) p.remove();
@@ -10235,7 +10317,9 @@ function hideCardTxPop() {
    in place while the panel stays open — the panel is pinned until the user
    closes it, and its whole purpose is cross-referencing against the sections,
    so a ✓ ticked while it is open has to show up in it. */
-function buildCardTxHtml(rowId, d) {
+function buildCardTxHtml(rowId, d, section) {
+  section = section || 'debt';
+  if (section === 'checking') return buildAccountTxHtml(rowId, d);
   var row = (d['debt'] || []).find(function(r) { return r.id === rowId; });
   if (!row) return null;
   var info = cardLinkedCharges(row, d);
@@ -10289,6 +10373,80 @@ function buildCardTxHtml(rowId, d) {
 /* Refresh an open panel in place. Never repositions and never closes: the
    position is where the user parked it, and the scroll offset is where they
    were reading. Called from recalc() alongside the badge counts. */
+/* Checking variant of the panel. Same shell, different footer: the account
+   runs Beginning − paid expenses ± transactions = Ending, and Ending can be
+   set by hand, in which case the computed figure is labelled as such rather
+   than claiming to be the number in the cell. */
+function buildAccountTxHtml(rowId, d) {
+  var row = (d['checking'] || []).find(function(r) { return r.id === rowId; });
+  if (!row) return null;
+  var info = accountLinkedCharges(row, d);
+  var card = _legendCards && _legendCards.find(function(c) {
+    return (c.color || '').toLowerCase() === info.color;
+  });
+  var name = row.label || (card && card.name) || 'this account';
+
+  function money(v) {
+    return '$' + Number(v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  var monthNames = (d._sectionNames) || {};
+  function secName(key) {
+    return monthNames[key] || _sectionNames[key] || DEFAULT_SECTION_NAMES[key] || key;
+  }
+
+  var n = info.rows.length + info.txs.length;
+  var html = '<div class="ctp-head">' +
+    '<button class="ctp-close" onclick="hideCardTxPop()" title="Close" aria-label="Close">×</button>' +
+    '<div class="ctp-title"><span class="ctb-dot" style="width:8px;height:8px;border-radius:50%;background:' +
+      escHtml(info.color || 'transparent') + ';"></span>' + escHtml(name) + '</div>' +
+    '<div class="ctp-sub">' + n + (n === 1 ? ' item' : ' items') + ' this month</div>' +
+    '</div>';
+
+  if (!n) {
+    html += '<div class="ctp-empty">Nothing is coming out of this account yet. ' +
+      'Expenses count here once they are marked paid and their number color matches this account.</div>';
+    return html;
+  }
+
+  info.rows.forEach(function(r) {
+    html += '<div class="ctp-row">' +
+      '<span class="ctp-check">−</span>' +
+      '<span class="ctp-label">' + escHtml(r.label) + '</span>' +
+      '<span class="ctp-sec">' + escHtml(secName(r.section)) + '</span>' +
+      '<span class="ctp-amt">' + money(r.amount) + '</span>' +
+      '</div>';
+  });
+  info.txs.forEach(function(t) {
+    html += '<div class="ctp-row">' +
+      '<span class="ctp-check">' + (t.withdrawal ? '−' : '+') + '</span>' +
+      '<span class="ctp-label">' + escHtml(t.label) + '</span>' +
+      '<span class="ctp-sec">' + (t.withdrawal ? 'Withdrawal' : 'Deposit') + '</span>' +
+      '<span class="ctp-amt">' + money(t.amount) + '</span>' +
+      '</div>';
+  });
+
+  html += '<div class="ctp-foot">' +
+    '<div class="ctp-fline"><span>Beginning</span><span>' + money(info.beginning) + '</span></div>';
+  if (info.chargeTotal > 0) {
+    html += '<div class="ctp-fline"><span>Paid expenses</span><span>−' + money(info.chargeTotal) + '</span></div>';
+  }
+  if (info.txNet !== 0) {
+    html += '<div class="ctp-fline"><span>Transactions</span><span>' +
+      (info.txNet < 0 ? '−' : '+') + money(Math.abs(info.txNet)) + '</span></div>';
+  }
+  html += '<div class="ctp-ftotal"><span>' + (info.overridden ? 'Calculated ending' : 'Ending') + '</span><span>' +
+    money(info.computedEnding) + '</span></div>';
+  if (info.shortfall > 0) {
+    html += '<div class="ctp-note">These come to ' + money(info.shortfall) +
+      ' more than the beginning balance, so Ending is held at $0.00.</div>';
+  }
+  if (info.overridden) {
+    html += '<div class="ctp-note">You set Ending by hand, so this figure is not being used.</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
 function refreshCardTxPop() {
   if (!_cardTxPopId) return;
   var pop = document.getElementById('card-tx-pop');
@@ -10296,14 +10454,15 @@ function refreshCardTxPop() {
   var all = loadAll();
   var d = all[currentMonthKey];
   if (!d) return;
-  var html = buildCardTxHtml(_cardTxPopId, d);
+  var html = buildCardTxHtml(_cardTxPopId, d, _cardTxPopSection);
   if (html === null) { hideCardTxPop(); return; }   // row deleted underneath it
   var keepScroll = pop.scrollTop;
   pop.innerHTML = html;
   pop.scrollTop = keepScroll;
 }
 
-function toggleCardTxPop(ev, rowId) {
+function toggleCardTxPop(ev, rowId, section) {
+  section = section || 'debt';
   if (ev) { ev.stopPropagation(); ev.preventDefault(); }
   if (_cardTxPopId === rowId) { hideCardTxPop(); return; }
   hideCardTxPop();
@@ -10311,7 +10470,7 @@ function toggleCardTxPop(ev, rowId) {
   var all = loadAll();
   var d = all[currentMonthKey];
   if (!d) return;
-  var html = buildCardTxHtml(rowId, d);
+  var html = buildCardTxHtml(rowId, d, section);
   if (html === null) return;
 
   var pop = document.createElement('div');
@@ -10330,6 +10489,7 @@ function toggleCardTxPop(ev, rowId) {
   pop.style.left = left + 'px';
   pop.style.top = top + 'px';
   _cardTxPopId = rowId;
+  _cardTxPopSection = section;
 }
 
 // Pinned on purpose: an outside click does NOT close it, so you can scroll to
