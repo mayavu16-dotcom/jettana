@@ -20047,6 +20047,54 @@ function renderCompare() {
    Static cost-of-living indices (US = 100), rough 2026 national
    blends including rent. Expenses translate by the index; income is
    deliberately held fixed (salaries/taxes/visas don't travel). */
+/* Currency per country, for the optional local-currency display in Life
+   Elsewhere. Currency CODES are safe to hardcode — they change once in a
+   generation. Exchange RATES are not, which is why the user supplies those
+   and Jettana never fetches or guesses one. */
+var LEL_CURRENCY = {
+  'Switzerland': 'CHF', 'Iceland': 'ISK', 'Singapore': 'SGD', 'Norway': 'NOK', 'Luxembourg': 'EUR',
+  'Denmark': 'DKK', 'Israel': 'ILS', 'Ireland': 'EUR', 'Netherlands': 'EUR', 'Australia': 'AUD',
+  'Canada': 'CAD', 'United Kingdom': 'GBP', 'New Zealand': 'NZD', 'Finland': 'EUR', 'Austria': 'EUR',
+  'Germany': 'EUR', 'France': 'EUR', 'Belgium': 'EUR', 'Sweden': 'SEK', 'United Arab Emirates': 'AED',
+  'South Korea': 'KRW', 'Italy': 'EUR', 'Japan': 'JPY', 'Cyprus': 'EUR', 'Spain': 'EUR',
+  'Czechia': 'CZK', 'Estonia': 'EUR', 'Slovenia': 'EUR', 'Greece': 'EUR', 'Portugal': 'EUR',
+  'Croatia': 'EUR', 'Panama': 'PAB', 'Uruguay': 'UYU', 'Costa Rica': 'CRC', 'Poland': 'PLN',
+  'Chile': 'CLP', 'Mexico': 'MXN', 'Brazil': 'BRL', 'Thailand': 'THB', 'South Africa': 'ZAR',
+  'Philippines': 'PHP', 'Ecuador': 'USD', 'Argentina': 'ARS', 'Malaysia': 'MYR', 'Indonesia': 'IDR',
+  'Peru': 'PEN', 'Colombia': 'COP', 'Turkey': 'TRY', 'Georgia': 'GEL', 'Vietnam': 'VND',
+  'Morocco': 'MAD', 'India': 'INR', 'Egypt': 'EGP'
+};
+
+/* User-supplied rates, one per country: { Thailand: 32.5, Japan: 148 }.
+   Never fetched. A missing rate simply hides the local-currency line. */
+function _lelRates() {
+  try { return JSON.parse(appStore.getItem(nsKey('intentra_lel_rates')) || '{}') || {}; }
+  catch (e) { return {}; }
+}
+function _lelRate(country) {
+  var n = parseFloat(_lelRates()[country]);
+  return (isFinite(n) && n > 0) ? n : 0;
+}
+function setLelRate(country, val) {
+  var rates = _lelRates();
+  // Keep the sign while stripping formatting: /[^0-9.]/ alone turns "-5" into
+  // 5, silently accepting an invalid entry as a valid one.
+  var cleaned = String(val).replace(/[^0-9.\-]/g, '');
+  var n = parseFloat(cleaned);
+  if (isFinite(n) && n > 0) rates[country] = n; else delete rates[country];
+  try { appStore.setItem(nsKey('intentra_lel_rates'), JSON.stringify(rates)); } catch (e) {}
+  renderLifeElsewhere();
+}
+/* Local currency has wildly different magnitudes — ¥148 vs Rp 15,000 vs
+   ₫25,000 — so no decimals once the number is large. */
+function _lelFmtLocal(amount, code) {
+  var rounded = amount >= 1000 ? Math.round(amount) : Math.round(amount * 100) / 100;
+  return rounded.toLocaleString('en-US', {
+    minimumFractionDigits: amount >= 1000 ? 0 : 2,
+    maximumFractionDigits: amount >= 1000 ? 0 : 2
+  }) + ' ' + code;
+}
+
 var LEL_INDEX = {
   'Switzerland': 125, 'Iceland': 105, 'Singapore': 100, 'Norway': 95, 'Luxembourg': 95,
   'Denmark': 90, 'Israel': 88, 'Ireland': 85, 'Netherlands': 82, 'Australia': 80,
@@ -20118,19 +20166,40 @@ function renderLifeElsewhere() {
   var rateHere = net > 0 ? Math.max(0, Math.round(roomHere / net * 100)) : null;
   var rateThere = net > 0 ? Math.max(0, Math.round(roomThere / net * 100)) : null;
   var cheaper = idx < 100;
-  var card = function(title, cost, room, rate, accent) {
+  var code = LEL_CURRENCY[country] || '';
+  var rate = _lelRate(country);
+  var localLine = function(usd) {
+    if (!rate || !code) return '';
+    return '<div style="font-size:11px;color:var(--steel);margin-top:2px;">≈ ' +
+      _lelFmtLocal(usd * rate, code) + '</div>';
+  };
+  var card = function(title, cost, room, rate2, accent, showLocal) {
     return '<div style="flex:1 1 150px;background:var(--mist-light);border-radius:10px;padding:10px 12px;">'
       + '<div style="font-size:10px;font-weight:700;letter-spacing:0.4px;color:var(--steel);text-transform:uppercase;">' + title + '</div>'
       + '<div style="font-size:15px;font-weight:700;color:var(--ink);margin-top:3px;">' + gpFmt(cost) + '<span style="font-size:10px;font-weight:400;color:var(--steel);">/mo lifestyle</span></div>'
-      + (rate !== null ? '<div style="font-size:11px;color:' + accent + ';margin-top:3px;">room to save ' + gpFmt(Math.max(0, room)) + ' · ' + rate + '%</div>' : '')
+      + (showLocal ? localLine(cost) : '')
+      + (rate2 !== null ? '<div style="font-size:11px;color:' + accent + ';margin-top:3px;">room to save ' + gpFmt(Math.max(0, room)) + ' · ' + rate2 + '%</div>' : '')
       + '</div>';
   };
+  // Optional, and deliberately user-entered: Jettana never fetches a rate, so
+  // it can never show a stale one. Blank simply means no local-currency line.
+  var rateRow = code && code !== 'USD'
+    ? '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--steel);margin-top:9px;">'
+      + '<span>1 USD =</span>'
+      + '<input type="text" inputmode="decimal" id="lel-rate" value="' + (rate || '') + '" placeholder="rate"'
+      + ' style="width:74px;border:none;border-bottom:1px solid var(--mist);outline:none;font-size:11px;font-family:Outfit,sans-serif;color:var(--ink);background:transparent;padding:2px 4px;text-align:right;"'
+      + ' onchange="setLelRate(\'' + country.replace(/'/g, "\\'") + '\',this.value)">'
+      + '<span>' + code + '</span>'
+      + '<span style="font-size:10px;">optional — look it up once, it saves here</span>'
+      + '</div>'
+    : '';
   out.innerHTML = '<div style="display:flex;gap:10px;flex-wrap:wrap;">'
-    + card('Here (U.S.)', exp, roomHere, rateHere, 'var(--steel)')
-    + card(country, costThere, roomThere, rateThere, cheaper ? 'var(--sage-dark)' : 'var(--blush)')
+    + card('Here (U.S.)', exp, roomHere, rateHere, 'var(--steel)', false)
+    + card(country, costThere, roomThere, rateThere, cheaper ? 'var(--sage-dark)' : 'var(--blush)', true)
     + '</div>'
     + '<div style="font-size:12.5px;color:var(--ink);margin-top:9px;">Your current lifestyle would cost about <strong style="color:' + (cheaper ? 'var(--sage-dark)' : 'var(--blush)') + ';">' + Math.abs(pctDiff) + '% ' + (cheaper ? 'less' : 'more') + '</strong> in ' + country
-    + (net > 0 && cheaper && rateThere > rateHere ? ' — your savings rate would jump from <strong>' + rateHere + '%</strong> to <strong style="color:var(--sage-dark);">' + rateThere + '%</strong>.' : '.') + '</div>';
+    + (net > 0 && cheaper && rateThere > rateHere ? ' — your savings rate would jump from <strong>' + rateHere + '%</strong> to <strong style="color:var(--sage-dark);">' + rateThere + '%</strong>.' : '.') + '</div>'
+    + rateRow;
   if (top) {
     var cheapest = Object.keys(LEL_INDEX).sort(function(a, b) { return LEL_INDEX[a] - LEL_INDEX[b]; }).slice(0, 5);
     top.innerHTML = '<div style="font-size:10px;font-weight:700;letter-spacing:0.4px;color:var(--steel);text-transform:uppercase;margin:8px 0 4px;">Where your money stretches furthest</div>'
