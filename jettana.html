@@ -4653,10 +4653,10 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <div class="sum-amount" id="sum-balance">$0</div>
           <div class="sum-sub">income − expenses</div>
         </div>
-        <div class="sum-card c-gold">
+        <div class="sum-card c-gold" id="savings-sum-card" style="position:relative;" onmouseenter="showSavingsBreakdown(this)" onmouseleave="hideSavingsBreakdown()" onclick="toggleSavingsBreakdown(this)">
           <div class="sum-label">Total Saved</div>
           <div class="sum-amount" id="sum-savings">$0</div>
-          <div class="sum-sub">investments + savings</div>
+          <div class="sum-sub" id="savings-sum-sub">investments + savings</div>
         </div>
       </div>
 
@@ -9508,15 +9508,20 @@ function _savingsSplitData() {
   var all = loadAll();
   var rows = (all[currentMonthKey] && all[currentMonthKey]['savings']) || [];
   var k = CONFIGS['savings'].k1;
-  var saved = [], invested = [], sSum = 0, iSum = 0;
+  var saved = [], invested = [], sSum = 0, iSum = 0, exemptSum = 0;
   rows.forEach(function(row) {
     var amt = parseAmt(row[k]);
-    if (!(amt > 0) || row.exempt) return;
+    if (!(amt > 0)) return;
+    // Exempt savings are excluded here on purpose: this Total must match
+    // "Total Saved" in the summary bar, which also excludes them. The section
+    // footer's "Total Savings" DOES include them, so exemptSum is carried out
+    // to explain the gap when the panel is anchored there.
+    if (row.exempt) { exemptSum += amt; return; }
     var item = { id: row.id, label: row.label || 'Untitled', amt: amt, guessed: !row._invClass };
     if (classifySavingsRow(row) === 'invest') { invested.push(item); iSum += amt; }
     else { saved.push(item); sSum += amt; }
   });
-  return { saved: saved, invested: invested, sSum: sSum, iSum: iSum, total: sSum + iSum };
+  return { saved: saved, invested: invested, sSum: sSum, iSum: iSum, total: sSum + iSum, exemptSum: exemptSum };
 }
 
 function showSavingsBreakdown(anchor) {
@@ -9537,6 +9542,13 @@ function showSavingsBreakdown(anchor) {
   if (d.saved.length) html += group('💰 Saved', d.saved, d.sSum, sPct, 'save');
   if (d.invested.length) html += group('📈 Invested', d.invested, d.iSum, 100 - sPct, 'invest');
   html += '<div class="ibp-row ibp-total"><span>Total</span><span>' + _fmtMoney(d.total) + '</span></div>';
+  // The section footer's "Total Savings" includes exempt accounts; this panel's
+  // Total does not. Anchored there, show the gap rather than leaving the user
+  // to wonder why the panel is lower than the figure they hovered.
+  if (d.exemptSum > 0 && anchor && anchor.id === 'ft-savings-0') {
+    html += '<div class="ibp-row ibp-sub"><span>Exempt (not counted)</span><span>' + _fmtMoney(d.exemptSum) + '</span></div>' +
+      '<div class="ibp-row ibp-total"><span>Section total</span><span>' + _fmtMoney(d.total + d.exemptSum) + '</span></div>';
+  }
   if (pinned) html += '<div style="font-size:9.5px;color:var(--steel);padding-top:5px;">Tap an account to flip Saved ↔ Invested</div>';
   pop.innerHTML = html;
   if (pinned) {
@@ -10082,6 +10094,19 @@ function recalc() {
     }
   }
   set('sum-savings',  fmt(savA));
+  var savSub = document.getElementById('savings-sum-sub');
+  var savCard = document.getElementById('savings-sum-card');
+  if (savSub && savCard) {
+    // Only advertise the breakdown when there is one — an empty savings
+    // section shouldn't promise a panel that won't open.
+    if (savA > 0) {
+      savSub.textContent = ('ontouchstart' in window) ? 'tap for breakdown' : 'hover for breakdown';
+      savCard.style.cursor = 'help';
+    } else {
+      savSub.textContent = 'investments + savings';
+      savCard.style.cursor = 'default';
+    }
+  }
   set('sum-balance',  fmt(balance));
   const balEl = document.getElementById('sum-balance');
   if (balEl) balEl.style.color = balance >= 0 ? 'var(--sage)' : 'var(--blush)';
