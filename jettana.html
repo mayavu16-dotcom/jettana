@@ -4374,35 +4374,14 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
               <button class="more-menu-item" onclick="showMorePanel('appearance')">
                 <span>🎨</span> Appearance <span class="more-chev">›</span>
               </button>
+              <button class="more-menu-item" onclick="showMorePanel('insights')">
+                <span>📊</span> Insights <span class="more-chev">›</span>
+              </button>
               <button class="more-menu-item" onclick="showMorePanel('learn')">
                 <span>📖</span> Learn <span class="more-chev">›</span>
               </button>
               <button class="more-menu-item" onclick="showMorePanel('io')">
                 <span>⬍</span> Import / Export <span class="more-chev">›</span>
-              </button>
-
-              <div class="more-divider"></div>
-              <div class="more-menu-title">Analytics</div>
-              <button class="more-menu-item" onclick="showCalendar(); hideMoreMenu()">
-                <span>📅</span> Spending calendar
-              </button>
-              <button class="more-menu-item" onclick="showTrends(); hideMoreMenu()">
-                <span>📊</span> Spending trends
-              </button>
-              <button class="more-menu-item" onclick="showNetWorthTrend(); hideMoreMenu()">
-                <span>📈</span> Net worth trend
-              </button>
-              <button class="more-menu-item" onclick="showGrowthProjection(); hideMoreMenu()">
-                <span>🌱</span> Growth projection
-              </button>
-              <button class="more-menu-item" onclick="showPlanSavings(); hideMoreMenu()">
-                <span>🧮</span> Plan my savings
-              </button>
-              <button class="more-menu-item" onclick="showLifeElsewhere(); hideMoreMenu()">
-                <span>🌍</span> Life elsewhere
-              </button>
-              <button class="more-menu-item" onclick="showCompare(); hideMoreMenu()">
-                <span>⇄</span> Compare months
               </button>
 
               <div class="more-divider"></div>
@@ -4415,6 +4394,36 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
               <div id="sync-status-row" style="display:none;padding:9px 14px;margin:2px 0;font-size:11.5px;line-height:1.5;color:var(--steel);border-top:1px solid var(--mist);"></div>
               <button class="more-menu-item" id="manage-account-item" onclick="showManageAccount(); hideMoreMenu()" style="color:var(--steel);">
                 <span>⚙</span> Manage account
+              </button>
+            </div>
+
+            <!-- ═══ INSIGHTS ═══ -->
+            <div id="more-panel-insights" style="display:none;">
+              <button class="more-menu-item more-back" onclick="showMorePanel('main')">
+                <span>‹</span> <strong>Insights</strong>
+              </button>
+              <div class="more-menu-title">Look back</div>
+              <button class="more-menu-item" onclick="showCalendar(); hideMoreMenu()">
+                <span>📅</span> Spending calendar
+              </button>
+              <button class="more-menu-item" onclick="showTrends(); hideMoreMenu()">
+                <span>📊</span> Spending trends
+              </button>
+              <button class="more-menu-item" onclick="showNetWorthTrend(); hideMoreMenu()">
+                <span>📈</span> Net worth trend
+              </button>
+              <button class="more-menu-item" onclick="showCompare(); hideMoreMenu()">
+                <span>⇄</span> Compare months
+              </button>
+              <div class="more-menu-title">Plan ahead</div>
+              <button class="more-menu-item" onclick="showPlanSavings(); hideMoreMenu()">
+                <span>🧮</span> Plan my savings
+              </button>
+              <button class="more-menu-item" onclick="showGrowthProjection(); hideMoreMenu()">
+                <span>🌱</span> Growth projection
+              </button>
+              <button class="more-menu-item" onclick="showLifeElsewhere(); hideMoreMenu()">
+                <span>🌍</span> Life elsewhere
               </button>
             </div>
 
@@ -5185,23 +5194,23 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       </div>
 
       <div class="askme-group" data-group>
-        <div class="askme-group-title">Analytics</div>
+        <div class="askme-group-title">Insights</div>
 
         <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">How do I see what I spent each day?<span class="askme-q-arrow">▾</span></button>
-          <div class="askme-a">Open <strong>⋯ → Spending Calendar</strong>. Days with spending are highlighted — tap any day to see a breakdown of transactions. Use the section filter to focus on one category, or search by transaction name. You can drag the calendar to compare it against your tracker rows.</div>
+          <div class="askme-a">Open <strong>⋯ → Insights → Spending Calendar</strong>. Days with spending are highlighted — tap any day to see a breakdown of transactions. Use the section filter to focus on one category, or search by transaction name. You can drag the calendar to compare it against your tracker rows.</div>
         </div>
 
         <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">How do I see my spending over time?<span class="askme-q-arrow">▾</span></button>
-          <div class="askme-a">Open <strong>⋯ → Spending Trends</strong>. Each bar is one month's total spending, and the <strong>gold dashed line</strong> is your average — so you can instantly see which months ran high. <strong>Tap a bar</strong> and it splits into colored blocks showing what made up that month, with the full breakdown listed below. Tap <strong>⭐ Peaks</strong> to flip the list to each category's highest month — tap any underlined month there to jump straight to those rows in your tracker. If anything looks unfamiliar, the <strong>?</strong> button explains how to read it all.</div>
+          <div class="askme-a">Open <strong>⋯ → Insights → Spending Trends</strong>. Each bar is one month's total spending, and the <strong>gold dashed line</strong> is your average — so you can instantly see which months ran high. <strong>Tap a bar</strong> and it splits into colored blocks showing what made up that month, with the full breakdown listed below. Tap <strong>⭐ Peaks</strong> to flip the list to each category's highest month — tap any underlined month there to jump straight to those rows in your tracker. If anything looks unfamiliar, the <strong>?</strong> button explains how to read it all.</div>
         </div>
 
         <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">How do I see my net worth over time?<span class="askme-q-arrow">▾</span></button>
-          <div class="askme-a">Open <strong>⋯ → Net worth trend</strong>. It draws a line chart of your net worth by month (checking + savings − debt). Pick a period with the <strong>6M / YTD / 1Y / All</strong> chips, or choose any starting month from the <strong>From</strong> dropdown. Green dots mean your net worth rose that month; the summary below shows your total change for the period.</div>
+          <div class="askme-a">Open <strong>⋯ → Insights → Net worth trend</strong>. It draws a line chart of your net worth by month (checking + savings − debt). Pick a period with the <strong>6M / YTD / 1Y / All</strong> chips, or choose any starting month from the <strong>From</strong> dropdown. Green dots mean your net worth rose that month; the summary below shows your total change for the period.</div>
           <button class="askme-q" onclick="toggleAskMe(this)">Can I see how my savings might grow over time?<span class="askme-q-arrow">▾</span></button>
-          <div class="askme-a">Open <strong>⋯ → Growth projection</strong>. It starts from your <strong>current savings</strong> and your <strong>average monthly contribution</strong> so far, then shows how that could compound over <strong>5, 10, 20, or 30 years — or any number of years you type into the custom chip</strong>. Every field is editable — change the starting amount, the monthly contribution, or the annual return (7% is a common long-term average) to try different what-ifs. You can also enter your <strong>age</strong> (optional) to see how old you'd be at the end of the projection — it's saved on your device only. The solid line is your projected balance and the dashed line is what you actually deposited; the space between them is growth. It only looks at savings — checking and debt aren't included, since they don't grow at a market rate. And it's a <strong>hypothetical illustration, not a guarantee</strong> — real returns move up and down year to year.</div>
+          <div class="askme-a">Open <strong>⋯ → Insights → Growth projection</strong>. It starts from your <strong>current savings</strong> and your <strong>average monthly contribution</strong> so far, then shows how that could compound over <strong>5, 10, 20, or 30 years — or any number of years you type into the custom chip</strong>. Every field is editable — change the starting amount, the monthly contribution, or the annual return (7% is a common long-term average) to try different what-ifs. You can also enter your <strong>age</strong> (optional) to see how old you'd be at the end of the projection — it's saved on your device only. The solid line is your projected balance and the dashed line is what you actually deposited; the space between them is growth. It only looks at savings — checking and debt aren't included, since they don't grow at a market rate. And it's a <strong>hypothetical illustration, not a guarantee</strong> — real returns move up and down year to year.</div>
         </div>
       </div>
 
@@ -5714,13 +5723,13 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
     </div>
 
     <div class="shortcuts-group">
-      <div class="shortcuts-group-title">Analytics</div>
-      <div class="shortcut-row"><span>📅 <strong>Spending Calendar</strong> — ⋯ → Spending Calendar; see daily spending laid out on a calendar grid with weekly totals. Filter by section, search by transaction name, and tap any day for a breakdown. Drag to reposition over the tracker.</span></div>
-      <div class="shortcut-row"><span>📊 <strong>Spending Trends</strong> — ⋯ → Spending Trends; bar chart of your last 6 months with a dashed gold line marking your average monthly spend. Tap any bar and it splits into colored blocks — one per category, sized by its share — with a full breakdown below. Tap ⭐ Peaks for each category's highest month (with its monthly average, or "one-time" for one-offs) — tap the month name to jump straight to those rows, and the last line shows your worst-case month if everything peaked at once. Tap ? for a quick guide to reading the chart. Drag to reposition.</span></div>
-      <div class="shortcut-row"><span>📈 <strong>Net Worth Trend</strong> — ⋯ → Net worth trend; a line chart of your net worth (checking + savings − debt) by month. Pick 6M, YTD, 1Y, All, or a custom start month. The summary shows your growth, how far apart the months are, and — optionally — your age across the range. Drag to reposition.</span></div>
+      <div class="shortcuts-group-title">Insights</div>
+      <div class="shortcut-row"><span>📅 <strong>Spending Calendar</strong> — ⋯ → Insights → Spending Calendar; see daily spending laid out on a calendar grid with weekly totals. Filter by section, search by transaction name, and tap any day for a breakdown. Drag to reposition over the tracker.</span></div>
+      <div class="shortcut-row"><span>📊 <strong>Spending Trends</strong> — ⋯ → Insights → Spending Trends; bar chart of your last 6 months with a dashed gold line marking your average monthly spend. Tap any bar and it splits into colored blocks — one per category, sized by its share — with a full breakdown below. Tap ⭐ Peaks for each category's highest month (with its monthly average, or "one-time" for one-offs) — tap the month name to jump straight to those rows, and the last line shows your worst-case month if everything peaked at once. Tap ? for a quick guide to reading the chart. Drag to reposition.</span></div>
+      <div class="shortcut-row"><span>📈 <strong>Net Worth Trend</strong> — ⋯ → Insights → Net worth trend; a line chart of your net worth (checking + savings − debt) by month. Pick 6M, YTD, 1Y, All, or a custom start month. The summary shows your growth, how far apart the months are, and — optionally — your age across the range. Drag to reposition.</span></div>
       <div class="shortcut-row"><span>🎂 <strong>Age on your trend</strong> — enter your birth month + year in the Net Worth Trend (optional) to see "age 23 → 25" alongside your growth. Month and year only — Jettana never asks for your full birthdate. Clear the field anytime to remove it.</span></div>
-      <div class="shortcut-row"><span>🌱 <strong>Growth Projection</strong> — ⋯ → Growth projection; a hypothetical compound-growth view seeded from your current savings and average monthly contribution. Adjust the amount, contribution, or return rate; pick 5Y / 10Y / 20Y / 30Y, or type any number of years (1–60) in the custom chip. Drag to reposition.</span></div>
-      <div class="shortcut-row"><span>⇄ <strong>Compare months</strong> — ⋯ → Compare months; any section line-by-line against a baseline month, with color-coded changes and how far apart the two months are (e.g. "2 years, 6 months apart"). The left column follows the month you're viewing. Drag to reposition.</span></div>
+      <div class="shortcut-row"><span>🌱 <strong>Growth Projection</strong> — ⋯ → Insights → Growth projection; a hypothetical compound-growth view seeded from your current savings and average monthly contribution. Adjust the amount, contribution, or return rate; pick 5Y / 10Y / 20Y / 30Y, or type any number of years (1–60) in the custom chip. Drag to reposition.</span></div>
+      <div class="shortcut-row"><span>⇄ <strong>Compare months</strong> — ⋯ → Insights → Compare months; any section line-by-line against a baseline month, with color-coded changes and how far apart the two months are (e.g. "2 years, 6 months apart"). The left column follows the month you're viewing. Drag to reposition.</span></div>
       <div class="shortcut-row"><span>📈 <strong>Month-over-Month card</strong> — on your dashboard below the sections; compares this month's totals per category against any previous month (pick one from the dropdown). Green means moving the right way for that category — income up is good, spending up isn't. A category you cut to zero shows as a 100% win, and renamed sections show your names.</span></div>
     </div>
 
@@ -15832,7 +15841,7 @@ function toggleMoreExpand() {
 
 // Drill-down panels inside the ⋯ menu
 function showMorePanel(name) {
-  ['main', 'appearance', 'learn', 'io'].forEach(function(p) {
+  ['main', 'appearance', 'insights', 'learn', 'io'].forEach(function(p) {
     var el = document.getElementById('more-panel-' + p);
     if (el) el.style.display = (p === name) ? 'block' : 'none';
   });
