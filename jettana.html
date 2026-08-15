@@ -7162,6 +7162,11 @@ function updateSyncStatusRow() {
   var el = document.getElementById('sync-status-row');
   if (!el) return;
   var msg = '';
+  // _paidStatus starts 'unknown' and resolves only after the entitlements read
+  // — which retries, and takes longest for accounts with NO entitlements row.
+  // A refused write is normal for an unpaid account and alarming for a paid
+  // one, so until we know which, say what happened without characterising it.
+  var paidKnown = (_paidStatus === 'paid' || _paidStatus === 'unpaid' || _paidStatus === 'n/a');
   if (inDemoSandbox()) {
     msg = '';                                   // sandbox saves nothing anywhere
   } else if (inLocalMode()) {
@@ -7170,10 +7175,14 @@ function updateSyncStatusRow() {
     msg = '';
   } else if (_pendingUnsynced && _paidStatus === 'unpaid') {
     msg = '📱 This device has changes the cloud has not accepted. They are safe here and were not overwritten. Cloud backup comes with lifetime access — the ✦ button just above, $19 once.';
+  } else if (_pendingUnsynced && !paidKnown) {
+    msg = '📱 This device has changes that are not in the cloud. They are safe here and were not overwritten.';
   } else if (_pendingUnsynced) {
     msg = '⚠️ This device has changes that never reached the cloud. They are safe here and were not overwritten.';
   } else if (_syncState === 'failed' && _paidStatus === 'unpaid') {
     msg = '📱 Saved in this browser. Cloud backup comes with lifetime access — the ✦ button just above, $19 once.';
+  } else if (_syncState === 'failed' && !paidKnown) {
+    msg = '📱 Saved in this browser. Checking your cloud backup status…';
   } else if (_syncState === 'failed') {
     msg = '⚠️ Last cloud save did not go through. Your budget is safe in this browser.';
   } else if (_syncState === 'ok') {
