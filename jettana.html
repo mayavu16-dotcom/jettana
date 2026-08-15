@@ -1581,12 +1581,27 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
   .erow-label-wrap { min-width: 0; }
   .erow-label-input { width: 100%; min-width: 0; }
   .erow-num-input   { min-width: 0; }
-  /* Narrower number columns buy back 40px for the label on a small screen. */
-  .erow { grid-template-columns: 1fr 76px 76px; }
+  /* 76px clipped the last digit of a 4-figure amount ("$3,000.0"). 84px fits
+     $9,999.99 at 13px; the label column can afford it now that it shrinks. */
+  .erow { grid-template-columns: 1fr 84px 84px; }
+}
+
+/* Below 700px the topbar can't fit a title, a search field and four buttons on
+   one line — squeezing them gave a search box that was just a magnifying glass
+   while Ask me still ran off the edge. Let the row wrap instead: title and
+   buttons on top, search full-width underneath. Costs ~40px of sticky header
+   height, which is the price of keeping search reachable on a phone rather
+   than hiding it. */
+@media (max-width: 700px) {
+  .topbar { flex-wrap: wrap; padding-right: 10px; row-gap: 8px; }
+  .topbar-left  { flex: 1 1 auto; min-width: 0; }
+  .topbar-right { flex: 0 0 auto; flex-shrink: 0; gap: 6px; }
+  .search-wrap  { order: 3; flex: 1 1 100%; min-width: 0; }
+  .search-input, .search-input:focus { width: 100%; min-width: 0; }
 }
 
 @media (max-width: 380px) {
-  .erow { grid-template-columns: 1fr 68px 68px; padding-left: 10px; }
+  .erow { grid-template-columns: 1fr 78px 78px; padding-left: 10px; }
   .page-body { padding: 16px 8px 40px; }
 }
 /* ── Mobile topbar sizing ──────────────────────────────────────
