@@ -5412,7 +5412,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <button class="trends-close" onclick="hideBackups()">×</button>
     </div>
     <div class="trends-subtitle" style="display:block;">
-      Automatic copies kept on this device. They're saved before every sync, so they
+      Automatic copies kept in this browser. They're saved before every sync, so they
       survive even if something goes wrong with your account.
     </div>
     <div id="backups-list" style="padding:6px 20px 18px;"></div>
@@ -5510,7 +5510,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
     <div class="welcome-header">
       <h2>Welcome to Jettana 👋</h2>
       <p>Your personal budget tracker. Add your income, track your expenses, and see exactly where your money goes.</p>
-      <p id="welcome-privacy-line" style="margin-top:8px;font-size:12px;opacity:0.85;">🔒 Your budget is private and saved on this device.</p>
+      <p id="welcome-privacy-line" style="margin-top:8px;font-size:12px;opacity:0.85;">🔒 Your budget is private and saved in this browser.</p>
     </div>
     <div class="welcome-body">
       <div class="welcome-steps">
@@ -6776,7 +6776,7 @@ function showLocalTransferDialog(localData, w, canCopy) {
   modal.innerHTML = '<div style="background:var(--white);border-radius:16px;padding:32px;width:100%;max-width:420px;margin:16px;font-family:\'Outfit\',sans-serif;">' +
     '<div style="font-size:22px;font-weight:700;color:var(--ink);margin-bottom:10px;">' + title + '</div>' +
     '<div style="font-size:14px;color:var(--steel);margin-bottom:18px;line-height:1.6;">' +
-    'You have a budget saved on this device — <strong style="color:var(--ink);">' + w.months + ' ' + monthWord +
+    'You have a budget saved in this browser — <strong style="color:var(--ink);">' + w.months + ' ' + monthWord +
     ', ' + w.rows + ' ' + rowWord + '</strong>. ' + lead + '</div>' +
     '<div style="font-size:12.5px;color:var(--steel);margin-bottom:22px;line-height:1.6;">' + note + '</div>' +
     '<div style="display:flex;gap:10px;">' + buttons + '</div>' +
@@ -6948,7 +6948,7 @@ function noteSyncResult(ok, err) {
       if (_unpaidToastCount < 2) {
         _unpaidToastCount++;
         try {
-          showToast('Saved on this device, not to the cloud. Cloud backup comes with lifetime access — $19 once, in the ⋯ menu.', true, 7000);
+          showToast('Saved in this browser, not to the cloud. Cloud backup comes with lifetime access — $19 once, in the ⋯ menu.', true, 7000);
         } catch (e) {}
       }
     } else {
@@ -6959,7 +6959,7 @@ function noteSyncResult(ok, err) {
       if (now - _syncToastAt > 60000) {
         _syncToastAt = now;
         try {
-          showToast('Not saved to the cloud — your budget is safe on this device. See ⋯ for details.', true, 6000);
+          showToast('Not saved to the cloud — your budget is safe in this browser. See ⋯ for details.', true, 6000);
         } catch (e) {}
       }
     }
@@ -7131,7 +7131,7 @@ function updateSyncStatusRow() {
   if (inDemoSandbox()) {
     msg = '';                                   // sandbox saves nothing anywhere
   } else if (inLocalMode()) {
-    msg = '📱 Saved on this device. Syncing across devices comes with lifetime access.';
+    msg = '📱 Saved in this browser. Syncing across devices and browsers comes with lifetime access.';
   } else if (!_currentUser) {
     msg = '';
   } else if (_pendingUnsynced && _paidStatus === 'unpaid') {
@@ -7139,9 +7139,9 @@ function updateSyncStatusRow() {
   } else if (_pendingUnsynced) {
     msg = '⚠️ This device has changes that never reached the cloud. They are safe here and were not overwritten.';
   } else if (_syncState === 'failed' && _paidStatus === 'unpaid') {
-    msg = '📱 Saved on this device. Cloud backup comes with lifetime access — the ✦ button just above, $19 once.';
+    msg = '📱 Saved in this browser. Cloud backup comes with lifetime access — the ✦ button just above, $19 once.';
   } else if (_syncState === 'failed') {
-    msg = '⚠️ Last cloud save did not go through. Your budget is safe on this device.';
+    msg = '⚠️ Last cloud save did not go through. Your budget is safe in this browser.';
   } else if (_syncState === 'ok') {
     msg = '☁ Synced to your account.';
   }
@@ -17273,13 +17273,13 @@ function showWelcome() {
     if (inDemoSandbox()) {
       msg = '👀 This is sample data in a sandbox — nothing here is saved, and none of it touches a real budget.';
     } else if (inLocalMode()) {
-      msg = '🔒 Your budget is private and saved on this device. Syncing it across devices comes with lifetime access.';
+      msg = '🔒 Your budget is private and saved in this browser. Syncing it across devices and browsers comes with lifetime access.';
     } else if (_paidStatus === 'paid') {
       msg = '🔒 Your data is private and syncs securely across all your devices.';
     } else if (_paidStatus === 'unpaid') {
-      msg = '🔒 Your budget is private and saved on this device. Syncing it across devices comes with lifetime access.';
+      msg = '🔒 Your budget is private and saved in this browser. Syncing it across devices and browsers comes with lifetime access.';
     } else {
-      msg = '🔒 Your budget is private and saved on this device.';
+      msg = '🔒 Your budget is private and saved in this browser.';
     }
     priv.textContent = msg;
   }
@@ -21478,7 +21478,7 @@ function hideCalPopover() {
       <div style="flex:1;height:1px;background:#E8EDF2;"></div>
     </div>
     <button onclick="enterLocalMode()" id="auth-local-btn" style="width:100%;padding:13px;background:none;color:var(--ink);border:1px solid #E8EDF2;border-radius:10px;font-size:15px;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;">Use it free on this device →</button>
-    <div id="auth-local-note" style="text-align:center;margin-top:10px;font-size:12px;color:#8A9AB5;line-height:1.6;">No account, no email. Your budget is saved on this device only — syncing across devices comes with lifetime access.</div>
+    <div id="auth-local-note" style="text-align:center;margin-top:10px;font-size:12px;color:#8A9AB5;line-height:1.6;">No account, no email. Your budget is saved in this browser only — not in other browsers on the same device. Syncing everywhere comes with lifetime access.</div>
   </div>
 </div>
 
