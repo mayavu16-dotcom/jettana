@@ -36,7 +36,14 @@
   --radius-sm:    8px;
 }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  /* Mobile browsers "boost" text on pages they judge hard to read, inflating
+     font sizes independently of the layout around them. Jettana sizes its own
+     type for small screens, so the boost only breaks alignment. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
 
 body {
   font-family: 'Outfit', sans-serif;
