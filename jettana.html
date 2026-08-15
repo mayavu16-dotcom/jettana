@@ -1559,6 +1559,36 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
 .search-input:focus { border-color: var(--sage); width: 260px; }
 .search-input::placeholder { color: var(--mist); }
 
+/* ── Mobile width containment ──────────────────────────────────
+   Placed near the END of the stylesheet on purpose. The max-width:900px block
+   further up is overridden by base rules declared after it (same specificity,
+   later source order) — that is exactly how the search box kept its 220px on
+   phones. Anything that must win on mobile belongs here.
+
+   The overflow itself: .page-body takes 56px of horizontal padding, leaving
+   374px of a 430px screen. Inside that, .erow is `1fr 96px 96px` + 16px, so the
+   label column gets ~166px — but it holds an <input>, whose intrinsic width is
+   ~180px, and a grid column's default min-width:auto refuses to shrink below
+   that. Minimum row ≈ 388px + padding ≈ 446px on a 430px screen, so the whole
+   document was forced wider than the viewport and the right edge got cut off.
+   min-width:0 lets each level actually shrink; the input then fills whatever
+   space is left rather than dictating it. */
+@media (max-width: 900px) {
+  .main-content { min-width: 0; }
+  .page-body    { padding: 18px 12px 40px; min-width: 0; }
+  .sec-card     { min-width: 0; }
+  .erow         { min-width: 0; }
+  .erow-label-wrap { min-width: 0; }
+  .erow-label-input { width: 100%; min-width: 0; }
+  .erow-num-input   { min-width: 0; }
+  /* Narrower number columns buy back 40px for the label on a small screen. */
+  .erow { grid-template-columns: 1fr 76px 76px; }
+}
+
+@media (max-width: 380px) {
+  .erow { grid-template-columns: 1fr 68px 68px; padding-left: 10px; }
+  .page-body { padding: 16px 8px 40px; }
+}
 /* ── Mobile topbar sizing ──────────────────────────────────────
    These repeat the @media (max-width:900px) block further up on purpose.
    That block sets .search-input { width: 120px }, but the base rule directly
