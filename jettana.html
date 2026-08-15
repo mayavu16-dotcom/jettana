@@ -1636,11 +1636,16 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
 @media (max-width: 900px) {
   /* Let the cluster give ground instead of setting a floor for the document. */
   .topbar-right { flex-shrink: 1; min-width: 0; }
-  /* The search box is the only part that can usefully absorb the squeeze. */
-  .search-wrap  { flex: 1 1 90px; min-width: 0; }
+  /* Search may SHRINK but must not GROW: with flex-grow it expanded into the
+     free space and squeezed the month title down to "Demo M…". The title is
+     the more important of the two, so it keeps its width and search takes
+     whatever is left. */
+  .search-wrap  { flex: 0 1 210px; min-width: 0; }
   .search-input { width: 100%; min-width: 0; }
   .search-input:focus { width: 100%; }
-  /* A long month name shouldn't push the topbar wider than the screen either. */
+  /* The title gets what it needs first; ellipsis stays only as a last resort
+     for a genuinely long month name on a very narrow screen. */
+  .topbar-left   { flex: 0 1 auto; min-width: 0; }
   .topbar-left h2 { overflow: hidden; text-overflow: ellipsis; }
 }
 .search-icon {
