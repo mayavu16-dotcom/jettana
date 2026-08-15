@@ -5294,13 +5294,13 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
     </div>
     <div class="trends-subtitle">What your current lifestyle would cost in another country — income held fixed</div>
     <div style="padding:14px 20px 4px;">
+      <div id="lel-rate-row" style="margin:0 0 10px;"></div>
       <div class="gp-controls" style="padding:0;">
         <div class="gp-field"><label>Country</label><select id="lel-country" onchange="renderLifeElsewhere()" style="font-family:'Outfit',sans-serif;font-size:13px;padding:6px 8px;border:1.5px solid var(--mist);border-radius:8px;color:var(--ink);background:transparent;width:100%;box-sizing:border-box;"></select><span class="gp-hint">vs. the U.S. baseline</span></div>
         <div class="gp-field"><label>Avg monthly take-home</label><input id="lel-net" type="text" inputmode="decimal" oninput="renderLifeElsewhere()"><span class="gp-hint" id="lel-net-hint"></span></div>
         <div class="gp-field"><label>Avg monthly expenses</label><input id="lel-exp" type="text" inputmode="decimal" oninput="renderLifeElsewhere()"><span class="gp-hint" id="lel-exp-hint"></span></div>
       </div>
       <div id="lel-out" style="margin:12px 0 4px;"></div>
-      <div id="lel-top" style="margin:4px 0 8px;"></div>
     </div>
     <div class="gp-note">Rough 2026 cost-of-living estimates (national blends including rent — big cities run higher). Income is held fixed: real salaries, taxes, and visas vary hugely by country. A daydream tool, not relocation advice.</div>
   </div>
@@ -20148,16 +20148,33 @@ function hideLifeElsewhere() {
 }
 function renderLifeElsewhere() {
   var out = document.getElementById('lel-out');
-  var top = document.getElementById('lel-top');
+  var rateRowEl = document.getElementById('lel-rate-row');
   var sel = document.getElementById('lel-country');
   if (!out || !sel || !sel.value) return;
   var country = sel.value;
   try { appStore.setItem(nsKey('intentra_lel_country'), country); } catch (e) {}
   var idx = LEL_INDEX[country] || 100;
   var net = _psavNum('lel-net'), exp = _psavNum('lel-exp');
+
+  // The rate row sits above the country picker and does not depend on having
+  // expenses entered, so it renders before the early return below.
+  if (rateRowEl) {
+    var rCode = LEL_CURRENCY[country] || '';
+    var rVal = _lelRate(country);
+    rateRowEl.innerHTML = (rCode && rCode !== 'USD')
+      ? '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--steel);">'
+        + '<span>1 USD =</span>'
+        + '<input type="text" inputmode="decimal" id="lel-rate" value="' + (rVal || '') + '" placeholder="rate"'
+        + ' style="width:74px;border:none;border-bottom:1px solid var(--mist);outline:none;font-size:11px;font-family:Outfit,sans-serif;color:var(--ink);background:transparent;padding:2px 4px;text-align:right;"'
+        + ' onchange="setLelRate(\'' + country.replace(/'/g, "\\'") + '\',this.value)">'
+        + '<span>' + rCode + '</span>'
+        + '<span style="font-size:10px;">optional — look it up once, it saves here</span>'
+        + '</div>'
+      : '';
+  }
+
   if (!(exp > 0)) {
     out.innerHTML = '<span style="font-size:12px;color:var(--steel);">Enter your monthly expenses to translate your lifestyle.</span>';
-    if (top) top.innerHTML = '';
     return;
   }
   var costThere = exp * idx / 100;
@@ -20181,32 +20198,12 @@ function renderLifeElsewhere() {
       + (rate2 !== null ? '<div style="font-size:11px;color:' + accent + ';margin-top:3px;">room to save ' + gpFmt(Math.max(0, room)) + ' · ' + rate2 + '%</div>' : '')
       + '</div>';
   };
-  // Optional, and deliberately user-entered: Jettana never fetches a rate, so
-  // it can never show a stale one. Blank simply means no local-currency line.
-  var rateRow = code && code !== 'USD'
-    ? '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--steel);margin-top:9px;">'
-      + '<span>1 USD =</span>'
-      + '<input type="text" inputmode="decimal" id="lel-rate" value="' + (rate || '') + '" placeholder="rate"'
-      + ' style="width:74px;border:none;border-bottom:1px solid var(--mist);outline:none;font-size:11px;font-family:Outfit,sans-serif;color:var(--ink);background:transparent;padding:2px 4px;text-align:right;"'
-      + ' onchange="setLelRate(\'' + country.replace(/'/g, "\\'") + '\',this.value)">'
-      + '<span>' + code + '</span>'
-      + '<span style="font-size:10px;">optional — look it up once, it saves here</span>'
-      + '</div>'
-    : '';
   out.innerHTML = '<div style="display:flex;gap:10px;flex-wrap:wrap;">'
     + card('Here (U.S.)', exp, roomHere, rateHere, 'var(--steel)', false)
     + card(country, costThere, roomThere, rateThere, cheaper ? 'var(--sage-dark)' : 'var(--blush)', true)
     + '</div>'
     + '<div style="font-size:12.5px;color:var(--ink);margin-top:9px;">Your current lifestyle would cost about <strong style="color:' + (cheaper ? 'var(--sage-dark)' : 'var(--blush)') + ';">' + Math.abs(pctDiff) + '% ' + (cheaper ? 'less' : 'more') + '</strong> in ' + country
-    + (net > 0 && cheaper && rateThere > rateHere ? ' — your savings rate would jump from <strong>' + rateHere + '%</strong> to <strong style="color:var(--sage-dark);">' + rateThere + '%</strong>.' : '.') + '</div>'
-    + rateRow;
-  if (top) {
-    var cheapest = Object.keys(LEL_INDEX).sort(function(a, b) { return LEL_INDEX[a] - LEL_INDEX[b]; }).slice(0, 5);
-    top.innerHTML = '<div style="font-size:10px;font-weight:700;letter-spacing:0.4px;color:var(--steel);text-transform:uppercase;margin:8px 0 4px;">Where your money stretches furthest</div>'
-      + cheapest.map(function(c) {
-          return '<div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--steel);padding:2px 0;cursor:pointer;" onclick="document.getElementById(\'lel-country\').value=\'' + c + '\';renderLifeElsewhere()"><span>' + c + '</span><span>' + gpFmt(exp * LEL_INDEX[c] / 100) + '/mo</span></div>';
-        }).join('');
-  }
+    + (net > 0 && cheaper && rateThere > rateHere ? ' — your savings rate would jump from <strong>' + rateHere + '%</strong> to <strong style="color:var(--sage-dark);">' + rateThere + '%</strong>.' : '.') + '</div>';
 }
 
 /* ── Plan My Savings calculator ──────────────────────────────────
