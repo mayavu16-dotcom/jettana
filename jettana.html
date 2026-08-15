@@ -16223,8 +16223,8 @@ function confirmDeleteDemo() {
   var overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;';
   overlay.innerHTML = '<div style="background:var(--white);border-radius:16px;padding:28px;width:100%;max-width:340px;margin:16px;font-family:Outfit,sans-serif;">' +
-    '<div style="font-size:17px;font-weight:700;color:var(--ink);margin-bottom:8px;">Remove demo month?</div>' +
-    '<div style="font-size:14px;color:var(--slate);line-height:1.6;margin-bottom:20px;">This will delete all demo data. Your real months are untouched.</div>' +
+    '<div style="font-size:17px;font-weight:700;color:var(--ink);margin-bottom:8px;">Leave the demo?</div>' +
+    '<div style="font-size:14px;color:var(--slate);line-height:1.6;margin-bottom:20px;">Demo data will be deleted and you\'ll go back to the real app, where your budget is actually saved. Your real months are untouched.</div>' +
     '<div style="display:flex;gap:10px;justify-content:flex-end;">' +
     '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="font-size:13px;color:var(--steel);background:none;border:1px solid var(--mist);border-radius:8px;padding:8px 16px;cursor:pointer;font-family:Outfit,sans-serif;">Cancel</button>' +
     '<button onclick="this.closest(\'div[style*=fixed]\').remove();deleteDemoMonth();" style="font-size:13px;font-weight:600;color:white;background:var(--blush);border:none;border-radius:8px;padding:8px 18px;cursor:pointer;font-family:Outfit,sans-serif;">Remove</button>' +
@@ -16234,6 +16234,24 @@ function confirmDeleteDemo() {
 }
 
 function deleteDemoMonth() {
+  // Leaving the demo has to mean leaving the SANDBOX, not just deleting its
+  // month. _isDemoURL is read once at parse time, so while ?demo=true is in the
+  // URL every write still goes to _memStore — memory that dies on refresh. Drop
+  // the month without the param and the banner disappears while the sandbox
+  // stays: a real-looking app whose data silently evaporates on reload, with
+  // the account UI already stripped so there is no way out. Reloading without
+  // the param is the only exit, and it must happen before anything is typed.
+  // Nothing needs saving first — demo data only ever existed in memory.
+  if (inDemoSandbox()) {
+    try {
+      var url = new URL(window.location.href);
+      url.searchParams.delete('demo');
+      window.location.replace(url.toString());   // replace: Back must not return to the sandbox
+    } catch (e) {
+      window.location.replace('/app');
+    }
+    return;
+  }
   var all = loadAll();
   delete all['demo-month'];
   saveAll(all);
