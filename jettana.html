@@ -1558,6 +1558,27 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
 }
 .search-input:focus { border-color: var(--sage); width: 260px; }
 .search-input::placeholder { color: var(--mist); }
+
+/* ── Mobile topbar sizing ──────────────────────────────────────
+   These repeat the @media (max-width:900px) block further up on purpose.
+   That block sets .search-input { width: 120px }, but the base rule directly
+   above here is declared LATER in the file at the same specificity, so source
+   order silently won and the search stayed 220px on phones. With a fixed
+   220px input inside a .topbar-right that had flex-shrink: 0, the topbar had a
+   floor around 507px and forced the whole document to ~706px on a 390px
+   screen — which reads as "the page opens zoomed in" because you only ever see
+   the left half of it.
+   Declared here, after the rules they override, so they actually apply. */
+@media (max-width: 900px) {
+  /* Let the cluster give ground instead of setting a floor for the document. */
+  .topbar-right { flex-shrink: 1; min-width: 0; }
+  /* The search box is the only part that can usefully absorb the squeeze. */
+  .search-wrap  { flex: 1 1 90px; min-width: 0; }
+  .search-input { width: 100%; min-width: 0; }
+  .search-input:focus { width: 100%; }
+  /* A long month name shouldn't push the topbar wider than the screen either. */
+  .topbar-left h2 { overflow: hidden; text-overflow: ellipsis; }
+}
 .search-icon {
   position: absolute; left: 10px;
   color: var(--steel); font-size: 13px; pointer-events: none;
