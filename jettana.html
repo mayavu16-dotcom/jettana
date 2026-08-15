@@ -1607,17 +1607,6 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
   .erow { grid-template-columns: 1fr 84px 84px; }
 }
 
-/* Kept as a safety net for anything laying out below 600px (the mobile viewport
-   script above puts phones at 700px, so this normally never fires). Without it,
-   a genuinely narrow viewport squeezes search down to a bare magnifying glass
-   while Ask me still runs off the edge. */
-@media (max-width: 600px) {
-  .topbar { flex-wrap: wrap; padding-right: 10px; row-gap: 8px; }
-  .topbar-right { flex: 0 0 auto; flex-shrink: 0; gap: 6px; }
-  .search-wrap  { order: 3; flex: 1 1 100%; min-width: 0; }
-  .search-input, .search-input:focus { width: 100%; min-width: 0; }
-}
-
 @media (max-width: 380px) {
   .erow { grid-template-columns: 1fr 78px 78px; padding-left: 10px; }
   .page-body { padding: 16px 8px 40px; }
@@ -1635,14 +1624,19 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
 @media (max-width: 900px) {
   .search-input { width: 100%; min-width: 0; }
   .search-input:focus { width: 100%; }
-  /* The month title is never truncated: it keeps its natural width and does
-     not shrink. The search box is the only flexible item — it grows into
-     whatever is left and collapses first if space runs short, so the title and
-     the buttons are never the things that give way. */
+  /* Nothing here shrinks or truncates. The title keeps its natural width, the
+     buttons keep theirs, and if the search box can't fit alongside them it
+     WRAPS to its own line and fills it. Previously both title and buttons were
+     immovable with nowhere to give, so the topbar overflowed the viewport
+     instead — which put the whole page into horizontal scroll and left the
+     sections looking off-centre against a clipped topbar. */
+  .topbar         { flex-wrap: wrap; row-gap: 8px; }
   .topbar-left    { flex: 0 0 auto; min-width: auto; }
   .topbar-left h2 { overflow: visible; text-overflow: clip; }
   .topbar-right   { flex: 0 0 auto; min-width: auto; }
-  .search-wrap    { flex: 1 1 0; min-width: 0; }
+  /* min-width is the wrap trigger: below 150px of free space the search box
+     moves to the next row rather than squeezing its neighbours. */
+  .search-wrap    { flex: 1 1 150px; min-width: 150px; }
 }
 .search-icon {
   position: absolute; left: 10px;
