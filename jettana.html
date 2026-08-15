@@ -5563,10 +5563,13 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
     </div>
     <div id="tour-title" style="font-size:15px;font-weight:700;color:var(--ink);margin-bottom:5px;"></div>
     <div id="tour-desc" style="font-size:12px;color:#3D4F63;line-height:1.6;margin-bottom:14px;"></div>
-    <div style="display:flex;align-items:center;justify-content:space-between;">
-      <button id="tour-prev" onclick="tourStep(-1)" style="font-size:12px;color:var(--steel);background:none;border:1px solid #E8EDF2;border-radius:8px;padding:6px 12px;cursor:pointer;font-family:Outfit,sans-serif;">← Back</button>
-      <div id="tour-dots" style="display:flex;gap:5px;"></div>
-      <button id="tour-next" onclick="tourStep(1)" style="font-size:13px;font-weight:600;color:white;background:#6B9E70;border:none;border-radius:8px;padding:7px 16px;cursor:pointer;font-family:Outfit,sans-serif;">Next →</button>
+    <!-- Dots get their own row: 16 of them plus two buttons overflow a 300px
+         card, which pushed Next outside the box. On their own line they also
+         stay centred no matter whether Back is showing. -->
+    <div id="tour-dots" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center;min-height:8px;margin-bottom:12px;"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <button id="tour-prev" onclick="tourStep(-1)" style="flex:none;font-size:12px;color:var(--steel);background:none;border:1px solid #E8EDF2;border-radius:8px;padding:6px 12px;cursor:pointer;font-family:Outfit,sans-serif;">← Back</button>
+      <button id="tour-next" onclick="tourStep(1)" style="flex:none;font-size:13px;font-weight:600;color:white;background:#6B9E70;border:none;border-radius:8px;padding:7px 16px;cursor:pointer;font-family:Outfit,sans-serif;">Next →</button>
     </div>
   </div>
 </div>
@@ -15453,7 +15456,12 @@ function renderTourStep() {
     document.getElementById('tour-desc').textContent = step.desc;
     var dotsEl = document.getElementById('tour-dots');
     dotsEl.innerHTML = steps.map(function(_, i) {
-      return '<div style="width:6px;height:6px;border-radius:50%;background:' + (i === _tourStep ? '#6B9E70' : '#E8EDF2') + ';"></div>';
+      // 5px with a 4px gap keeps all 16 on one line inside a 300px card.
+      // The active dot is slightly larger as well as darker — at this size
+      // colour alone is hard to pick out at a glance.
+      var on = (i === _tourStep);
+      return '<div style="width:' + (on ? '7px' : '5px') + ';height:' + (on ? '7px' : '5px') +
+        ';border-radius:50%;flex:none;background:' + (on ? '#6B9E70' : '#E8EDF2') + ';"></div>';
     }).join('');
     document.getElementById('tour-prev').style.visibility = _tourStep === 0 ? 'hidden' : 'visible';
     var nextBtn = document.getElementById('tour-next');
