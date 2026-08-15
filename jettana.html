@@ -1613,7 +1613,6 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
    while Ask me still runs off the edge. */
 @media (max-width: 600px) {
   .topbar { flex-wrap: wrap; padding-right: 10px; row-gap: 8px; }
-  .topbar-left  { flex: 1 1 auto; min-width: 0; }
   .topbar-right { flex: 0 0 auto; flex-shrink: 0; gap: 6px; }
   .search-wrap  { order: 3; flex: 1 1 100%; min-width: 0; }
   .search-input, .search-input:focus { width: 100%; min-width: 0; }
@@ -1634,19 +1633,16 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
    the left half of it.
    Declared here, after the rules they override, so they actually apply. */
 @media (max-width: 900px) {
-  /* Let the cluster give ground instead of setting a floor for the document. */
-  .topbar-right { flex-shrink: 1; min-width: 0; }
-  /* Search may SHRINK but must not GROW: with flex-grow it expanded into the
-     free space and squeezed the month title down to "Demo M…". The title is
-     the more important of the two, so it keeps its width and search takes
-     whatever is left. */
-  .search-wrap  { flex: 0 1 210px; min-width: 0; }
   .search-input { width: 100%; min-width: 0; }
   .search-input:focus { width: 100%; }
-  /* The title gets what it needs first; ellipsis stays only as a last resort
-     for a genuinely long month name on a very narrow screen. */
-  .topbar-left   { flex: 0 1 auto; min-width: 0; }
-  .topbar-left h2 { overflow: hidden; text-overflow: ellipsis; }
+  /* The month title is never truncated: it keeps its natural width and does
+     not shrink. The search box is the only flexible item — it grows into
+     whatever is left and collapses first if space runs short, so the title and
+     the buttons are never the things that give way. */
+  .topbar-left    { flex: 0 0 auto; min-width: auto; }
+  .topbar-left h2 { overflow: visible; text-overflow: clip; }
+  .topbar-right   { flex: 0 0 auto; min-width: auto; }
+  .search-wrap    { flex: 1 1 0; min-width: 0; }
 }
 .search-icon {
   position: absolute; left: 10px;
