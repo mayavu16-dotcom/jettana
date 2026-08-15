@@ -6463,6 +6463,15 @@ function _handleAuthReady() {
   if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
     clearTimeout(_authTimeout);
     if (session && session.user) {
+      // A different account (or the same one, freshly) starts with NO claim
+      // about its cloud state. _syncState is a page-session variable describing
+      // a per-account fact — sign out of a paid account and into an unpaid one
+      // in the same tab and, without this, the status row keeps reporting the
+      // previous account's successful write. Same bug shape as the unsynced
+      // flag and the backups leak: per-browser state, per-account meaning.
+      if (!_currentUser || !session.user || _currentUser.id !== session.user.id) {
+        resetSyncStateForAccountChange();
+      }
       _currentUser = session.user;
       hideAuthModal();
       syncFromSupabase();
@@ -6474,6 +6483,7 @@ function _handleAuthReady() {
     }
   } else if (event === 'SIGNED_OUT') {
     _currentUser = null;
+    resetSyncStateForAccountChange();
     showAuthModal();
   }
 }
@@ -6858,19 +6868,28 @@ async function syncToSupabase(data) {
   // emptied it. A just-seeded account has nothing worth saving — and an
   // auto-pushed seed is exactly the write that overwrote a real account
   // when a fetch wrongly looked empty (July 25 incident).
+  // Each of these returns WITHOUT attempting a write. None of them may leave an
+  // earlier write's outcome on display — "Synced to your account" must never
+  // outlive the write that earned it.
   if (w.rows === 0 && !deliberate) {
     console.warn('[jettana] skipped cloud write: dataset has no real rows');
+    _syncState = 'unknown'; _syncErrMsg = '';
+    try { updateSyncStatusRow(); } catch (e) {}
     return;
   }
 
   if (_lastGood.rows > 0 && w.rows === 0 && !deliberate) {
     console.warn('[jettana] blocked cloud write: would empty an account holding ' +
                  _lastGood.rows + ' rows');
+    _syncState = 'unknown'; _syncErrMsg = '';
+    try { updateSyncStatusRow(); } catch (e) {}
     return;
   }
   if (!_allowShrink && _lastGood.months > 0 && w.months < _lastGood.months) {
     console.warn('[jettana] blocked cloud write: month count would drop from ' +
                  _lastGood.months + ' to ' + w.months);
+    _syncState = 'unknown'; _syncErrMsg = '';
+    try { updateSyncStatusRow(); } catch (e) {}
     return;
   }
   if (w.rows > 0) _lastGood = w;  // high-water mark
@@ -6900,6 +6919,21 @@ var _syncErrMsg = '';
 var _syncToastAt = 0;
 var _unpaidToastCount = 0;    // the paywall message is information, not a nag
 var _pendingUnsynced = false; // set by the pull when it kept local over the cloud
+
+/* Everything above describes ONE account's relationship with the cloud, but all
+   of it lives in page-session variables that outlive a sign-out. Clearing them
+   on an account change keeps the status row from attributing one account's
+   result to another. Deliberately does NOT touch the jettana_unsynced storage
+   flag: that records stranded work and is already stamped with its owner. */
+function resetSyncStateForAccountChange() {
+  _syncState = 'unknown';
+  _syncErrMsg = '';
+  _pendingUnsynced = false;
+  _unpaidToastCount = 0;
+  _syncToastAt = 0;
+  _lastGood = { rows: 0, months: 0 };   // high-water mark is per account too
+  try { updateSyncStatusRow(); } catch (e) {}
+}
 
 // ── Changes the cloud never accepted ─────────────────────────
 // When a write is refused, this device is holding the only copy of that work.
