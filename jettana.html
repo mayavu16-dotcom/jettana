@@ -3,6 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+/* ── Mobile: render wide, let the browser scale it down ────────
+   At device-width a 430px phone shows very little of the tracker, and the
+   numeric columns leave the label almost no room. Rather than shrink dozens of
+   font sizes and paddings — which would drift out of step with desktop and
+   would not touch the many popovers positioned by hand in JS — declare a
+   700px LAYOUT viewport on phones. The browser then scales the whole page to
+   fit, exactly as pinch-zooming out does, and every coordinate the app
+   computes stays in one consistent space.
+   Runs before the stylesheet so the first paint is already correct.
+   Pinch-zoom still works, so anyone who needs bigger text can zoom in. */
+(function () {
+  try {
+    var LAYOUT = 700;
+    if (window.screen && window.screen.width && window.screen.width < LAYOUT) {
+      var m = document.querySelector('meta[name="viewport"]');
+      if (m) m.setAttribute('content', 'width=' + LAYOUT);
+    }
+  } catch (e) {}
+})();
+</script>
 <title>Jettana — Monthly Budget Tracker</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500;1,700&family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@700;800&family=Cormorant+Garamond:ital,wght@1,400;1,500;1,600;1,700&family=Lora:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&family=Dancing+Script:wght@400;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400;1,700&family=DM+Serif+Display:ital@0;1&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Crimson+Text:ital,wght@0,400;0,700;1,400;1,600;1,700&display=swap" rel="stylesheet">
@@ -1586,13 +1607,11 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
   .erow { grid-template-columns: 1fr 84px 84px; }
 }
 
-/* Below 700px the topbar can't fit a title, a search field and four buttons on
-   one line — squeezing them gave a search box that was just a magnifying glass
-   while Ask me still ran off the edge. Let the row wrap instead: title and
-   buttons on top, search full-width underneath. Costs ~40px of sticky header
-   height, which is the price of keeping search reachable on a phone rather
-   than hiding it. */
-@media (max-width: 700px) {
+/* Kept as a safety net for anything laying out below 600px (the mobile viewport
+   script above puts phones at 700px, so this normally never fires). Without it,
+   a genuinely narrow viewport squeezes search down to a bare magnifying glass
+   while Ask me still runs off the edge. */
+@media (max-width: 600px) {
   .topbar { flex-wrap: wrap; padding-right: 10px; row-gap: 8px; }
   .topbar-left  { flex: 1 1 auto; min-width: 0; }
   .topbar-right { flex: 0 0 auto; flex-shrink: 0; gap: 6px; }
