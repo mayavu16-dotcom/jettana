@@ -5510,7 +5510,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
     <div class="welcome-header">
       <h2>Welcome to Jettana 👋</h2>
       <p>Your personal budget tracker. Add your income, track your expenses, and see exactly where your money goes.</p>
-      <p id="welcome-privacy-line" style="margin-top:8px;font-size:12px;opacity:0.85;">🔒 Your data is private and syncs securely across all your devices.</p>
+      <p id="welcome-privacy-line" style="margin-top:8px;font-size:12px;opacity:0.85;">🔒 Your budget is private and saved on this device.</p>
     </div>
     <div class="welcome-body">
       <div class="welcome-steps">
@@ -5697,7 +5697,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
     <div class="shortcuts-group">
       <div class="shortcuts-group-title">Personalisation</div>
-      <div class="shortcut-row"><span>☁️ <strong>Sync across devices</strong> — your data saves automatically to the cloud; sign in on any device to access your budget</span></div>
+      <div class="shortcut-row"><span>☁️ <strong>Sync across devices</strong> — cloud backup comes with lifetime access; once you have it, sign in on any device to pick up where you left off</span></div>
       <div class="shortcut-row"><span>↩ <strong>Sign out / Delete account</strong> — ⋯ → Sign out or Delete account to manage your account</span></div>
       <div class="shortcut-row"><span>✦ <strong>Monthly intention</strong> — click "Add intention" at the top to write a quote or goal; pick a color, font (10 options) and size, and use <strong>B</strong> / <strong>H</strong> to bold or highlight words</span></div>
       <div class="shortcut-row"><span>🎨 <strong>Color themes</strong> — ⋯ → Appearance: Classic, Minimal, Monochrome, Warm, or a fully custom color</span></div>
@@ -7020,7 +7020,7 @@ function swapAccountUIForLocal() {
   if (!inLocalMode()) return;
   var item = document.getElementById('manage-account-item');
   if (item) {
-    item.innerHTML = '<span>☁</span> Create an account to sync';
+    item.innerHTML = '<span>☁</span> Create a free account';
     item.setAttribute('onclick', 'leaveLocalMode()');
   }
   document.querySelectorAll('.shortcut-row').forEach(function(row) {
@@ -7131,7 +7131,7 @@ function updateSyncStatusRow() {
   if (inDemoSandbox()) {
     msg = '';                                   // sandbox saves nothing anywhere
   } else if (inLocalMode()) {
-    msg = '📱 Saved on this device. Create an account to sync across your devices.';
+    msg = '📱 Saved on this device. Syncing across devices comes with lifetime access.';
   } else if (!_currentUser) {
     msg = '';
   } else if (_pendingUnsynced && _paidStatus === 'unpaid') {
@@ -17260,14 +17260,28 @@ function showWelcome() {
   var auth = document.getElementById('auth-overlay');
   if (auth && auth.style.display !== 'none' && auth.style.display !== '') return;
   var el = document.getElementById('welcome-overlay');
-  // The header promises cloud sync. In local mode there is no account behind
-  // that promise, so say what is actually true. Set at show time rather than
-  // on DOMContentLoaded — Welcome can fire before the DOM event on a slow load.
+  // The header used to promise cloud sync to everyone, which is untrue in three
+  // states: demo saves nothing at all, local mode has no account behind it, and
+  // cloud backup is a lifetime feature so free accounts don't get it either.
+  // Mirrors updateSyncStatusRow() — if the wording changes there, change it here.
+  // _paidStatus starts 'unknown' and resolves only after the entitlements query,
+  // and Welcome fires right after signup, so the unresolved case must claim
+  // nothing about sync rather than guess.
   var priv = document.getElementById('welcome-privacy-line');
   if (priv) {
-    priv.textContent = inLocalMode()
-      ? '🔒 Your budget is private and saved on this device. Create a free account any time to sync it across your devices.'
-      : '🔒 Your data is private and syncs securely across all your devices.';
+    var msg;
+    if (inDemoSandbox()) {
+      msg = '👀 This is sample data in a sandbox — nothing here is saved, and none of it touches a real budget.';
+    } else if (inLocalMode()) {
+      msg = '🔒 Your budget is private and saved on this device. Syncing it across devices comes with lifetime access.';
+    } else if (_paidStatus === 'paid') {
+      msg = '🔒 Your data is private and syncs securely across all your devices.';
+    } else if (_paidStatus === 'unpaid') {
+      msg = '🔒 Your budget is private and saved on this device. Syncing it across devices comes with lifetime access.';
+    } else {
+      msg = '🔒 Your budget is private and saved on this device.';
+    }
+    priv.textContent = msg;
   }
   if (el) el.style.display = 'flex';
 }
@@ -21464,7 +21478,7 @@ function hideCalPopover() {
       <div style="flex:1;height:1px;background:#E8EDF2;"></div>
     </div>
     <button onclick="enterLocalMode()" id="auth-local-btn" style="width:100%;padding:13px;background:none;color:var(--ink);border:1px solid #E8EDF2;border-radius:10px;font-size:15px;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;">Use it free on this device →</button>
-    <div id="auth-local-note" style="text-align:center;margin-top:10px;font-size:12px;color:#8A9AB5;line-height:1.6;">No account, no email. Your budget is saved on this device only — you can create an account later to sync it.</div>
+    <div id="auth-local-note" style="text-align:center;margin-top:10px;font-size:12px;color:#8A9AB5;line-height:1.6;">No account, no email. Your budget is saved on this device only — syncing across devices comes with lifetime access.</div>
   </div>
 </div>
 
