@@ -4144,6 +4144,16 @@ body.font-large.text-bold .erow-label-input {
 @media (max-width: 900px) {
   .footer-budget-input { padding-left: 3px; padding-right: 3px; min-width: 0; }
 }
+
+/* iOS forces EVERY input to 16px to stop zoom-on-focus, and that selector
+   out-specifies .footer-budget-input — so the footer's middle cell rendered at
+   16px beside its 13px sibling spans. Sections without a budget input (Savings,
+   Checking, Debt) looked correct, which is what gave it away.
+   Match the siblings while idle, and let iOS have its 16px the moment the field
+   is focused, which is the only time zoom-on-focus can trigger.
+   Specificity must beat `input:not([type=date]):not([type=checkbox])` (0,2,1),
+   hence the .sec-footer prefix — (0,3,0). */
+.sec-footer .footer-budget-input:not(:focus) { font-size: 13px !important; }
 body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
 /* ── Row color toolbar ───────────────────────────────────────── */
@@ -17050,8 +17060,10 @@ function setFontSizeExact(size) {
     '.add-row-btn { font-size: ' + Math.round(size * 0.89) + 'px !important; }',
     // Must use the SAME factor as .sec-footer span above — these two sit side
     // by side in the same total row, so any difference reads as a mismatch.
-    // The font-small/font-large presets already give them equal sizes.
-    '.footer-budget-input { font-size: ' + Math.round(size * 0.96) + 'px !important; }',
+    // The .sec-footer prefix and :not(:focus) are required: iOS forces every
+    // input to 16px with a (0,2,1) selector, which out-specifies a bare
+    // .footer-budget-input and would ignore this entirely on a phone.
+    '.sec-footer .footer-budget-input:not(:focus) { font-size: ' + Math.round(size * 0.96) + 'px !important; }',
     '.bs-data-row { font-size: ' + size + 'px !important; }',
     '.bs-data-row span { font-size: ' + size + 'px !important; }',
     '.bs-total-row span { font-size: ' + size + 'px !important; }',
