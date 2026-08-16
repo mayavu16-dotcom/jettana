@@ -814,7 +814,8 @@ body {
    the chip background plus the count is what makes it read as a control. */
 .card-tx-badge {
   flex: none;
-  margin-left: 8px;
+  order: -1;              /* before the label input, not crowding the ✓ */
+  margin-right: 8px;
   display: flex;
   align-items: center;
   gap: 3px;
