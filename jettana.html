@@ -1624,18 +1624,24 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
 @media (max-width: 900px) {
   .search-input { width: 100%; min-width: 0; }
   .search-input:focus { width: 100%; }
-  /* Nothing here truncates. .search-wrap lives INSIDE .topbar-right, so the
-     topbar has only two flex children: the title and the whole right cluster.
-     The cluster must be allowed to shrink — with flex: 0 0 auto it sized to its
-     full content (~500px), overflowed the line beside the title, and wrapped.
-     It shrinks, its buttons hold their size, and the search box inside absorbs
-     the difference. Only if search hits its floor does the row wrap. */
-  .topbar         { flex-wrap: wrap; row-gap: 8px; }
+  /* One row, always. .search-wrap lives INSIDE .topbar-right, so the topbar has
+     only two flex children: the title and the whole right cluster. The title
+     never shrinks and the buttons never shrink; the search box is the sole
+     elastic element and has no floor, so it takes up whatever is spare and
+     gives it all back when space is tight. No wrapping, no truncation, and
+     nothing can overflow as long as title + buttons fit — which at the 700px
+     mobile layout they comfortably do. */
+  .topbar         { flex-wrap: nowrap; }
   .topbar-left    { flex: 0 0 auto; min-width: auto; }
   .topbar-left h2 { overflow: visible; text-overflow: clip; }
   .topbar-right   { flex: 1 1 auto; min-width: 0; justify-content: flex-end; }
   .topbar-right > * { flex: none; }          /* buttons keep their real size */
-  .search-wrap    { flex: 1 1 90px; min-width: 90px; }
+  .search-wrap    { flex: 1 1 0; min-width: 0; }
+  /* The save indicator sits at opacity 0 when idle but still reserves ~50px,
+     and the result count reserves more. Both are transient, so on a phone let
+     them take space only while they have something to say. */
+  .save-indicator:not(.visible) { display: none; }
+  .search-result-count:empty { display: none; }
 }
 .search-icon {
   position: absolute; left: 10px;
