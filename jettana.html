@@ -1021,15 +1021,13 @@ body {
    the same area and must be cleared by margin:
      .note-indicator  right 42–50px  (58–66px on touch)
      .del-btn         right  4–28px, or 74–98px in sections with a paid ✓
-   So the margin is per context — enough to clear whichever sits furthest left.
-   Checking has no paid ✓, so only the note dot matters; debt must clear both. */
-.card-tx-badge { margin-right: 56px; }
-[data-section="debt"] .card-tx-badge { margin-right: 104px; }
+   One clearance for every badged section rather than a per-section minimum, so
+   debt and checking read identically — a tighter margin on checking left the
+   note dot pressed up against the badge. */
+.card-tx-badge { margin-right: 104px; }
 @media (pointer: coarse) {
-  /* .del-btn is display:none on touch, so only the note dot (58–66px) counts,
-     and both sections can use the same clearance. */
-  .card-tx-badge,
-  [data-section="debt"] .card-tx-badge { margin-right: 72px; }
+  /* .del-btn is display:none on touch, so only the note dot (58–66px) counts. */
+  .card-tx-badge { margin-right: 72px; }
 }
 .erow:hover .del-btn { opacity: 1; }
 .erow:hover .drag-handle { opacity: 1; }
