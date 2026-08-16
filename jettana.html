@@ -1624,20 +1624,18 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
 @media (max-width: 900px) {
   .search-input { width: 100%; min-width: 0; }
   .search-input:focus { width: 100%; }
-  /* Nothing here shrinks or truncates. The title keeps its natural width, the
-     buttons keep theirs, and if the search box can't fit alongside them it
-     WRAPS to its own line and fills it. Previously both title and buttons were
-     immovable with nowhere to give, so the topbar overflowed the viewport
-     instead — which put the whole page into horizontal scroll and left the
-     sections looking off-centre against a clipped topbar. */
+  /* Nothing here truncates. .search-wrap lives INSIDE .topbar-right, so the
+     topbar has only two flex children: the title and the whole right cluster.
+     The cluster must be allowed to shrink — with flex: 0 0 auto it sized to its
+     full content (~500px), overflowed the line beside the title, and wrapped.
+     It shrinks, its buttons hold their size, and the search box inside absorbs
+     the difference. Only if search hits its floor does the row wrap. */
   .topbar         { flex-wrap: wrap; row-gap: 8px; }
   .topbar-left    { flex: 0 0 auto; min-width: auto; }
   .topbar-left h2 { overflow: visible; text-overflow: clip; }
-  .topbar-right   { flex: 0 0 auto; min-width: auto; }
-  /* min-width is the wrap trigger: the search box only moves to its own row
-     when there is genuinely no room beside the title and buttons. Set too high
-     it wraps while space remains, leaving dead air under the title. */
-  .search-wrap    { flex: 1 1 120px; min-width: 120px; }
+  .topbar-right   { flex: 1 1 auto; min-width: 0; justify-content: flex-end; }
+  .topbar-right > * { flex: none; }          /* buttons keep their real size */
+  .search-wrap    { flex: 1 1 90px; min-width: 90px; }
 }
 .search-icon {
   position: absolute; left: 10px;
