@@ -17572,7 +17572,17 @@ function toggleLegendPanel() {
   if (panel.style.display === 'none') {
     panel.style.display = 'block';
     appStore.setItem('intentra_legend_open', 'true');
-    if (!_legendCards.length) addLegendCard();
+    if (!_legendCards.length) {
+      addLegendCard();
+    } else if (_legendCollapsed) {
+      // Opening the panel while it is collapsed shows nothing but "+ Add card",
+      // which reads as "you have no cards" even when several are saved. The
+      // collapsed state persists, so this could greet someone every time.
+      // Expand on open; the toggle still collapses it afterwards.
+      _legendCollapsed = false;
+      appStore.setItem('intentra_legend_collapsed', 'false');
+      renderLegend();
+    }
   } else {
     panel.style.display = 'none';
     appStore.setItem('intentra_legend_open', 'false');
