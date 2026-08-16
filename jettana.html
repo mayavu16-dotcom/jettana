@@ -811,7 +811,7 @@ body {
 .card-tx-badge {
   position: absolute;
   left: 1px;
-  bottom: 3px;
+  top: 3px;
   z-index: 3;
   display: flex;
   align-items: center;
@@ -1610,6 +1610,13 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
      96px grid while the values sat on an 84px one, a visible 12px offset in
      every section. */
   .erow, .col-lbl-row, .sec-footer { grid-template-columns: 1fr 84px 84px; }
+  /* The footer's number cells carry 8px of side padding while the row inputs
+     have none on touch, and the size slider renders the footer BOLD at a
+     similar px size — so "$3,500.00" clipped in a column where the row above
+     it fit comfortably. Trim the padding rather than widen the column, which
+     would put the three row types back out of alignment. */
+  .sec-footer span:nth-child(2),
+  .sec-footer span:nth-child(3) { padding-left: 3px; padding-right: 3px; }
 }
 
 @media (max-width: 380px) {
