@@ -19342,6 +19342,13 @@ window.addEventListener('load', function() {
   document.addEventListener('click', function(e) {
     var panel = document.getElementById('legend-panel');
     if (!panel || panel.style.display === 'none') return;
+    /* Legend actions (move, delete, copy, paste) re-render #legend-rows, which
+       destroys the very button that was clicked. By the time the event reaches
+       document, e.target is detached — and panel.contains() on a detached node
+       is false, so an INSIDE click looked like an outside one and closed the
+       panel. If the target is no longer in the document, it can't tell us
+       anything about where the click landed, so leave the panel alone. */
+    if (!document.contains(e.target)) return;
     if (!panel.contains(e.target) &&
         !e.target.closest('.more-menu-item') &&
         !document.getElementById('legend-color-picker').contains(e.target)) {
