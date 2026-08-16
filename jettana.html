@@ -17048,7 +17048,10 @@ function setFontSizeExact(size) {
     '.sec-hdr h3 { font-size: ' + Math.round(size * 0.85) + 'px !important; }',
     '.col-lbl-row span { font-size: ' + Math.round(size * 0.81) + 'px !important; }',
     '.add-row-btn { font-size: ' + Math.round(size * 0.89) + 'px !important; }',
-    '.footer-budget-input { font-size: ' + size + 'px !important; }',
+    // Must use the SAME factor as .sec-footer span above — these two sit side
+    // by side in the same total row, so any difference reads as a mismatch.
+    // The font-small/font-large presets already give them equal sizes.
+    '.footer-budget-input { font-size: ' + Math.round(size * 0.96) + 'px !important; }',
     '.bs-data-row { font-size: ' + size + 'px !important; }',
     '.bs-data-row span { font-size: ' + size + 'px !important; }',
     '.bs-total-row span { font-size: ' + size + 'px !important; }',
