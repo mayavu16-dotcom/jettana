@@ -805,30 +805,31 @@ body {
   position: relative;
 }
 
-/* Card-linked debt rows: a small badge showing how many expense rows feed this
-   card's Current. Absolutely positioned like .row-date-wrap so it takes NO
-   grid space — the .erow template stays 1fr 96px 96px at every width. */
+/* Card-linked rows: a chip showing how many expense rows feed this card's
+   Current (or this account's Ending). It lives in the LABEL column, not the
+   number cell — an 84px number column leaves ~6px of margin on a phone, so a
+   badge there sat on top of the "$". Account names are short, so the gap
+   between the label and the ⋯ handle is the roomiest space in the row.
+   A dot alone reads as decoration next to the row's existing colour dots;
+   the chip background plus the count is what makes it read as a control. */
 .card-tx-badge {
-  position: absolute;
-  left: 1px;
-  top: 3px;
-  z-index: 3;
+  flex: none;
+  margin-left: 8px;
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 1px 4px;
+  gap: 3px;
+  padding: 2px 7px;
   border: none;
-  border-radius: 9px;
+  border-radius: 20px;
   background: var(--mist-light);
   color: var(--steel);
   font-family: Outfit, sans-serif;
-  font-size: 9.5px;
-  line-height: 1.4;
+  font-size: 10px;
+  line-height: 1.5;
   cursor: pointer;
-  opacity: 0.75;
-  transition: opacity 0.12s, background 0.12s;
+  transition: background 0.12s;
 }
-.card-tx-badge:hover { opacity: 1; background: var(--mist); }
+.card-tx-badge:hover { background: var(--mist); color: var(--ink); }
 .card-tx-badge .ctb-dot {
   width: 6px;
   height: 6px;
@@ -836,24 +837,7 @@ body {
   flex-shrink: 0;
 }
 @media (pointer: coarse) {
-  .card-tx-badge { opacity: 1; padding: 2px 5px; font-size: 10px; }
-}
-
-/* On a phone the number column is 84px and a 9-character amount leaves ~6px
-   of margin, so a dot-plus-count badge sits on top of the "$". Drop to a bare
-   dot: it still marks the row as card-linked and still opens the panel, and
-   the count is in the panel header ("8 charges this month") anyway. The tap
-   target stays finger-sized via padding while the visible mark shrinks. */
-@media (max-width: 900px) {
-  .card-tx-badge {
-    padding: 6px;
-    top: 0;
-    left: -2px;
-    background: none;
-    opacity: 1;
-  }
-  .card-tx-badge:hover { background: none; }
-  .card-tx-badge span:not(.ctb-dot) { display: none; }   /* hide the count */
+  .card-tx-badge { padding: 3px 8px; font-size: 10.5px; }
   .card-tx-badge .ctb-dot { width: 7px; height: 7px; }
 }
 
@@ -8842,6 +8826,13 @@ function renderRowEl(section, row, animate = false) {
       <span class="note-indicator ${rowHasNote(row) ? 'has-note' : ''}" id="note-dot-${row.id}" title="Has note" onclick="event.stopPropagation();event.preventDefault();toggleNote('${section}','${row.id}')" ontouchstart="event.stopPropagation();event.preventDefault();toggleNote('${section}','${row.id}')" ontouchend="event.stopPropagation();event.preventDefault()"></span>
       <span class="exempt-badge" id="exempt-badge-${row.id}" title="Exempt — not included in totals">exempt</span>
 
+      ${(section === 'debt' && row._cardLink) || (section === 'checking' && (row.paidColor || row.numColor || (row._entries || []).some(function(e){ return e._type === 'transaction'; }))) ? `
+      <button class="card-tx-badge" id="ctb-${row.id}" data-rowid="${row.id}" data-section="${section}" style="display:none;"
+        onclick="toggleCardTxPop(event,'${row.id}','${section}')"
+        aria-label="${section === 'debt' ? 'Charges on this card' : 'What came out of this account'}">
+        <span class="ctb-dot" style="background:${escHtml(section === 'debt' ? row._cardLink : (row.paidColor || row.numColor || 'var(--steel)'))};"></span><span id="ctb-n-${row.id}"></span>
+      </button>` : ''}
+
 
 
       ${allowPaid ? `<div class="paid-color-wrap">
@@ -8854,11 +8845,6 @@ function renderRowEl(section, row, animate = false) {
         data-section="${section}" data-id="${row.id}" data-key="${cfg.k1}" data-col="1"
         data-raw="${row[cfg.k1]||''}"${section === 'debt' && row._cardLink ? ` readonly title="Auto-calculated from this card&#39;s charges. Set a starting balance in the row note." onclick="toggleCardTxPop(event,'${row.id}')"` : ''}
         onfocus="numFocus(this)" onblur="numBlur(this)" oninput="numInput(this)" onkeydown="numKeyDown(event,this)">
-      ${section === 'debt' && row._cardLink ? `
-      <button class="card-tx-badge" id="ctb-${row.id}" data-rowid="${row.id}" data-section="debt" style="display:none;"
-        onclick="toggleCardTxPop(event,'${row.id}','debt')" aria-label="Charges on this card">
-        <span class="ctb-dot" style="background:${escHtml(row._cardLink)};"></span><span id="ctb-n-${row.id}"></span>
-      </button>` : ''}
       ${(allowDate && section === 'savings') || section === 'income' || section === 'checking' || section === 'debt' ? `
       <div class="row-date-wrap">
         <button class="row-date-btn ${row.date ? 'has-date' : ''}" onclick="toggleDateInput('${row.id}')" id="date-btn-${row.id}">${row.date ? formatDateLabel(row.date) : '+ date'}</button>
@@ -8871,11 +8857,6 @@ function renderRowEl(section, row, animate = false) {
         data-section="${section}" data-id="${row.id}" data-key="${cfg.k2}" data-col="2"
         data-raw="${row[cfg.k2]||''}"
         onfocus="numFocus(this)" onblur="numBlur(this)" oninput="numInput(this)" onkeydown="numKeyDown(event,this)">
-      ${section === 'checking' && (row.paidColor || row.numColor || (row._entries || []).some(function(e){ return e._type === 'transaction'; })) ? `
-      <button class="card-tx-badge" id="ctb-${row.id}" data-rowid="${row.id}" data-section="checking" style="display:none;"
-        onclick="toggleCardTxPop(event,'${row.id}','checking')" aria-label="What came out of this account">
-        <span class="ctb-dot" style="background:${escHtml(row.paidColor || row.numColor || 'var(--steel)')};"></span><span id="ctb-n-${row.id}"></span>
-      </button>` : ''}
       ${allowDate ? `
       <div class="row-date-wrap">
         <button class="row-date-btn ${row.date2 ? 'has-date' : ''}" onclick="toggleDateInput('${row.id}-2')" id="date-btn-${row.id}-2">${row.date2 ? formatDateLabel(row.date2) : '+ date'}</button>
