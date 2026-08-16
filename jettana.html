@@ -1013,6 +1013,12 @@ body {
 [data-section="gifts"] .del-btn,
 [data-section="misc"] .del-btn,
 [data-section="subscriptions"] .del-btn { right: 74px; }
+/* Checking has no paid checkbox, so its × stays at right: 4px — which is
+   exactly where the card badge sits. The other badged section (debt) shifts
+   its × to 74px and clears it. Give the checking badge enough right margin to
+   sit outside the ×'s 4–28px zone. A margin rather than :has() so it can't
+   silently drop on an older browser. */
+[data-section="checking"] .card-tx-badge { margin-right: 34px; }
 .erow:hover .del-btn { opacity: 1; }
 .erow:hover .drag-handle { opacity: 1; }
 @media (pointer: coarse) {
