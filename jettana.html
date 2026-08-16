@@ -4382,14 +4382,23 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
   padding: 0; min-width: 0;
 }
 .legend-name-input::placeholder { color: var(--mist); }
-.legend-del, .legend-copy-btn, .legend-paste-btn {
+.legend-del, .legend-copy-btn, .legend-paste-btn, .legend-move {
   font-size: 12px; cursor: pointer; background: none;
   border: none; padding: 0 2px; line-height: 1; opacity: 0;
   transition: opacity 0.15s, color 0.15s;
   flex-shrink: 0;
 }
+.legend-move { color: var(--mist); font-size: 9px; padding: 0 1px; }
+.legend-move:hover { color: var(--ink); }
+@media (pointer: coarse) {
+  /* These are hover-revealed, which on touch means never revealed. The move
+     arrows in particular are useless if you can't see them. */
+  .legend-del, .legend-copy-btn, .legend-paste-btn, .legend-move { opacity: 1; }
+  .legend-move { font-size: 12px; padding: 4px 3px; }
+}
 .legend-row:hover .legend-del,
 .legend-row:hover .legend-copy-btn,
+.legend-row:hover .legend-move,
 .legend-row:hover .legend-paste-btn { opacity: 1; }
 .legend-del { color: var(--mist); }
 .legend-del:hover { color: var(--blush); }
@@ -18992,16 +19001,34 @@ function renderLegend() {
   }
   container.innerHTML = _legendCards.map(function(card, i) {
     var hasCopied = !!appStore.getItem('intentra_copied_any_color');
+    var isFirst = (i === 0), isLast = (i === _legendCards.length - 1);
     return '<div class="legend-row" data-idx="' + i + '">' +
       '<div class="legend-color-dot" style="background:' + card.color + ';" onclick="openLegendPicker(' + i + ',this)" title="Change color"></div>' +
       '<input class="legend-name-input" value="' + escHtml(card.name) + '" placeholder="Card name…" ' +
         'onchange="updateLegendName(' + i + ',this.value)" ' +
         'onblur="updateLegendName(' + i + ',this.value)">' +
+      '<button class="legend-move" onclick="moveLegendCard(' + i + ',-1)" title="Move up"' +
+        (isFirst ? ' style="visibility:hidden"' : '') + '>▲</button>' +
+      '<button class="legend-move" onclick="moveLegendCard(' + i + ',1)" title="Move down"' +
+        (isLast ? ' style="visibility:hidden"' : '') + '>▼</button>' +
       '<button class="legend-copy-btn" onclick="copyLegendColor(' + i + ')" title="Copy color">⎘</button>' +
       (hasCopied ? '<button class="legend-paste-btn" onclick="pasteLegendColor(' + i + ')" title="Paste color" style="background:' + (appStore.getItem('intentra_copied_any_color') || '#ccc') + '"></button>' : '') +
       '<button class="legend-del" onclick="deleteLegendCard(' + i + ')">×</button>' +
     '</div>';
   }).join('');
+}
+
+/* Reorder the legend. Purely presentational — every lookup elsewhere keys on
+   COLOUR, not position, so moving a card can't affect which expenses belong to
+   it. The ends keep their arrows as hidden placeholders so the columns stay
+   aligned down the list. */
+function moveLegendCard(idx, dir) {
+  var to = idx + dir;
+  if (to < 0 || to >= _legendCards.length) return;
+  var moved = _legendCards.splice(idx, 1)[0];
+  _legendCards.splice(to, 0, moved);
+  saveLegend();
+  renderLegend();
 }
 
 function toggleLegend() {
