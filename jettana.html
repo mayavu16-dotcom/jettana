@@ -16325,6 +16325,10 @@ function _runLoadDemo() {
 
   switchMonth(demoKey);
 
+  // Colours already in the legend BEFORE the demo touches it. Anything the
+  // demo introduces is the difference, and only that may be removed later.
+  var _preDemoColors = _legendCards.map(function (c) { return c.color; });
+
   // ── Set up legend cards FIRST so autoCalcDebtFromCards works from the start ──
   var demoCards = [
     { name: 'Discover', color: DISCOVER_COLOR },
@@ -16426,6 +16430,21 @@ function _runLoadDemo() {
   saveLegend();
   renderLegend();
 
+  /* The legend is global, not per-month, so a demo loaded in place (⋯ → Try
+     demo, the start banner, Welcome) writes its cards into the user's REAL
+     legend — and syncs them to Supabase. Record exactly which colours the demo
+     introduced so removing the demo can take them back out again. Only colours
+     the demo actually added are recorded: if the user already had a card in
+     that colour, the seed skips it and we must not delete theirs. */
+  try {
+    var _demoOwned = [DISCOVER_COLOR, BMO_COLOR, CHECKING_COLOR].filter(function (col) {
+      return _preDemoColors.indexOf(col) === -1;   // not there before = demo's
+    });
+    var _a = loadAll();
+    _a._demoLegendColors = _demoOwned;
+    saveAll(_a);
+  } catch (e) {}
+
   recalc();
   // Re-render entire demo month from saved state to guarantee all rows show correctly
   switchMonth('demo-month');
@@ -16467,6 +16486,26 @@ function deleteDemoMonth() {
   }
   var all = loadAll();
   delete all['demo-month'];
+
+  /* Take back the legend cards the demo introduced. The legend is global, so a
+     demo loaded in place put them into the user's real legend (and synced
+     them). Only colours recorded as demo-added are touched, and a card the
+     user has RENAMED is treated as adopted and left alone. */
+  try {
+    var owned = all._demoLegendColors || [];
+    if (owned.length && _legendCards.length) {
+      var DEMO_NAMES = ['Discover', 'BMO CC', 'BMO Checking'];
+      _legendCards = _legendCards.filter(function (c) {
+        return !(owned.indexOf(c.color) !== -1 && DEMO_NAMES.indexOf(c.name) !== -1);
+      });
+      saveLegend();
+      renderLegend();
+      all = loadAll();                 // saveLegend rewrote it — re-read
+      delete all['demo-month'];
+    }
+    delete all._demoLegendColors;
+  } catch (e) {}
+
   saveAll(all);
   var now = new Date();
   switchMonth(monthKey(now.getFullYear(), now.getMonth()));
