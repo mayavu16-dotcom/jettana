@@ -11676,6 +11676,40 @@ function doSearch(q) {
   // Strip leading $ so "$47" matches raw value "47"
   var qNum = q.replace(/^\$/, '');
 
+  /* ── Card / account name search ───────────────────────────────
+     Typing "Discover" should surface everything charged to that card, but the
+     link between a card and its expenses is a COLOUR, not text — so a plain
+     label match finds only the debt row itself. Resolve the query against the
+     My Cards legend (names live there, not on the rows) and collect the
+     matching colours; a row then also counts as a hit when its own number
+     colour is one of them. Checking accounts work the same way, keyed on the
+     account row's paidColor/numColor.
+     Purely visual: this only adds rows to the existing dim/highlight pass. */
+  var qColors = [];
+  try {
+    (_legendCards || []).forEach(function (c) {
+      if (!c || !c.name || !c.color) return;
+      if (String(c.name).toLowerCase().indexOf(q) !== -1) {
+        qColors.push(String(c.color).toLowerCase());
+      }
+    });
+  } catch (e) {}
+
+  // Row id -> its number colour, read once rather than per row.
+  var rowColor = {};
+  if (qColors.length) {
+    try {
+      var _all = loadAll();
+      var _d = _all[currentMonthKey] || {};
+      SECTIONS.forEach(function (sec) {
+        (_d[sec] || []).forEach(function (r) {
+          var c = (r.numColor || r.paidColor || '').toLowerCase();
+          if (c) rowColor[r.id] = c;
+        });
+      });
+    } catch (e) {}
+  }
+
   var total = 0;
   for (var s = 0; s < SECTIONS.length; s++) {
     var sec = SECTIONS[s];
@@ -11713,7 +11747,15 @@ function doSearch(q) {
         if (rawDate && rawDate.indexOf(q) !== -1) { dateMatch = true; break; }
       }
 
-      var isMatch = labelTxt.indexOf(q) !== -1 || amountMatch || dateMatch;
+      // 4. Card / account colour — set when the query named a legend card
+      var colorMatch = false;
+      if (qColors.length) {
+        var rid = labelInp ? labelInp.dataset.id : null;
+        var rc = rid ? rowColor[rid] : '';
+        if (rc && qColors.indexOf(rc) !== -1) colorMatch = true;
+      }
+
+      var isMatch = labelTxt.indexOf(q) !== -1 || amountMatch || dateMatch || colorMatch;
 
       row.classList.remove('s-dim', 's-match');
       if (isMatch) {
