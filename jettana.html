@@ -4152,8 +4152,25 @@ body.font-large.text-bold .erow-label-input {
    Match the siblings while idle, and let iOS have its 16px the moment the field
    is focused, which is the only time zoom-on-focus can trigger.
    Specificity must beat `input:not([type=date]):not([type=checkbox])` (0,2,1),
-   hence the .sec-footer prefix — (0,3,0). */
+   hence the .sec-footer prefix — (0,3,0). One variant per size preset: the
+   S/M/L buttons CLEAR the generated stylesheet and rely on body.font-* alone,
+   and those rules are only (0,2,1), so without these the field would stay
+   pinned at the medium size while its sibling spans grew or shrank. */
 .sec-footer .footer-budget-input:not(:focus) { font-size: 13px !important; }
+body.font-small .sec-footer .footer-budget-input:not(:focus) { font-size: 11px !important; }
+body.font-large .sec-footer .footer-budget-input:not(:focus) { font-size: 16px !important; }
+
+/* Same problem, wider blast radius: the row label and value fields are inputs
+   too, so on iOS they were pinned at 16px and the Text size control did
+   nothing to them — only the spans around them changed, which is why sizes
+   stopped matching at S and M. Follow the setting while idle, hand iOS its
+   16px on focus. Selectors are (0,3,0) / (0,4,0) to clear the iOS rule. */
+.erow .erow-num-input:not(:focus)   { font-size: 14px !important; }
+.erow .erow-label-input:not(:focus) { font-size: 14px !important; }
+body.font-small .erow .erow-num-input:not(:focus)   { font-size: 12px !important; }
+body.font-small .erow .erow-label-input:not(:focus) { font-size: 11.5px !important; }
+body.font-large .erow .erow-num-input:not(:focus)   { font-size: 16px !important; }
+body.font-large .erow .erow-label-input:not(:focus) { font-size: 16px !important; }
 body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
 /* ── Row color toolbar ───────────────────────────────────────── */
@@ -17052,8 +17069,12 @@ function setFontSizeExact(size) {
   // Base medium is 13.5px. Scale everything proportionally
   var scale = size / 13.5;
   style.textContent = [
-    '.erow-label-input { font-size: ' + size + 'px !important; }',
-    '.erow-num-input { font-size: ' + size + 'px !important; }',
+    // .erow prefix + :not(:focus) required — see the CSS note by
+    // .footer-budget-input. iOS pins every input to 16px with a (0,2,1)
+    // selector, so a bare .erow-num-input rule is ignored on a phone and the
+    // Text size control silently stops working for row values.
+    '.erow .erow-label-input:not(:focus) { font-size: ' + size + 'px !important; }',
+    '.erow .erow-num-input:not(:focus) { font-size: ' + size + 'px !important; }',
     '.sec-footer span { font-size: ' + Math.round(size * 0.96) + 'px !important; }',
     '.sec-hdr h3 { font-size: ' + Math.round(size * 0.85) + 'px !important; }',
     '.col-lbl-row span { font-size: ' + Math.round(size * 0.81) + 'px !important; }',
