@@ -16307,6 +16307,12 @@ function _runLoadDemo() {
   // Build demo month data
   var DISCOVER_COLOR = '#E8824A'; // orange
   var BMO_COLOR      = '#4A85A0'; // teal/blue
+  // Checking needs its OWN colour. Sharing BMO_COLOR with the credit card made
+  // every BMO-coloured expense belong to both the card and the account — so the
+  // same money would count toward the card's balance AND come out of checking
+  // the moment a row was ticked paid. A charge is one or the other, and the
+  // demo is where people learn that.
+  var CHECKING_COLOR = '#7B72AA'; // violet
 
   all[demoKey] = {};
   saveAll(all);
@@ -16316,7 +16322,8 @@ function _runLoadDemo() {
   // ── Set up legend cards FIRST so autoCalcDebtFromCards works from the start ──
   var demoCards = [
     { name: 'Discover', color: DISCOVER_COLOR },
-    { name: 'BMO Card', color: BMO_COLOR },
+    { name: 'BMO CC', color: BMO_COLOR },
+    { name: 'BMO Checking', color: CHECKING_COLOR },
   ];
   demoCards.forEach(function(demoCard) {
     var exists = _legendCards.some(function(c) { return c.color === demoCard.color; });
@@ -16353,7 +16360,7 @@ function _runLoadDemo() {
 
   // Housing — Discover charges (orange numbers)
   var housingRows = [
-    { label: 'Rent',               budget: 1500, actual: 1500, numColor: DISCOVER_COLOR, date2: dd(1)  },
+    { label: 'Rent',               budget: 1500, actual: 1500, numColor: CHECKING_COLOR, paid: true, date2: dd(1)  },
     { label: 'Electric',           budget: 80,   actual: 67,   numColor: DISCOVER_COLOR, date2: dd(5)  },
     { label: 'Internet',           budget: 60,   actual: 60,   numColor: DISCOVER_COLOR, date2: dd(5)  },
   ];
@@ -16361,7 +16368,7 @@ function _runLoadDemo() {
 
   // Checking
   var checkingRows = [
-    { label: 'BMO Checking', beginning: 3200, ending: 0, paidColor: BMO_COLOR, numColor: BMO_COLOR },
+    { label: 'BMO Checking', beginning: 3200, ending: 0, paidColor: CHECKING_COLOR, numColor: CHECKING_COLOR },
   ];
   checkingRows.forEach(function(d) { addRow('checking', d, false); });
 
@@ -16398,7 +16405,8 @@ function _runLoadDemo() {
   // (ensures autoCalcDebtFromCards finds them even if _legendCards was reset)
   var demoCardsAgain = [
     { name: 'Discover', color: DISCOVER_COLOR },
-    { name: 'BMO Card', color: BMO_COLOR },
+    { name: 'BMO CC', color: BMO_COLOR },
+    { name: 'BMO Checking', color: CHECKING_COLOR },
   ];
   demoCardsAgain.forEach(function(dc) {
     var exists = _legendCards.some(function(c) { return c.color === dc.color; });
