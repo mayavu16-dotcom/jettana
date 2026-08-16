@@ -16330,6 +16330,11 @@ function _runLoadDemo() {
     if (!exists) _legendCards.push(demoCard);
   });
   saveLegend();
+  // saveLegend deliberately doesn't repaint (it fires on every keystroke while
+  // renaming a card). Seeding the demo DOES change the list, so repaint here —
+  // otherwise the panel opens showing only "+ Add card" and the cards appear
+  // only once the chevron is toggled, which reads as "it opens collapsed".
+  renderLegend();
 
   // Build date strings for this month so spending calendar shows demo data
   var demoNow = new Date();
@@ -16413,6 +16418,7 @@ function _runLoadDemo() {
     if (!exists) _legendCards.push(dc);
   });
   saveLegend();
+  renderLegend();
 
   recalc();
   // Re-render entire demo month from saved state to guarantee all rows show correctly
@@ -18881,6 +18887,10 @@ function saveLegend() {
   all._legendCards = _legendCards;
   all._legendCollapsed = _legendCollapsed;
   saveAll(all);
+  // Deliberately does NOT renderLegend(): updateLegendName() calls this on
+  // every onchange/onblur, and rebuilding the rows there would pull focus out
+  // of the name field mid-edit. Callers that change the card LIST re-render
+  // themselves.
 }
 
 function renderLegend() {
