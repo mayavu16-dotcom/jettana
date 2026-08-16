@@ -816,10 +816,9 @@ body {
   flex: none;
   /* Right of the label, not left: rows without a badge would otherwise start
      their name at the row edge while badged rows are indented, leaving the
-     account names ragged. margin-right keeps it clear of the paid ✓ so the
-     two don't read as a pair of related controls. */
+     account names ragged. Right-hand clearance is set per section further
+     down — the note dot and × are absolutely positioned over this area. */
   margin-left: 8px;
-  margin-right: 12px;
   display: flex;
   align-items: center;
   gap: 3px;
@@ -1018,7 +1017,20 @@ body {
    its × to 74px and clears it. Give the checking badge enough right margin to
    sit outside the ×'s 4–28px zone. A margin rather than :has() so it can't
    silently drop on an older browser. */
-[data-section="checking"] .card-tx-badge { margin-right: 34px; }
+/* The badge is a flow item, but two row fixtures are absolutely positioned over
+   the same area and must be cleared by margin:
+     .note-indicator  right 42–50px  (58–66px on touch)
+     .del-btn         right  4–28px, or 74–98px in sections with a paid ✓
+   So the margin is per context — enough to clear whichever sits furthest left.
+   Checking has no paid ✓, so only the note dot matters; debt must clear both. */
+.card-tx-badge { margin-right: 56px; }
+[data-section="debt"] .card-tx-badge { margin-right: 104px; }
+@media (pointer: coarse) {
+  /* .del-btn is display:none on touch, so only the note dot (58–66px) counts,
+     and both sections can use the same clearance. */
+  .card-tx-badge,
+  [data-section="debt"] .card-tx-badge { margin-right: 72px; }
+}
 .erow:hover .del-btn { opacity: 1; }
 .erow:hover .drag-handle { opacity: 1; }
 @media (pointer: coarse) {
@@ -1744,6 +1756,18 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
   pointer-events: all;
   cursor: pointer;
 }
+
+/* The note dot and the × are absolutely positioned inside the label wrap while
+   the card badge is a flow item, so they share one strip of space and overlap.
+   Shift the dot past the badge on rows that have one. The two sections differ
+   because their × sits differently: debt's is pushed to 74px (it has a paid
+   checkbox), checking's stays at 4px.
+     debt     — badge 12–47px, note 56px, × 74–98px
+     checking — × 4–28px, badge 34–69px, note 78px
+   MUST be declared here, after the base .note-indicator rules above — the same
+   selector placed earlier in the file loses on source order and does nothing. */
+.erow-label-wrap.has-cardbadge .note-indicator { right: 56px; }
+[data-section="checking"] .erow-label-wrap.has-cardbadge .note-indicator { right: 78px; }
 /* Large invisible tap target around the tiny dot */
 .note-indicator.has-note::after {
   content: '';
@@ -8825,7 +8849,7 @@ function renderRowEl(section, row, animate = false) {
     }
   });
   div.innerHTML = `
-    <div class="erow-label-wrap">
+    <div class="erow-label-wrap${(section === 'debt' && row._cardLink) || (section === 'checking' && (row.paidColor || row.numColor || (row._entries || []).some(function(e){ return e._type === 'transaction'; }))) ? ' has-cardbadge' : ''}">
       <button class="drag-handle" title="Options" onclick="showCtxMenuBtn(event,'${section}','${row.id}');dismissRowMenuHint()" ontouchend="event.preventDefault();showCtxMenuBtn(event,'${section}','${row.id}');dismissRowMenuHint()"><span></span><span></span><span></span><span id="row-menu-hint-dot" style="display:none;position:absolute;top:2px;right:2px;width:6px;height:6px;background:#6B9E70;border-radius:50%;animation:hint-pulse 1.5s ease-in-out infinite;pointer-events:none;"></span></button>
       <button class="del-btn" onmousedown="event.preventDefault();event.stopPropagation();this._md=1;delRow('${section}','${row.id}')" onclick="event.stopPropagation();if(!this._md)delRow('${section}','${row.id}');this._md=0" title="Remove row">×</button>
       <input type="text" class="erow-label-input" placeholder="${cfg.ph}" value="${escHtml(row.label||'')}"
