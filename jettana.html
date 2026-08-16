@@ -839,6 +839,24 @@ body {
   .card-tx-badge { opacity: 1; padding: 2px 5px; font-size: 10px; }
 }
 
+/* On a phone the number column is 84px and a 9-character amount leaves ~6px
+   of margin, so a dot-plus-count badge sits on top of the "$". Drop to a bare
+   dot: it still marks the row as card-linked and still opens the panel, and
+   the count is in the panel header ("8 charges this month") anyway. The tap
+   target stays finger-sized via padding while the visible mark shrinks. */
+@media (max-width: 900px) {
+  .card-tx-badge {
+    padding: 6px;
+    top: 0;
+    left: -2px;
+    background: none;
+    opacity: 1;
+  }
+  .card-tx-badge:hover { background: none; }
+  .card-tx-badge span:not(.ctb-dot) { display: none; }   /* hide the count */
+  .card-tx-badge .ctb-dot { width: 7px; height: 7px; }
+}
+
 .card-tx-pop {
   position: fixed;
   z-index: 9000;
