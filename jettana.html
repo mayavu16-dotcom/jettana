@@ -1604,11 +1604,16 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
   .erow-num-input   { min-width: 0; }
   /* 76px clipped the last digit of a 4-figure amount ("$3,000.0"). 84px fits
      $9,999.99 at 13px; the label column can afford it now that it shrinks. */
-  .erow { grid-template-columns: 1fr 84px 84px; }
+  /* .col-lbl-row (the SOURCE / PLANNED / RECEIVED strip) and .sec-footer (the
+     Total row) share the section's column grid with .erow. All three must be
+     changed together — narrowing only .erow left the labels and totals on a
+     96px grid while the values sat on an 84px one, a visible 12px offset in
+     every section. */
+  .erow, .col-lbl-row, .sec-footer { grid-template-columns: 1fr 84px 84px; }
 }
 
 @media (max-width: 380px) {
-  .erow { grid-template-columns: 1fr 78px 78px; padding-left: 10px; }
+  .erow, .col-lbl-row, .sec-footer { grid-template-columns: 1fr 78px 78px; padding-left: 10px; }
   .page-body { padding: 16px 8px 40px; }
 }
 /* ── Mobile topbar sizing ──────────────────────────────────────
