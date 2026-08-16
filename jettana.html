@@ -16292,7 +16292,7 @@ function loadDemo() {
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;';
   overlay.innerHTML = '<div style="background:var(--white);border-radius:16px;padding:28px;width:100%;max-width:360px;margin:16px;font-family:Outfit,sans-serif;">' +
     '<div style="font-size:18px;font-weight:700;color:var(--ink);margin-bottom:8px;">▶ Try demo</div>' +
-    '<div style="font-size:14px;color:var(--slate);line-height:1.6;margin-bottom:20px;">This loads a sample month with color-coded rows, card tracking, and templates pre-filled.<br><br>Your real data is completely untouched — you can delete the demo anytime.</div>' +
+    '<div style="font-size:14px;color:var(--slate);line-height:1.6;margin-bottom:20px;">This opens a sample month with color-coded rows, card tracking, and templates pre-filled.<br><br>The demo runs in its own sandbox — nothing you change there touches your real budget, cards or settings. Use <strong>Remove demo</strong> to come back.</div>' +
     '<div style="display:flex;gap:10px;justify-content:flex-end;">' +
     '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="font-size:13px;color:var(--steel);background:none;border:1px solid var(--mist);border-radius:8px;padding:8px 16px;cursor:pointer;font-family:Outfit,sans-serif;">Cancel</button>' +
     '<button id="demo-confirm-btn" style="font-size:13px;font-weight:600;color:white;background:var(--sage);border:none;border-radius:8px;padding:8px 18px;cursor:pointer;font-family:Outfit,sans-serif;">Load demo</button>' +
@@ -16300,7 +16300,23 @@ function loadDemo() {
   document.body.appendChild(overlay);
   overlay.querySelector('#demo-confirm-btn').onclick = function() {
     overlay.remove();
-    _runLoadDemo();
+    /* Open the demo in the SANDBOX rather than running it in place.
+       Running in place shares everything global with the real account — the
+       legend above all, which is one list, not one per month. So a card added,
+       renamed, recoloured or DELETED while viewing an in-place demo was an
+       edit to the user's real legend, and it synced. The same applies to
+       section names and appearance settings.
+       ?demo=true routes every read and write to _memStore, which is the
+       isolation this needs and is already proven. "Remove demo" drops the
+       param and returns here. Falls back to in-place only if the URL can't be
+       built, which shouldn't happen on a served page. */
+    try {
+      var url = new URL(window.location.href);
+      url.searchParams.set('demo', 'true');
+      window.location.assign(url.toString());
+    } catch (e) {
+      _runLoadDemo();
+    }
   };
   overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
 }
