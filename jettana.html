@@ -814,8 +814,12 @@ body {
    the chip background plus the count is what makes it read as a control. */
 .card-tx-badge {
   flex: none;
-  order: -1;              /* before the label input, not crowding the ✓ */
-  margin-right: 8px;
+  /* Right of the label, not left: rows without a badge would otherwise start
+     their name at the row edge while badged rows are indented, leaving the
+     account names ragged. margin-right keeps it clear of the paid ✓ so the
+     two don't read as a pair of related controls. */
+  margin-left: 8px;
+  margin-right: 12px;
   display: flex;
   align-items: center;
   gap: 3px;
