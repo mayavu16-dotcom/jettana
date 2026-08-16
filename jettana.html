@@ -1631,12 +1631,15 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
      gives it all back when space is tight. No wrapping, no truncation, and
      nothing can overflow as long as title + buttons fit — which at the 700px
      mobile layout they comfortably do. */
-  .topbar         { flex-wrap: nowrap; }
+  .topbar         { flex-wrap: nowrap; column-gap: 16px; }
   .topbar-left    { flex: 0 0 auto; min-width: auto; }
   .topbar-left h2 { overflow: visible; text-overflow: clip; }
   .topbar-right   { flex: 1 1 auto; min-width: 0; justify-content: flex-end; }
   .topbar-right > * { flex: none; }          /* buttons keep their real size */
-  .search-wrap    { flex: 1 1 0; min-width: 0; }
+  /* Search may shrink but must not GROW: with flex-grow it swallowed every
+     spare pixel and ended up flush against the month emoji. A fixed basis
+     leaves the leftover space as breathing room between title and cluster. */
+  .search-wrap    { flex: 0 1 240px; min-width: 0; }
   /* The save indicator sits at opacity 0 when idle but still reserves ~50px,
      and the result count reserves more. Both are transient, so on a phone let
      them take space only while they have something to say. */
