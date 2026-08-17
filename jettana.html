@@ -17,10 +17,54 @@
 (function () {
   try {
     var LAYOUT = 700;
-    if (window.screen && window.screen.width && window.screen.width < LAYOUT) {
-      var m = document.querySelector('meta[name="viewport"]');
-      if (m) m.setAttribute('content', 'width=' + LAYOUT);
+    if (!(window.screen && window.screen.width && window.screen.width < LAYOUT)) return;
+    var m = document.querySelector('meta[name="viewport"]');
+    if (!m) return;
+
+    /* ── iOS zoom-on-focus ──────────────────────────────────────
+       Scaling the page down to ~0.61 to fit 700px on a phone also makes the
+       text physically small, and Safari answers that by zooming into any
+       field you tap. The old defence — force every input to 16px — no longer
+       works, because after the shrink 16px is not really 16px.
+       maximum-scale stops it. That attribute used to be removed from this
+       page because it blocks pinch-zoom (WCAG 1.4.4), but Safari has ignored
+       it for PINCH since iOS 10 while still honouring it for its own
+       auto-zoom — so the user keeps pinch and loses the unwanted zoom.
+       ** If pinch-zoom ever stops working on a real iPhone, that premise is
+       wrong and this block must come out. **
+       iOS only: Android has neither the auto-zoom nor the pinch exemption,
+       so pinning it there would take zoom away for nothing. Chrome and
+       Firefox on iOS are WebKit underneath and match this test too. */
+    var isIOS = /iP(hone|od|ad)/.test(navigator.userAgent) ||
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    function apply() {
+      var content = 'width=' + LAYOUT;
+      if (isIOS) {
+        /* screen.width does NOT swap on rotation, so ask which way round we
+           are rather than trusting it. */
+        var landscape = window.matchMedia('(orientation: landscape)').matches;
+        var deviceW = landscape ? Math.max(screen.width, screen.height)
+                                : Math.min(screen.width, screen.height);
+        /* Pin only while the page is being scaled DOWN. In landscape a phone
+           is usually wider than 700, the page scales UP, the text is already
+           large and Safari has no reason to zoom — pinning there would strand
+           the layout in a narrow strip in the middle of the screen. */
+        if (deviceW < LAYOUT) {
+          var fit = Math.round((deviceW / LAYOUT) * 10000) / 10000;
+          content += ', initial-scale=' + fit + ', maximum-scale=' + fit;
+        }
+      }
+      /* Only write on a real change — apply() runs on resize, and resize is
+         something setting this attribute can itself cause. */
+      if (m.getAttribute('content') !== content) m.setAttribute('content', content);
     }
+
+    apply();
+    var t = null;
+    function requeue() { clearTimeout(t); t = setTimeout(apply, 150); }
+    window.addEventListener('orientationchange', requeue);
+    window.addEventListener('resize', requeue);
   } catch (e) {}
 })();
 </script>
