@@ -3406,6 +3406,9 @@ body.font-large.text-bold .erow-label-input {
 .new-month-wrap {
   position: relative;
   width: 100%;
+  /* Sibling of .month-list inside the flex column. Without this it shares the
+     squeeze when the list is long, instead of the list taking it and scrolling. */
+  flex-shrink: 0;
 }
 .new-month-tooltip {
   display: none;
@@ -8621,6 +8624,37 @@ function switchMonth(key) {
   loadNotes();
 }
 
+/* Open/close a year group.
+   The expanded height is MEASURED, never estimated. This used to be
+   `months * 38 + 20`, and 38px was too small for a real row: .month-item is
+   15px text with 9px padding top and bottom plus a 2px gap, and an emoji in
+   the label or the large text setting pushes it further. Because .year-months
+   is overflow:hidden, everything past the guess was silently cut off — with
+   twelve months that hid January outright and sliced February in half, while
+   the list itself had room to spare and so never showed a scrollbar.
+   Once open the cap is removed entirely, so nothing added afterwards — a new
+   month, a longer label, a font-size change — can ever be clipped again. */
+function setYearMonthsHeight(el, collapsed) {
+  if (!el) return;
+  if (collapsed) {
+    // The .year-group.collapsed rule carries !important and has already taken
+    // effect; this just keeps the inline value honest for the next expand.
+    el.style.maxHeight = '0px';
+    return;
+  }
+  // Animate 0 -> measured height, then hand the element back to auto.
+  el.style.maxHeight = el.scrollHeight + 'px';
+  var release = function(e) {
+    if (e && e.propertyName !== 'max-height') return;
+    el.style.maxHeight = 'none';
+    el.removeEventListener('transitionend', release);
+  };
+  el.addEventListener('transitionend', release);
+  // transitionend does not fire under reduced-motion or in a background tab,
+  // and a cap left on is exactly the bug being fixed. Always release.
+  setTimeout(release, 400);
+}
+
 function renderSidebar() {
   const list = document.getElementById('month-list');
   const keys = allMonthKeys(); // newest first
@@ -8666,7 +8700,7 @@ function renderSidebar() {
     header.innerHTML = '<span class="year-header-label">' + year + '</span><span class="year-toggle">▾</span>';
     header.onclick = function() {
       var isNowCollapsed = group.classList.toggle('collapsed');
-      monthsDiv.style.maxHeight = isNowCollapsed ? '0' : (yearKeys.length * itemHeight + 20) + 'px';
+      setYearMonthsHeight(monthsDiv, isNowCollapsed);
       appStore.setItem('intentra_year_' + year, isNowCollapsed ? '1' : '0');
     };
     group.appendChild(header);
@@ -8678,9 +8712,10 @@ function renderSidebar() {
     monthsDiv.style.flexDirection = 'column';
     monthsDiv.style.gap = '2px';
 
-    // Set max-height for animation
-    var itemHeight = 38; // approx px per month item
-    monthsDiv.style.maxHeight = collapsed ? '0' : (yearKeys.length * itemHeight + 20) + 'px';
+    // Collapsed starts pinned shut; expanded starts uncapped. No estimate is
+    // made at render time — there is nothing to animate on first paint, so the
+    // cap serves no purpose and can only clip.
+    monthsDiv.style.maxHeight = collapsed ? '0px' : 'none';
 
     yearKeys.forEach(function(key) {
       var div = document.createElement('div');
