@@ -8731,7 +8731,7 @@ function addRow(section, data = {}, animate = true) {
   const id = Date.now() + '_' + Math.random().toString(36).slice(2);
   const row = { id, label: '', [CONFIGS[section].k1]: '', [CONFIGS[section].k2]: '', paid: false, date: '', note: '', recurring: false, ...data };
   // Apply default colors to new rows (not to rows being seeded from data)
-  if (animate && !data.paidColor && _defaultTextColor) row.paidColor = _defaultTextColor;
+  if (animate && !data.paidColor && _defaultTextColors && _defaultTextColors[section]) row.paidColor = _defaultTextColors[section];
   if (animate && !data.numColor  && _defaultNumColor)  row.numColor  = _defaultNumColor;
   const all = loadAll();
   if (!all[currentMonthKey]) all[currentMonthKey] = {};
@@ -16735,11 +16735,11 @@ function setPaidColor(section, id, color, e) {
   row.paidColor = color;
   saveAll(all);
   applyTextColor(id, color);
-  // Save as sticky default for future rows
-  if (color) {
-    _defaultTextColor = color;
-    appStore.setItem('intentra_default_text_color', color);
-  }
+  // Save as sticky default for future rows IN THIS SECTION ONLY.
+  // Text colour is per-section: colouring a Food label teal should not make
+  // the next Housing row teal. Number colour stays global on purpose --
+  // it tracks a card, which spans every section.
+  if (color) setDefaultTextColor(section, color);
   // Close picker
   var picker = document.getElementById('global-paid-picker');
   if (picker) picker.style.display = 'none';
@@ -17284,16 +17284,52 @@ function addRowMobile(e, section) {
     if (last) last.focus();
   }
 }
-var _defaultNumColor  = '';
+/* -- Sticky colour defaults -----------------------------------------------
+   Declared WITHOUT initialisers on purpose. These lines sit AFTER the
+   top-level loadDefaultColors() call earlier in this same script block, so
+   `var x = ''` here would execute second and wipe the value that had just
+   been loaded. That is exactly why the number colour forgot itself on every
+   reload. `var x;` on its own does not reassign an existing value.
+   Do not add an initialiser here without first moving the load call. */
+var _defaultNumColor;
+var _defaultTextColors;   // { section: colour } -- text default is PER SECTION
 
-function loadDefaultColors() {
-  _defaultTextColor = appStore.getItem('intentra_default_text_color') || '';
-  _defaultNumColor  = appStore.getItem('intentra_default_num_color')  || '';
+/* Key is written inline rather than held in a const: loadDefaultColors() runs
+   before this point in the file, and a `const` read from there would be in the
+   temporal dead zone and throw. */
+
+function saveDefaultTextColors() {
+  try {
+    appStore.setItem(nsKey('intentra_default_text_colors'), JSON.stringify(_defaultTextColors || {}));
+  } catch (e) {}
 }
 
-function setDefaultTextColor(color) {
-  _defaultTextColor = color;
-  appStore.setItem('intentra_default_text_color', color);
+function loadDefaultColors() {
+  _defaultNumColor   = appStore.getItem('intentra_default_num_color') || '';
+  _defaultTextColors = {};
+  var raw = appStore.getItem(nsKey('intentra_default_text_colors'));
+  if (raw) {
+    try {
+      var parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') _defaultTextColors = parsed;
+    } catch (e) {}
+  } else {
+    // First run after the switch to per-section text defaults: seed every
+    // section from the old single global default so nothing looks different
+    // until she deliberately changes one section.
+    var legacy = appStore.getItem('intentra_default_text_color') || '';
+    if (legacy) {
+      SECTIONS.forEach(function(sec) { _defaultTextColors[sec] = legacy; });
+      saveDefaultTextColors();
+    }
+  }
+}
+
+function setDefaultTextColor(section, color) {
+  if (!section) return;
+  if (!_defaultTextColors) _defaultTextColors = {};
+  _defaultTextColors[section] = color;
+  saveDefaultTextColors();
 }
 
 function setDefaultNumColor(color) {
@@ -18453,11 +18489,9 @@ function setNumColor(section, id, color, e) {
   row.numColor = color;
   saveAll(all);
   applyNumColor(id, color);
-  // Save as sticky default for future rows
-  if (color) {
-    _defaultNumColor = color;
-    appStore.setItem('intentra_default_num_color', color);
-  }
+  // Save as sticky default for future rows, in every section -- a card
+  // colour is not a category thing.
+  if (color) setDefaultNumColor(color);
   var picker = document.getElementById('global-num-picker');
   if (picker) picker.style.display = 'none';
   _numPickerId = null;
