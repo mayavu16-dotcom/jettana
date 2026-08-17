@@ -10604,6 +10604,19 @@ function latestDatedItem(items) {
   return best;
 }
 
+/* Chronological, earliest first — the panel reads as a statement.
+   Undated items sit at the END. An undated charge has no place on a timeline,
+   and leading with it would read as "oldest", which is a claim the data does
+   not support. Same-day items fall back to largest first, which is the order
+   the whole panel used before. */
+function byDateThenAmount(a, b) {
+  var da = (a && a.date) || '', db = (b && b.date) || '';
+  if (da && db) { if (da !== db) return da < db ? -1 : 1; }
+  else if (da) return -1;
+  else if (db) return 1;
+  return ((b && b.amount) || 0) - ((a && a.amount) || 0);
+}
+
 function accountLinkedCharges(acctRow, monthData) {
   var out = { rows: [], txs: [], chargeTotal: 0, txNet: 0, beginning: 0,
               computedEnding: 0, shortfall: 0, overridden: false, color: '' };
@@ -10652,7 +10665,10 @@ function accountLinkedCharges(acctRow, monthData) {
     out.txNet += isW ? -amt : amt;
   });
 
-  out.rows.sort(function(a, b) { return b.amount - a.amount; });
+  out.rows.sort(byDateThenAmount);
+  // The panel renders expenses and transactions as two separate groups, so
+  // this orders each group chronologically rather than interleaving them.
+  out.txs.sort(byDateThenAmount);
   // Recency across BOTH lists — a withdrawal is as much "the last thing that
   // touched this account" as a paid expense is.
   out.latest = latestDatedItem(out.rows.concat(out.txs));
@@ -10705,9 +10721,9 @@ function cardLinkedCharges(debtRow, monthData) {
     });
   });
 
-  out.rows.sort(function(a, b) { return b.amount - a.amount; });
-  // Sort stays on amount — the list exists to explain what is driving the
-  // balance. Recency is answered by this single figure instead.
+  out.rows.sort(byDateThenAmount);
+  // Kept even though the list is now chronological: the last dated row is only
+  // the latest while every row carries a date, and they do not have to.
   out.latest = latestDatedItem(out.rows);
   // Mirrors autoCalcDebtFromCards: a manually entered starting balance behaves
   // exactly like carried money. Kept as two numbers so the panel can name them
