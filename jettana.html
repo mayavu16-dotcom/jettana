@@ -598,6 +598,11 @@ body {
 .bulk-bar {
   display: none;
   align-items: center;
+  /* Wrap: the date mode adds a label, a picker and two buttons on top of the
+     count and Select all, which overflows a phone. Wrapping only engages when
+     the row would otherwise clip, so the four older modes are unaffected. */
+  flex-wrap: wrap;
+  row-gap: 6px;
   gap: 8px;
   padding: 6px 12px 6px 16px;
   background: var(--ink);
@@ -9236,6 +9241,16 @@ function clearSection(section, btnEl) {
     enterBulkMode(section, 'paid');
   };
 
+  const optSelectDate = document.createElement('button');
+  optSelectDate.textContent = '📅 Select rows to set a date';
+  optSelectDate.style.cssText = 'background:none;border:none;padding:8px 12px;text-align:left;font-size:13px;color:var(--lav);cursor:pointer;border-radius:5px;font-family:\'Outfit\',sans-serif;';
+  optSelectDate.onmouseenter = function() { this.style.background = 'var(--mist-light)'; };
+  optSelectDate.onmouseleave = function() { this.style.background = 'none'; };
+  optSelectDate.onclick = function() {
+    pop.remove(); _secPopover = null;
+    enterBulkMode(section, 'date');
+  };
+
   const optSelectColor = document.createElement('button');
   optSelectColor.textContent = '🎨 Select rows to color';
   optSelectColor.style.cssText = 'background:none;border:none;padding:8px 12px;text-align:left;font-size:13px;color:#A8823E;cursor:pointer;border-radius:5px;font-family:\'Outfit\',sans-serif;';
@@ -9256,8 +9271,9 @@ function clearSection(section, btnEl) {
     enterBulkMode(section, 'move');
   };
 
-  // Order: paid → color → move → delete → divider → clear budget → clear actual → divider → copy
+  // Order: paid → date → color → move → delete → divider → clear budget → clear actual → divider → copy
   pop.appendChild(optSelectPaid);
+  pop.appendChild(optSelectDate);
   pop.appendChild(optSelectColor);
   pop.appendChild(optSelectMove);
   pop.appendChild(optSelect);
@@ -9368,13 +9384,18 @@ function clearSection(section, btnEl) {
 // ── Bulk select ───────────────────────────────────────────────
 var _bulkSection = null;
 var _bulkSelected = new Set();
-var _bulkMode = 'delete'; // 'delete' | 'paid' | 'color' | 'move'
+var _bulkMode = 'delete'; // 'delete' | 'paid' | 'color' | 'move' | 'date'
+/* The chosen date has to live outside the bar. updateBulkBarButtons() wipes
+   bar.innerHTML and rebuilds on EVERY row toggle, so a value typed into the
+   picker would vanish the moment another row was selected. */
+var _bulkDateVal = '';
 
 function enterBulkMode(section, mode) {
   if (_bulkSection && _bulkSection !== section) cancelBulk(_bulkSection);
   _bulkSection = section;
   _bulkSelected = new Set();
   _bulkMode = mode || 'delete';
+  _bulkDateVal = '';
   var bar = document.getElementById('bulk-bar-' + section);
   if (bar) {
     bar.classList.add('visible');
@@ -9447,6 +9468,39 @@ function updateBulkBarButtons(section) {
       showBulkColorPicker(section);
     };
     bar.appendChild(applyColorBtn);
+  } else if (_bulkMode === 'date') {
+    var dateLbl = document.createElement('span');
+    dateLbl.textContent = bulkDateLabelFor(section) + ':';
+    dateLbl.style.cssText = 'font-size:11px;opacity:0.85;white-space:nowrap;';
+    bar.appendChild(dateLbl);
+
+    var dateInp = document.createElement('input');
+    dateInp.type = 'date';
+    dateInp.id = 'bulk-date-' + section;
+    dateInp.value = _bulkDateVal || '';
+    // color-scheme:dark so the native picker's own text is legible on the bar
+    dateInp.style.cssText = 'font-family:\'Outfit\',sans-serif;font-size:12px;border:1px solid rgba(255,255,255,0.3);border-radius:5px;padding:3px 6px;background:rgba(255,255,255,0.1);color:white;cursor:pointer;color-scheme:dark;';
+    dateInp.onchange = function() { _bulkDateVal = this.value; };
+    bar.appendChild(dateInp);
+
+    var applyDateBtn = document.createElement('button');
+    applyDateBtn.className = 'bulk-bar-btn';
+    applyDateBtn.style.cssText = 'border-color:var(--lav);color:#B9B2DE;';
+    applyDateBtn.textContent = '📅 Apply date';
+    applyDateBtn.onclick = function() {
+      var inp = document.getElementById('bulk-date-' + section);
+      var v = (inp && inp.value) || _bulkDateVal;
+      if (!v) { showToast('Pick a date first', false); return; }
+      applyDateSelectedBulk(section, v);
+    };
+    bar.appendChild(applyDateBtn);
+
+    var clearDateBtn = document.createElement('button');
+    clearDateBtn.className = 'bulk-bar-btn';
+    clearDateBtn.style.cssText = 'border-color:var(--steel);color:var(--mist);';
+    clearDateBtn.textContent = '✕ Clear date';
+    clearDateBtn.onclick = function() { applyDateSelectedBulk(section, ''); };
+    bar.appendChild(clearDateBtn);
   } else if (_bulkMode === 'move') {
     var moveSections = ['income','savings','housing','checking','transport','debt','food','health','subscriptions','gifts','misc'];
     var moveSel = document.createElement('select');
@@ -9687,6 +9741,65 @@ function markPaidSelectedBulk(section, setPaid) {
   var n = ids.size;
   cancelBulk(section);
   showUndoToast(n + ' row' + (n !== 1 ? 's' : '') + (setPaid ? ' marked paid' : ' marked unpaid'));
+}
+
+/* Which of a row's two date fields a bulk date lands on.
+   Every row carries two, one beside each number column, and only one of them
+   is the one people mean: Received for income, Actual for savings and the
+   expense sections, Ending for checking, Current for debt.
+   CONFIGS[section].mainKey already names that column, so derive the answer
+   from it rather than keeping a second list that can drift out of step.
+   Verified against the row template: every date this resolves to has a
+   visible picker. Column 1's picker only exists in savings, income, checking
+   and debt — which is exactly where mainKey is k1. */
+function bulkDateKeyFor(section) {
+  var cfg = CONFIGS[section];
+  if (!cfg) return 'date2';
+  return cfg.mainKey === cfg.k1 ? 'date' : 'date2';
+}
+
+var BULK_DATE_COL_LABELS = {
+  planned: 'Planned', budget: 'Budget', actual: 'Actual',
+  beginning: 'Beginning', current: 'Current', received: 'Received',
+  gains: 'Growth', ending: 'Ending', remaining: 'Remaining'
+};
+
+function bulkDateLabelFor(section) {
+  var cfg = CONFIGS[section];
+  if (!cfg) return 'Date';
+  return (BULK_DATE_COL_LABELS[cfg.mainKey] || cfg.mainKey) + ' date';
+}
+
+function applyDateSelectedBulk(section, dateVal) {
+  if (!_bulkSelected.size) { showToast('Select at least one row first', false); return; }
+  var key = bulkDateKeyFor(section);
+  var ids = new Set(_bulkSelected);
+  var count = ids.size;
+  pushUndo((dateVal ? 'Set ' : 'Clear ') + bulkDateLabelFor(section) + ' — ' + count + ' rows');
+
+  var all = loadAll();
+  var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
+  rows.forEach(function(r) {
+    if (!ids.has(r.id)) return;
+    // Deliberate overwrite. Selecting a row and applying a date replaces
+    // whatever was there, including a date already set. Undo covers it.
+    r[key] = dateVal || '';
+    if (key === 'date') delete r._datePlaceholder;
+  });
+  saveAll(all);
+
+  cancelBulk(section);
+  var container = document.getElementById('rows-' + section);
+  if (container) {
+    container.innerHTML = '';
+    rows.forEach(function(r) { renderRowEl(section, r, false); });
+  }
+  // Mirror what a single date edit does — otherwise a bulk edit would leave
+  // the section in an order a one-row edit would have re-sorted.
+  autoSortSectionByDate(section);
+  recalc();
+  showUndoToast(count + ' row' + (count !== 1 ? 's' : '') +
+    (dateVal ? ' set to ' + formatDateLabel(dateVal) : ' — date cleared'));
 }
 
 function cancelBulk(section) {
