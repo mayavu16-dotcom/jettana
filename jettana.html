@@ -897,7 +897,7 @@ body {
 .card-tx-pop {
   position: fixed;
   z-index: 9000;
-  width: 268px;
+  width: 292px;   /* 268 -> 292: the charge lines now carry a date too */
   max-height: 340px;
   overflow-y: auto;
   background: var(--white);
@@ -948,7 +948,12 @@ body {
 .ctp-row + .ctp-row { border-top: 1px solid var(--mist-light); }
 .ctp-check { width: 11px; flex-shrink: 0; color: var(--sage); font-size: 10px; }
 .ctp-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ctp-sec { font-size: 9.5px; color: var(--steel); flex-shrink: 0; }
+/* The section chip is the one thing on the line that may give way. The check,
+   the date and the amount are all fixed, and the label is the point of the
+   line, so a long section name ellipses rather than crushing everything. */
+.ctp-sec { font-size: 9.5px; color: var(--steel); flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctp-date { font-size: 9.5px; color: var(--steel); flex-shrink: 0; opacity: 0.85; white-space: nowrap; }
+.ctp-latest { font-size: 10px; color: var(--steel); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ctp-amt { font-size: 11.5px; flex-shrink: 0; min-width: 60px; text-align: right; }
 .ctp-row.is-paid .ctp-label,
 .ctp-row.is-paid .ctp-amt { color: var(--steel); }
@@ -10585,6 +10590,20 @@ function recalc() {
      • Transaction entries add (deposit) or subtract (withdrawal)
    Pointing the debt reader at checking would list unpaid rows and miss the
    deposits. Read-only; nothing here writes. */
+/* The most recently dated item in a list, or null when nothing carries a date.
+   Dates are stored YYYY-MM-DD, which sorts correctly as a plain string, so
+   there is no need to build Date objects for a comparison. Undated items are
+   skipped rather than treated as old — an undated charge is unknown, not
+   ancient, and guessing either way would be wrong. */
+function latestDatedItem(items) {
+  var best = null;
+  (items || []).forEach(function(it) {
+    if (!it || !it.date) return;
+    if (!best || it.date > best.date) best = it;
+  });
+  return best;
+}
+
 function accountLinkedCharges(acctRow, monthData) {
   var out = { rows: [], txs: [], chargeTotal: 0, txNet: 0, beginning: 0,
               computedEnding: 0, shortfall: 0, overridden: false, color: '' };
@@ -10617,7 +10636,7 @@ function accountLinkedCharges(acctRow, monthData) {
         var budget = parseAmt(row[cfg.k1]);
         var amount = actual > 0 ? actual : budget;
         if (amount <= 0) return;
-        out.rows.push({ label: row.label || '(no label)', section: sec, amount: amount });
+        out.rows.push({ label: row.label || '(no label)', section: sec, amount: amount, date: expenseDate });
         out.chargeTotal += amount;
       });
     });
@@ -10629,11 +10648,14 @@ function accountLinkedCharges(acctRow, monthData) {
     if (!amt) return;
     if (beginDate && en.date && en.date < beginDate) return;
     var isW = en.txtype === 'withdrawal';
-    out.txs.push({ label: en.txdesc || (isW ? 'Withdrawal' : 'Deposit'), amount: amt, withdrawal: isW });
+    out.txs.push({ label: en.txdesc || (isW ? 'Withdrawal' : 'Deposit'), amount: amt, withdrawal: isW, date: en.date || '' });
     out.txNet += isW ? -amt : amt;
   });
 
   out.rows.sort(function(a, b) { return b.amount - a.amount; });
+  // Recency across BOTH lists — a withdrawal is as much "the last thing that
+  // touched this account" as a paid expense is.
+  out.latest = latestDatedItem(out.rows.concat(out.txs));
   var raw = out.beginning - out.chargeTotal + out.txNet;
   out.computedEnding = Math.max(0, raw);          // same clamp recalcCheckingBalances applies
   out.shortfall = raw < 0 ? -raw : 0;             // how much the clamp is hiding
@@ -10673,13 +10695,20 @@ function cardLinkedCharges(debtRow, monthData) {
         label: row.label || '(no label)',
         section: sec,
         amount: actual,
-        paid: !!row.paid
+        paid: !!row.paid,
+        // Expense sections only render the column-2 picker, so date2 is what
+        // people actually set. date is read first anyway to match the
+        // expression accountLinkedCharges already uses for its cutoff.
+        date: row.date || row.date2 || ''
       });
       out.chargeTotal += actual;
     });
   });
 
   out.rows.sort(function(a, b) { return b.amount - a.amount; });
+  // Sort stays on amount — the list exists to explain what is driving the
+  // balance. Recency is answered by this single figure instead.
+  out.latest = latestDatedItem(out.rows);
   // Mirrors autoCalcDebtFromCards: a manually entered starting balance behaves
   // exactly like carried money. Kept as two numbers so the panel can name them
   // separately, but they must SUM to the same carried figure the math uses.
@@ -10759,6 +10788,8 @@ function buildCardTxHtml(rowId, d, section) {
       escHtml(row._cardLink || 'transparent') + ';"></span>' + escHtml(cardName) + '</div>' +
     '<div class="ctp-sub">' + info.rows.length +
       (info.rows.length === 1 ? ' charge' : ' charges') + ' this month</div>' +
+    (info.latest ? '<div class="ctp-latest">Latest: ' + escHtml(info.latest.label) +
+      ' · ' + escHtml(formatDateLabel(info.latest.date)) + '</div>' : '') +
     '</div>';
 
   if (!info.rows.length) {
@@ -10770,6 +10801,9 @@ function buildCardTxHtml(rowId, d, section) {
         '<span class="ctp-check">' + (r.paid ? '✓' : '') + '</span>' +
         '<span class="ctp-label">' + escHtml(r.label) + '</span>' +
         '<span class="ctp-sec">' + escHtml(secName(r.section)) + '</span>' +
+        // Undated charges show nothing at all. A repeated "no date" label
+        // would draw the eye straight to what is missing.
+        (r.date ? '<span class="ctp-date">' + escHtml(formatDateLabel(r.date)) + '</span>' : '') +
         '<span class="ctp-amt">' + money(r.amount) + '</span>' +
         '</div>';
     });
@@ -10817,6 +10851,8 @@ function buildAccountTxHtml(rowId, d) {
     '<div class="ctp-title"><span class="ctb-dot" style="width:8px;height:8px;border-radius:50%;background:' +
       escHtml(info.color || 'transparent') + ';"></span>' + escHtml(name) + '</div>' +
     '<div class="ctp-sub">' + n + (n === 1 ? ' item' : ' items') + ' this month</div>' +
+    (info.latest ? '<div class="ctp-latest">Latest: ' + escHtml(info.latest.label) +
+      ' · ' + escHtml(formatDateLabel(info.latest.date)) + '</div>' : '') +
     '</div>';
 
   if (!n) {
@@ -10830,6 +10866,7 @@ function buildAccountTxHtml(rowId, d) {
       '<span class="ctp-check">−</span>' +
       '<span class="ctp-label">' + escHtml(r.label) + '</span>' +
       '<span class="ctp-sec">' + escHtml(secName(r.section)) + '</span>' +
+      (r.date ? '<span class="ctp-date">' + escHtml(formatDateLabel(r.date)) + '</span>' : '') +
       '<span class="ctp-amt">' + money(r.amount) + '</span>' +
       '</div>';
   });
@@ -10838,6 +10875,7 @@ function buildAccountTxHtml(rowId, d) {
       '<span class="ctp-check">' + (t.withdrawal ? '−' : '+') + '</span>' +
       '<span class="ctp-label">' + escHtml(t.label) + '</span>' +
       '<span class="ctp-sec">' + (t.withdrawal ? 'Withdrawal' : 'Deposit') + '</span>' +
+      (t.date ? '<span class="ctp-date">' + escHtml(formatDateLabel(t.date)) + '</span>' : '') +
       '<span class="ctp-amt">' + money(t.amount) + '</span>' +
       '</div>';
   });
