@@ -69,18 +69,6 @@
 })();
 </script>
 <title>Jettana — Monthly Budget Tracker</title>
-
-<!-- Home screen app. Deliberately no viewport-fit=cover: the viewport script
-     above rewrites the viewport meta on phones, and cover would need editing
-     that string too. Without it iOS insets the web view below the status bar
-     on its own, which needs no layout changes. -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Jettana">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#F8F7F4">
-<link rel="apple-touch-icon" href="/icon.png">
-<link rel="icon" href="/icon.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500;1,700&family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@700;800&family=Cormorant+Garamond:ital,wght@1,400;1,500;1,600;1,700&family=Lora:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&family=Dancing+Script:wght@400;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400;1,700&family=DM+Serif+Display:ital@0;1&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Crimson+Text:ital,wght@0,400;0,700;1,400;1,600;1,700&display=swap" rel="stylesheet">
 <style>
@@ -4107,6 +4095,24 @@ body.font-large.text-bold .erow-label-input {
 #nw-from, #nw-to { font-family: 'Outfit', sans-serif; font-size: 11.5px; padding: 3px 6px; border: 1.5px solid var(--mist); border-radius: 6px; color: var(--ink); background: transparent; }
 /* ── Growth Projection ───────────────────────────────────── */
 .gp-controls { display: flex; flex-wrap: wrap; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--mist); }
+.spj-row { margin-bottom: 15px; }
+.spj-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 5px; }
+.spj-name { font-size: 13.5px; color: var(--ink); font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.spj-fig { font-size: 12.5px; color: var(--steel); white-space: nowrap; flex-shrink: 0; }
+/* Track is a plain flex pair — solid = today, faded = what the pace adds. */
+.spj-track { display: flex; height: 12px; border-radius: 3px; overflow: hidden; background: var(--mist-light); }
+.spj-now { background: var(--sage); }
+.spj-add { background: var(--sage); opacity: 0.3; }
+.spj-mo { display: flex; align-items: center; gap: 5px; margin-top: 5px; font-size: 11.5px; color: var(--steel); }
+.spj-mo input {
+  font-family: 'Outfit', sans-serif; font-size: 12px; width: 74px;
+  padding: 3px 6px; border: 1.5px solid var(--mist); border-radius: 6px;
+  color: var(--ink); background: transparent;
+}
+.spj-mo input:focus { outline: none; border-color: var(--sage); }
+.spj-total { display: flex; justify-content: space-between; align-items: baseline; padding-top: 12px; margin-top: 4px; border-top: 1px solid var(--mist); font-size: 14px; color: var(--ink); }
+.spj-legend { display: flex; gap: 15px; font-size: 11.5px; color: var(--steel); margin-bottom: 13px; }
+.spj-key { width: 10px; height: 10px; border-radius: 2px; background: var(--sage); display: inline-block; margin-right: 5px; vertical-align: -1px; }
 .gp-field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 130px; min-width: 118px; }
 .gp-field label { font-size: 10.5px; font-weight: 700; letter-spacing: 0.3px; color: var(--steel); text-transform: uppercase; }
 .gp-field input { font-family: 'Outfit', sans-serif; font-size: 13px; padding: 6px 8px; border: 1.5px solid var(--mist); border-radius: 8px; color: var(--ink); background: transparent; width: 100%; box-sizing: border-box; }
@@ -5585,6 +5591,27 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
     </div>
     <div id="psav-bottom" style="margin:8px 20px 14px;padding:12px 14px;background:var(--mist-light);border-radius:10px;font-size:13px;color:var(--ink);line-height:1.7;"></div>
     <div class="gp-note">Planning estimates — taxes are simplified (pre-tax contributions reduce taxable income; your real brackets and plan rules vary).</div>
+  </div>
+</div>
+
+<div class="trends-overlay" id="sproj-overlay" style="display:none;" onclick="if(event.target===this)hideSavingsProjection()">
+  <div class="trends-modal" id="sproj-modal">
+    <div class="trends-header" id="sproj-header">
+      <h3>🌱 Where this pace lands you</h3>
+      <button class="trends-close" onclick="hideSavingsProjection()">×</button>
+    </div>
+    <div class="trends-subtitle" id="sproj-sub"></div>
+    <div class="gp-controls">
+      <div class="gp-field">
+        <label>Annual return %</label>
+        <input type="text" inputmode="decimal" id="sproj-rate" value="4" oninput="saveSavingsProjRate();renderSavingsProjection()">
+        <span class="gp-hint">applied to every account</span>
+      </div>
+    </div>
+    <div id="sproj-body" style="padding:14px 20px 18px;"></div>
+    <div style="padding:0 20px 16px;font-size:11.5px;color:var(--steel);line-height:1.6;">
+      A hypothetical illustration, not a guarantee. Monthly amounts start from your own average and can be changed.
+    </div>
   </div>
 </div>
 
@@ -8585,6 +8612,12 @@ function copyMonthData(sourceKey, newKey) {
   if (source._budgetOverrides) {
     all[newKey]._budgetOverrides = JSON.parse(JSON.stringify(source._budgetOverrides));
   }
+  // Carried like _highlights and _budgetOverrides. A year-end target that reset
+  // every month would have to be re-entered twelve times — which is exactly the
+  // weakness _nwGoal has, since it is stored per month and never copied.
+  if (source._savingsProj) {
+    all[newKey]._savingsProj = JSON.parse(JSON.stringify(source._savingsProj));
+  }
   saveAll(all);
   switchMonth(newKey);
   renderSidebar();
@@ -9292,6 +9325,22 @@ function clearSection(section, btnEl) {
     pop.remove(); _secPopover = null;
     enterBulkMode(section, 'paid');
   };
+
+  if (section === 'savings') {
+    const optProj = document.createElement('button');
+    optProj.textContent = '🌱 Where this pace lands you';
+    optProj.style.cssText = 'background:none;border:none;padding:8px 12px;text-align:left;font-size:13px;color:var(--sage-dark);cursor:pointer;border-radius:5px;font-family:\'Outfit\',sans-serif;';
+    optProj.onmouseenter = function() { this.style.background = 'var(--mist-light)'; };
+    optProj.onmouseleave = function() { this.style.background = 'none'; };
+    optProj.onclick = function() {
+      pop.remove(); _secPopover = null;
+      showSavingsProjection();
+    };
+    pop.appendChild(optProj);
+    const projDiv = document.createElement('div');
+    projDiv.style.cssText = 'height:1px;background:var(--mist);margin:4px 0;';
+    pop.appendChild(projDiv);
+  }
 
   const optSelectDate = document.createElement('button');
   optSelectDate.textContent = '📅 Select rows to set a date';
@@ -20379,7 +20428,7 @@ function renderNWChart() {
 // behavior is taught the same way everywhere. Injected before the header's
 // close button (or appended for headers without one).
 document.addEventListener('DOMContentLoaded', function() {
-  ['trends-header', 'nw-header', 'gp-header', 'compare-header', 'features-header', 'cal-header', 'askme-header', 'psav-header', 'lel-header'].forEach(function(id) {
+  ['trends-header', 'nw-header', 'gp-header', 'sproj-header', 'compare-header', 'features-header', 'cal-header', 'askme-header', 'psav-header', 'lel-header'].forEach(function(id) {
     var hdr = document.getElementById(id);
     if (!hdr || hdr.querySelector('.modal-drag-hint')) return;
     var hint = document.createElement('span');
@@ -21026,6 +21075,196 @@ function psavToProjection() {
   var cHint = document.getElementById('gp-contrib-hint');
   if (cHint) cHint.textContent = 'from Plan My Savings — your room to save';
   renderGPChart();
+}
+
+/* ── Savings: where this pace lands you by December ────────────────────
+   Per-account, this calendar year. Distinct from the ⋯ Insights "Growth
+   projection", which is whole-savings and runs 5-30 years.
+
+   Contribution prefill matches gpAvgContribution() deliberately: the average
+   month-over-month change in that account's balance, floored at zero. That
+   figure already contains whatever interest was earned, so adding a return
+   rate on top slightly overstates it. The existing feature accepts the same
+   overlap and labels the field "your average so far — adjust it"; matching it
+   keeps one mental model instead of two, and every figure is editable.
+
+   Identity across months is the trimmed lowercased label — the same rule
+   checking uses to carry its ending balance and debt uses for _carriedBalance.
+   Renaming a row therefore orphans its monthly amount. */
+
+function sprojKey(label) { return String(label || '').trim().toLowerCase(); }
+
+function sprojSettings() {
+  var all = loadAll();
+  var m = all[currentMonthKey] || {};
+  var p = m._savingsProj;
+  if (!p || typeof p !== 'object') p = {};
+  if (!p.mo || typeof p.mo !== 'object') p.mo = {};
+  return p;
+}
+
+function sprojSave(p) {
+  var all = loadAll();
+  if (!all[currentMonthKey]) return;
+  all[currentMonthKey]._savingsProj = p;
+  saveAll(all);
+}
+
+/* Average month-over-month change for ONE account, matched by label. */
+function sprojAvgFor(label) {
+  var all = loadAll();
+  var keys = Object.keys(all).filter(function(k) { return /^\d{4}-\d{2}$/.test(k); }).sort();
+  if (keys.length < 2) return null;
+  var want = sprojKey(label), deltas = [], i;
+  function balOf(mk) {
+    var rows = (all[mk] && all[mk].savings) || [];
+    var hit = rows.find(function(r) { return sprojKey(r.label) === want; });
+    return hit ? (parseFloat(hit.actual) || 0) : null;
+  }
+  for (i = 1; i < keys.length; i++) {
+    var a = balOf(keys[i - 1]), b = balOf(keys[i]);
+    if (a === null || b === null) continue;   // account absent that month
+    deltas.push(b - a);
+  }
+  if (!deltas.length) return null;
+  var avg = deltas.reduce(function(x, y) { return x + y; }, 0) / deltas.length;
+  return Math.max(0, Math.round(avg));
+}
+
+/* Months from the current month to December, exclusive of the current one.
+   August -> 4 (Sep, Oct, Nov, Dec). December -> 0. */
+function sprojMonthsLeft() {
+  var parts = String(currentMonthKey).split('-');
+  var m = parseInt(parts[1], 10);
+  if (!isFinite(m) || m < 1 || m > 12) return 0;
+  return 12 - m;
+}
+
+/* Balance rolled forward: interest applied, then the month's contribution. */
+function sprojForward(balance, monthly, annualPct, months) {
+  var r = (annualPct / 100) / 12;
+  var bal = balance;
+  for (var i = 0; i < months; i++) bal = bal * (1 + r) + monthly;
+  return bal;
+}
+
+function sprojRows() {
+  var all = loadAll();
+  var rows = (all[currentMonthKey] && all[currentMonthKey].savings) || [];
+  return rows.filter(function(r) {
+    if (r.exempt) return false;                    // matches Total Saved
+    if (!r.label || !String(r.label).trim()) return false;
+    return true;
+  });
+}
+
+function showSavingsProjection() {
+  var el = document.getElementById('sproj-overlay');
+  if (el) el.style.display = 'flex';
+  var rateInp = document.getElementById('sproj-rate');
+  var st = sprojSettings();
+  if (rateInp && st.rate !== undefined && st.rate !== '') rateInp.value = st.rate;
+  renderSavingsProjection();
+}
+
+function hideSavingsProjection() {
+  var el = document.getElementById('sproj-overlay');
+  if (el) el.style.display = 'none';
+  var modal = document.getElementById('sproj-modal');
+  if (modal) { modal.style.position = ''; modal.style.left = ''; modal.style.top = ''; modal.style.margin = ''; }
+  if (el) { el.style.background = ''; el.style.pointerEvents = ''; el.style.alignItems = ''; el.style.justifyContent = ''; }
+}
+
+function saveSavingsProjRate() {
+  var el = document.getElementById('sproj-rate');
+  if (!el) return;
+  var p = sprojSettings();
+  p.rate = String(el.value).replace(/[^0-9.]/g, '');
+  sprojSave(p);
+}
+
+function setSprojMonthly(label, val) {
+  var p = sprojSettings();
+  var clean = String(val).replace(/[$,\s]/g, '');
+  if (clean === '') delete p.mo[sprojKey(label)];   // empty = fall back to the average
+  else p.mo[sprojKey(label)] = clean;
+  sprojSave(p);
+  renderSavingsProjection();
+}
+
+function renderSavingsProjection() {
+  var body = document.getElementById('sproj-body');
+  var sub  = document.getElementById('sproj-sub');
+  if (!body) return;
+
+  var rows = sprojRows();
+  var months = sprojMonthsLeft();
+  var year = String(currentMonthKey).split('-')[0];
+  var rate = parseFloat(String((document.getElementById('sproj-rate') || {}).value || '4').replace(/[^0-9.]/g, ''));
+  if (!isFinite(rate) || rate < 0) rate = 0;
+  if (rate > 100) rate = 100;
+
+  if (sub) {
+    sub.textContent = months > 0
+      ? months + (months === 1 ? ' month' : ' months') + ' left in ' + year
+      : 'December — the year is already here';
+  }
+
+  if (!rows.length) {
+    body.innerHTML = '<div style="font-size:13px;color:var(--steel);line-height:1.7;">' +
+      'No savings accounts logged this month yet. Add one and this fills in.</div>';
+    return;
+  }
+
+  var st = sprojSettings();
+  var calc = rows.map(function(r) {
+    var now = parseFloat(r.actual) || 0;
+    var k = sprojKey(r.label);
+    var stored = st.mo[k];
+    var avg = sprojAvgFor(r.label);
+    var monthly = (stored !== undefined && stored !== '') ? (parseFloat(stored) || 0)
+                                                          : (avg === null ? 0 : avg);
+    var end = sprojForward(now, monthly, rate, months);
+    return { label: r.label, now: now, monthly: monthly, end: end,
+             typed: (stored !== undefined && stored !== ''), hasAvg: avg !== null };
+  });
+
+  // One shared scale so the bars are comparable between accounts.
+  var maxEnd = Math.max.apply(null, calc.map(function(c) { return c.end; }).concat([1]));
+
+  var html = '<div class="spj-legend">' +
+    '<span><span class="spj-key"></span>Today</span>' +
+    '<span><span class="spj-key" style="opacity:0.3;"></span>Added by Dec</span></div>';
+
+  calc.forEach(function(c) {
+    var nowPct = Math.max(0, Math.min(100, (c.now / maxEnd) * 100));
+    var addPct = Math.max(0, Math.min(100 - nowPct, ((c.end - c.now) / maxEnd) * 100));
+    html += '<div class="spj-row">' +
+      '<div class="spj-top">' +
+        '<span class="spj-name">' + escHtml(c.label) + '</span>' +
+        '<span class="spj-fig">' + gpFmt(c.now) + ' &rarr; ' + gpFmt(c.end) + '</span>' +
+      '</div>' +
+      '<div class="spj-track">' +
+        '<div class="spj-now" style="width:' + nowPct.toFixed(2) + '%;"></div>' +
+        '<div class="spj-add" style="width:' + addPct.toFixed(2) + '%;"></div>' +
+      '</div>' +
+      '<div class="spj-mo">' +
+        '<input type="text" inputmode="decimal" value="' + escHtml(gpFmt(c.monthly)) + '" ' +
+          'onchange="setSprojMonthly(' + JSON.stringify(c.label).replace(/"/g, '&quot;') + ', this.value)" ' +
+          'onkeydown="if(event.key===\'Enter\')this.blur();">' +
+        '<span>per month' + (c.typed ? '' : (c.hasAvg ? ' — your average so far' : ' — enter what you plan to add')) + '</span>' +
+      '</div>' +
+    '</div>';
+  });
+
+  var totNow = calc.reduce(function(t, c) { return t + c.now; }, 0);
+  var totEnd = calc.reduce(function(t, c) { return t + c.end; }, 0);
+  html += '<div class="spj-total"><span>All accounts by Dec ' + year + '</span>' +
+          '<strong>' + gpFmt(totEnd) + '</strong></div>' +
+          '<div style="font-size:11.5px;color:var(--steel);margin-top:5px;">' +
+          gpFmt(totEnd - totNow) + ' more than today</div>';
+
+  body.innerHTML = html;
 }
 
 function showGrowthProjection() {
