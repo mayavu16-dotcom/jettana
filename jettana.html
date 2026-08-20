@@ -4105,11 +4105,18 @@ body.font-large.text-bold .erow-label-input {
 .spj-add { background: var(--sage); opacity: 0.3; }
 .spj-mo { display: flex; align-items: center; gap: 5px; margin-top: 5px; font-size: 11.5px; color: var(--steel); }
 .spj-mo input {
-  font-family: 'Outfit', sans-serif; font-size: 12px; width: 74px;
+  font-family: 'Outfit', sans-serif; font-size: 12px; width: 84px;
   padding: 3px 6px; border: 1.5px solid var(--mist); border-radius: 6px;
   color: var(--ink); background: transparent;
 }
 .spj-mo input:focus { outline: none; border-color: var(--sage); }
+/* The track needs to be a positioning parent so the target notch can sit on it. */
+.spj-track { position: relative; }
+.spj-mark { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--ink); opacity: 0.55; }
+.spj-need { font-size: 13px; color: var(--ink); margin-top: 6px; line-height: 1.5; }
+.spj-need strong { color: var(--sage-dark); }
+.spj-ctx { font-size: 11.5px; color: var(--steel); margin-top: 2px; line-height: 1.5; }
+.spj-win { font-size: 13px; color: var(--sage-dark); margin-top: 6px; font-weight: 600; }
 .spj-total { display: flex; justify-content: space-between; align-items: baseline; padding-top: 12px; margin-top: 4px; border-top: 1px solid var(--mist); font-size: 14px; color: var(--ink); }
 .spj-legend { display: flex; gap: 15px; font-size: 11.5px; color: var(--steel); margin-bottom: 13px; }
 .spj-key { width: 10px; height: 10px; border-radius: 2px; background: var(--sage); display: inline-block; margin-right: 5px; vertical-align: -1px; }
@@ -5597,7 +5604,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 <div class="trends-overlay" id="sproj-overlay" style="display:none;" onclick="if(event.target===this)hideSavingsProjection()">
   <div class="trends-modal" id="sproj-modal">
     <div class="trends-header" id="sproj-header">
-      <h3>🌱 Where this pace lands you</h3>
+      <h3>🌱 What it takes to get there</h3>
       <button class="trends-close" onclick="hideSavingsProjection()">×</button>
     </div>
     <div class="trends-subtitle" id="sproj-sub"></div>
@@ -5610,7 +5617,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
     </div>
     <div id="sproj-body" style="padding:14px 20px 18px;"></div>
     <div style="padding:0 20px 16px;font-size:11.5px;color:var(--steel);line-height:1.6;">
-      A hypothetical illustration, not a guarantee. Monthly amounts start from your own average and can be changed.
+      A hypothetical illustration, not a guarantee. Change a goal any time — it is there to aim at, not to hold you to.
     </div>
   </div>
 </div>
@@ -9328,7 +9335,7 @@ function clearSection(section, btnEl) {
 
   if (section === 'savings') {
     const optProj = document.createElement('button');
-    optProj.textContent = '🌱 Where this pace lands you';
+    optProj.textContent = '🌱 What it takes to get there';
     optProj.style.cssText = 'background:none;border:none;padding:8px 12px;text-align:left;font-size:13px;color:var(--sage-dark);cursor:pointer;border-radius:5px;font-family:\'Outfit\',sans-serif;';
     optProj.onmouseenter = function() { this.style.background = 'var(--mist-light)'; };
     optProj.onmouseleave = function() { this.style.background = 'none'; };
@@ -21183,13 +21190,31 @@ function saveSavingsProjRate() {
   sprojSave(p);
 }
 
-function setSprojMonthly(label, val) {
+function setSprojGoal(label, val) {
   var p = sprojSettings();
+  if (!p.goal || typeof p.goal !== 'object') p.goal = {};
   var clean = String(val).replace(/[$,\s]/g, '');
-  if (clean === '') delete p.mo[sprojKey(label)];   // empty = fall back to the average
-  else p.mo[sprojKey(label)] = clean;
+  if (clean === '' || !isFinite(parseFloat(clean))) delete p.goal[sprojKey(label)];
+  else p.goal[sprojKey(label)] = clean;
   sprojSave(p);
   renderSavingsProjection();
+}
+
+/* The inverse of sprojForward: what must go in each month to land on `target`.
+   Forward is  bal = bal*(1+r) + c  repeated, which closes to
+     FV = P(1+r)^n + c * ((1+r)^n - 1)/r
+   so solving for c gives the line below. r = 0 collapses the factor to n,
+   which is why it is special-cased rather than dividing by zero.
+   Returns null when there is no time left — "per month" has no meaning across
+   zero months, and inventing a number there would be worse than saying so. */
+function sprojRequiredMonthly(now, target, annualPct, months) {
+  if (months <= 0) return null;
+  var r = (annualPct / 100) / 12;
+  var grown = now * Math.pow(1 + r, months);
+  if (grown >= target) return 0;          // interest alone covers it
+  var factor = (r === 0) ? months : (Math.pow(1 + r, months) - 1) / r;
+  if (!isFinite(factor) || factor <= 0) return null;
+  return (target - grown) / factor;
 }
 
 function renderSavingsProjection() {
@@ -21217,52 +21242,94 @@ function renderSavingsProjection() {
   }
 
   var st = sprojSettings();
+  if (!st.goal || typeof st.goal !== 'object') st.goal = {};
+
   var calc = rows.map(function(r) {
     var now = parseFloat(r.actual) || 0;
     var k = sprojKey(r.label);
-    var stored = st.mo[k];
-    var avg = sprojAvgFor(r.label);
-    var monthly = (stored !== undefined && stored !== '') ? (parseFloat(stored) || 0)
-                                                          : (avg === null ? 0 : avg);
-    var end = sprojForward(now, monthly, rate, months);
-    return { label: r.label, now: now, monthly: monthly, end: end,
-             typed: (stored !== undefined && stored !== ''), hasAvg: avg !== null };
+    var rawGoal = st.goal[k];
+    var goal = (rawGoal === undefined || rawGoal === '') ? null : (parseFloat(rawGoal) || 0);
+    var avg = sprojAvgFor(r.label);                      // current pace, may be null
+    var pace = (avg === null ? null : avg);
+    var paceEnd = (pace === null) ? null : sprojForward(now, pace, rate, months);
+    var need = (goal === null) ? null : sprojRequiredMonthly(now, goal, rate, months);
+    return { label: r.label, now: now, goal: goal, pace: pace, paceEnd: paceEnd, need: need };
   });
 
-  // One shared scale so the bars are comparable between accounts.
-  var maxEnd = Math.max.apply(null, calc.map(function(c) { return c.end; }).concat([1]));
+  /* One shared scale so accounts stay comparable. Include goals so a target
+     sitting past the projection still has room to be drawn. */
+  var scale = 1;
+  calc.forEach(function(c) {
+    scale = Math.max(scale, c.now, c.goal || 0, c.paceEnd || 0);
+  });
 
   var html = '<div class="spj-legend">' +
     '<span><span class="spj-key"></span>Today</span>' +
-    '<span><span class="spj-key" style="opacity:0.3;"></span>Added by Dec</span></div>';
+    '<span><span class="spj-key" style="opacity:0.3;"></span>At your pace</span>' +
+    '<span><span class="spj-key" style="background:var(--ink);opacity:0.55;width:2px;"></span>Goal</span></div>';
 
   calc.forEach(function(c) {
-    var nowPct = Math.max(0, Math.min(100, (c.now / maxEnd) * 100));
-    var addPct = Math.max(0, Math.min(100 - nowPct, ((c.end - c.now) / maxEnd) * 100));
+    var nowPct  = Math.max(0, Math.min(100, (c.now / scale) * 100));
+    var addPct  = (c.paceEnd === null) ? 0
+      : Math.max(0, Math.min(100 - nowPct, ((c.paceEnd - c.now) / scale) * 100));
+    var goalPct = (c.goal === null) ? null : Math.max(0, Math.min(100, (c.goal / scale) * 100));
+
     html += '<div class="spj-row">' +
       '<div class="spj-top">' +
         '<span class="spj-name">' + escHtml(c.label) + '</span>' +
-        '<span class="spj-fig">' + gpFmt(c.now) + ' &rarr; ' + gpFmt(c.end) + '</span>' +
+        '<span class="spj-fig">' + gpFmt(c.now) + ' today</span>' +
       '</div>' +
       '<div class="spj-track">' +
         '<div class="spj-now" style="width:' + nowPct.toFixed(2) + '%;"></div>' +
         '<div class="spj-add" style="width:' + addPct.toFixed(2) + '%;"></div>' +
-      '</div>' +
-      '<div class="spj-mo">' +
-        '<input type="text" inputmode="decimal" value="' + escHtml(gpFmt(c.monthly)) + '" ' +
-          'onchange="setSprojMonthly(' + JSON.stringify(c.label).replace(/"/g, '&quot;') + ', this.value)" ' +
+        (goalPct === null ? '' : '<div class="spj-mark" style="left:' + goalPct.toFixed(2) + '%;"></div>') +
+      '</div>';
+
+    /* Wording is deliberately never a verdict. A required figure someone
+       cannot reach should still leave them able to see progress and to move
+       the goal, rather than being told they failed. */
+    if (c.goal === null) {
+      html += '<div class="spj-ctx">Set a goal to see what it takes.</div>';
+    } else if (c.now >= c.goal) {
+      html += '<div class="spj-win">Reached — ' + gpFmt(c.now - c.goal) + ' past your goal.</div>';
+    } else if (c.need === null) {
+      html += '<div class="spj-ctx">The year is here — this is where you landed. ' +
+              gpFmt(c.goal - c.now) + ' from ' + gpFmt(c.goal) + '.</div>';
+    } else if (c.need === 0) {
+      html += '<div class="spj-need">You get there without adding anything — growth alone covers it.</div>';
+    } else {
+      html += '<div class="spj-need">Put in <strong>' + gpFmt(c.need) + ' a month</strong> to reach ' + gpFmt(c.goal) + '.</div>';
+      if (c.pace !== null && c.pace > 0) {
+        html += '<div class="spj-ctx">' +
+          (c.pace >= c.need
+            ? 'You are already averaging ' + gpFmt(c.pace) + ' — you are ahead of that.'
+            : 'You are averaging ' + gpFmt(c.pace) + ' — that pace reaches ' + gpFmt(c.paceEnd) + '.') +
+          '</div>';
+      }
+    }
+
+    html += '<div class="spj-mo">' +
+        '<input type="text" inputmode="decimal" placeholder="Set goal" ' +
+          'value="' + (c.goal === null ? '' : escHtml(gpFmt(c.goal))) + '" ' +
+          'onchange="setSprojGoal(' + JSON.stringify(c.label).replace(/"/g, '&quot;') + ', this.value)" ' +
           'onkeydown="if(event.key===\'Enter\')this.blur();">' +
-        '<span>per month' + (c.typed ? '' : (c.hasAvg ? ' — your average so far' : ' — enter what you plan to add')) + '</span>' +
+        '<span>goal by Dec ' + year + '</span>' +
       '</div>' +
     '</div>';
   });
 
-  var totNow = calc.reduce(function(t, c) { return t + c.now; }, 0);
-  var totEnd = calc.reduce(function(t, c) { return t + c.end; }, 0);
-  html += '<div class="spj-total"><span>All accounts by Dec ' + year + '</span>' +
-          '<strong>' + gpFmt(totEnd) + '</strong></div>' +
-          '<div style="font-size:11.5px;color:var(--steel);margin-top:5px;">' +
-          gpFmt(totEnd - totNow) + ' more than today</div>';
+  var withGoals = calc.filter(function(c) { return c.goal !== null; });
+  if (withGoals.length) {
+    var totGoal = withGoals.reduce(function(t, c) { return t + c.goal; }, 0);
+    var totNeed = withGoals.reduce(function(t, c) { return t + (c.need || 0); }, 0);
+    html += '<div class="spj-total"><span>All goals by Dec ' + year + '</span>' +
+            '<strong>' + gpFmt(totGoal) + '</strong></div>';
+    if (months > 0) {
+      html += '<div style="font-size:11.5px;color:var(--steel);margin-top:5px;">' +
+              gpFmt(totNeed) + ' a month across ' + withGoals.length +
+              (withGoals.length === 1 ? ' account' : ' accounts') + '</div>';
+    }
+  }
 
   body.innerHTML = html;
 }
