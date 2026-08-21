@@ -867,7 +867,16 @@ body {
    Hidden by default — a beginner should not meet an extra empty box.
    When off the cells are display:none, which removes them from the grid
    entirely and the rows fall back to the ordinary three-track layout. */
-.goal-col-wrap, .goal-col-lbl, .goal-ft-total { display: none; }
+/* Hiding these needs real specificity, not just `display: none`.
+   `.sec-footer span:nth-child(2)` is (0,2,1) and sets `display: flex`, so a
+   bare `.goal-ft-total { display: none }` at (0,1,0) LOST — the footer's goal
+   cell stayed in the layout with the column switched off, which put four
+   items into three tracks and pushed Growth onto a line of its own. That is
+   a regression in the savings section for anyone who never turns this on.
+   `body:not(.show-sav-goal) …` is (0,3,2) and wins outright. */
+body:not(.show-sav-goal) .erow .goal-col-wrap,
+body:not(.show-sav-goal) .col-lbl-row span.goal-col-lbl,
+body:not(.show-sav-goal) .sec-footer span.goal-ft-total { display: none !important; }
 
 /* The row's cells are divs matched by class, so this one needs its own
    styling — copied from .num-col-wrap, its neighbour. */
@@ -961,6 +970,24 @@ body.show-sav-goal .sec-footer-savings {
   body.show-sav-goal [data-section-id="savings"] .col-lbl-row,
   body.show-sav-goal .sec-footer-savings {
     grid-template-columns: 1fr 78px 78px 78px;
+  }
+}
+/* The text-size settings resize the tracks too — `body.font-large .erow,
+   .col-lbl-row, .sec-footer { 1fr 112px 112px }`. That is (0,2,1), the same
+   weight as the rule above, and it sits later in the file, so at Large the
+   savings rows silently dropped back to three tracks and Growth wrapped.
+   Doubling the class on body makes these (0,3,2) so they win on weight
+   rather than on position. Values match the setting's own, plus one track. */
+body.show-sav-goal.font-large .erow[data-section="savings"],
+body.show-sav-goal.font-large [data-section-id="savings"] .col-lbl-row,
+body.show-sav-goal.font-large .sec-footer-savings {
+  grid-template-columns: 1fr 112px 112px 112px;
+}
+@media (max-width: 900px) {
+  body.show-sav-goal.font-large .erow[data-section="savings"],
+  body.show-sav-goal.font-large [data-section-id="savings"] .col-lbl-row,
+  body.show-sav-goal.font-large .sec-footer-savings {
+    grid-template-columns: 1fr 96px 96px 96px;
   }
 }
 
