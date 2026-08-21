@@ -918,7 +918,11 @@ body.show-sav-goal .sec-footer-savings span:nth-child(4) {
   min-width: 0;
   text-align: center;
   font-family: 'Outfit', sans-serif;
-  font-size: 13px;
+  /* No font-size here on purpose. Sizing is handled by the same rules that
+     size .erow-num-input, which this input is now named in — including the
+     `.erow ... :not(:focus)` variants that exist solely to outrank the iOS
+     rule pinning every input to 16px. A local font-size here would be a
+     second source of truth and would drift from the S/M/L setting. */
   font-weight: 600;
   padding: 0;
   border: none;
@@ -1217,7 +1221,8 @@ body.show-sav-goal .sec-footer-savings {
 .erow input[type="number"]::placeholder { color: var(--mist); text-align: center; }
 .erow input:focus { border-bottom: 1.5px solid var(--sage); }
 
-.erow-num-input {
+.erow-num-input,
+.erow-goal-input {
   font-family: 'Outfit', sans-serif;
   font-size: 14px;
   border: none;
@@ -1633,7 +1638,8 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
     overflow-wrap: break-word;
   }
   .sum-card { padding: 14px 12px; }
-  .erow-num-input { font-size: 13px; }
+  .erow-num-input,
+  .erow-goal-input { font-size: 13px; }
   .erow-label-input { font-size: 13px; }
   .sec-footer span { font-size: 13px; font-weight: 700; }
   .sec-footer { font-size: 13px; font-weight: 700; }
@@ -3346,7 +3352,8 @@ body.text-bold .bs-col-row span {
 
 /* Small (S) — scale down ~85% from base */
 body.font-small .erow-label-input  { font-size: 11.5px !important; }
-body.font-small .erow-num-input    { font-size: 12px !important; }
+body.font-small .erow-num-input,
+body.font-small .erow-goal-input   { font-size: 12px !important; }
 body.font-small .sec-footer span   { font-size: 11px !important; }
 body.font-small #notes-textarea    { font-size: 11.5px !important; }
 #notes-textarea { overflow-y: auto; }
@@ -3368,7 +3375,8 @@ body.font-small .erow              { min-height: 38px !important; }
 
 /* Large (L) — scale up ~115% from base */
 body.font-large .erow-label-input  { font-size: 16px !important; }
-body.font-large .erow-num-input    { font-size: 16px !important; }
+body.font-large .erow-num-input,
+body.font-large .erow-goal-input   { font-size: 16px !important; }
 body.font-large .sec-footer span   { font-size: 16px !important; }
 body.font-large #notes-textarea    { font-size: 16px !important; }
 body.font-large .add-row-btn       { font-size: 14px !important; }
@@ -4356,11 +4364,14 @@ body.font-large .sec-footer .footer-budget-input:not(:focus) { font-size: 16px !
    nothing to them — only the spans around them changed, which is why sizes
    stopped matching at S and M. Follow the setting while idle, hand iOS its
    16px on focus. Selectors are (0,3,0) / (0,4,0) to clear the iOS rule. */
-.erow .erow-num-input:not(:focus)   { font-size: 14px !important; }
+.erow .erow-num-input:not(:focus),
+.erow .erow-goal-input:not(:focus)  { font-size: 14px !important; }
 .erow .erow-label-input:not(:focus) { font-size: 14px !important; }
-body.font-small .erow .erow-num-input:not(:focus)   { font-size: 12px !important; }
+body.font-small .erow .erow-num-input:not(:focus),
+body.font-small .erow .erow-goal-input:not(:focus)  { font-size: 12px !important; }
 body.font-small .erow .erow-label-input:not(:focus) { font-size: 11.5px !important; }
-body.font-large .erow .erow-num-input:not(:focus)   { font-size: 16px !important; }
+body.font-large .erow .erow-num-input:not(:focus),
+body.font-large .erow .erow-goal-input:not(:focus)  { font-size: 16px !important; }
 body.font-large .erow .erow-label-input:not(:focus) { font-size: 16px !important; }
 body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
@@ -17642,6 +17653,9 @@ function setFontSizeExact(size) {
     // Text size control silently stops working for row values.
     '.erow .erow-label-input:not(:focus) { font-size: ' + size + 'px !important; }',
     '.erow .erow-num-input:not(:focus) { font-size: ' + size + 'px !important; }',
+    // The goal column is a row value too — left out, it keeps the 16px iOS
+    // pins every input to and reads larger than its neighbours on a phone.
+    '.erow .erow-goal-input:not(:focus) { font-size: ' + size + 'px !important; }',
     '.sec-footer span { font-size: ' + Math.round(size * 0.96) + 'px !important; }',
     '.sec-hdr h3 { font-size: ' + Math.round(size * 0.85) + 'px !important; }',
     '.col-lbl-row span { font-size: ' + Math.round(size * 0.81) + 'px !important; }',
