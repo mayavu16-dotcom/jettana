@@ -854,6 +854,52 @@ body {
   position: relative;
 }
 
+/* ── The ghost Goal column (savings only) ──────────────────────────────
+   Savings is the one section with no target column: every other section
+   opens with Budget / Planned / Beginning / Current, while savings shows
+   Actual then Growth, both of which look backwards.
+   This is NOT a real third column. The row grid is hardcoded to
+   `1fr 96px 96px` and the whole app reads columns as slot one and slot two,
+   so a genuine third column would mean touching the row layout, the mobile
+   widths, the totals row, the date pickers, the colour system, Reports,
+   Trends and Compare. Instead the field rides at the right-hand end of the
+   existing name cell, which costs no grid change at all.
+   Hidden by default — a beginner opening Jettana for the first time should
+   not meet an extra empty box. Toggled from the section ⋯ menu. */
+.erow-goal-input {
+  display: none;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  text-align: right;
+  width: 78px;
+  flex-shrink: 0;
+  margin-left: auto;
+  margin-right: 10px;
+  padding: 2px 6px;
+  border: none;
+  border-bottom: 1.5px dashed var(--mist);
+  border-radius: 0;
+  background: transparent;
+  color: var(--steel);
+}
+.erow-goal-input:focus { outline: none; border-bottom-color: var(--gold); color: var(--ink); }
+.erow-goal-input::placeholder { color: var(--mist); }
+.goal-col-lbl, .goal-ft-total { display: none; float: right; margin-right: 10px; }
+.goal-ft-total { color: var(--steel); font-weight: 600; }
+
+body.show-sav-goal .erow-goal-input,
+body.show-sav-goal .goal-col-lbl,
+body.show-sav-goal .goal-ft-total { display: inline-block; }
+
+/* The note dot is absolutely positioned from the right edge of the name cell,
+   so it has to step aside for the field. Same move the card badge already
+   makes. Higher specificity than the pointer:coarse rule further down, so it
+   wins on touch too without depending on source order. */
+body.show-sav-goal .erow[data-section="savings"] .note-indicator { right: 130px; }
+@media (pointer: coarse) {
+  body.show-sav-goal .erow[data-section="savings"] .note-indicator { right: 138px; }
+}
+
 /* Card-linked rows: a chip showing how many expense rows feed this card's
    Current (or this account's Ending). It lives in the LABEL column, not the
    number cell — an 84px number column leaves ~6px of margin on a phone, so a
@@ -4095,31 +4141,6 @@ body.font-large.text-bold .erow-label-input {
 #nw-from, #nw-to { font-family: 'Outfit', sans-serif; font-size: 11.5px; padding: 3px 6px; border: 1.5px solid var(--mist); border-radius: 6px; color: var(--ink); background: transparent; }
 /* ── Growth Projection ───────────────────────────────────── */
 .gp-controls { display: flex; flex-wrap: wrap; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--mist); }
-.spj-row { margin-bottom: 15px; }
-.spj-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 5px; }
-.spj-name { font-size: 13.5px; color: var(--ink); font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.spj-fig { font-size: 12.5px; color: var(--steel); white-space: nowrap; flex-shrink: 0; }
-/* Track is a plain flex pair — solid = today, faded = what the pace adds. */
-.spj-track { display: flex; height: 12px; border-radius: 3px; overflow: hidden; background: var(--mist-light); }
-.spj-now { background: var(--sage); }
-.spj-add { background: var(--sage); opacity: 0.3; }
-.spj-mo { display: flex; align-items: center; gap: 5px; margin-top: 5px; font-size: 11.5px; color: var(--steel); }
-.spj-mo input {
-  font-family: 'Outfit', sans-serif; font-size: 12px; width: 84px;
-  padding: 3px 6px; border: 1.5px solid var(--mist); border-radius: 6px;
-  color: var(--ink); background: transparent;
-}
-.spj-mo input:focus { outline: none; border-color: var(--sage); }
-/* The track needs to be a positioning parent so the target notch can sit on it. */
-.spj-track { position: relative; }
-.spj-mark { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--ink); opacity: 0.55; }
-.spj-need { font-size: 13px; color: var(--ink); margin-top: 6px; line-height: 1.5; }
-.spj-need strong { color: var(--sage-dark); }
-.spj-ctx { font-size: 11.5px; color: var(--steel); margin-top: 2px; line-height: 1.5; }
-.spj-win { font-size: 13px; color: var(--sage-dark); margin-top: 6px; font-weight: 600; }
-.spj-total { display: flex; justify-content: space-between; align-items: baseline; padding-top: 12px; margin-top: 4px; border-top: 1px solid var(--mist); font-size: 14px; color: var(--ink); }
-.spj-legend { display: flex; gap: 15px; font-size: 11.5px; color: var(--steel); margin-bottom: 13px; }
-.spj-key { width: 10px; height: 10px; border-radius: 2px; background: var(--sage); display: inline-block; margin-right: 5px; vertical-align: -1px; }
 .gp-field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 130px; min-width: 118px; }
 .gp-field label { font-size: 10.5px; font-weight: 700; letter-spacing: 0.3px; color: var(--steel); text-transform: uppercase; }
 .gp-field input { font-family: 'Outfit', sans-serif; font-size: 13px; padding: 6px 8px; border: 1.5px solid var(--mist); border-radius: 8px; color: var(--ink); background: transparent; width: 100%; box-sizing: border-box; }
@@ -4961,11 +4982,11 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
             <div class="sec-hdr-left"><h3 id="sec-title-savings" ondblclick="renameSectionPrompt('savings')" ontouchstart="_secLongPress=setTimeout(function(){renameSectionPrompt('savings');},600)" ontouchend="clearTimeout(_secLongPress)" ontouchmove="clearTimeout(_secLongPress)" title="Double-click or long-press to rename">Savings &amp; Investments</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
             <div class="sec-hdr-right"><button class="sec-clear-btn" onclick="event.stopPropagation();clearSection('savings',this)" title="Section actions">⋯</button><button class="sec-trash-btn" onclick="confirmClearSection('savings')" title="Clear all rows"><svg width="11" height="12" viewBox="0 0 11 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 3h9M4 3V2h3v1M2 3l.6 7h5.8L9 3" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="sec-total" id="hdr-savings">$0</span><button class="sec-collapse-btn" onclick="toggleSection('savings')" title="Collapse section">▾</button></div></div>
           <div class="sec-body">
-          <div class="col-lbl-row"><span>Account / Fund</span><span>Actual</span><span>Growth</span></div>
+          <div class="col-lbl-row"><span>Account / Fund<span class="goal-col-lbl">Goal</span></span><span>Actual</span><span>Growth</span></div>
           <div class="bulk-bar" id="bulk-bar-savings"><span class="bulk-bar-count" id="bulk-count-savings">0 selected</span><button class="bulk-bar-btn" onclick="selectAllBulk('savings')">Select all</button><button class="bulk-bar-btn danger" onclick="deleteSelectedBulk('savings')">Delete selected</button><button class="bulk-bar-btn" onclick="cancelBulk('savings')">Cancel</button></div><div class="entry-list" id="rows-savings" data-hint="Add your HYSA, Roth IRA, 401(k), or any accounts you're building"></div>
           <button class="add-row-btn" onclick="addRow('savings')"><span class="plus">+</span> Add account</button>
           <div class="sec-footer sec-footer-savings">
-            <span id="ft-savings-label" style="cursor:help;" title="Saved vs invested — hover the total, or click here to pin the breakdown" onclick="toggleSavingsBreakdown(document.getElementById('ft-savings-0'))">Total Savings</span>
+            <span id="ft-savings-label" style="cursor:help;" title="Saved vs invested — hover the total, or click here to pin the breakdown" onclick="toggleSavingsBreakdown(document.getElementById('ft-savings-0'))">Total Savings<span class="goal-ft-total" id="ft-savings-goal"></span></span>
             <span id="ft-savings-0" class="ft-actual-cell" data-section="savings" onmouseenter="showSavingsBreakdown(this)" onmouseleave="hideSavingsBreakdown()" onclick="showFtColorPicker(event,'savings')" oncontextmenu="showFtColorPicker(event,'savings')" title="Click to highlight">$0</span>
             <span id="ft-savings-1" class="ft-actual-cell" data-section="savings-growth" onclick="showFtColorPicker(event,'savings-growth')" oncontextmenu="showFtColorPicker(event,'savings-growth')" title="Click to highlight">$0</span>
           </div>
@@ -5598,27 +5619,6 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
     </div>
     <div id="psav-bottom" style="margin:8px 20px 14px;padding:12px 14px;background:var(--mist-light);border-radius:10px;font-size:13px;color:var(--ink);line-height:1.7;"></div>
     <div class="gp-note">Planning estimates — taxes are simplified (pre-tax contributions reduce taxable income; your real brackets and plan rules vary).</div>
-  </div>
-</div>
-
-<div class="trends-overlay" id="sproj-overlay" style="display:none;" onclick="if(event.target===this)hideSavingsProjection()">
-  <div class="trends-modal" id="sproj-modal">
-    <div class="trends-header" id="sproj-header">
-      <h3>🌱 What it takes to get there</h3>
-      <button class="trends-close" onclick="hideSavingsProjection()">×</button>
-    </div>
-    <div class="trends-subtitle" id="sproj-sub"></div>
-    <div class="gp-controls">
-      <div class="gp-field">
-        <label>Annual return %</label>
-        <input type="text" inputmode="decimal" id="sproj-rate" value="4" oninput="saveSavingsProjRate();renderSavingsProjection()">
-        <span class="gp-hint">applied to every account</span>
-      </div>
-    </div>
-    <div id="sproj-body" style="padding:14px 20px 18px;"></div>
-    <div style="padding:0 20px 16px;font-size:11.5px;color:var(--steel);line-height:1.6;">
-      A hypothetical illustration, not a guarantee. Change a goal any time — it is there to aim at, not to hold you to.
-    </div>
   </div>
 </div>
 
@@ -8309,6 +8309,7 @@ function createFreshMonth(newKey) {
           [cfg.k1]: CLEAR_BOTH.includes(section) ? '' : (r[cfg.k1] || ''),
           [cfg.k2]: '',
           paid: false, date: '', date2: '', note: '',
+          goal: r.goal || '',   // a savings target repeats; the balance does not
           recurring: true,
           textColor: r.textColor || '',
           paidColor: r.paidColor || '',
@@ -8496,6 +8497,7 @@ function showCopySectionModal(section) {
         [cfg.k1]: CLEAR_BOTH.includes(section) ? '' : (row[cfg.k1] || ''),
         [cfg.k2]: '',
         paid: false, date: '', date2: '', note: '', recurring: row.recurring || false,
+        goal: row.goal || '',
         paidColor: row.paidColor || '', numColor: row.numColor || '', strikeColor: row.strikeColor || '',
         _template: row._template || '', alloc: row.alloc || '', _cardLink: row._cardLink || '',
         _myContrib: row._myContrib || '', _empMatch: row._empMatch || '',
@@ -8566,6 +8568,7 @@ function copyMonthData(sourceKey, newKey) {
       date: '',
       date2: '',
       note: '',
+      goal: row.goal || '',
       recurring: row.recurring || false,
       textColor: row.textColor || '',
       paidColor: row.paidColor || '',
@@ -8618,12 +8621,6 @@ function copyMonthData(sourceKey, newKey) {
   }
   if (source._budgetOverrides) {
     all[newKey]._budgetOverrides = JSON.parse(JSON.stringify(source._budgetOverrides));
-  }
-  // Carried like _highlights and _budgetOverrides. A year-end target that reset
-  // every month would have to be re-entered twelve times — which is exactly the
-  // weakness _nwGoal has, since it is stored per month and never copied.
-  if (source._savingsProj) {
-    all[newKey]._savingsProj = JSON.parse(JSON.stringify(source._savingsProj));
   }
   saveAll(all);
   switchMonth(newKey);
@@ -8705,6 +8702,42 @@ function setYearMonthsHeight(el, collapsed) {
   // transitionend does not fire under reduced-motion or in a background tab,
   // and a cap left on is exactly the bug being fixed. Always release.
   setTimeout(release, 400);
+}
+
+/* Ghost goal column: on/off state and the footer total.
+   The preference is a display choice, so it goes through nsKey() like every
+   other new key — turning it on in the demo must not turn it on for real. */
+function savGoalColOn() {
+  try { return appStore.getItem(nsKey('intentra_sav_goal_col')) === '1'; }
+  catch (e) { return false; }
+}
+
+function applySavGoalCol() {
+  document.body.classList.toggle('show-sav-goal', savGoalColOn());
+  updateSavGoalTotal();
+}
+
+function toggleSavGoalCol() {
+  var on = !savGoalColOn();
+  try { appStore.setItem(nsKey('intentra_sav_goal_col'), on ? '1' : '0'); } catch (e) {}
+  applySavGoalCol();
+  showToast(on ? 'Goal column shown' : 'Goal column hidden', true);
+}
+
+function updateSavGoalTotal() {
+  var el = document.getElementById('ft-savings-goal');
+  if (!el) return;
+  if (!savGoalColOn()) { el.textContent = ''; return; }
+  var all = loadAll();
+  var rows = (all[currentMonthKey] && all[currentMonthKey].savings) || [];
+  var sum = 0, any = false;
+  rows.forEach(function(r) {
+    if (r.exempt) return;                       // matches how Total Savings adds up
+    var v = parseFloat(r.goal);
+    if (!isFinite(v) || v === 0) return;
+    sum += v; any = true;
+  });
+  el.textContent = any ? ('$' + Math.round(sum).toLocaleString('en-US')) : '';
 }
 
 function renderSidebar() {
@@ -9021,6 +9054,13 @@ function renderRowEl(section, row, animate = false) {
       ${allowPaid ? `<div class="paid-color-wrap">
         <div class="paid-checkbox" onclick="event.stopPropagation();togglePaid('${section}','${row.id}')" ontouchstart="event.stopPropagation();event.preventDefault();togglePaid('${section}','${row.id}')" title="Mark as paid">✓</div>
       </div>` : ''}
+      ${section === 'savings' ? `<input type="text" inputmode="decimal" class="erow-goal-input" placeholder="$0.00"
+        value="${fmtInput(row.goal)}"
+        data-section="savings" data-id="${row.id}" data-key="goal"
+        data-raw="${row.goal||''}"
+        title="What you're aiming to have in this account"
+        onclick="event.stopPropagation()"
+        onfocus="numFocus(this)" onblur="numBlur(this)" oninput="numInput(this)" onkeydown="numKeyDown(event,this)">` : ''}
     </div>
     <div class="num-col-wrap">
       <input type="text" inputmode="decimal" class="erow-num-input${section === 'debt' && row._cardLink ? ' is-autocalc' : ''}" placeholder="$0.00"
@@ -9334,19 +9374,19 @@ function clearSection(section, btnEl) {
   };
 
   if (section === 'savings') {
-    const optProj = document.createElement('button');
-    optProj.textContent = '🌱 What it takes to get there';
-    optProj.style.cssText = 'background:none;border:none;padding:8px 12px;text-align:left;font-size:13px;color:var(--sage-dark);cursor:pointer;border-radius:5px;font-family:\'Outfit\',sans-serif;';
-    optProj.onmouseenter = function() { this.style.background = 'var(--mist-light)'; };
-    optProj.onmouseleave = function() { this.style.background = 'none'; };
-    optProj.onclick = function() {
+    const optGoalCol = document.createElement('button');
+    optGoalCol.textContent = (savGoalColOn() ? '👻 Hide goal column' : '👻 Show goal column');
+    optGoalCol.style.cssText = 'background:none;border:none;padding:8px 12px;text-align:left;font-size:13px;color:var(--gold);cursor:pointer;border-radius:5px;font-family:\'Outfit\',sans-serif;';
+    optGoalCol.onmouseenter = function() { this.style.background = 'var(--mist-light)'; };
+    optGoalCol.onmouseleave = function() { this.style.background = 'none'; };
+    optGoalCol.onclick = function() {
       pop.remove(); _secPopover = null;
-      showSavingsProjection();
+      toggleSavGoalCol();
     };
-    pop.appendChild(optProj);
-    const projDiv = document.createElement('div');
-    projDiv.style.cssText = 'height:1px;background:var(--mist);margin:4px 0;';
-    pop.appendChild(projDiv);
+    pop.appendChild(optGoalCol);
+    const goalDiv = document.createElement('div');
+    goalDiv.style.cssText = 'height:1px;background:var(--mist);margin:4px 0;';
+    pop.appendChild(goalDiv);
   }
 
   const optSelectDate = document.createElement('button');
@@ -10365,6 +10405,9 @@ document.addEventListener('touchstart', function(e) {
 }, { passive: true });
 
 function recalc() {
+  // Reads from storage, and recalc always runs after the write, so the goal
+  // total stays in step with whatever was just typed.
+  updateSavGoalTotal();
   // Run auto-calcs FIRST so header/footer/net-worth totals see fresh values
   autoCalcDebtFromCards();
   recalcCheckingBalances();
@@ -11985,6 +12028,7 @@ function migrateFormattedNumbers() {
 
 migrateZeros();
 migrateFormattedNumbers();
+setTimeout(applySavGoalCol, 0);   // body exists by now; also seeds the total
 init();
 loadDefaultColors();
 loadBoldText();
@@ -14488,6 +14532,7 @@ function toggleRecurring(section, id) {
           [cfg.k1]: CLEAR_BOTH.includes(section) ? '' : (row[cfg.k1] || ''),
           [cfg.k2]: '',
           paid: false, date: '', date2: '', note: '',
+          goal: row.goal || '',
           recurring: true,
           paidColor: row.paidColor || '',
           numColor: row.numColor || '',
@@ -20435,7 +20480,7 @@ function renderNWChart() {
 // behavior is taught the same way everywhere. Injected before the header's
 // close button (or appended for headers without one).
 document.addEventListener('DOMContentLoaded', function() {
-  ['trends-header', 'nw-header', 'gp-header', 'sproj-header', 'compare-header', 'features-header', 'cal-header', 'askme-header', 'psav-header', 'lel-header'].forEach(function(id) {
+  ['trends-header', 'nw-header', 'gp-header', 'compare-header', 'features-header', 'cal-header', 'askme-header', 'psav-header', 'lel-header'].forEach(function(id) {
     var hdr = document.getElementById(id);
     if (!hdr || hdr.querySelector('.modal-drag-hint')) return;
     var hint = document.createElement('span');
@@ -21082,256 +21127,6 @@ function psavToProjection() {
   var cHint = document.getElementById('gp-contrib-hint');
   if (cHint) cHint.textContent = 'from Plan My Savings — your room to save';
   renderGPChart();
-}
-
-/* ── Savings: where this pace lands you by December ────────────────────
-   Per-account, this calendar year. Distinct from the ⋯ Insights "Growth
-   projection", which is whole-savings and runs 5-30 years.
-
-   Contribution prefill matches gpAvgContribution() deliberately: the average
-   month-over-month change in that account's balance, floored at zero. That
-   figure already contains whatever interest was earned, so adding a return
-   rate on top slightly overstates it. The existing feature accepts the same
-   overlap and labels the field "your average so far — adjust it"; matching it
-   keeps one mental model instead of two, and every figure is editable.
-
-   Identity across months is the trimmed lowercased label — the same rule
-   checking uses to carry its ending balance and debt uses for _carriedBalance.
-   Renaming a row therefore orphans its monthly amount. */
-
-function sprojKey(label) { return String(label || '').trim().toLowerCase(); }
-
-function sprojSettings() {
-  var all = loadAll();
-  var m = all[currentMonthKey] || {};
-  var p = m._savingsProj;
-  if (!p || typeof p !== 'object') p = {};
-  if (!p.mo || typeof p.mo !== 'object') p.mo = {};
-  return p;
-}
-
-function sprojSave(p) {
-  var all = loadAll();
-  if (!all[currentMonthKey]) return;
-  all[currentMonthKey]._savingsProj = p;
-  saveAll(all);
-}
-
-/* Average month-over-month change for ONE account, matched by label. */
-function sprojAvgFor(label) {
-  var all = loadAll();
-  var keys = Object.keys(all).filter(function(k) { return /^\d{4}-\d{2}$/.test(k); }).sort();
-  if (keys.length < 2) return null;
-  var want = sprojKey(label), deltas = [], i;
-  function balOf(mk) {
-    var rows = (all[mk] && all[mk].savings) || [];
-    var hit = rows.find(function(r) { return sprojKey(r.label) === want; });
-    return hit ? (parseFloat(hit.actual) || 0) : null;
-  }
-  for (i = 1; i < keys.length; i++) {
-    var a = balOf(keys[i - 1]), b = balOf(keys[i]);
-    if (a === null || b === null) continue;   // account absent that month
-    deltas.push(b - a);
-  }
-  if (!deltas.length) return null;
-  var avg = deltas.reduce(function(x, y) { return x + y; }, 0) / deltas.length;
-  return Math.max(0, Math.round(avg));
-}
-
-/* Months from the current month to December, exclusive of the current one.
-   August -> 4 (Sep, Oct, Nov, Dec). December -> 0. */
-function sprojMonthsLeft() {
-  var parts = String(currentMonthKey).split('-');
-  var m = parseInt(parts[1], 10);
-  if (!isFinite(m) || m < 1 || m > 12) return 0;
-  return 12 - m;
-}
-
-/* Balance rolled forward: interest applied, then the month's contribution. */
-function sprojForward(balance, monthly, annualPct, months) {
-  var r = (annualPct / 100) / 12;
-  var bal = balance;
-  for (var i = 0; i < months; i++) bal = bal * (1 + r) + monthly;
-  return bal;
-}
-
-function sprojRows() {
-  var all = loadAll();
-  var rows = (all[currentMonthKey] && all[currentMonthKey].savings) || [];
-  return rows.filter(function(r) {
-    if (r.exempt) return false;                    // matches Total Saved
-    if (!r.label || !String(r.label).trim()) return false;
-    return true;
-  });
-}
-
-function showSavingsProjection() {
-  var el = document.getElementById('sproj-overlay');
-  if (el) el.style.display = 'flex';
-  var rateInp = document.getElementById('sproj-rate');
-  var st = sprojSettings();
-  if (rateInp && st.rate !== undefined && st.rate !== '') rateInp.value = st.rate;
-  renderSavingsProjection();
-}
-
-function hideSavingsProjection() {
-  var el = document.getElementById('sproj-overlay');
-  if (el) el.style.display = 'none';
-  var modal = document.getElementById('sproj-modal');
-  if (modal) { modal.style.position = ''; modal.style.left = ''; modal.style.top = ''; modal.style.margin = ''; }
-  if (el) { el.style.background = ''; el.style.pointerEvents = ''; el.style.alignItems = ''; el.style.justifyContent = ''; }
-}
-
-function saveSavingsProjRate() {
-  var el = document.getElementById('sproj-rate');
-  if (!el) return;
-  var p = sprojSettings();
-  p.rate = String(el.value).replace(/[^0-9.]/g, '');
-  sprojSave(p);
-}
-
-function setSprojGoal(label, val) {
-  var p = sprojSettings();
-  if (!p.goal || typeof p.goal !== 'object') p.goal = {};
-  var clean = String(val).replace(/[$,\s]/g, '');
-  if (clean === '' || !isFinite(parseFloat(clean))) delete p.goal[sprojKey(label)];
-  else p.goal[sprojKey(label)] = clean;
-  sprojSave(p);
-  renderSavingsProjection();
-}
-
-/* The inverse of sprojForward: what must go in each month to land on `target`.
-   Forward is  bal = bal*(1+r) + c  repeated, which closes to
-     FV = P(1+r)^n + c * ((1+r)^n - 1)/r
-   so solving for c gives the line below. r = 0 collapses the factor to n,
-   which is why it is special-cased rather than dividing by zero.
-   Returns null when there is no time left — "per month" has no meaning across
-   zero months, and inventing a number there would be worse than saying so. */
-function sprojRequiredMonthly(now, target, annualPct, months) {
-  if (months <= 0) return null;
-  var r = (annualPct / 100) / 12;
-  var grown = now * Math.pow(1 + r, months);
-  if (grown >= target) return 0;          // interest alone covers it
-  var factor = (r === 0) ? months : (Math.pow(1 + r, months) - 1) / r;
-  if (!isFinite(factor) || factor <= 0) return null;
-  return (target - grown) / factor;
-}
-
-function renderSavingsProjection() {
-  var body = document.getElementById('sproj-body');
-  var sub  = document.getElementById('sproj-sub');
-  if (!body) return;
-
-  var rows = sprojRows();
-  var months = sprojMonthsLeft();
-  var year = String(currentMonthKey).split('-')[0];
-  var rate = parseFloat(String((document.getElementById('sproj-rate') || {}).value || '4').replace(/[^0-9.]/g, ''));
-  if (!isFinite(rate) || rate < 0) rate = 0;
-  if (rate > 100) rate = 100;
-
-  if (sub) {
-    sub.textContent = months > 0
-      ? months + (months === 1 ? ' month' : ' months') + ' left in ' + year
-      : 'December — the year is already here';
-  }
-
-  if (!rows.length) {
-    body.innerHTML = '<div style="font-size:13px;color:var(--steel);line-height:1.7;">' +
-      'No savings accounts logged this month yet. Add one and this fills in.</div>';
-    return;
-  }
-
-  var st = sprojSettings();
-  if (!st.goal || typeof st.goal !== 'object') st.goal = {};
-
-  var calc = rows.map(function(r) {
-    var now = parseFloat(r.actual) || 0;
-    var k = sprojKey(r.label);
-    var rawGoal = st.goal[k];
-    var goal = (rawGoal === undefined || rawGoal === '') ? null : (parseFloat(rawGoal) || 0);
-    var avg = sprojAvgFor(r.label);                      // current pace, may be null
-    var pace = (avg === null ? null : avg);
-    var paceEnd = (pace === null) ? null : sprojForward(now, pace, rate, months);
-    var need = (goal === null) ? null : sprojRequiredMonthly(now, goal, rate, months);
-    return { label: r.label, now: now, goal: goal, pace: pace, paceEnd: paceEnd, need: need };
-  });
-
-  /* One shared scale so accounts stay comparable. Include goals so a target
-     sitting past the projection still has room to be drawn. */
-  var scale = 1;
-  calc.forEach(function(c) {
-    scale = Math.max(scale, c.now, c.goal || 0, c.paceEnd || 0);
-  });
-
-  var html = '<div class="spj-legend">' +
-    '<span><span class="spj-key"></span>Today</span>' +
-    '<span><span class="spj-key" style="opacity:0.3;"></span>At your pace</span>' +
-    '<span><span class="spj-key" style="background:var(--ink);opacity:0.55;width:2px;"></span>Goal</span></div>';
-
-  calc.forEach(function(c) {
-    var nowPct  = Math.max(0, Math.min(100, (c.now / scale) * 100));
-    var addPct  = (c.paceEnd === null) ? 0
-      : Math.max(0, Math.min(100 - nowPct, ((c.paceEnd - c.now) / scale) * 100));
-    var goalPct = (c.goal === null) ? null : Math.max(0, Math.min(100, (c.goal / scale) * 100));
-
-    html += '<div class="spj-row">' +
-      '<div class="spj-top">' +
-        '<span class="spj-name">' + escHtml(c.label) + '</span>' +
-        '<span class="spj-fig">' + gpFmt(c.now) + ' today</span>' +
-      '</div>' +
-      '<div class="spj-track">' +
-        '<div class="spj-now" style="width:' + nowPct.toFixed(2) + '%;"></div>' +
-        '<div class="spj-add" style="width:' + addPct.toFixed(2) + '%;"></div>' +
-        (goalPct === null ? '' : '<div class="spj-mark" style="left:' + goalPct.toFixed(2) + '%;"></div>') +
-      '</div>';
-
-    /* Wording is deliberately never a verdict. A required figure someone
-       cannot reach should still leave them able to see progress and to move
-       the goal, rather than being told they failed. */
-    if (c.goal === null) {
-      html += '<div class="spj-ctx">Set a goal to see what it takes.</div>';
-    } else if (c.now >= c.goal) {
-      html += '<div class="spj-win">Reached — ' + gpFmt(c.now - c.goal) + ' past your goal.</div>';
-    } else if (c.need === null) {
-      html += '<div class="spj-ctx">The year is here — this is where you landed. ' +
-              gpFmt(c.goal - c.now) + ' from ' + gpFmt(c.goal) + '.</div>';
-    } else if (c.need === 0) {
-      html += '<div class="spj-need">You get there without adding anything — growth alone covers it.</div>';
-    } else {
-      html += '<div class="spj-need">Put in <strong>' + gpFmt(c.need) + ' a month</strong> to reach ' + gpFmt(c.goal) + '.</div>';
-      if (c.pace !== null && c.pace > 0) {
-        html += '<div class="spj-ctx">' +
-          (c.pace >= c.need
-            ? 'You are already averaging ' + gpFmt(c.pace) + ' — you are ahead of that.'
-            : 'You are averaging ' + gpFmt(c.pace) + ' — that pace reaches ' + gpFmt(c.paceEnd) + '.') +
-          '</div>';
-      }
-    }
-
-    html += '<div class="spj-mo">' +
-        '<input type="text" inputmode="decimal" placeholder="Set goal" ' +
-          'value="' + (c.goal === null ? '' : escHtml(gpFmt(c.goal))) + '" ' +
-          'onchange="setSprojGoal(' + JSON.stringify(c.label).replace(/"/g, '&quot;') + ', this.value)" ' +
-          'onkeydown="if(event.key===\'Enter\')this.blur();">' +
-        '<span>goal by Dec ' + year + '</span>' +
-      '</div>' +
-    '</div>';
-  });
-
-  var withGoals = calc.filter(function(c) { return c.goal !== null; });
-  if (withGoals.length) {
-    var totGoal = withGoals.reduce(function(t, c) { return t + c.goal; }, 0);
-    var totNeed = withGoals.reduce(function(t, c) { return t + (c.need || 0); }, 0);
-    html += '<div class="spj-total"><span>All goals by Dec ' + year + '</span>' +
-            '<strong>' + gpFmt(totGoal) + '</strong></div>';
-    if (months > 0) {
-      html += '<div style="font-size:11.5px;color:var(--steel);margin-top:5px;">' +
-              gpFmt(totNeed) + ' a month across ' + withGoals.length +
-              (withGoals.length === 1 ? ' account' : ' accounts') + '</div>';
-    }
-  }
-
-  body.innerHTML = html;
 }
 
 function showGrowthProjection() {
