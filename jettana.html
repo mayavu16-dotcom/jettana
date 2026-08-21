@@ -8812,10 +8812,10 @@ function updateSavGoalTotal() {
   el.textContent = any ? ('$' + Math.round(sum).toLocaleString('en-US')) : '';
   // Same shrink thresholds the row values use, so a six-figure total cannot
   // overrun its cell and drag the Growth column out of line.
+  el.style.removeProperty('font-size');
   var digits = el.textContent.replace(/[^0-9]/g, '').length;
-  el.style.fontSize = digits >= 8 ? '10px'
-                    : digits >= 7 ? '11px'
-                    : digits >= 6 ? '12px' : '';
+  var fsize = digits >= 8 ? '10px' : digits >= 7 ? '11px' : digits >= 6 ? '12px' : '';
+  if (fsize) el.style.setProperty('font-size', fsize, 'important');
 }
 
 function renderSidebar() {
@@ -9012,13 +9012,20 @@ function renderRowEl(section, row, animate = false) {
     return n < 0 ? '-' + str : str;
   }
 
+  /* Sets the shrink with `important`, because a plain inline style LOSES to a
+     stylesheet !important declaration — and every rule that sizes a row value
+     carries !important, added so they could outrank the iOS rule pinning all
+     inputs to 16px. Written as `input.style.fontSize = ...` this function has
+     therefore been doing nothing at all, for ACTUAL and GROWTH as much as for
+     the goal column. setProperty with the important flag is the only inline
+     form that wins. */
   function applyNumFontSize(input) {
-    if (!input || !input.value) return;
+    if (!input) return;
+    input.style.removeProperty('font-size');
+    if (!input.value) return;
     var len = input.value.replace(/[^0-9]/g, '').length;
-    if (len >= 8) input.style.fontSize = '10px';
-    else if (len >= 7) input.style.fontSize = '11px';
-    else if (len >= 6) input.style.fontSize = '12px';
-    else input.style.fontSize = '';
+    var size = len >= 8 ? '10px' : len >= 7 ? '11px' : len >= 6 ? '12px' : '';
+    if (size) input.style.setProperty('font-size', size, 'important');
   }
 
   const PAID_SECTIONS = ['housing','transport','debt','food','health','gifts','misc','subscriptions'];
@@ -9298,11 +9305,10 @@ function numBlur(el) {
    first paint, but a value typed in afterwards has to be measured again. */
 function sizeGoalInput(el) {
   if (!el || !el.classList || !el.classList.contains('erow-goal-input')) return;
+  el.style.removeProperty('font-size');          // hand it back to the S/M/L rules
   var len = String(el.value).replace(/[^0-9]/g, '').length;
-  if (len >= 8) el.style.fontSize = '10px';
-  else if (len >= 7) el.style.fontSize = '11px';
-  else if (len >= 6) el.style.fontSize = '12px';
-  else el.style.fontSize = '';        // '' hands it back to the S/M/L rules
+  var size = len >= 8 ? '10px' : len >= 7 ? '11px' : len >= 6 ? '12px' : '';
+  if (size) el.style.setProperty('font-size', size, 'important');
 }
 
 function numInput(el) {
