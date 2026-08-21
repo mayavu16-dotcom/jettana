@@ -859,77 +859,59 @@ body {
    opens with Budget / Planned / Beginning / Current, while savings shows
    Actual then Growth, both of which look backwards.
 
-   This is a REAL fourth grid column, not a field floated inside the name
-   cell. The first attempt did the latter — absolutely positioned at a fixed
-   offset from the name cell's right edge — and it went wrong three times
-   running: it collided with the ×, it fought the name input for width, and
-   the values ended up on a different centre line from their own heading.
-   Every one of those was a symptom of the same thing: a value that belongs
-   in a column being positioned by hand instead of being placed in one.
+   A REAL grid column, sitting second. Earlier attempts floated a field
+   inside the name cell at a fixed offset; it collided with the ×, fought
+   the name input for width, and never shared a centre line with its own
+   heading. A cell in a track has none of those problems.
 
-   Grid placement removes the whole class of problem. The cell inherits the
-   same width, the same centring and the same border-left separator as ACTUAL
-   and GROWTH, so it cannot drift out of line with them — and the ×, the note
-   dot and the drag handle keep the positions they have in every other
-   section, because nothing has been squeezed into their cell.
-
-   Hidden by default — a beginner opening Jettana for the first time should
-   not meet an extra empty box. Toggled from the section ⋯ menu. When it is
-   off the cells are display:none, which removes them from the grid entirely,
-   so the row falls back to the ordinary three-track layout. */
+   Hidden by default — a beginner should not meet an extra empty box.
+   When off the cells are display:none, which removes them from the grid
+   entirely and the rows fall back to the ordinary three-track layout. */
 .goal-col-wrap, .goal-col-lbl, .goal-ft-total { display: none; }
 
-/* The goal cell is the LAST child in the DOM and is put back into column 2
-   by the grid. It has to be last: ACTUAL and GROWTH are styled through
-   `span:nth-child(2)` and `span:nth-child(3)` in several places, so a cell
-   inserted ahead of them shifts every one of those rules onto the wrong
-   element — ACTUAL takes GOAL's styling, GROWTH takes ACTUAL's, and GROWTH is
-   left with none at all. Placing by grid-column instead of by DOM order
-   leaves those selectors pointing exactly where they always did.
-   NOTHING about the other three cells is redefined here. */
-body.show-sav-goal .erow[data-section="savings"] .erow-label-wrap,
-body.show-sav-goal [data-section-id="savings"] .col-lbl-row > span:nth-child(1),
-body.show-sav-goal .sec-footer-savings > span:nth-child(1) { grid-column: 1; }
-
-body.show-sav-goal .goal-col-wrap,
-body.show-sav-goal .goal-col-lbl,
-body.show-sav-goal .goal-ft-total { grid-column: 2; }
-
-body.show-sav-goal .erow[data-section="savings"] .num-col-wrap:nth-of-type(1),
-body.show-sav-goal [data-section-id="savings"] .col-lbl-row > span:nth-child(2),
-body.show-sav-goal .sec-footer-savings > span:nth-child(2) { grid-column: 3; }
-
-body.show-sav-goal .erow[data-section="savings"] .num-col-wrap:nth-of-type(2),
-body.show-sav-goal [data-section-id="savings"] .col-lbl-row > span:nth-child(3),
-body.show-sav-goal .sec-footer-savings > span:nth-child(3) { grid-column: 4; }
-
+/* The row's cells are divs matched by class, so this one needs its own
+   styling — copied from .num-col-wrap, its neighbour. */
 body.show-sav-goal .goal-col-wrap {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  border-left: 0.5px solid var(--mist);   /* same separator as .num-col-wrap */
+  border-left: 0.5px solid var(--mist);
   padding: 0 4px;
 }
-/* These two copy the neighbouring cell's own rule verbatim rather than
-   inventing values — .col-lbl-row span:nth-child(2) and
-   .sec-footer span:nth-child(2). Vertical padding in the heading was what
-   made the GOAL label sit lower than the other three. */
-body.show-sav-goal .goal-col-lbl {
+/* The heading and footer cells are spans, and the app styles those BY
+   POSITION. As child 2 they inherit precisely the rules ACTUAL used to
+   carry, so nothing is redeclared here beyond making them visible. */
+body.show-sav-goal .goal-col-lbl  { display: block; }
+body.show-sav-goal .goal-ft-total { display: flex; }
+
+/* The one thing position-based styling gets wrong: with a cell inserted at
+   2, GROWTH slides to 4, and nothing in the app targets a 4th child. It
+   loses its separator, its centring and its weight. These mirror the
+   nth-child(3) rules onto nth-child(4) — additive only, so ACCOUNT / FUND,
+   ACTUAL and GROWTH keep the exact rules they have today. */
+body.show-sav-goal [data-section-id="savings"] .col-lbl-row span:nth-child(4) {
   border-left: 0.5px solid var(--mist);
   padding: 0 8px;
   text-align: center;
 }
-body.show-sav-goal .goal-ft-total {
+body.show-sav-goal .sec-footer-savings span:nth-child(4) {
   border-left: 0.5px solid var(--mist);
   padding: 10px 8px;
   text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--ink);
+  font-weight: 700;
 }
-.goal-ft-total { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+@media (max-width: 900px) {
+  body.show-sav-goal .sec-footer-savings span:nth-child(4) {
+    padding-left: 3px;
+    padding-right: 3px;
+  }
+}
 
 .erow-goal-input {
   width: 100%;
@@ -941,17 +923,16 @@ body.show-sav-goal .goal-ft-total {
   padding: 0;
   border: none;
   background: transparent;
-  color: var(--sage-dark);          /* #4d7a52 — money you intend, not money you have */
+  color: var(--sage-dark);          /* money you intend, not money you have */
 }
-/* --sage-dark is not re-defined for dark mode and #4d7a52 goes muddy on a
-   dark background. --sage is the lighter sibling and stays legible. */
+/* --sage-dark is not re-defined for dark mode and goes muddy there. */
 .dark .erow-goal-input { color: var(--sage); }
 .erow-goal-input:focus { outline: none; color: var(--ink); }
 .erow-goal-input::placeholder { color: var(--mist); }
 
-/* One extra track, added to all three rows together. Narrowing only .erow
-   once left labels and totals on a different grid from the values — a 12px
-   offset in every section — so heading, rows and footer move as one. */
+/* One extra track, added to heading, rows and footer together. Narrowing
+   only .erow once left labels and totals on a different grid from the
+   values — a 12px offset in every section. */
 body.show-sav-goal .erow[data-section="savings"],
 body.show-sav-goal [data-section-id="savings"] .col-lbl-row,
 body.show-sav-goal .sec-footer-savings {
@@ -972,10 +953,6 @@ body.show-sav-goal .sec-footer-savings {
   }
 }
 
-/* The note dot is absolutely positioned from the right edge of the name cell,
-   so it has to step aside for the field. Same move the card badge already
-   makes. Higher specificity than the pointer:coarse rule further down, so it
-   wins on touch too without depending on source order. */
 /* Card-linked rows: a chip showing how many expense rows feed this card's
    Current (or this account's Ending). It lives in the LABEL column, not the
    number cell — an 84px number column leaves ~6px of margin on a phone, so a
@@ -5058,14 +5035,14 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
             <div class="sec-hdr-left"><h3 id="sec-title-savings" ondblclick="renameSectionPrompt('savings')" ontouchstart="_secLongPress=setTimeout(function(){renameSectionPrompt('savings');},600)" ontouchend="clearTimeout(_secLongPress)" ontouchmove="clearTimeout(_secLongPress)" title="Double-click or long-press to rename">Savings &amp; Investments</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
             <div class="sec-hdr-right"><button class="sec-clear-btn" onclick="event.stopPropagation();clearSection('savings',this)" title="Section actions">⋯</button><button class="sec-trash-btn" onclick="confirmClearSection('savings')" title="Clear all rows"><svg width="11" height="12" viewBox="0 0 11 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 3h9M4 3V2h3v1M2 3l.6 7h5.8L9 3" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="sec-total" id="hdr-savings">$0</span><button class="sec-collapse-btn" onclick="toggleSection('savings')" title="Collapse section">▾</button></div></div>
           <div class="sec-body">
-          <div class="col-lbl-row"><span>Account / Fund</span><span>Actual</span><span>Growth</span><span class="goal-col-lbl">Goal</span></div>
+          <div class="col-lbl-row"><span>Account / Fund</span><span class="goal-col-lbl">Goal</span><span>Actual</span><span>Growth</span></div>
           <div class="bulk-bar" id="bulk-bar-savings"><span class="bulk-bar-count" id="bulk-count-savings">0 selected</span><button class="bulk-bar-btn" onclick="selectAllBulk('savings')">Select all</button><button class="bulk-bar-btn danger" onclick="deleteSelectedBulk('savings')">Delete selected</button><button class="bulk-bar-btn" onclick="cancelBulk('savings')">Cancel</button></div><div class="entry-list" id="rows-savings" data-hint="Add your HYSA, Roth IRA, 401(k), or any accounts you're building"></div>
           <button class="add-row-btn" onclick="addRow('savings')"><span class="plus">+</span> Add account</button>
           <div class="sec-footer sec-footer-savings">
             <span id="ft-savings-label" style="cursor:help;" title="Saved vs invested — hover the total, or click here to pin the breakdown" onclick="toggleSavingsBreakdown(document.getElementById('ft-savings-0'))">Total Savings</span>
+            <span class="goal-ft-total" id="ft-savings-goal"></span>
             <span id="ft-savings-0" class="ft-actual-cell" data-section="savings" onmouseenter="showSavingsBreakdown(this)" onmouseleave="hideSavingsBreakdown()" onclick="showFtColorPicker(event,'savings')" oncontextmenu="showFtColorPicker(event,'savings')" title="Click to highlight">$0</span>
             <span id="ft-savings-1" class="ft-actual-cell" data-section="savings-growth" onclick="showFtColorPicker(event,'savings-growth')" oncontextmenu="showFtColorPicker(event,'savings-growth')" title="Click to highlight">$0</span>
-            <span class="goal-ft-total" id="ft-savings-goal"></span>
           </div>
           </div>
         </div>
@@ -8782,8 +8759,8 @@ function setYearMonthsHeight(el, collapsed) {
 }
 
 /* Ghost goal column: on/off state and the footer total.
-   The preference is a display choice, so it goes through nsKey() like every
-   other new key — turning it on in the demo must not turn it on for real. */
+   A display preference, so it goes through nsKey() like every other new key
+   — turning it on in the demo must not turn it on for real. */
 function savGoalColOn() {
   try { return appStore.getItem(nsKey('intentra_sav_goal_col')) === '1'; }
   catch (e) { return false; }
@@ -9132,6 +9109,15 @@ function renderRowEl(section, row, animate = false) {
         <div class="paid-checkbox" onclick="event.stopPropagation();togglePaid('${section}','${row.id}')" ontouchstart="event.stopPropagation();event.preventDefault();togglePaid('${section}','${row.id}')" title="Mark as paid">✓</div>
       </div>` : ''}
     </div>
+    ${section === 'savings' ? `<div class="goal-col-wrap">
+      <input type="text" inputmode="decimal" class="erow-goal-input" placeholder="$0.00"
+        value="${fmtInput(row.goal)}"
+        data-section="savings" data-id="${row.id}" data-key="goal"
+        data-raw="${row.goal||''}"
+        title="What you're aiming to have in this account"
+        onclick="event.stopPropagation()"
+        onfocus="numFocus(this)" onblur="numBlur(this)" oninput="numInput(this)" onkeydown="numKeyDown(event,this)">
+    </div>` : ''}
     <div class="num-col-wrap">
       <input type="text" inputmode="decimal" class="erow-num-input${section === 'debt' && row._cardLink ? ' is-autocalc' : ''}" placeholder="$0.00"
         value="${fmtInput(row[cfg.k1])}"
@@ -9156,15 +9142,6 @@ function renderRowEl(section, row, animate = false) {
         <input type="date" class="row-date-input" id="date-input-${row.id}-2" value="${row.date2 || ''}" onchange="saveDate2('${section}','${row.id}',this.value)" onblur="hideDateInput('${row.id}-2')">
       </div>` : ''}
     </div>
-    ${section === 'savings' ? `<div class="goal-col-wrap">
-      <input type="text" inputmode="decimal" class="erow-goal-input" placeholder="$0.00"
-        value="${fmtInput(row.goal)}"
-        data-section="savings" data-id="${row.id}" data-key="goal"
-        data-raw="${row.goal||''}"
-        title="What you're aiming to have in this account"
-        onclick="event.stopPropagation()"
-        onfocus="numFocus(this)" onblur="numBlur(this)" oninput="numInput(this)" onkeydown="numKeyDown(event,this)">
-    </div>` : ''}
   `;
   container.appendChild(div);
   // Shrink font for large numbers
