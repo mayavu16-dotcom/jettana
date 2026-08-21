@@ -875,14 +875,18 @@ body {
 .erow-goal-input {
   display: none;
   position: absolute;
-  right: 34px;
+  /* 96px flush to the cell edge — the exact width of ACTUAL and GROWTH in the
+     `1fr 96px 96px` grid, centred like them, so the three read as equal
+     columns with equal gutters rather than one number floating nearer the
+     edge than the others. */
+  right: 0;
+  width: 96px;
   top: 50%;
   transform: translateY(-50%);
   font-family: 'Outfit', sans-serif;
   font-size: 13px;
-  text-align: right;
-  width: 78px;
-  padding: 2px 6px;
+  text-align: center;
+  padding: 2px 4px;
   border: none;
   border-bottom: 1.5px dashed var(--mist);
   border-radius: 0;
@@ -914,19 +918,25 @@ body.show-sav-goal .goal-ft-total { display: inline-block; }
    and the drag handle all stop short of it rather than running underneath.
    `right` offsets measure from the padding edge, so this insets the flow
    content without moving the field itself. */
-body.show-sav-goal .erow[data-section="savings"] .erow-label-wrap { padding-right: 156px; }
+body.show-sav-goal .erow[data-section="savings"] .erow-label-wrap { padding-right: 140px; }
+
+/* The × normally sits at right:4px, which is now inside the goal column and
+   would print on top of the figure. Shift it clear, the same move already
+   made for sections that carry a paid checkbox. */
+body.show-sav-goal .erow[data-section="savings"] .del-btn { right: 104px; }
 
 /* A full-height rule at the field's left edge, so the goal reads as its own
    column rather than a number floating in the name cell. A border on the
    input itself would only be as tall as the input; every other column
    separator in the app spans the whole cell, so this one does too.
-   Sits at right:128px — 4px clear of the field, which ends at 124px. */
+   Sits at right:96px, the column boundary itself — same relationship the
+   ACTUAL and GROWTH separators have to their own columns. */
 body.show-sav-goal .erow[data-section="savings"] .erow-label-wrap::before,
 body.show-sav-goal [data-section-id="savings"] .col-lbl-row > span:first-child::before,
 body.show-sav-goal .sec-footer-savings > span:first-child::before {
   content: '';
   position: absolute;
-  right: 128px;
+  right: 96px;
   top: 0;
   bottom: 0;
   width: 0.5px;
@@ -941,17 +951,25 @@ body.show-sav-goal [data-section-id="savings"] .col-lbl-row > span:first-child,
 body.show-sav-goal .sec-footer-savings > span:first-child {
   display: flex;
   align-items: center;
-  padding-right: 40px;
   position: relative;   /* containing block for the divider above */
+}
+/* Same 96px centred band as the field, so heading, values and total all sit
+   on one centre line. One number governs all four: 96. */
+body.show-sav-goal .goal-col-lbl,
+body.show-sav-goal .goal-ft-total {
+  width: 96px;
+  text-align: center;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 /* The note dot is absolutely positioned from the right edge of the name cell,
    so it has to step aside for the field. Same move the card badge already
    makes. Higher specificity than the pointer:coarse rule further down, so it
    wins on touch too without depending on source order. */
-body.show-sav-goal .erow[data-section="savings"] .note-indicator { right: 140px; }
+body.show-sav-goal .erow[data-section="savings"] .note-indicator { right: 132px; }
 @media (pointer: coarse) {
-  body.show-sav-goal .erow[data-section="savings"] .note-indicator { right: 140px; }
+  body.show-sav-goal .erow[data-section="savings"] .note-indicator { right: 132px; }
 }
 
 /* Card-linked rows: a chip showing how many expense rows feed this card's
