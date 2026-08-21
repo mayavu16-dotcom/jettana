@@ -867,13 +867,10 @@ body {
    Hidden by default — a beginner should not meet an extra empty box.
    When off the cells are display:none, which removes them from the grid
    entirely and the rows fall back to the ordinary three-track layout. */
-/* Hiding these needs real specificity, not just `display: none`.
-   `.sec-footer span:nth-child(2)` is (0,2,1) and sets `display: flex`, so a
-   bare `.goal-ft-total { display: none }` at (0,1,0) LOST — the footer's goal
-   cell stayed in the layout with the column switched off, which put four
-   items into three tracks and pushed Growth onto a line of its own. That is
-   a regression in the savings section for anyone who never turns this on.
-   `body:not(.show-sav-goal) …` is (0,3,2) and wins outright. */
+/* Hiding these needs real weight. `.sec-footer span:nth-child(2)` is (0,2,1)
+   and sets `display: flex`, so a bare `.goal-ft-total { display: none }` at
+   (0,1,0) lost and the footer's goal cell stayed in the layout with the
+   column switched off. `body:not(.show-sav-goal) …` is (0,3,2) and wins. */
 body:not(.show-sav-goal) .erow .goal-col-wrap,
 body:not(.show-sav-goal) .col-lbl-row span.goal-col-lbl,
 body:not(.show-sav-goal) .sec-footer span.goal-ft-total { display: none !important; }
@@ -888,9 +885,6 @@ body.show-sav-goal .goal-col-wrap {
   width: 100%;
   border-left: 0.5px solid var(--mist);
   padding: 0 4px;
-  /* A grid item's automatic minimum is its min-content, so a long unbroken
-     figure can force its track wider than declared and push the last column
-     out of the row. These three cells opt out of that. */
   min-width: 0;
   overflow: hidden;
 }
@@ -907,12 +901,12 @@ body.show-sav-goal .goal-ft-total { display: flex; }
    loses its separator, its centring and its weight. These mirror the
    nth-child(3) rules onto nth-child(4) — additive only, so ACCOUNT / FUND,
    ACTUAL and GROWTH keep the exact rules they have today. */
-body.show-sav-goal [data-section-id="savings"] .col-lbl-row span:nth-child(4) {
+[data-section-id="savings"] .col-lbl-row span:nth-child(4) {
   border-left: 0.5px solid var(--mist);
   padding: 0 8px;
   text-align: center;
 }
-body.show-sav-goal .sec-footer-savings span:nth-child(4) {
+.sec-footer-savings span:nth-child(4) {
   border-left: 0.5px solid var(--mist);
   padding: 10px 8px;
   text-align: center;
@@ -923,7 +917,7 @@ body.show-sav-goal .sec-footer-savings span:nth-child(4) {
   font-weight: 700;
 }
 @media (max-width: 900px) {
-  body.show-sav-goal .sec-footer-savings span:nth-child(4) {
+  .sec-footer-savings span:nth-child(4) {
     padding-left: 3px;
     padding-right: 3px;
   }
@@ -934,11 +928,10 @@ body.show-sav-goal .sec-footer-savings span:nth-child(4) {
   min-width: 0;
   text-align: center;
   font-family: 'Outfit', sans-serif;
-  /* No font-size here on purpose. Sizing is handled by the same rules that
-     size .erow-num-input, which this input is now named in — including the
-     `.erow ... :not(:focus)` variants that exist solely to outrank the iOS
-     rule pinning every input to 16px. A local font-size here would be a
-     second source of truth and would drift from the S/M/L setting. */
+  /* No font-size here. The rules that size .erow-num-input name this input
+     too, including the `.erow … :not(:focus)` variants that exist to outrank
+     the iOS rule pinning every input to 16px. A size here would be a second
+     source of truth and would drift from the S/M/L setting. */
   font-weight: 600;
   padding: 0;
   border: none;
@@ -972,12 +965,11 @@ body.show-sav-goal .sec-footer-savings {
     grid-template-columns: 1fr 78px 78px 78px;
   }
 }
-/* The text-size settings resize the tracks too — `body.font-large .erow,
-   .col-lbl-row, .sec-footer { 1fr 112px 112px }`. That is (0,2,1), the same
-   weight as the rule above, and it sits later in the file, so at Large the
-   savings rows silently dropped back to three tracks and Growth wrapped.
-   Doubling the class on body makes these (0,3,2) so they win on weight
-   rather than on position. Values match the setting's own, plus one track. */
+/* `body.font-large .erow, .col-lbl-row, .sec-footer { 1fr 112px 112px }` is
+   (0,2,1) — the same weight as the rule above — and sits later in the file,
+   so ties went to it and Large text silently reverted savings to three
+   tracks. Doubling the class on body makes these (0,3,2), winning on weight
+   rather than on position. The 112px matches what Large uses everywhere. */
 body.show-sav-goal.font-large .erow[data-section="savings"],
 body.show-sav-goal.font-large [data-section-id="savings"] .col-lbl-row,
 body.show-sav-goal.font-large .sec-footer-savings {
@@ -4399,13 +4391,13 @@ body.font-large .sec-footer .footer-budget-input:not(:focus) { font-size: 16px !
    stopped matching at S and M. Follow the setting while idle, hand iOS its
    16px on focus. Selectors are (0,3,0) / (0,4,0) to clear the iOS rule. */
 .erow .erow-num-input:not(:focus),
-.erow .erow-goal-input:not(:focus)  { font-size: 14px !important; }
+.erow .erow-goal-input:not(:focus) { font-size: 14px !important; }
 .erow .erow-label-input:not(:focus) { font-size: 14px !important; }
 body.font-small .erow .erow-num-input:not(:focus),
-body.font-small .erow .erow-goal-input:not(:focus)  { font-size: 12px !important; }
+body.font-small .erow .erow-goal-input:not(:focus) { font-size: 12px !important; }
 body.font-small .erow .erow-label-input:not(:focus) { font-size: 11.5px !important; }
 body.font-large .erow .erow-num-input:not(:focus),
-body.font-large .erow .erow-goal-input:not(:focus)  { font-size: 16px !important; }
+body.font-large .erow .erow-goal-input:not(:focus) { font-size: 16px !important; }
 body.font-large .erow .erow-label-input:not(:focus) { font-size: 16px !important; }
 body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
@@ -8837,12 +8829,6 @@ function updateSavGoalTotal() {
     sum += v; any = true;
   });
   el.textContent = any ? ('$' + Math.round(sum).toLocaleString('en-US')) : '';
-  // Same shrink thresholds the row values use, so a six-figure total cannot
-  // overrun its cell and drag the Growth column out of line.
-  el.style.removeProperty('font-size');
-  var digits = el.textContent.replace(/[^0-9]/g, '').length;
-  var fsize = digits >= 8 ? '10px' : digits >= 7 ? '11px' : digits >= 6 ? '12px' : '';
-  if (fsize) el.style.setProperty('font-size', fsize, 'important');
 }
 
 function renderSidebar() {
@@ -9039,20 +9025,13 @@ function renderRowEl(section, row, animate = false) {
     return n < 0 ? '-' + str : str;
   }
 
-  /* Sets the shrink with `important`, because a plain inline style LOSES to a
-     stylesheet !important declaration — and every rule that sizes a row value
-     carries !important, added so they could outrank the iOS rule pinning all
-     inputs to 16px. Written as `input.style.fontSize = ...` this function has
-     therefore been doing nothing at all, for ACTUAL and GROWTH as much as for
-     the goal column. setProperty with the important flag is the only inline
-     form that wins. */
   function applyNumFontSize(input) {
-    if (!input) return;
-    input.style.removeProperty('font-size');
-    if (!input.value) return;
+    if (!input || !input.value) return;
     var len = input.value.replace(/[^0-9]/g, '').length;
-    var size = len >= 8 ? '10px' : len >= 7 ? '11px' : len >= 6 ? '12px' : '';
-    if (size) input.style.setProperty('font-size', size, 'important');
+    if (len >= 8) input.style.fontSize = '10px';
+    else if (len >= 7) input.style.fontSize = '11px';
+    else if (len >= 6) input.style.fontSize = '12px';
+    else input.style.fontSize = '';
   }
 
   const PAID_SECTIONS = ['housing','transport','debt','food','health','gifts','misc','subscriptions'];
@@ -9202,10 +9181,8 @@ function renderRowEl(section, row, animate = false) {
     </div>
   `;
   container.appendChild(div);
-  // Shrink font for large numbers. The goal column is a row value like any
-  // other — left out, "$50,000.00" at the Large text size overruns an 84px
-  // cell on a phone and gets clipped to "$50,000.0".
-  div.querySelectorAll('.erow-num-input, .erow-goal-input').forEach(applyNumFontSize);
+  // Shrink font for large numbers
+  div.querySelectorAll('.erow-num-input').forEach(applyNumFontSize);
 
   // Note row — sibling div, lives outside the grid
   var noteDiv = document.createElement('div');
@@ -9328,18 +9305,7 @@ function numBlur(el) {
   }
 }
 
-/* Re-apply the long-number shrink after an edit. renderRowEl does this on
-   first paint, but a value typed in afterwards has to be measured again. */
-function sizeGoalInput(el) {
-  if (!el || !el.classList || !el.classList.contains('erow-goal-input')) return;
-  el.style.removeProperty('font-size');          // hand it back to the S/M/L rules
-  var len = String(el.value).replace(/[^0-9]/g, '').length;
-  var size = len >= 8 ? '10px' : len >= 7 ? '11px' : len >= 6 ? '12px' : '';
-  if (size) el.style.setProperty('font-size', size, 'important');
-}
-
 function numInput(el) {
-  sizeGoalInput(el);
   el.dataset.raw = el.value;
   const clean = el.value.replace(/[$,]/g, '');
   const n = parseFloat(clean);
@@ -17713,8 +17679,6 @@ function setFontSizeExact(size) {
     // Text size control silently stops working for row values.
     '.erow .erow-label-input:not(:focus) { font-size: ' + size + 'px !important; }',
     '.erow .erow-num-input:not(:focus) { font-size: ' + size + 'px !important; }',
-    // The goal column is a row value too — left out, it keeps the 16px iOS
-    // pins every input to and reads larger than its neighbours on a phone.
     '.erow .erow-goal-input:not(:focus) { font-size: ' + size + 'px !important; }',
     '.sec-footer span { font-size: ' + Math.round(size * 0.96) + 'px !important; }',
     '.sec-hdr h3 { font-size: ' + Math.round(size * 0.85) + 'px !important; }',
