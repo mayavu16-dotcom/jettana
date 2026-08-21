@@ -866,21 +866,29 @@ body {
    existing name cell, which costs no grid change at all.
    Hidden by default — a beginner opening Jettana for the first time should
    not meet an extra empty box. Toggled from the section ⋯ menu. */
+/* ABSOLUTELY positioned, not a flex item. Every other fixture in this cell —
+   the ×, the note dot, the card badge — is absolute, and mixing the two
+   systems is what broke the first attempt: the field sat in the flex flow
+   while the × sits at right:4px, so they overlapped, and the field competed
+   with the name input for width instead of floating above it.
+   Occupies right:34px..124px. The × keeps right:4..28px, clear by 6px. */
 .erow-goal-input {
   display: none;
+  position: absolute;
+  right: 34px;
+  top: 50%;
+  transform: translateY(-50%);
   font-family: 'Outfit', sans-serif;
   font-size: 13px;
   text-align: right;
   width: 78px;
-  flex-shrink: 0;
-  margin-left: auto;
-  margin-right: 10px;
   padding: 2px 6px;
   border: none;
   border-bottom: 1.5px dashed var(--mist);
   border-radius: 0;
   background: transparent;
   color: var(--steel);
+  z-index: 2;
 }
 .erow-goal-input:focus { outline: none; border-bottom-color: var(--gold); color: var(--ink); }
 .erow-goal-input::placeholder { color: var(--mist); }
@@ -891,13 +899,19 @@ body.show-sav-goal .erow-goal-input,
 body.show-sav-goal .goal-col-lbl,
 body.show-sav-goal .goal-ft-total { display: inline-block; }
 
+/* Reserve the strip the absolute field sits in, so the name, the exempt badge
+   and the drag handle all stop short of it rather than running underneath.
+   `right` offsets measure from the padding edge, so this insets the flow
+   content without moving the field itself. */
+body.show-sav-goal .erow[data-section="savings"] .erow-label-wrap { padding-right: 142px; }
+
 /* The note dot is absolutely positioned from the right edge of the name cell,
    so it has to step aside for the field. Same move the card badge already
    makes. Higher specificity than the pointer:coarse rule further down, so it
    wins on touch too without depending on source order. */
-body.show-sav-goal .erow[data-section="savings"] .note-indicator { right: 130px; }
+body.show-sav-goal .erow[data-section="savings"] .note-indicator { right: 132px; }
 @media (pointer: coarse) {
-  body.show-sav-goal .erow[data-section="savings"] .note-indicator { right: 138px; }
+  body.show-sav-goal .erow[data-section="savings"] .note-indicator { right: 132px; }
 }
 
 /* Card-linked rows: a chip showing how many expense rows feed this card's
