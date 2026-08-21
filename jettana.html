@@ -879,7 +879,14 @@ body.show-sav-goal .goal-col-wrap {
   width: 100%;
   border-left: 0.5px solid var(--mist);
   padding: 0 4px;
+  /* A grid item's automatic minimum is its min-content, so a long unbroken
+     figure can force its track wider than declared and push the last column
+     out of the row. These three cells opt out of that. */
+  min-width: 0;
+  overflow: hidden;
 }
+body.show-sav-goal .goal-col-lbl,
+body.show-sav-goal .goal-ft-total { min-width: 0; overflow: hidden; }
 /* The heading and footer cells are spans, and the app styles those BY
    POSITION. As child 2 they inherit precisely the rules ACTUAL used to
    carry, so nothing is redeclared here beyond making them visible. */
@@ -8803,6 +8810,12 @@ function updateSavGoalTotal() {
     sum += v; any = true;
   });
   el.textContent = any ? ('$' + Math.round(sum).toLocaleString('en-US')) : '';
+  // Same shrink thresholds the row values use, so a six-figure total cannot
+  // overrun its cell and drag the Growth column out of line.
+  var digits = el.textContent.replace(/[^0-9]/g, '').length;
+  el.style.fontSize = digits >= 8 ? '10px'
+                    : digits >= 7 ? '11px'
+                    : digits >= 6 ? '12px' : '';
 }
 
 function renderSidebar() {
@@ -9155,8 +9168,10 @@ function renderRowEl(section, row, animate = false) {
     </div>
   `;
   container.appendChild(div);
-  // Shrink font for large numbers
-  div.querySelectorAll('.erow-num-input').forEach(applyNumFontSize);
+  // Shrink font for large numbers. The goal column is a row value like any
+  // other — left out, "$50,000.00" at the Large text size overruns an 84px
+  // cell on a phone and gets clipped to "$50,000.0".
+  div.querySelectorAll('.erow-num-input, .erow-goal-input').forEach(applyNumFontSize);
 
   // Note row — sibling div, lives outside the grid
   var noteDiv = document.createElement('div');
@@ -9279,7 +9294,19 @@ function numBlur(el) {
   }
 }
 
+/* Re-apply the long-number shrink after an edit. renderRowEl does this on
+   first paint, but a value typed in afterwards has to be measured again. */
+function sizeGoalInput(el) {
+  if (!el || !el.classList || !el.classList.contains('erow-goal-input')) return;
+  var len = String(el.value).replace(/[^0-9]/g, '').length;
+  if (len >= 8) el.style.fontSize = '10px';
+  else if (len >= 7) el.style.fontSize = '11px';
+  else if (len >= 6) el.style.fontSize = '12px';
+  else el.style.fontSize = '';        // '' hands it back to the S/M/L rules
+}
+
 function numInput(el) {
+  sizeGoalInput(el);
   el.dataset.raw = el.value;
   const clean = el.value.replace(/[$,]/g, '');
   const n = parseFloat(clean);
