@@ -2692,6 +2692,23 @@ mark.hl-rose  { --hl: rgba(224, 132, 132, 0.30); }
 #expense-breakdown-pop .ebp-bar { height: 4px; border-radius: 2px; background: var(--mist); margin-top: 3px; overflow: hidden; }
 #expense-breakdown-pop .ebp-bar > span { display: block; height: 100%; background: var(--blush); border-radius: 2px; }
 #expense-breakdown-pop .ebp-total { display: flex; justify-content: space-between; gap: 12px; border-top: 1px solid var(--mist); margin-top: 7px; padding-top: 7px; font-weight: 700; }
+/* Donut + legend above the ranked rows. Additive only: the rows below keep
+   the blush bars they have always had, so nothing existing changes look.
+   No mobile @media here on purpose — the layout viewport is pinned to 700px
+   on any device narrower than that, so `min(300px, 100vw - 24px)` resolves to
+   300px on a phone too and one size genuinely fits both. A max-width:380px
+   rule would simply never match. */
+#expense-breakdown-pop .ebp-donut {
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 9px; padding-bottom: 9px;
+  border-bottom: 1px solid var(--mist);
+}
+#expense-breakdown-pop .ebp-legend { font-size: 11.5px; color: var(--slate); min-width: 0; }
+#expense-breakdown-pop .ebp-lg {
+  display: flex; align-items: center; gap: 6px; padding: 1.5px 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#expense-breakdown-pop .ebp-sw { width: 9px; height: 9px; border-radius: 2px; flex: none; }
 .dark #expense-breakdown-pop { background: #1E2A38; border-color: #2A3A4A; }
 /* ── Debt carried-balance caption + popup ────────────────── */
 /* Sits inline beside the label so the row keeps its normal height — a taller
@@ -10563,6 +10580,88 @@ function _expenseBreakdownPop() {
   return pop;
 }
 
+/* Donut for the "Where it went" panel — the same numbers as the ranked rows
+   below it, but as a shape you can read without reading.
+   Small sections collapse into one "Other" wedge. With seven expense
+   sections, four of them routinely land under 4% of the month and render as
+   hairlines that carry no information and cost the eye real effort. The rows
+   underneath still list every section separately, so nothing is hidden — the
+   grouping only applies to the picture. */
+function expenseDonutSlices(cats, total) {
+  if (!total || !cats || !cats.length) return [];
+  var MIN = 0.04, big = [], other = 0;
+  cats.forEach(function(c) {
+    if (c.amt / total >= MIN) big.push({ key: c.key, amt: c.amt });
+    else other += c.amt;
+  });
+  if (!big.length) return [];              // nothing large enough to anchor a shape
+  if (other > 0) big.push({ key: '_other', amt: other });
+  return big;
+}
+
+function expenseDonutColor(key) {
+  if (key === '_other') return '#B9BFC7';
+  // Reuses the Spending Trends palette so a section is the same colour
+  // wherever it appears. Read at call time, never cached at parse time.
+  return (typeof TREND_SEC_COLORS !== 'undefined' && TREND_SEC_COLORS[key]) || '#6B7C8F';
+}
+
+function expenseDonutSvg(slices, total) {
+  if (!slices.length) return '';
+  var cx = 60, cy = 60, r = 46, ir = 28;
+  // A gap between wedges needs two wedges to sit between.
+  var gap = slices.length > 1 ? 1.6 : 0;
+  var svg = '<svg viewBox="0 0 120 120" width="104" height="104" style="flex:none;" aria-hidden="true">';
+  if (slices.length === 1) {
+    // One section: a stroked ring, not a 360° arc. An arc whose start and end
+    // points coincide draws nothing at all.
+    svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + ((r + ir) / 2) +
+           '" fill="none" stroke="' + expenseDonutColor(slices[0].key) +
+           '" stroke-width="' + (r - ir) + '"/>';
+  } else {
+    var ang = -90;                          // 12 o'clock, so the largest wedge starts at the top
+    slices.forEach(function(s) {
+      var sweep = (s.amt / total) * 360;
+      var a0 = ang + gap / 2, a1 = ang + sweep - gap / 2;
+      if (a1 <= a0) a1 = a0 + 0.4;          // a wedge thinner than the gap still gets a sliver
+      var laf = (a1 - a0) > 180 ? 1 : 0;
+      function px(rad, a) {
+        var t = a * Math.PI / 180;
+        return [(cx + rad * Math.cos(t)).toFixed(2), (cy + rad * Math.sin(t)).toFixed(2)];
+      }
+      var p0 = px(r, a0), p1 = px(r, a1), p2 = px(ir, a1), p3 = px(ir, a0);
+      svg += '<path d="M' + p0[0] + ' ' + p0[1] +
+             'A' + r + ' ' + r + ' 0 ' + laf + ' 1 ' + p1[0] + ' ' + p1[1] +
+             'L' + p2[0] + ' ' + p2[1] +
+             'A' + ir + ' ' + ir + ' 0 ' + laf + ' 0 ' + p3[0] + ' ' + p3[1] +
+             'Z" fill="' + expenseDonutColor(s.key) + '"/>';
+      ang += sweep;
+    });
+  }
+  // Centre total. The hole is 56 units across, so the size is solved from the
+  // string rather than fixed — a hardcoded 14px fits "$2,529" and runs outside
+  // the ring by "$123,456".
+  var txt = _fmtMoney(total), w = 0;
+  for (var i = 0; i < txt.length; i++) w += (txt.charAt(i) === ',' ? 0.28 : 0.55);
+  var fs = Math.max(9, Math.min(14, 48 / w));
+  svg += '<text x="60" y="57" text-anchor="middle" font-family="Outfit,sans-serif" font-size="9" fill="var(--steel)">Total</text>';
+  svg += '<text x="60" y="' + (57 + fs * 0.95).toFixed(1) + '" text-anchor="middle" font-family="Outfit,sans-serif" font-size="' +
+         fs.toFixed(1) + '" font-weight="700" fill="var(--ink)">' + escHtml(txt) + '</text>';
+  return svg + '</svg>';
+}
+
+function expenseDonutHtml(cats, total) {
+  var slices = expenseDonutSlices(cats, total);
+  if (slices.length < 2) return '';         // one wedge is a circle, not a breakdown
+  var legend = slices.map(function(s) {
+    var name = s.key === '_other' ? 'Other' : getSectionName(s.key);
+    return '<div class="ebp-lg"><span class="ebp-sw" style="background:' + expenseDonutColor(s.key) +
+           '"></span>' + escHtml(name) + ' ' + Math.round(s.amt / total * 100) + '%</div>';
+  }).join('');
+  return '<div class="ebp-donut">' + expenseDonutSvg(slices, total) +
+         '<div class="ebp-legend">' + legend + '</div></div>';
+}
+
 function showExpenseBreakdown(card) {
   var b = _expenseBreakdown;
   if (!b || !b.cats.length) return;
@@ -10571,6 +10670,7 @@ function showExpenseBreakdown(card) {
   var maxAmt = b.cats[0].amt || 1;
   var rows = pinned ? breakdownHeader('Where it went')
                     : '<div class="ebp-title">Where it went</div>';
+  rows += expenseDonutHtml(b.cats, b.total);
   b.cats.forEach(function(c) {
     var pct = b.total > 0 ? Math.round((c.amt / b.total) * 100) : 0;
     var barW = Math.max(3, Math.round((c.amt / maxAmt) * 100));
