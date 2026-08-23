@@ -2854,38 +2854,43 @@ mark.hl-rose  { --hl: rgba(224, 132, 132, 0.30); }
 .erow.exempt-row .note-indicator.has-note + .exempt-badge { display: none; }
 .erow.exempt-row .note-indicator.has-note { right: 42px; }
 .erow.exempt-row:has(.note-indicator.has-note) .del-btn { right: 74px; }
-.erow.exempt-row:has(.note-indicator.has-note) .erow-label-wrap .erow-label-input { padding-right: 36px; }
 @media (pointer: coarse) {
   .erow.exempt-row .note-indicator.has-note { right: 58px; }
-  .erow.exempt-row:has(.note-indicator.has-note) .erow-label-wrap .erow-label-input { padding-right: 44px; }
 }
-/* Long labels: reserve space only for always-visible chrome (badge, checkbox);
-   fade the text tail so hover controls (✕, dot) overlay cleanly */
+/* Long labels: reserve space only for chrome that actually sits OVER the
+   field, and let the fade handle the rest.
+   The exempt badge, the card badge and the paid checkbox are in-flow flex
+   siblings — flex has already shortened the input by their full width, so
+   padding for them reserved the same space a second time. Measured on an
+   exempt Food row: the input ended at 470px, the badge began at 476px, and
+   58px of padding inside the input pushed the text to stop at 412px. That is
+   ~58px of name traded for nothing, which is the "…" appearing with half the
+   column still empty.
+   The note dot IS absolutely positioned over the field, so it is the one
+   thing the padding has to clear. The ✕ is hover-only and is meant to land on
+   the faded tail — deliberately not reserved for. */
 .erow-label-wrap .erow-label-input {
-  padding-right: 16px;
   -webkit-mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
   mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
 }
+/* `.erow input[type="text"] { padding: 2px 0 }` is (0,2,1) and sets
+   padding-right to 0 via the shorthand, so a (0,2,0) rule here loses and the
+   ellipsis ends up flush against the checkbox. `.erow` in front makes this
+   (0,3,0) — measured, not assumed. */
+.erow .erow-label-wrap .erow-label-input { padding-right: 8px; }
 .erow-label-wrap .erow-label-input:focus { -webkit-mask-image: none; mask-image: none; }
-[data-section="housing"] .erow-label-wrap .erow-label-input,
-[data-section="transport"] .erow-label-wrap .erow-label-input,
-[data-section="debt"] .erow-label-wrap .erow-label-input,
-[data-section="food"] .erow-label-wrap .erow-label-input,
-[data-section="health"] .erow-label-wrap .erow-label-input,
-[data-section="gifts"] .erow-label-wrap .erow-label-input,
-[data-section="misc"] .erow-label-wrap .erow-label-input,
-[data-section="subscriptions"] .erow-label-wrap .erow-label-input { padding-right: 36px; }
-.erow.exempt-row .erow-label-wrap .erow-label-input { padding-right: 58px; }
+/* A visible note dot sits 28px in from the field's right edge, so this clears
+   it with a little air. Keyed on the dot being present rather than on the
+   section, because that is the actual condition. */
+.erow:has(.note-indicator.has-note) .erow-label-wrap .erow-label-input { padding-right: 36px; }
+/* A card badge pushes the dot further in (right: 56px), so a badged row with
+   a note needs more clearance. Checking pushes it further still, but 50px was
+   measured to leave 58px of room there, so it needs no separate rule. */
+.erow:has(.erow-label-wrap.has-cardbadge) .erow-label-wrap .erow-label-input { padding-right: 8px; }
+.erow:has(.erow-label-wrap.has-cardbadge):has(.note-indicator.has-note) .erow-label-wrap .erow-label-input { padding-right: 50px; }
 @media (pointer: coarse) {
-  [data-section="housing"] .erow-label-wrap .erow-label-input,
-  [data-section="transport"] .erow-label-wrap .erow-label-input,
-  [data-section="debt"] .erow-label-wrap .erow-label-input,
-  [data-section="food"] .erow-label-wrap .erow-label-input,
-  [data-section="health"] .erow-label-wrap .erow-label-input,
-  [data-section="gifts"] .erow-label-wrap .erow-label-input,
-  [data-section="misc"] .erow-label-wrap .erow-label-input,
-  [data-section="subscriptions"] .erow-label-wrap .erow-label-input { padding-right: 44px; }
-  .erow.exempt-row .erow-label-wrap .erow-label-input { padding-right: 64px; }
+  .erow:has(.note-indicator.has-note) .erow-label-wrap .erow-label-input { padding-right: 44px; }
+  .erow:has(.erow-label-wrap.has-cardbadge):has(.note-indicator.has-note) .erow-label-wrap .erow-label-input { padding-right: 58px; }
 }
 
 /* ── Undo toast ──────────────────────────────────────────────── */
