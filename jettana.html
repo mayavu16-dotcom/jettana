@@ -6118,7 +6118,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <div class="shortcuts-group-title">Insights</div>
       <div class="shortcut-row"><span>📅 <strong>Spending Calendar</strong> — ⋯ → Insights → Spending Calendar; see daily spending laid out on a calendar grid with weekly totals. Filter by section, search by transaction name, and tap any day for a breakdown. Drag to reposition over the tracker.</span></div>
       <div class="shortcut-row"><span>📊 <strong>Spending Trends</strong> — ⋯ → Insights → Spending Trends; bar chart of your last 6 months with a dashed gold line marking your average monthly spend. Tap any bar and it splits into colored blocks — one per category, sized by its share — with a full breakdown below. Tap ⭐ Peaks for each category's highest month (with its monthly average, or "one-time" for one-offs) — tap the month name to jump straight to those rows, and the last line shows your worst-case month if everything peaked at once. Tap ? for a quick guide to reading the chart. Drag to reposition.</span></div>
-      <div class="shortcut-row"><span>📈 <strong>Net Worth Trend</strong> — ⋯ → Insights → Net worth trend; a line chart of your net worth (checking + savings − debt) by month. Pick 6M, YTD, 1Y, All, or a custom start month. The summary shows your growth, how far apart the months are, and — optionally — your age across the range. Drag to reposition.</span></div>
+      <div class="shortcut-row"><span>📈 <strong>Net Worth Trend</strong> — ⋯ → Insights → Net worth trend; a line chart of your net worth (checking + savings − debt) by month. Pick 6M, YTD, 1Y, All, or a custom start month. Tap any point on the line to jump straight to that month — drag the chart aside first and it stays open, so you can step through months one dot at a time. The summary shows your growth, how far apart the months are, and — optionally — your age across the range. Drag to reposition.</span></div>
       <div class="shortcut-row"><span>🎂 <strong>Age on your trend</strong> — enter your birth month + year in the Net Worth Trend (optional) to see "age 23 → 25" alongside your growth. Month and year only — Jettana never asks for your full birthdate. Clear the field anytime to remove it.</span></div>
       <div class="shortcut-row"><span>🌱 <strong>Growth Projection</strong> — ⋯ → Insights → Growth projection; a hypothetical compound-growth view seeded from your current savings and average monthly contribution. Adjust the amount, contribution, or return rate; pick 5Y / 10Y / 20Y / 30Y, or type any number of years (1–60) in the custom chip. Drag to reposition.</span></div>
       <div class="shortcut-row"><span>⇄ <strong>Compare months</strong> — ⋯ → Insights → Compare months; any section line-by-line against a baseline month, with color-coded changes and how far apart the two months are (e.g. "2 years, 6 months apart"). The left column follows the month you're viewing. Drag to reposition.</span></div>
@@ -20527,6 +20527,27 @@ function hideNetWorthTrend() {
   if (overlay) { overlay.style.background = ''; overlay.style.pointerEvents = ''; overlay.style.alignItems = ''; overlay.style.justifyContent = ''; }
 }
 
+/* Tapping a point on the trend jumps to that month — a shortcut from "what
+   was I worth in March" to actually looking at March.
+   The modal closes UNLESS it has been dragged aside. A dragged modal has
+   already been made click-through by startDrag(), so the tracker is visible
+   behind it and leaving it open lets you walk the dots and watch the months
+   change. startDrag() is the only thing in the file that sets
+   position:fixed on #nw-modal, so it doubles as a reliable "has been
+   dragged" marker — no second flag to keep in sync with it. */
+function nwJumpToMonth(key) {
+  if (!key) return;
+  // The chart is drawn from a snapshot; if the month has since been deleted,
+  // do nothing rather than let switchMonth's getMonthData re-create it empty.
+  var all = loadAll();
+  if (!all[key]) return;
+  var modal = document.getElementById('nw-modal');
+  var dragged = !!(modal && modal.style.position === 'fixed');
+  switchMonth(key);
+  if (dragged) renderNWChart();   // repaint so the current-month ring follows
+  else hideNetWorthTrend();
+}
+
 function renderNWChart() {
   var birthInput = document.getElementById('nw-birth');
   if (birthInput && birthInput !== document.activeElement) birthInput.value = getNWBirth();
@@ -20572,16 +20593,42 @@ function renderNWChart() {
     var poly = pts.map(function(p, i) { return X(i).toFixed(1) + ',' + Y(p.v).toFixed(1); }).join(' ');
     out += '<polyline points="' + poly + '" fill="none" stroke="var(--sage)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
   }
-  // Dots, value labels, month ticks
+  // Dots, value labels, month ticks.
+  // Each point is wrapped in a <g> that jumps to that month. The group holds
+  // an invisible hit RECT as well as the visible dot: r=4 in a 520-wide
+  // viewBox is about a 6px target once the SVG is scaled to a phone, far
+  // under what a finger needs.
+  // A rect capped at the real spacing between points, not a circle with a
+  // minimum radius. A minimum radius looks safer and is not: with ~39+
+  // months on "All" the circles overlap, and since later points paint on
+  // top, point i+1's hit area covers point i's VISIBLE DOT — tapping a dot
+  // would jump to the month after it. Width <= spacing cannot overlap, so
+  // every point keeps a target centred on itself at any month count.
+  // The two labels live inside the group too, so tapping the value or the
+  // month name works as well. Without that they would sit ON TOP of the hit
+  // area (drawn later = higher) and swallow taps aimed just above the dot.
   var step = Math.max(1, Math.ceil(pts.length / 8));
+  var spacing = pts.length > 1 ? innerW / (pts.length - 1) : innerW;
+  var hitW = Math.min(spacing, 28), hitH = 30;
   pts.forEach(function(p, i) {
     var up = i === 0 || p.v >= pts[i - 1].v;
-    out += '<circle cx="' + X(i) + '" cy="' + Y(p.v) + '" r="4" fill="' + (up ? 'var(--sage)' : 'var(--blush)') + '" stroke="white" stroke-width="1.5"/>';
     var showLbl = pts.length <= 8 || i % step === 0 || i === pts.length - 1;
+    out += '<g style="cursor:pointer;" onclick="nwJumpToMonth(\'' + p.key + '\')">';
+    out += '<title>Go to ' + escHtml(monthLabel(p.key)) + '</title>';
+    out += '<rect x="' + (X(i) - hitW / 2).toFixed(1) + '" y="' + (Y(p.v) - hitH / 2).toFixed(1)
+         + '" width="' + hitW.toFixed(1) + '" height="' + hitH + '" fill="transparent"/>';
+    // A ring on the month you're actually looking at. It matters most when
+    // the modal has been dragged aside and stays open — you walk the dots
+    // and this is the only thing telling you where you landed.
+    if (p.key === currentMonthKey) {
+      out += '<circle cx="' + X(i) + '" cy="' + Y(p.v) + '" r="7.5" fill="none" stroke="var(--steel)" stroke-width="1.5" opacity="0.85"/>';
+    }
+    out += '<circle cx="' + X(i) + '" cy="' + Y(p.v) + '" r="4" fill="' + (up ? 'var(--sage)' : 'var(--blush)') + '" stroke="white" stroke-width="1.5"/>';
     if (showLbl) {
       out += '<text x="' + X(i) + '" y="' + (Y(p.v) - 9) + '" text-anchor="middle" font-size="10" font-weight="700" fill="var(--ink)" font-family="Outfit,sans-serif">' + nwShortFmt(p.v) + '</text>';
       out += '<text x="' + X(i) + '" y="' + (H - 12) + '" text-anchor="middle" font-size="10" fill="var(--steel)" font-family="Outfit,sans-serif">' + tick(p.key) + '</text>';
     }
+    out += '</g>';
   });
   svg.innerHTML = out;
 
@@ -20601,7 +20648,10 @@ function renderNWChart() {
       })() + '</span>'
     + '<span style="font-weight:700;color:' + col + ';">' + sign + fmt(Math.abs(delta)).replace('$', '$')
     + (pct !== null ? ' <span style="font-weight:600;opacity:0.8;">(' + sign + Math.abs(pct).toFixed(1) + '%)</span>' : '') + '</span>'
-    + '</div>';
+    + '</div>'
+    // The dots give no visual sign they are tappable, and the <title>
+    // tooltip is desktop-only, so mobile needs this line to find the feature.
+    + '<div style="text-align:center;color:var(--steel);font-size:11px;opacity:0.75;padding:0 2px 4px;">Tap a point to open that month</div>';
 }
 
 // One shared "⠿ drag to move" hint across every draggable modal header, so the
