@@ -9245,7 +9245,7 @@ function renderRowEl(section, row, animate = false) {
         data-raw="${row.goal||''}"
         title="What you're aiming to have in this account"
         onclick="event.stopPropagation()"
-        onfocus="numFocus(this)" onblur="numBlur(this)" oninput="numInput(this)" onkeydown="numKeyDown(event,this)">
+        onfocus="numFocus(this)" onblur="numBlur(this)" oninput="numInput(this)" onkeydown="goalKeyDown(event,this)">
     </div>` : ''}
     <div class="num-col-wrap">
       <input type="text" inputmode="decimal" class="erow-num-input${section === 'debt' && row._cardLink ? ' is-autocalc' : ''}" placeholder="$0.00"
@@ -16710,6 +16710,43 @@ function numKeyDown(e, el) {
       }
     }, 50);
   }
+}
+
+/* Enter in the Goal cell moves down to the Goal cell of the next row, so it
+   behaves like every other value cell.
+   It needs its own handler rather than a share of numKeyDown(), which
+   navigates purely by `data-col`. The goal input deliberately carries no
+   data-col: that same attribute is what handleNavKey() builds the Tab chain
+   from, and that chain calls .focus() without checking the element is
+   visible. With the column switched off the goal cell is display:none, so
+   adding data-col would make Tab from the label land on an unfocusable cell
+   and drop focus entirely — for users who never turned the feature on.
+   Navigating by class keeps the goal column out of that machinery.
+   Otherwise this mirrors numKeyDown() line for line, including the last-row
+   behaviour, so Goal and Actual feel identical. */
+function goalKeyDown(e, el) {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  var section = el.dataset.section || 'savings';
+  var rows = Array.from(document.querySelectorAll('#rows-' + section + ' .erow'));
+  var curIdx = rows.indexOf(el.closest('.erow'));
+  var nextRow = rows[curIdx + 1];
+  if (nextRow) {
+    var nextInput = nextRow.querySelector('.erow-goal-input');
+    if (nextInput) { nextInput.focus(); nextInput.select(); }
+    return;
+  }
+  // Last row — create a new one and focus its label, same as numKeyDown().
+  if (!CONFIGS[section]) return;
+  addRow(section);
+  setTimeout(function() {
+    var updatedRows = Array.from(document.querySelectorAll('#rows-' + section + ' .erow'));
+    var newRow = updatedRows[updatedRows.length - 1];
+    if (newRow) {
+      var labelInput = newRow.querySelector('.erow-label-input');
+      if (labelInput) labelInput.focus();
+    }
+  }, 50);
 }
 
 function labelKeyDown(e, el) {
