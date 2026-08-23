@@ -9309,7 +9309,9 @@ function renderRowEl(section, row, animate = false) {
   const hasVal2  = row[cfg.k2] !== '' && row[cfg.k2] !== null && row[cfg.k2] !== undefined && row[cfg.k2] !== 0 && row[cfg.k2] !== '0';
   if (!hasLabel && !hasVal1 && !hasVal2 && !animate) div.style.display = 'none';
 
-  div.querySelectorAll('input[data-col]').forEach(input => {
+  // Unfiltered selector on purpose: div is not in the document yet, so a
+  // visibility filter here would match nothing and wire up no listeners.
+  div.querySelectorAll(rowNavSelector()).forEach(input => {
     input.addEventListener('keydown', handleNavKey);
   });
 
@@ -9421,6 +9423,30 @@ function numInput(el) {
   if (!isNaN(n)) updateRow(el.dataset.section, el.dataset.id, el.dataset.key, n);
 }
 
+/* The fields Tab walks through in a row.
+   `input[data-col]` alone misses the Savings goal cell, which carries no
+   data-col on purpose — that attribute is what builds this chain, and the
+   goal cell is display:none whenever the column is switched off, so putting
+   it in by attribute would make Tab stop on an unfocusable cell for people
+   who never enabled the feature. Selecting it by class here, together with
+   the visibility filter in rowNavInputs(), gives the right behaviour in both
+   states: in the chain when shown, absent when hidden.
+   A hoisted function rather than a top-level `var` so it cannot be caught by
+   the declaration-order trap — everything in this file shares one script
+   block, and a var assigned below its first use runs second. */
+function rowNavSelector() { return 'input[data-col], input.erow-goal-input'; }
+
+/* Same set, in DOM order, minus anything not currently rendered.
+   The filter is a no-op for the three data-col inputs — none of them is ever
+   hidden individually (checked, not assumed) — so it exists purely to stop a
+   hidden cell becoming a Tab stop that swallows focus. Do NOT use this when
+   attaching listeners: at render time the row is not in the document yet,
+   every element reports offsetParent null, and nothing would get wired up. */
+function rowNavInputs(scope) {
+  return Array.from(scope.querySelectorAll(rowNavSelector()))
+    .filter(function(el) { return el.offsetParent !== null; });
+}
+
 function handleNavKey(e) {
   const isTab = e.key === 'Tab' && !e.shiftKey;
   if (!isTab) return;
@@ -9428,7 +9454,7 @@ function handleNavKey(e) {
   const input   = e.currentTarget;
   const erow    = input.closest('.erow');
   if (!erow) return;
-  const rowInputs = Array.from(erow.querySelectorAll('input[data-col]'));
+  const rowInputs = rowNavInputs(erow);
   const currentIdx = rowInputs.indexOf(input);
   const nextInput = rowInputs[currentIdx + 1];
   if (nextInput) {
@@ -9439,7 +9465,7 @@ function handleNavKey(e) {
       nextRow = nextRow.nextElementSibling;
     }
     if (nextRow) {
-      const first = nextRow.querySelector('input[data-col]');
+      const first = rowNavInputs(nextRow)[0];
       if (first) first.focus();
     }
   }
