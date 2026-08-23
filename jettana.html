@@ -4039,6 +4039,17 @@ body.font-large.text-bold .erow-label-input {
 .cal-popover-section { font-size: 10px; color: var(--steel); white-space: nowrap; }
 .cal-popover-amt { color: var(--blush); font-weight: 600; white-space: nowrap; }
 .cal-popover-close { position: absolute; top: 8px; right: 10px; background: none; border: none; color: var(--steel); cursor: pointer; font-size: 16px; padding: 0; line-height: 1; }
+/* A transaction that can be opened in the tracker. Rows without a resolvable
+   id stay inert, so the affordance only appears where the jump will work. */
+.cal-popover-row.cal-jump { cursor: pointer; margin: 0 -6px; padding-left: 6px; padding-right: 6px; border-radius: 6px; }
+.cal-popover-row.cal-jump:hover { background: var(--mist-light); }
+.dark .cal-popover-row.cal-jump:hover { background: #263545; }
+/* Flash on the row you were sent to. An INSET ring on purpose: .sec-card is
+   overflow:hidden and a row spans its full width, so an outward ring is
+   clipped on the left and right and only the top and bottom edges survive.
+   Inset also stays clear of .erow's nth-child(even) and :hover backgrounds
+   instead of fighting them. */
+.erow.cal-jump-flash { box-shadow: inset 0 0 0 3px rgba(217,182,74,0.85); transition: box-shadow 0.35s; }
 .cal-empty-state { text-align: center; padding: 32px 20px; color: var(--steel); font-size: 13px; line-height: 1.6; }
 .dark .cal-modal { background: #182030; }
 .dark .cal-day { background: #1E2A38; border-color: #2A3A4A; }
@@ -5587,7 +5598,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
         <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">How do I see what I spent each day?<span class="askme-q-arrow">▾</span></button>
-          <div class="askme-a">Open <strong>⋯ → Insights → Spending Calendar</strong>. Days with spending are highlighted — tap any day to see a breakdown of transactions. Use the section filter to focus on one category, or search by transaction name. You can drag the calendar to compare it against your tracker rows.</div>
+          <div class="askme-a">Open <strong>⋯ → Insights → Spending Calendar</strong>. Days with spending are highlighted — tap any day to see a breakdown of transactions, then tap a transaction to jump to its row in the tracker. Use the section filter to focus on one category, or search by transaction name. You can drag the calendar to compare it against your tracker rows — dragged aside, it stays open while you jump, so you can work through a day at a time.</div>
         </div>
 
         <div class="askme-item">
@@ -6116,7 +6127,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
     <div class="shortcuts-group">
       <div class="shortcuts-group-title">Insights</div>
-      <div class="shortcut-row"><span>📅 <strong>Spending Calendar</strong> — ⋯ → Insights → Spending Calendar; see daily spending laid out on a calendar grid with weekly totals. Filter by section, search by transaction name, and tap any day for a breakdown. Drag to reposition over the tracker.</span></div>
+      <div class="shortcut-row"><span>📅 <strong>Spending Calendar</strong> — ⋯ → Insights → Spending Calendar; see daily spending laid out on a calendar grid with weekly totals. Filter by section, search by transaction name, and tap any day for a breakdown. Tap a transaction in that breakdown to jump straight to its row in the tracker — useful when reconciling. Drag to reposition over the tracker.</span></div>
       <div class="shortcut-row"><span>📊 <strong>Spending Trends</strong> — ⋯ → Insights → Spending Trends; bar chart of your last 6 months with a dashed gold line marking your average monthly spend. Tap any bar and it splits into colored blocks — one per category, sized by its share — with a full breakdown below. Tap ⭐ Peaks for each category's highest month (with its monthly average, or "one-time" for one-offs) — tap the month name to jump straight to those rows, and the last line shows your worst-case month if everything peaked at once. Tap ? for a quick guide to reading the chart. Drag to reposition.</span></div>
       <div class="shortcut-row"><span>📈 <strong>Net Worth Trend</strong> — ⋯ → Insights → Net worth trend; a line chart of your net worth (checking + savings − debt) by month. Pick 6M, YTD, 1Y, All, or a custom start month. Tap any point on the line to jump straight to that month — drag the chart aside first and it stays open, so you can step through months one dot at a time. The summary shows your growth, how far apart the months are, and — optionally — your age across the range. Drag to reposition.</span></div>
       <div class="shortcut-row"><span>🎂 <strong>Age on your trend</strong> — enter your birth month + year in the Net Worth Trend (optional) to see "age 23 → 25" alongside your growth. Month and year only — Jettana never asks for your full birthdate. Clear the field anytime to remove it.</span></div>
@@ -22241,14 +22252,17 @@ function calGetDaySpend() {
   var all = loadAll();
   var mk  = _calYear + '-' + String(_calMonth + 1).padStart(2, '0');
   // When demo month is active, read its data (dates were set to current month)
-  var d   = (currentMonthKey === 'demo-month' ? all['demo-month'] : all[mk]) || {};
+  // dataKey is the key the rows actually live under, which is NOT mk in demo
+  // mode. Entries carry it so a jump lands in the right month's data.
+  var dataKey = (currentMonthKey === 'demo-month') ? 'demo-month' : mk;
+  var d   = all[dataKey] || {};
   var filter = (document.getElementById('cal-filter') || {}).value || 'all';
   var searchRaw = ((document.getElementById('cal-search') || {}).value || '').trim().toLowerCase();
 
   var map = {};
   var SECTIONS_ALL = ['housing','transport','food','health','subscriptions','gifts','misc'];
 
-  function addEntry(dateKey, label, sec, amt, exempt) {
+  function addEntry(dateKey, label, sec, amt, exempt, id) {
     if (!dateKey) return;
     var parts = String(dateKey).trim().split('-');
     if (parts.length !== 3) return;
@@ -22256,7 +22270,8 @@ function calGetDaySpend() {
     if (!normalized.startsWith(mk)) return;
     if (!amt && !exempt) return;
     if (!map[normalized]) map[normalized] = [];
-    map[normalized].push({ label: label || '—', section: sec, amount: exempt ? 0 : amt, exempt: !!exempt });
+    map[normalized].push({ label: label || '—', section: sec, amount: exempt ? 0 : amt, exempt: !!exempt,
+                           id: id || '', monthKey: dataKey });
   }
 
   function parseAmt(v) {
@@ -22276,13 +22291,13 @@ function calGetDaySpend() {
       // date → col 1 amount (mainly income/debt/savings/checking)
       if (row.date) {
         var amt1 = parseAmt(row[cfg.k2]) || parseAmt(row[cfg.k1]) || 0;
-        addEntry(row.date, label, sec, amt1, row.exempt);
+        addEntry(row.date, label, sec, amt1, row.exempt, row.id);
       }
       // date2 → col 2 actual date (the ONLY date column for expense sections)
       if (row.date2) {
         var amt2 = parseAmt(row[cfg.k2]) || parseAmt(row[cfg.k1]) || 0;
         if (row.date2 !== row.date) {
-          addEntry(row.date2, label, sec, amt2, row.exempt);
+          addEntry(row.date2, label, sec, amt2, row.exempt, row.id);
         }
       }
     });
@@ -22378,6 +22393,53 @@ function renderCalendar() {
   }
 }
 
+/* Jump from a calendar transaction to the row it came from — the reconcile
+   shortcut, so you don't have to hunt for the row you just saw on a day.
+   Deliberately shaped like jumpToMonthSection() (the Trends-peak jump) so
+   the two behave the same; this one targets a specific row rather than a
+   whole section. */
+function jumpToMonthRow(mk, sec, id) {
+  if (!sec || !id) return;
+  hideCalPopover();
+  // Same rule as the net worth trend: a modal that has been dragged aside is
+  // already click-through, so leaving it open lets you reconcile day after
+  // day. Its startDrag() is the only thing that sets position:fixed.
+  var modal = document.getElementById('cal-modal');
+  var dragged = !!(modal && modal.style.position === 'fixed');
+  if (!dragged) hideCalendar();
+  if (mk && currentMonthKey !== mk) switchMonth(mk);
+  // The delay lets switchMonth's re-render finish before we look for the row.
+  setTimeout(function() {
+    var card = document.querySelector('.sec-card[data-section-id="' + sec + '"]');
+    if (card && card.classList.contains('collapsed')) toggleSection(sec);
+    var row = document.querySelector('#rows-' + sec + ' .erow[data-id="' + id + '"]');
+    // An active search leaves non-matching rows in the DOM but hidden, so the
+    // scroll would land on nothing visible. Clear it only when the target is
+    // actually hidden, so an unrelated search survives the jump.
+    if (row && row.offsetParent === null) {
+      try { clearSearch(); } catch (err) {}
+    }
+    // Deleted or renamed away since the calendar was drawn: fall back to the
+    // section so the jump still puts them somewhere useful.
+    var target = row || card;
+    if (!target) return;
+    // The topbar is position:sticky — a plain scrollIntoView slides the target
+    // underneath it. Same offset trick as jumpToMonthSection().
+    var topbar = document.querySelector('.topbar');
+    var offset = (topbar ? topbar.getBoundingClientRect().height : 0) + 14;
+    var y = target.getBoundingClientRect().top + window.pageYOffset - offset;
+    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+    if (row) {
+      row.classList.add('cal-jump-flash');
+      setTimeout(function() { row.classList.remove('cal-jump-flash'); }, 1700);
+    } else {
+      card.style.transition = 'box-shadow 0.35s';
+      card.style.boxShadow = '0 0 0 3px rgba(217,182,74,0.85)';
+      setTimeout(function() { card.style.boxShadow = ''; }, 1700);
+    }
+  }, 280);
+}
+
 function showCalPopover(e, dateStr, entries) {
   hideCalPopover();
   var pop = document.createElement('div');
@@ -22399,6 +22461,16 @@ function showCalPopover(e, dateStr, entries) {
     amtEl.textContent = entry.exempt ? 'exempt' : '$' + entry.amount.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
     if (entry.exempt) amtEl.style.color = 'var(--steel)';
     row.appendChild(labelEl); row.appendChild(secEl); row.appendChild(amtEl);
+    // Reconcile shortcut: open this transaction where it lives in the tracker.
+    // Only wired when the entry carries an id — older/edge entries stay inert
+    // rather than offering a click that would land nowhere.
+    if (entry.id) {
+      row.classList.add('cal-jump');
+      row.title = 'Open this row in the tracker';
+      row.onclick = (function(mk, sec, id) {
+        return function(ev) { ev.stopPropagation(); jumpToMonthRow(mk, sec, id); };
+      })(entry.monthKey, entry.section, entry.id);
+    }
     pop.appendChild(row);
   });
   document.body.appendChild(pop);
