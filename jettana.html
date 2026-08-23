@@ -5501,6 +5501,16 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
         </div>
 
         <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">What's the little number next to my card or account name?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">That's the <strong>charge badge</strong> — it counts how many expense rows are feeding that card's Current balance, or that account's Ending balance. <strong>Tap it</strong> to see the list: every charge with its section, amount and date, sorted earliest to latest, plus a <strong>Latest</strong> line at the top so you can see the most recent activity at a glance. It's the quickest way to answer "why is this balance what it is?" Charges with no date still show — they just sort to the end.</div>
+        </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">My card already had a balance before this month — how do I include it?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Open the note on that <strong>Debt</strong> row and set a <strong>starting balance</strong>. When a debt row is auto-calculated from a card color, the Current column is read-only — Jettana is filling it from your charges — so the starting balance is how you tell it what was already owed. It's added on top of this month's charges, and it shows as its own line in the charge breakdown so the maths stays visible.</div>
+        </div>
+
+        <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">What's the difference between Current and Remaining in Debt?<span class="askme-q-arrow">▾</span></button>
           <div class="askme-a"><strong>Current</strong> is your total balance this month — what you charged to the card plus any carried-over balance. <strong>Remaining</strong> is what's still owed after payments. When you log a payment in the Payment template, Remaining updates automatically.</div>
         </div>
@@ -5542,6 +5552,16 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
       <div class="askme-group" data-group>
         <div class="askme-group-title">Rows & sections</div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">How do I set a target for a savings account?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Savings has an optional <strong>Goal</strong> column, hidden by default so it doesn't clutter things while you're starting out. Open <strong>⋯ on the Savings header → 👻 Show goal column</strong> and a Goal cell appears next to each account — type what you're aiming to have in it. The goal shows in dark green so it reads differently from money you actually have, and the section footer totals your goals. It's set <strong>per month</strong>, so turning it on for one month doesn't turn it on everywhere; goals themselves carry into new months on recurring rows even though balances start fresh.</div>
+        </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">Can I edit lots of rows at once?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Yes — open <strong>⋯ on any section header</strong> and pick a bulk mode, then tap the rows you want and apply. There are five: <strong>☑ delete</strong>, <strong>✓ mark paid</strong>, <strong>📅 set a date</strong>, <strong>🎨 color</strong>, and <strong>↔ move to another section</strong>. The date option is the quiet time-saver — pick one date and stamp it on every selected row instead of opening each picker in turn. Jettana chooses the right date field for the section automatically (Received for Income, Actual for expenses, and so on), and the rows re-sort once applied.</div>
+        </div>
 
         <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">How do I move a row to a different section?<span class="askme-q-arrow">▾</span></button>
@@ -5608,9 +5628,27 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 
         <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">How do I see my net worth over time?<span class="askme-q-arrow">▾</span></button>
-          <div class="askme-a">Open <strong>⋯ → Insights → Net worth trend</strong>. It draws a line chart of your net worth by month (checking + savings − debt). Pick a period with the <strong>6M / YTD / 1Y / All</strong> chips, or choose any starting month from the <strong>From</strong> dropdown. Green dots mean your net worth rose that month; the summary below shows your total change for the period.</div>
+          <div class="askme-a">Open <strong>⋯ → Insights → Net worth trend</strong>. It draws a line chart of your net worth by month (checking + savings − debt). Pick a period with the <strong>6M / YTD / 1Y / All</strong> chips, or choose any starting month from the <strong>From</strong> dropdown. Green dots mean your net worth rose that month; the summary below shows your total change for the period. <strong>Tap any point</strong> to open that month in the tracker — a ring marks the month you're currently viewing.</div>
+        </div>
+
+        <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">Can I see how my savings might grow over time?<span class="askme-q-arrow">▾</span></button>
           <div class="askme-a">Open <strong>⋯ → Insights → Growth projection</strong>. It starts from your <strong>current savings</strong> and your <strong>average monthly contribution</strong> so far, then shows how that could compound over <strong>5, 10, 20, or 30 years — or any number of years you type into the custom chip</strong>. Every field is editable — change the starting amount, the monthly contribution, or the annual return (7% is a common long-term average) to try different what-ifs. You can also enter your <strong>age</strong> (optional) to see how old you'd be at the end of the projection — it's saved on your device only. The solid line is your projected balance and the dashed line is what you actually deposited; the space between them is growth. It only looks at savings — checking and debt aren't included, since they don't grow at a market rate. And it's a <strong>hypothetical illustration, not a guarantee</strong> — real returns move up and down year to year.</div>
+        </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">How much can I actually afford to save each month?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Open <strong>⋯ → Plan ahead → 🧮 Plan my savings</strong>. Enter your average take-home pay and average monthly expenses and it works out what's genuinely left over. There's a second half for retirement: put in your gross pay, your contribution %, and your employer's match, and it shows what a pre-tax contribution actually costs your take-home — usually less than you'd expect, since the contribution comes out before tax. If your employer matches, it also shows what you'd be leaving behind by contributing under the match.</div>
+        </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">What would my life cost somewhere else?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Open <strong>⋯ → Plan ahead → 🌍 Life elsewhere</strong>. Pick a country and it re-prices your current lifestyle there with your income held fixed, so you can see what the same spending would leave you. You can optionally type in an <strong>exchange rate</strong> to see the figures in the local currency too — Jettana never fetches rates, so it's whatever you enter, and leaving it blank just hides that line. It's a daydream tool, not relocation advice: real salaries, taxes and visas vary enormously.</div>
+        </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">Can I jump from a chart to the rows behind it?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Yes, from three places. In the <strong>Spending Calendar</strong>, tap a day and then tap a transaction to land on its row — built for reconciling against a statement. In the <strong>Net Worth Trend</strong>, tap any point on the line to open that month. In <strong>Spending Trends → ⭐ Peaks</strong>, tap an underlined month to jump to those rows. In all three, dragging the panel aside first keeps it open while you jump, so you can work through several without reopening it.</div>
         </div>
       </div>
 
@@ -6033,6 +6071,9 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <div class="shortcut-row"><span>🔄 <strong>Subscriptions</strong> — dedicated section for recurring services; included in expense totals and month-over-month comparison</span></div>
       <div class="shortcut-row"><span>📝 <strong>Notes</strong> — free-form notes per month with bullet points and checkable to-dos; syncs across devices</span></div>
       <div class="shortcut-row"><span>🎨 <strong>Footer highlight</strong> — click the Actual/Received total in any section footer to set a background and number color; supports copy, paste and clear</span></div>
+      <div class="shortcut-row"><span>👻 <strong>Savings goal column</strong> — ⋯ on the Savings header → 👻 Show goal column; adds an optional Goal cell next to each account for what you're aiming to have in it, shown in dark green so it reads as intent rather than balance. Hidden by default, set per month, and the footer totals your goals. Goals carry into new months on recurring rows even though balances start fresh.</span></div>
+      <div class="shortcut-row"><span>🔢 <strong>Charge badges</strong> — a small count next to a card or account name showing how many expense rows feed its balance; tap it for the full list with sections, amounts and dates, sorted earliest to latest, with a "Latest" line for the most recent activity. Undated charges still appear, sorted to the end.</span></div>
+      <div class="shortcut-row"><span>🏦 <strong>Starting balance</strong> — open the note on a card-linked Debt row to set what was already owed before this month; it's added on top of this month's charges and shows as its own line in the charge breakdown</span></div>
       <div class="shortcut-row"><span>🎯 <strong>Net worth goal</strong> — click the Goal cell in the Net Worth Overview to set a target</span></div>
       <div class="shortcut-row"><span>💳 <strong>Credit score</strong> — type your score (300–850) in the pill on the Debt section header; each month keeps its own, with a ▲/▼ change vs the last month you logged one</span></div>
     </div>
@@ -6065,7 +6106,8 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <div class="shortcut-row"><span>✓ <strong>Strike = payment flow</strong> — when you mark an expense as paid, the linked card's Current decreases automatically (the charge is settled). The strike color also identifies which savings or checking account the money came from — that account's balance decreases too.</span></div>
       <div class="shortcut-row"><span>⎘ <strong>Copy / paste color</strong> — open the color toolbar → Copy to copy any color; click ≡ on a row → Paste color to apply it as any type</span></div>
       <div class="shortcut-row"><span>✕ <strong>Clear all colors</strong> — click ≡ on a row → Clear all colors to reset text, number and strikethrough at once</span></div>
-      <div class="shortcut-row"><span>● <strong>Sticky row colors</strong> — coloring a row sets that color as the default for the next new row automatically</span></div>
+      <div class="shortcut-row"><span>▲▼ <strong>Reorder your legend</strong> — the ▲ and ▼ buttons on each card in the My Cards legend move it up or down, so your list can match how you actually think about your cards</span></div>
+      <div class="shortcut-row"><span>● <strong>Sticky row colors</strong> — coloring a row sets that color as the default for the next new row automatically. Text color defaults are remembered <em>per section</em>, so coloring your Food labels doesn't change the color of a new Housing row. Number color stays global on purpose — it tracks a card, and a card spans every section.</span></div>
     </div>
 
     <div class="shortcuts-group">
@@ -6081,6 +6123,8 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <div class="shortcut-row"><span>✨ <strong>Autocomplete</strong> — start typing a label to see suggestions from your history; selecting one prefills all 3 colors</span></div>
       <div class="shortcut-row"><span>⌨ <strong>Enter key</strong> — pressing Enter in any cell moves down to the same column in the next row; on the last row it creates a new row automatically</span></div>
       <div class="shortcut-row"><span>🧮 <strong>Expression calculator</strong> — type a math expression in any number cell (e.g. <em>50+25+30</em> or <em>1500-200-50</em>) and it auto-calculates when you tab or click away</span></div>
+      <div class="shortcut-row"><span>☑ <strong>Bulk edit modes</strong> — ⋯ on any section header offers five: select rows to delete, mark paid, set a date, color, or move to another section. Pick a mode, tap the rows, apply.</span></div>
+      <div class="shortcut-row"><span>📅 <strong>Bulk date</strong> — ⋯ → 📅 Select rows to set a date; stamp one date across every selected row instead of opening each picker. Jettana picks the right date field for the section automatically (Received for Income, Actual for expenses), and rows re-sort once applied.</span></div>
       <div class="shortcut-row"><span>🗑 <strong>Delete / clear rows</strong> — hover any section header to reveal 🗑; click to: select rows to delete, clear all rows, clear the Budget column, clear the Actual column, or copy the section from another month</span></div>
       <div class="shortcut-row"><span>⎘ <strong>Copy section from another month</strong> — 🗑 → Copy from another month; choose to append or replace existing rows</span></div>
       <div class="shortcut-row"><span>↩ <strong>Undo</strong> — most actions are undoable: deleting rows, clearing sections, editing a cell value, marking paid, filling template fields, removing entries, and copying sections. An UNDO button appears in the toast — click it within 5 seconds to reverse.</span></div>
@@ -6131,6 +6175,9 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <div class="shortcut-row"><span>📊 <strong>Spending Trends</strong> — ⋯ → Insights → Spending Trends; bar chart of your last 6 months with a dashed gold line marking your average monthly spend. Tap any bar and it splits into colored blocks — one per category, sized by its share — with a full breakdown below. Tap ⭐ Peaks for each category's highest month (with its monthly average, or "one-time" for one-offs) — tap the month name to jump straight to those rows, and the last line shows your worst-case month if everything peaked at once. Tap ? for a quick guide to reading the chart. Drag to reposition.</span></div>
       <div class="shortcut-row"><span>📈 <strong>Net Worth Trend</strong> — ⋯ → Insights → Net worth trend; a line chart of your net worth (checking + savings − debt) by month. Pick 6M, YTD, 1Y, All, or a custom start month. Tap any point on the line to jump straight to that month — drag the chart aside first and it stays open, so you can step through months one dot at a time. The summary shows your growth, how far apart the months are, and — optionally — your age across the range. Drag to reposition.</span></div>
       <div class="shortcut-row"><span>🎂 <strong>Age on your trend</strong> — enter your birth month + year in the Net Worth Trend (optional) to see "age 23 → 25" alongside your growth. Month and year only — Jettana never asks for your full birthdate. Clear the field anytime to remove it.</span></div>
+      <div class="shortcut-row"><span>🧮 <strong>Plan My Savings</strong> — ⋯ → Plan ahead → Plan my savings; works out what's genuinely left over each month from your average take-home and expenses. The retirement half shows what a pre-tax contribution actually costs your take-home (less than the headline number, since it comes out before tax) and what you'd leave behind by contributing under your employer's match.</span></div>
+      <div class="shortcut-row"><span>🌍 <strong>Life Elsewhere</strong> — ⋯ → Plan ahead → Life elsewhere; re-prices your current lifestyle in another country with your income held fixed. Optionally type an exchange rate to see the figures in local currency too — rates are never fetched, so it's whatever you enter, and leaving it blank hides that line. A daydream tool, not relocation advice.</span></div>
+      <div class="shortcut-row"><span>↩ <strong>Jump back to your rows</strong> — three of the panels link straight back into the tracker: tap a transaction in the Spending Calendar, a point on the Net Worth Trend, or an underlined month in Spending Trends → Peaks. Drag the panel aside first and it stays open while you jump, so you can work through several in a row — handy for reconciling.</span></div>
       <div class="shortcut-row"><span>🌱 <strong>Growth Projection</strong> — ⋯ → Insights → Growth projection; a hypothetical compound-growth view seeded from your current savings and average monthly contribution. Adjust the amount, contribution, or return rate; pick 5Y / 10Y / 20Y / 30Y, or type any number of years (1–60) in the custom chip. Drag to reposition.</span></div>
       <div class="shortcut-row"><span>⇄ <strong>Compare months</strong> — ⋯ → Insights → Compare months; any section line-by-line against a baseline month, with color-coded changes and how far apart the two months are (e.g. "2 years, 6 months apart"). The left column follows the month you're viewing. Drag to reposition.</span></div>
       <div class="shortcut-row"><span>📈 <strong>Month-over-Month card</strong> — on your dashboard below the sections; compares this month's totals per category against any previous month (pick one from the dropdown). Green means moving the right way for that category — income up is good, spending up isn't. A category you cut to zero shows as a 100% win, and renamed sections show your names.</span></div>
