@@ -937,18 +937,22 @@ body.show-sav-goal .goal-ft-total { display: flex; }
   border: none;
   background: transparent;
 }
-/* The colour needs a `.erow` in front of it. `.erow-num-input,
-   .erow-goal-input { color: var(--slate) }` sits LATER in this file at equal
-   weight (0,1,0), so a bare `.erow-goal-input { color: … }` here lost on
-   source order and the column rendered slate — the near-black every other
-   value uses — from the day it shipped. Dark mode looked correct only
-   because `.dark .erow-goal-input` is (0,2,0) and beat the slate rule on
-   weight. Adding `.erow` makes these (0,2,0) / (0,3,0) so they win on
-   weight too, not on position. Trap 1 in the handoff. */
-.erow .erow-goal-input { color: var(--sage-dark); }  /* money you intend, not money you have */
+/* Getting this colour to land takes real weight, and the rule to beat does
+   not mention the goal class at all — grepping `.erow-goal-input` never
+   finds it. TWO rules were winning:
+     `.erow-num-input, .erow-goal-input { color: var(--slate) }`  (0,1,0), later
+     `.erow input[type="text"]         { color: var(--ink)   }`  (0,2,1)  ← the
+   real one. The goal field is type="text", so it picks up --ink, the same
+   near-black every row value uses, and the column shipped looking like an
+   ordinary column. An earlier fix here was (0,2,0) — enough for the first
+   rule, still short of the second, and the field stayed black.
+   `.erow .goal-col-wrap input.erow-goal-input` is (0,3,1) and wins on
+   weight, not on source order. Dark takes one more class on top so it
+   outranks BOTH this rule and `.dark .erow input[type="text"]` (0,3,1). */
+.erow .goal-col-wrap input.erow-goal-input { color: var(--sage-dark); }  /* money you intend, not money you have */
 /* --sage-dark is not re-defined for dark mode and goes muddy there. */
-.dark .erow .erow-goal-input { color: var(--sage); }
-.erow .erow-goal-input:focus { outline: none; color: var(--ink); }
+.dark .erow .goal-col-wrap input.erow-goal-input { color: var(--sage); }
+.erow .goal-col-wrap input.erow-goal-input:focus { outline: none; color: var(--ink); }
 .erow-goal-input::placeholder { color: var(--mist); }
 
 /* One extra track, added to heading, rows and footer together. Narrowing
