@@ -936,11 +936,19 @@ body.show-sav-goal .goal-ft-total { display: flex; }
   padding: 0;
   border: none;
   background: transparent;
-  color: var(--sage-dark);          /* money you intend, not money you have */
 }
+/* The colour needs a `.erow` in front of it. `.erow-num-input,
+   .erow-goal-input { color: var(--slate) }` sits LATER in this file at equal
+   weight (0,1,0), so a bare `.erow-goal-input { color: … }` here lost on
+   source order and the column rendered slate — the near-black every other
+   value uses — from the day it shipped. Dark mode looked correct only
+   because `.dark .erow-goal-input` is (0,2,0) and beat the slate rule on
+   weight. Adding `.erow` makes these (0,2,0) / (0,3,0) so they win on
+   weight too, not on position. Trap 1 in the handoff. */
+.erow .erow-goal-input { color: var(--sage-dark); }  /* money you intend, not money you have */
 /* --sage-dark is not re-defined for dark mode and goes muddy there. */
-.dark .erow-goal-input { color: var(--sage); }
-.erow-goal-input:focus { outline: none; color: var(--ink); }
+.dark .erow .erow-goal-input { color: var(--sage); }
+.erow .erow-goal-input:focus { outline: none; color: var(--ink); }
 .erow-goal-input::placeholder { color: var(--mist); }
 
 /* One extra track, added to heading, rows and footer together. Narrowing
@@ -8746,6 +8754,9 @@ function switchMonth(key) {
   if (demoBanner) demoBanner.style.display = key === 'demo-month' ? 'flex' : 'none';
   renderSidebar();
   loadFooterBudgets();
+  // The flag is per month now, so the body class has to be re-read on every
+  // switch — otherwise August's column stays on the screen in September.
+  applySavGoalCol();
   recalc();
   renderCreditScore();
   renderMonthChecklist();
@@ -8796,11 +8807,23 @@ function setYearMonthsHeight(el, collapsed) {
 }
 
 /* Ghost goal column: on/off state and the footer total.
-   A display preference, so it goes through nsKey() like every other new key
-   — turning it on in the demo must not turn it on for real. */
-function savGoalColOn() {
-  try { return appStore.getItem(nsKey('intentra_sav_goal_col')) === '1'; }
-  catch (e) { return false; }
+   PER MONTH, not per account. The flag lives on the month object as
+   `_savGoalCol`, next to `_emoji` and `_intention` — so it travels with the
+   month's own data, syncs to the cloud with it, and the demo sandbox
+   isolates it for free (loadAll() already returns the sandbox in demo).
+   It used to be one account-wide key, which meant switching it on for one
+   month switched it on for every month, past and future.
+   A new or copied month never inherits it: createFreshMonth, getMonthData
+   and copyMonthData all build the month from SECTIONS only, so the flag is
+   simply absent and the column starts hidden. Deliberate — a beginner
+   should not meet an extra empty box, and that stays true in month two.
+   `all` is optional: callers holding a loaded dataset pass it in so one
+   recalc doesn't parse the whole thing twice. */
+function savGoalColOn(all) {
+  try {
+    var d = all || loadAll();
+    return !!(d[currentMonthKey] && d[currentMonthKey]._savGoalCol);
+  } catch (e) { return false; }
 }
 
 function applySavGoalCol() {
@@ -8809,17 +8832,24 @@ function applySavGoalCol() {
 }
 
 function toggleSavGoalCol() {
-  var on = !savGoalColOn();
-  try { appStore.setItem(nsKey('intentra_sav_goal_col'), on ? '1' : '0'); } catch (e) {}
+  var all = loadAll();
+  var on = !savGoalColOn(all);
+  if (!all[currentMonthKey]) all[currentMonthKey] = {};
+  // Deleted rather than set to 0, so an off month carries no key at all and
+  // reads identically to a month that never had the column touched.
+  if (on) all[currentMonthKey]._savGoalCol = 1;
+  else delete all[currentMonthKey]._savGoalCol;
+  saveAll(all);
   applySavGoalCol();
-  showToast(on ? 'Goal column shown' : 'Goal column hidden', true);
+  showToast((on ? 'Goal column shown for ' : 'Goal column hidden for ')
+    + monthLabel(currentMonthKey), true);
 }
 
 function updateSavGoalTotal() {
   var el = document.getElementById('ft-savings-goal');
   if (!el) return;
-  if (!savGoalColOn()) { el.textContent = ''; return; }
   var all = loadAll();
+  if (!savGoalColOn(all)) { el.textContent = ''; return; }
   var rows = (all[currentMonthKey] && all[currentMonthKey].savings) || [];
   var sum = 0, any = false;
   rows.forEach(function(r) {
