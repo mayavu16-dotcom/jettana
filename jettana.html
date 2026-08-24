@@ -9335,6 +9335,19 @@ function renderRowEl(section, row, animate = false) {
   // visibility filter here would match nothing and wire up no listeners.
   div.querySelectorAll(rowNavSelector()).forEach(input => {
     input.addEventListener('keydown', handleNavKey);
+    // Remember which cell the person is working in, so the color toolbar can
+    // open on that target instead of whatever was colored last. Stored on the
+    // row element rather than in a global: it is a per-row fact, it needs no
+    // cleanup when the row is re-rendered, and it sidesteps the
+    // declaration-order trap (the toolbar's globals are assigned at line
+    // ~19400, well after rows first render).
+    // The savings goal cell is skipped — it has no color target of its own.
+    var cellType = input.classList.contains('erow-label-input') ? 'text'
+                 : input.classList.contains('erow-num-input')   ? 'num'
+                 : null;
+    if (cellType) {
+      input.addEventListener('focus', function() { div.dataset.lastCell = cellType; });
+    }
   });
 
   initRowDrag(div, section);
@@ -19523,7 +19536,15 @@ function showColorToolbar(section, id, anchorEl) {
   toolbar.classList.add('visible');
   // Update dots to reflect current colors
   updateToolbarDots();
-  setToolbarType(_tbType);
+  // Open on the target the person is actually working in: focusing the name
+  // field means Text, focusing an amount means Number. Previously this always
+  // restored _tbType — the last tab used on ANY row — so coloring a number on
+  // one row and then opening the toolbar from a different row's name cell
+  // silently recolored numbers again.
+  // Falls back to the previous behaviour when the row has no remembered cell
+  // (opened from the row menu without touching a field, or freshly rendered).
+  var _cell = anchorEl && anchorEl.dataset ? anchorEl.dataset.lastCell : null;
+  setToolbarType(_cell === 'text' || _cell === 'num' ? _cell : _tbType);
   // Populate legend card swatches
   updateLegendSwatches();
   // Final clamp AFTER the tabs/dots/swatches are populated — that's when the
@@ -19547,6 +19568,13 @@ function hideColorToolbar() {
 
 function setToolbarType(type) {
   _tbType = type;
+  // Mirror a manual tab choice back onto the row, so reopening that row lands
+  // where you left it whether you got there by focusing a cell or by clicking
+  // a tab. Strike has no cell of its own, so it is not recorded.
+  if (_tbId && (type === 'text' || type === 'num')) {
+    var _r = document.querySelector('.erow[data-id="' + _tbId + '"]');
+    if (_r) _r.dataset.lastCell = type;
+  }
   ['text','num','strike'].forEach(function(t) {
     var btn = document.getElementById('ct-' + t + '-btn');
     if (btn) btn.classList.toggle('ct-active', t === type);
