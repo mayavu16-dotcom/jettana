@@ -11816,8 +11816,7 @@ function commitDate(section, id, dateVal) {
     const wrap = inp.closest('.row-date-wrap');
     if (wrap) wrap.style.display = '';
   }
-  const bar = document.getElementById('date-confirm-bar-' + id);
-  if (bar) bar.remove();
+  clearDateConfirmBar(id, false);
   scheduleSave();
   autoSortSectionByDate(section);
 }
@@ -11862,10 +11861,21 @@ function saveDate(section, id, dateVal) {
   commitDate(section, id, dateVal);
 }
 
+/* Removing the confirm bar also has to undo the z-index lift that made it
+   tappable — see showDateConfirmBar() for why the lift is needed. Kept in one
+   place so no exit path (Save, Remove, Cancel, reopen, commit) can restore the
+   bar's removal but forget the row. */
+function clearDateConfirmBar(id, isDate2) {
+  var bar = document.getElementById('date-confirm-bar-' + id + (isDate2 ? '-2' : ''));
+  if (!bar) return;
+  var erow = bar.closest('.erow');
+  if (erow) erow.style.zIndex = '';
+  bar.remove();
+}
+
 function showDateConfirmBar(section, id, dateVal, isDate2) {
   // Remove any existing bar for this row
-  var existingBar = document.getElementById('date-confirm-bar-' + id + (isDate2 ? '-2' : ''));
-  if (existingBar) existingBar.remove();
+  clearDateConfirmBar(id, isDate2);
 
   var inp = document.getElementById('date-input-' + id + (isDate2 ? '-2' : ''));
   var wrap = inp ? inp.closest('.row-date-wrap') : null;
@@ -11897,7 +11907,7 @@ function showDateConfirmBar(section, id, dateVal, isDate2) {
   // Cancel button — discards the pending pick, restores prior state
   bar.querySelector('#dcb-cancel').addEventListener('click', function(e) {
     e.stopPropagation();
-    bar.remove();
+    clearDateConfirmBar(id, isDate2);
     if (inp) { inp.style.display = 'none'; inp.value = ''; }
     if (wrap) wrap.style.display = '';
   });
@@ -11905,7 +11915,7 @@ function showDateConfirmBar(section, id, dateVal, isDate2) {
   // Tapping the label reopens the picker to change
   bar.querySelector('span').addEventListener('click', function(e) {
     e.stopPropagation();
-    bar.remove();
+    clearDateConfirmBar(id, isDate2);
     if (inp) {
       inp.value = dateVal;
       if (wrap) wrap.style.display = 'flex';
@@ -11916,6 +11926,15 @@ function showDateConfirmBar(section, id, dateVal, isDate2) {
   });
 
   erow.style.position = 'relative';
+  // The bar hangs 40px BELOW its own row, over the row beneath. Its z-index:50
+  // is not enough on its own: `.erow-new` applies `animation: rowIn … both`,
+  // the class is never removed, and a filled transform/opacity animation gives
+  // every row its own stacking context permanently. That traps the bar's
+  // z-index inside this row, so the next row — a later sibling at the same
+  // level — painted over the entire bar and swallowed every tap on Save.
+  // Lifting the row itself is what actually puts the bar on top. Cleared again
+  // in clearDateConfirmBar().
+  erow.style.zIndex = '60';
   erow.appendChild(bar);
 }
 
@@ -11942,8 +11961,7 @@ function commitDate2(section, id, dateVal) {
     const wrap2 = inp2.closest('.row-date-wrap');
     if (wrap2) wrap2.style.display = '';
   }
-  const bar2 = document.getElementById('date-confirm-bar-' + id + '-2');
-  if (bar2) bar2.remove();
+  clearDateConfirmBar(id, true);
   scheduleSave();
   autoSortSectionByDate(section);
 }
