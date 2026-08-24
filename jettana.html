@@ -11883,6 +11883,42 @@ function showDateConfirmBar(section, id, dateVal, isDate2) {
   if (!erow) return;
 
   var formatted = formatDateLabel(dateVal);
+  // iOS: at this moment the date field is still focused and its native picker
+  // is still up. The first tap anywhere is spent dismissing that picker and
+  // never reaches the button underneath — which is the "tap Save twice"
+  // symptom. Close the field before the bar goes up, so the very first tap
+  // lands on Save. The bar itself now carries the chosen date, and "tap to
+  // change" reopens the field.
+  if (inp) {
+    inp.blur();
+    inp.style.display = 'none';
+    if (wrap) wrap.style.display = '';
+  }
+
+  /* Bind a handler for both touch and mouse.
+     The bar's buttons previously listened for `click` alone. On iOS the
+     synthetic click that follows touchend is unreliable for an element
+     inserted mid-gesture, which is why 52 other handlers in this file are
+     already paired this way. preventDefault on touchend suppresses the
+     synthetic click, and the `done` latch covers any browser that fires it
+     anyway, so a single tap can never run the action twice. */
+  function bindTap(el, fn) {
+    if (!el) return;
+    var done = false;
+    el.addEventListener('touchend', function(e) {
+      e.preventDefault(); e.stopPropagation();
+      if (done) return;
+      done = true;
+      fn(e);
+    });
+    el.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (done) return;
+      done = true;
+      fn(e);
+    });
+  }
+
   var bar = document.createElement('div');
   bar.id = 'date-confirm-bar-' + id + (isDate2 ? '-2' : '');
   bar.style.cssText = 'position:absolute;bottom:-40px;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:6px 8px;pointer-events:all;background:var(--white);border:1px solid var(--mist);border-radius:0 0 8px 8px;box-shadow:0 4px 10px rgba(0,0,0,0.15);';
@@ -11893,28 +11929,24 @@ function showDateConfirmBar(section, id, dateVal, isDate2) {
     '<button id="dcb-cancel" style="background:none;color:var(--steel);border:none;border-radius:6px;padding:4px 6px;font-size:13px;font-family:Outfit,sans-serif;cursor:pointer;touch-action:manipulation;">✕</button>';
 
   // Save button
-  bar.querySelector('#dcb-save').addEventListener('click', function(e) {
-    e.stopPropagation();
+  bindTap(bar.querySelector('#dcb-save'), function() {
     if (isDate2) commitDate2(section, id, dateVal);
     else commitDate(section, id, dateVal);
   });
   // Remove button — clears the date
-  bar.querySelector('#dcb-remove').addEventListener('click', function(e) {
-    e.stopPropagation();
+  bindTap(bar.querySelector('#dcb-remove'), function() {
     if (isDate2) commitDate2(section, id, '');
     else commitDate(section, id, '');
   });
   // Cancel button — discards the pending pick, restores prior state
-  bar.querySelector('#dcb-cancel').addEventListener('click', function(e) {
-    e.stopPropagation();
+  bindTap(bar.querySelector('#dcb-cancel'), function() {
     clearDateConfirmBar(id, isDate2);
     if (inp) { inp.style.display = 'none'; inp.value = ''; }
     if (wrap) wrap.style.display = '';
   });
 
   // Tapping the label reopens the picker to change
-  bar.querySelector('span').addEventListener('click', function(e) {
-    e.stopPropagation();
+  bindTap(bar.querySelector('span'), function() {
     clearDateConfirmBar(id, isDate2);
     if (inp) {
       inp.value = dateVal;
