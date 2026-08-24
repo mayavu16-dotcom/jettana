@@ -2893,6 +2893,51 @@ mark.hl-rose  { --hl: rgba(224, 132, 132, 0.30); }
   .erow:has(.erow-label-wrap.has-cardbadge):has(.note-indicator.has-note) .erow-label-wrap .erow-label-input { padding-right: 58px; }
 }
 
+/* ── In-app day grid (mobile date picking) ─────────────────────────────
+   Replaces the native <input type="date"> picker on touch devices. The
+   native picker fills in today's date the moment it opens, which fires
+   `change` before the person has chosen anything, and it floats above the
+   page in a layer the app cannot see or position around. Owning the widget
+   makes the behaviour identical on iOS and Android — and testable. */
+.dg-overlay {
+  position: fixed; inset: 0; z-index: 100002;
+  background: rgba(26,35,50,0.45);
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.dg-panel {
+  background: var(--white); border-radius: 14px; width: 100%; max-width: 340px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25); font-family: 'Outfit', sans-serif;
+  overflow: hidden; box-sizing: border-box;
+}
+.dark .dg-panel { background: #1E2A38; }
+.dg-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 8px; border-bottom: 1px solid var(--mist); }
+.dg-title { font-size: 14px; font-weight: 700; color: var(--ink); }
+.dg-nav { background: none; border: none; font-size: 20px; line-height: 1; color: var(--steel); padding: 6px 14px; cursor: pointer; touch-action: manipulation; font-family: 'Outfit', sans-serif; }
+.dg-sub { text-align: center; font-size: 11px; color: var(--steel); padding: 6px 10px 0; }
+.dg-dow { display: grid; grid-template-columns: repeat(7, 1fr); padding: 8px 10px 0; }
+.dg-dow span { text-align: center; font-size: 10px; font-weight: 700; color: var(--steel); }
+.dg-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; padding: 6px 10px 10px; }
+/* min-height rather than aspect-ratio: older iOS Safari does not support it,
+   and a collapsed grid would be untappable. 38px clears the touch minimum. */
+.dg-day {
+  min-height: 38px; border: none; background: none; border-radius: 8px;
+  font-family: 'Outfit', sans-serif; font-size: 13px; color: var(--ink);
+  cursor: pointer; touch-action: manipulation; padding: 0;
+}
+.dg-day.dg-empty { visibility: hidden; }
+.dg-day.dg-today { box-shadow: inset 0 0 0 1.5px var(--mist); }
+.dg-day.dg-sel { background: var(--sage); color: #fff; font-weight: 700; }
+.dg-foot { display: flex; gap: 8px; padding: 10px 12px 12px; border-top: 1px solid var(--mist); }
+.dg-btn {
+  flex: 1; border-radius: 8px; padding: 10px 0; font-family: 'Outfit', sans-serif;
+  font-size: 13px; font-weight: 600; cursor: pointer; touch-action: manipulation;
+  border: 1px solid var(--mist); background: var(--white); color: var(--slate);
+}
+.dark .dg-btn { background: #24313F; color: var(--mist); border-color: #2A3A4A; }
+.dg-btn.dg-save { background: var(--sage); border-color: var(--sage); color: #fff; }
+.dg-btn.dg-save[disabled] { opacity: 0.45; }
+.dg-btn.dg-remove { color: var(--blush); border-color: var(--blush); background: none; }
+
 /* ── Undo toast ──────────────────────────────────────────────── */
 .toast-undo {
   background: none;
@@ -11756,9 +11801,181 @@ function formatDateLabel(dateStr) {
   return `${months[parseInt(m,10)-1]} ${parseInt(d,10)}`;
 }
 
+/* Bind a handler for both touch and mouse.
+   A `click`-only listener is unreliable on iOS for an element inserted
+   mid-gesture, which is why dozens of other handlers in this file are already
+   paired this way. touchend runs the action and preventDefault suppresses the
+   synthetic click that follows; the timestamp guard catches any browser that
+   fires that click anyway.
+   The guard is a TIMESTAMP, not a one-shot latch. A latch reads as safer and
+   is not: it lets the control work exactly once and then go dead, which is
+   invisible on a button that removes itself but breaks anything reused —
+   month arrows, or picking a second day in the grid. */
+function bindTap(el, fn) {
+  if (!el) return;
+  var lastTouch = 0;
+  el.addEventListener('touchend', function(e) {
+    e.preventDefault(); e.stopPropagation();
+    lastTouch = Date.now();
+    fn(e);
+  });
+  el.addEventListener('click', function(e) {
+    e.stopPropagation();
+    if (Date.now() - lastTouch < 700) return;   // the ghost click from that tap
+    fn(e);
+  });
+}
+
+/* ── In-app day grid ───────────────────────────────────────────────────
+   On touch devices this replaces the native date input entirely. The native
+   picker fills today's date the instant it opens, firing `change` before the
+   person has picked anything, and it renders in a layer the page cannot see
+   — which is why it kept swallowing the first tap. A grid we own opens
+   straight onto the month, selects nothing until tapped, and behaves the
+   same on every device.
+   State is a single object rather than several loose globals, so closing the
+   grid cannot leave half of it set. */
+var _dgState = null;
+
+function showDayGrid(section, id, isDate2) {
+  closeDayGrid();
+  var all = loadAll();
+  var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
+  var row = rows.find(function(r) { return r.id === id; });
+  if (!row) return;
+  var existing = isDate2 ? (row.date2 || '') : (row.date || '');
+
+  // Open on the month the date is already in; otherwise on the month being
+  // budgeted, which is nearly always the one they want.
+  var y, m;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(existing)) {
+    y = +existing.slice(0, 4); m = +existing.slice(5, 7) - 1;
+  } else if (/^\d{4}-\d{2}$/.test(currentMonthKey)) {
+    y = +currentMonthKey.slice(0, 4); m = +currentMonthKey.slice(5, 7) - 1;
+  } else {
+    var now = new Date(); y = now.getFullYear(); m = now.getMonth();
+  }
+  _dgState = { section: section, id: id, isDate2: !!isDate2, y: y, m: m, sel: existing };
+
+  var ov = document.createElement('div');
+  ov.className = 'dg-overlay';
+  ov.id = 'dg-overlay';
+  ov.innerHTML =
+    '<div class="dg-panel" id="dg-panel">' +
+      '<div class="dg-head">' +
+        '<button class="dg-nav" id="dg-prev" aria-label="Previous month">‹</button>' +
+        '<span class="dg-title" id="dg-title"></span>' +
+        '<button class="dg-nav" id="dg-next" aria-label="Next month">›</button>' +
+      '</div>' +
+      '<div class="dg-sub" id="dg-sub"></div>' +
+      '<div class="dg-dow"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>' +
+      '<div class="dg-grid" id="dg-grid"></div>' +
+      '<div class="dg-foot">' +
+        '<button class="dg-btn" id="dg-cancel">Cancel</button>' +
+        (existing ? '<button class="dg-btn dg-remove" id="dg-remove">Remove</button>' : '') +
+        '<button class="dg-btn dg-save" id="dg-save">Save</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(ov);
+
+  bindTap(document.getElementById('dg-prev'), function() { dgNav(-1); });
+  bindTap(document.getElementById('dg-next'), function() { dgNav(1); });
+  bindTap(document.getElementById('dg-cancel'), closeDayGrid);
+  bindTap(document.getElementById('dg-save'), dgSave);
+  var rm = document.getElementById('dg-remove');
+  if (rm) bindTap(rm, function() { dgCommit(''); });
+  // One delegated handler rather than ~35 per-day ones, re-bound on every
+  // month change.
+  bindTap(document.getElementById('dg-grid'), function(e) {
+    var btn = e.target && e.target.closest ? e.target.closest('.dg-day') : null;
+    if (!btn || !btn.dataset.date) return;
+    _dgState.sel = btn.dataset.date;
+    dgRender();
+  });
+  // Tapping the backdrop cancels, the same as tapping Cancel.
+  ov.addEventListener('click', function(e) { if (e.target === ov) closeDayGrid(); });
+
+  dgRender();
+}
+
+function dgNav(delta) {
+  if (!_dgState) return;
+  var d = new Date(_dgState.y, _dgState.m + delta, 1);
+  _dgState.y = d.getFullYear();
+  _dgState.m = d.getMonth();
+  dgRender();
+}
+
+function dgRender() {
+  if (!_dgState) return;
+  var y = _dgState.y, m = _dgState.m;
+  var title = document.getElementById('dg-title');
+  if (title) title.textContent = new Date(y, m, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+  var pad = function(n) { return n < 10 ? '0' + n : '' + n; };
+  var monthKey = y + '-' + pad(m + 1);
+  var sub = document.getElementById('dg-sub');
+  if (sub) {
+    // A date outside the month being budgeted will not appear in that month's
+    // calendar or totals. Worth saying plainly rather than letting them find out.
+    sub.textContent = monthKey === currentMonthKey ? '' : 'Outside ' + monthLabel(currentMonthKey);
+  }
+
+  var first = new Date(y, m, 1).getDay();
+  var days = new Date(y, m + 1, 0).getDate();
+  var today = new Date();
+  var todayStr = today.getFullYear() + '-' + pad(today.getMonth() + 1) + '-' + pad(today.getDate());
+
+  var html = '';
+  for (var i = 0; i < first; i++) html += '<button class="dg-day dg-empty" tabindex="-1"></button>';
+  for (var d = 1; d <= days; d++) {
+    var ds = monthKey + '-' + pad(d);
+    var cls = 'dg-day' + (ds === _dgState.sel ? ' dg-sel' : '') + (ds === todayStr ? ' dg-today' : '');
+    html += '<button class="' + cls + '" data-date="' + ds + '">' + d + '</button>';
+  }
+  var grid = document.getElementById('dg-grid');
+  if (grid) grid.innerHTML = html;
+
+  var save = document.getElementById('dg-save');
+  if (save) save.disabled = !_dgState.sel;   // nothing picked yet, nothing to save
+}
+
+function dgSave() {
+  if (!_dgState || !_dgState.sel) return;    // Save does nothing until a day is chosen
+  dgCommit(_dgState.sel);
+}
+
+function dgCommit(val) {
+  if (!_dgState) return;
+  var s = _dgState.section, id = _dgState.id, isDate2 = _dgState.isDate2;
+  closeDayGrid();
+  if (isDate2) commitDate2(s, id, val);
+  else commitDate(s, id, val);
+}
+
+function closeDayGrid() {
+  var ov = document.getElementById('dg-overlay');
+  if (ov) ov.remove();
+  _dgState = null;
+}
+
 function toggleDateInput(rowId) {
   const input = document.getElementById(`date-input-${rowId}`);
   if (!input) return;
+  // Touch devices get the in-app grid instead of the native picker. Section and
+  // row id are read off the DOM rather than passed in, so all six existing call
+  // sites (both date buttons, plus the row-menu paths) keep working unchanged.
+  // erow.dataset.id is the authoritative base id — deriving it by stripping a
+  // "-2" suffix would depend on generated ids never containing a hyphen.
+  if ('ontouchstart' in window) {
+    const erow = input.closest('.erow');
+    const section = erow ? erow.dataset.section : null;
+    const baseId = erow ? erow.dataset.id : null;
+    if (section && baseId) {
+      showDayGrid(section, baseId, rowId !== baseId);
+      return;
+    }
+  }
   // On mobile, row-date-wrap is hidden via CSS; show it so the input is visible
   const wrap = input.closest('.row-date-wrap');
   if (input.style.display === 'block') {
@@ -11893,30 +12110,6 @@ function showDateConfirmBar(section, id, dateVal, isDate2) {
     inp.blur();
     inp.style.display = 'none';
     if (wrap) wrap.style.display = '';
-  }
-
-  /* Bind a handler for both touch and mouse.
-     The bar's buttons previously listened for `click` alone. On iOS the
-     synthetic click that follows touchend is unreliable for an element
-     inserted mid-gesture, which is why 52 other handlers in this file are
-     already paired this way. preventDefault on touchend suppresses the
-     synthetic click, and the `done` latch covers any browser that fires it
-     anyway, so a single tap can never run the action twice. */
-  function bindTap(el, fn) {
-    if (!el) return;
-    var done = false;
-    el.addEventListener('touchend', function(e) {
-      e.preventDefault(); e.stopPropagation();
-      if (done) return;
-      done = true;
-      fn(e);
-    });
-    el.addEventListener('click', function(e) {
-      e.stopPropagation();
-      if (done) return;
-      done = true;
-      fn(e);
-    });
   }
 
   var bar = document.createElement('div');
