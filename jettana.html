@@ -2673,10 +2673,6 @@ mark.hl-rose  { --hl: rgba(224, 132, 132, 0.30); }
 #income-breakdown-pop .ibp-row.ibp-total, #balance-breakdown-pop .ibp-row.ibp-total, #savings-breakdown-pop .ibp-row.ibp-total { border-top: 1px solid var(--mist); margin-top: 6px; padding-top: 7px; font-weight: 700; }
 #income-breakdown-pop .ibp-neg, #balance-breakdown-pop .ibp-neg, #savings-breakdown-pop .ibp-neg { color: var(--blush); }
 #income-breakdown-pop .ibp-title, #balance-breakdown-pop .ibp-title, #savings-breakdown-pop .ibp-title { font-size: 10.5px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--steel); margin-bottom: 7px; }
-/* Balance panel only: the plan comparison sits below the total, and the
-   savings note closes the panel — same shape as the debt panel's dtp-note. */
-#balance-breakdown-pop .ibp-plan { margin-top: 8px; }
-#balance-breakdown-pop .ibp-note { font-size: 10.5px; color: var(--steel); font-style: italic; margin-top: 9px; line-height: 1.45; }
 .dark #income-breakdown-pop, .dark #balance-breakdown-pop, .dark #savings-breakdown-pop { background: #1E2A38; border-color: #2A3A4A; }
 .dark #mchk-pop { background: #1E2A38; border-color: #2A3A4A; }
 .dark #mchk-pop input[type="text"] { border-color: #2A3A4A; }
@@ -10814,23 +10810,6 @@ function showBalanceBreakdown(card) {
   rows += '<div class="ibp-row ibp-total"><span>Net balance</span><span' +
           (b.net < 0 ? ' class="ibp-neg"' : '') + '>' + _fmtSigned(b.net) + '</span></div>';
 
-  // Only compare against a plan she actually set.
-  if (b.hasPlan) {
-    var diff = b.net - b.plannedNet;
-    var label = diff > 0 ? 'Over your plan' : diff < 0 ? 'Under your plan' : 'Exactly on plan';
-    rows += '<div class="ibp-plan">' +
-      '<div class="ibp-row ibp-sub"><span>You planned to keep</span><span>' + _fmtSigned(b.plannedNet) + '</span></div>' +
-      '<div class="ibp-row ibp-sub"><span>' + label + '</span><span' + (diff < 0 ? ' class="ibp-neg"' : '') + '>' +
-        (diff === 0 ? '—' : (diff > 0 ? '+' : '−') + _fmtMoney(Math.abs(diff))) +
-      '</span></div></div>';
-  }
-
-  // Phrased so it stays true when the balance is negative — "of this" would not be.
-  if (b.saved > 0) {
-    rows += '<div class="ibp-note">' + _fmtMoney(b.saved) + ' went to savings this month. ' +
-            'Saving isn\'t an expense, so it\'s still counted inside this balance.</div>';
-  }
-
   pop.innerHTML = rows;
   pop.style.display = 'block';
   if (pinned) return;   // keep wherever the user dragged it
@@ -10976,17 +10955,13 @@ function recalc() {
     ].filter(function(c) { return c.amt > 0; }).sort(function(a, b) { return b.amt - a.amt; })
   };
   const balance   = incA - totalExpA;
-  // Data for the Net Balance tooltip. `has` gates the whole panel so an
-  // untouched month doesn't advertise a breakdown of zeroes; `hasPlan` gates
-  // just the comparison, for a month with actuals but no budgets set.
+  // Data for the Net Balance tooltip. `has` keeps an untouched month from
+  // advertising a breakdown of zeroes.
   _balanceBreakdown = {
-    income:     incA,
-    expenses:   totalExpA,
-    net:        balance,
-    plannedNet: incP - totalExpB,
-    hasPlan:    (incP > 0 || totalExpB > 0),
-    saved:      savA,
-    has:        (incA > 0 || totalExpA > 0)
+    income:   incA,
+    expenses: totalExpA,
+    net:      balance,
+    has:      (incA > 0 || totalExpA > 0)
   };
   const assets    = chkE + savA;
   const liab      = dbtR;
