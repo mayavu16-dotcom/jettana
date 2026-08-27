@@ -5436,7 +5436,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <div class="import-drop-zone" id="import-drop-zone" onclick="document.getElementById('import-file-input').click()">
         <div class="import-drop-icon">📄</div>
         <div class="import-drop-title">Drop your CSV file here or tap to browse</div>
-        <div class="import-drop-sub">Download your statement as CSV from your bank's website</div>
+        <div class="import-drop-sub">Look under Transactions or Activity on your bank's site — not Statements, which are usually PDFs</div>
       </div>
       <input type="file" class="import-file-input" id="import-file-input" accept=".csv">
 
@@ -18934,10 +18934,14 @@ function setImportStatus(msg, type) {
 
 function processCSVFile(file) {
   var name = file.name.toLowerCase();
-  // For non-CSV files, require API key
+  // The PDF/screenshot paths below need an Anthropic key, and there is currently
+  // no field anywhere in the app to enter one — so without a saved key they are
+  // unreachable. Say what can actually be imported instead of pointing at a
+  // key box that does not exist. (Do NOT focus '#api-key-input' here: no such
+  // element exists, and calling .focus() on null threw for anyone who dragged
+  // a PDF onto the drop zone, which bypasses the file picker's accept filter.)
   if (!name.endsWith('.csv') && !getApiKey()) {
-    setImportStatus('Please enter your Anthropic API key above to use AI import.', 'error');
-    document.getElementById('api-key-input').focus();
+    setImportStatus('This importer reads CSV files. Most banks offer a CSV download on the Transactions or Activity page — statements are usually PDFs.', 'error');
     return;
   }
   if (name.endsWith('.csv')) {
