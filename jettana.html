@@ -2674,6 +2674,14 @@ mark.hl-rose  { --hl: rgba(224, 132, 132, 0.30); }
 #income-breakdown-pop .ibp-neg, #balance-breakdown-pop .ibp-neg, #savings-breakdown-pop .ibp-neg { color: var(--blush); }
 #income-breakdown-pop .ibp-title, #balance-breakdown-pop .ibp-title, #savings-breakdown-pop .ibp-title { font-size: 10.5px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--steel); margin-bottom: 7px; }
 .dark #income-breakdown-pop, .dark #balance-breakdown-pop, .dark #savings-breakdown-pop { background: #1E2A38; border-color: #2A3A4A; }
+/* Balance panel only. The sign slot is a fixed width on every row (empty on
+   positives) so the "$" lines up in a column; tabular figures keep the digits
+   in step whatever the values are. Scoped by id — the income and savings
+   panels keep their neutral amounts. */
+#balance-breakdown-pop .ibp-amt { font-variant-numeric: tabular-nums; white-space: nowrap; }
+#balance-breakdown-pop .ibp-sgn { display: inline-block; width: 0.5em; text-align: left; }
+#balance-breakdown-pop .ibp-pos { color: var(--sage-dark); }
+.dark #balance-breakdown-pop .ibp-pos { color: var(--sage); }
 .dark #mchk-pop { background: #1E2A38; border-color: #2A3A4A; }
 .dark #mchk-pop input[type="text"] { border-color: #2A3A4A; }
 #expense-breakdown-pop {
@@ -10793,11 +10801,6 @@ function _balanceBreakdownPop() {
   return pop;
 }
 
-// _fmtMoney would render a negative as "$-500"; the panel wants "−$500".
-function _fmtSigned(n) {
-  return (n < 0 ? '−' : '') + _fmtMoney(Math.abs(n));
-}
-
 function showBalanceBreakdown(card) {
   var b = _balanceBreakdown;
   if (!b || !b.has) return;
@@ -10805,10 +10808,19 @@ function showBalanceBreakdown(card) {
   var pinned = breakdownIsPinned('balance-breakdown-pop');
   var rows = pinned ? breakdownHeader('How it adds up')
                     : '<div class="ibp-title">How it adds up</div>';
-  rows += '<div class="ibp-row"><span>Income</span><span>' + _fmtMoney(b.income) + '</span></div>';
-  rows += '<div class="ibp-row ibp-sub"><span>− Expenses</span><span class="ibp-neg">−' + _fmtMoney(b.expenses) + '</span></div>';
-  rows += '<div class="ibp-row ibp-total"><span>Net balance</span><span' +
-          (b.net < 0 ? ' class="ibp-neg"' : '') + '>' + _fmtSigned(b.net) + '</span></div>';
+  // Every amount carries a sign slot, even when empty — a fixed-width slot on
+  // all three rows is what keeps the "$" in a column. Without it the minus
+  // pushes the expense row's "$" left of the other two.
+  function _amt(sign, str, cls) {
+    return '<span class="ibp-amt' + (cls ? ' ' + cls : '') + '">' +
+           '<span class="ibp-sgn">' + sign + '</span>' + str + '</span>';
+  }
+  rows += '<div class="ibp-row"><span>Income</span>' +
+          _amt('', _fmtMoney(b.income), 'ibp-pos') + '</div>';
+  rows += '<div class="ibp-row ibp-sub"><span>− Expenses</span>' +
+          _amt('−', _fmtMoney(b.expenses), 'ibp-neg') + '</div>';
+  rows += '<div class="ibp-row ibp-total"><span>Net balance</span>' +
+          _amt(b.net < 0 ? '−' : '', _fmtMoney(Math.abs(b.net)), b.net < 0 ? 'ibp-neg' : '') + '</div>';
 
   pop.innerHTML = rows;
   pop.style.display = 'block';
