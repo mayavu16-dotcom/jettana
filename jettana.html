@@ -2680,6 +2680,7 @@ mark.hl-rose  { --hl: rgba(224, 132, 132, 0.30); }
    panels keep their neutral amounts. */
 #balance-breakdown-pop .ibp-amt { font-variant-numeric: tabular-nums; white-space: nowrap; }
 #balance-breakdown-pop .ibp-sgn { display: inline-block; width: 0.5em; text-align: left; }
+#balance-breakdown-pop .ibp-op { display: inline-block; width: 0.8em; margin-left: -0.8em; }
 #balance-breakdown-pop .ibp-pos { color: var(--sage-dark); }
 .dark #balance-breakdown-pop .ibp-pos { color: var(--sage); }
 .dark #mchk-pop { background: #1E2A38; border-color: #2A3A4A; }
@@ -10815,11 +10816,17 @@ function showBalanceBreakdown(card) {
     return '<span class="ibp-amt' + (cls ? ' ' + cls : '') + '">' +
            '<span class="ibp-sgn">' + sign + '</span>' + str + '</span>';
   }
-  rows += '<div class="ibp-row"><span>Income</span>' +
+  // Labels carry a matching gutter: the "−" hangs to the left of the text so
+  // "Income", "Expenses" and "Net balance" all start on the same line as the
+  // title, instead of Expenses being pushed right by its operator.
+  function _lbl(op, text) {
+    return '<span><span class="ibp-op">' + op + '</span>' + text + '</span>';
+  }
+  rows += '<div class="ibp-row">' + _lbl('', 'Income') +
           _amt('', _fmtMoney(b.income), 'ibp-pos') + '</div>';
-  rows += '<div class="ibp-row ibp-sub"><span>− Expenses</span>' +
+  rows += '<div class="ibp-row ibp-sub">' + _lbl('−', 'Expenses') +
           _amt('−', _fmtMoney(b.expenses), 'ibp-neg') + '</div>';
-  rows += '<div class="ibp-row ibp-total"><span>Net balance</span>' +
+  rows += '<div class="ibp-row ibp-total">' + _lbl('', 'Net balance') +
           _amt(b.net < 0 ? '−' : '', _fmtMoney(Math.abs(b.net)), b.net < 0 ? 'ibp-neg' : '') + '</div>';
 
   pop.innerHTML = rows;
