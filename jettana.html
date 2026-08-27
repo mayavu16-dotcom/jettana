@@ -2659,6 +2659,7 @@ mark.hl-rose  { --hl: rgba(224, 132, 132, 0.30); }
 }
 .dark #label-peek { background: #EEF2F5; color: #1A2332; }
 #income-breakdown-pop,
+#balance-breakdown-pop,
 #savings-breakdown-pop {
   position: fixed; z-index: 10050; display: none;
   background: var(--white); color: var(--ink);
@@ -2667,12 +2668,16 @@ mark.hl-rose  { --hl: rgba(224, 132, 132, 0.30); }
   padding: 12px 14px; min-width: 210px; max-width: min(280px, calc(100vw - 24px));
   box-shadow: 0 8px 30px rgba(0,0,0,0.16); pointer-events: none;
 }
-#income-breakdown-pop .ibp-row, #savings-breakdown-pop .ibp-row { display: flex; justify-content: space-between; gap: 16px; padding: 2px 0; }
-#income-breakdown-pop .ibp-row.ibp-sub, #savings-breakdown-pop .ibp-row.ibp-sub { color: var(--steel); }
-#income-breakdown-pop .ibp-row.ibp-total, #savings-breakdown-pop .ibp-row.ibp-total { border-top: 1px solid var(--mist); margin-top: 6px; padding-top: 7px; font-weight: 700; }
-#income-breakdown-pop .ibp-neg, #savings-breakdown-pop .ibp-neg { color: var(--blush); }
-#income-breakdown-pop .ibp-title, #savings-breakdown-pop .ibp-title { font-size: 10.5px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--steel); margin-bottom: 7px; }
-.dark #income-breakdown-pop, .dark #savings-breakdown-pop { background: #1E2A38; border-color: #2A3A4A; }
+#income-breakdown-pop .ibp-row, #balance-breakdown-pop .ibp-row, #savings-breakdown-pop .ibp-row { display: flex; justify-content: space-between; gap: 16px; padding: 2px 0; }
+#income-breakdown-pop .ibp-row.ibp-sub, #balance-breakdown-pop .ibp-row.ibp-sub, #savings-breakdown-pop .ibp-row.ibp-sub { color: var(--steel); }
+#income-breakdown-pop .ibp-row.ibp-total, #balance-breakdown-pop .ibp-row.ibp-total, #savings-breakdown-pop .ibp-row.ibp-total { border-top: 1px solid var(--mist); margin-top: 6px; padding-top: 7px; font-weight: 700; }
+#income-breakdown-pop .ibp-neg, #balance-breakdown-pop .ibp-neg, #savings-breakdown-pop .ibp-neg { color: var(--blush); }
+#income-breakdown-pop .ibp-title, #balance-breakdown-pop .ibp-title, #savings-breakdown-pop .ibp-title { font-size: 10.5px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--steel); margin-bottom: 7px; }
+/* Balance panel only: the plan comparison sits below the total, and the
+   savings note closes the panel — same shape as the debt panel's dtp-note. */
+#balance-breakdown-pop .ibp-plan { margin-top: 8px; }
+#balance-breakdown-pop .ibp-note { font-size: 10.5px; color: var(--steel); font-style: italic; margin-top: 9px; line-height: 1.45; }
+.dark #income-breakdown-pop, .dark #balance-breakdown-pop, .dark #savings-breakdown-pop { background: #1E2A38; border-color: #2A3A4A; }
 .dark #mchk-pop { background: #1E2A38; border-color: #2A3A4A; }
 .dark #mchk-pop input[type="text"] { border-color: #2A3A4A; }
 #expense-breakdown-pop {
@@ -2816,6 +2821,7 @@ mark.hl-rose  { --hl: rgba(224, 132, 132, 0.30); }
 
 /* ── Pinned breakdown panels ─────────────────────────────── */
 #income-breakdown-pop.brk-pinned,
+#balance-breakdown-pop.brk-pinned,
 #expense-breakdown-pop.brk-pinned,
 #savings-breakdown-pop.brk-pinned {
   pointer-events: auto;                 /* interactive once pinned */
@@ -5123,10 +5129,10 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           <div class="sum-amount" id="sum-expenses">$0</div>
           <div class="sum-sub" id="expense-sum-sub">across all categories</div>
         </div>
-        <div class="sum-card c-slate">
+        <div class="sum-card c-slate" id="balance-sum-card" style="position:relative;" onmouseenter="showBalanceBreakdown(this)" onmouseleave="hideBalanceBreakdown()" onclick="toggleBalanceBreakdown(this)">
           <div class="sum-label">Net Balance</div>
           <div class="sum-amount" id="sum-balance">$0</div>
-          <div class="sum-sub">income − expenses</div>
+          <div class="sum-sub" id="balance-sum-sub">income − expenses</div>
         </div>
         <div class="sum-card c-gold" id="savings-sum-card" style="position:relative;" onmouseenter="showSavingsBreakdown(this)" onmouseleave="hideSavingsBreakdown()" onclick="toggleSavingsBreakdown(this)">
           <div class="sum-label">Total Saved</div>
@@ -10778,6 +10784,87 @@ document.addEventListener('touchstart', function(e) {
   if ('ontouchstart' in window && !e.target.closest('#expense-sum-card')) hideExpenseBreakdown();
 }, { passive: true });
 
+/* ── Net Balance: how it adds up ──────────────────────────────
+   The arithmetic alone is already on screen in the two cards to the left,
+   so the panel earns its place on the two things that aren't: what she
+   PLANNED to keep, and the fact that money moved to savings is not an
+   expense and therefore still sits inside this balance. */
+var _balanceBreakdown = null;
+
+function _balanceBreakdownPop() {
+  var pop = document.getElementById('balance-breakdown-pop');
+  if (!pop) { pop = document.createElement('div'); pop.id = 'balance-breakdown-pop'; document.body.appendChild(pop); }
+  return pop;
+}
+
+// _fmtMoney would render a negative as "$-500"; the panel wants "−$500".
+function _fmtSigned(n) {
+  return (n < 0 ? '−' : '') + _fmtMoney(Math.abs(n));
+}
+
+function showBalanceBreakdown(card) {
+  var b = _balanceBreakdown;
+  if (!b || !b.has) return;
+  var pop = _balanceBreakdownPop();
+  var pinned = breakdownIsPinned('balance-breakdown-pop');
+  var rows = pinned ? breakdownHeader('How it adds up')
+                    : '<div class="ibp-title">How it adds up</div>';
+  rows += '<div class="ibp-row"><span>Income</span><span>' + _fmtMoney(b.income) + '</span></div>';
+  rows += '<div class="ibp-row ibp-sub"><span>− Expenses</span><span class="ibp-neg">−' + _fmtMoney(b.expenses) + '</span></div>';
+  rows += '<div class="ibp-row ibp-total"><span>Net balance</span><span' +
+          (b.net < 0 ? ' class="ibp-neg"' : '') + '>' + _fmtSigned(b.net) + '</span></div>';
+
+  // Only compare against a plan she actually set.
+  if (b.hasPlan) {
+    var diff = b.net - b.plannedNet;
+    var label = diff > 0 ? 'Over your plan' : diff < 0 ? 'Under your plan' : 'Exactly on plan';
+    rows += '<div class="ibp-plan">' +
+      '<div class="ibp-row ibp-sub"><span>You planned to keep</span><span>' + _fmtSigned(b.plannedNet) + '</span></div>' +
+      '<div class="ibp-row ibp-sub"><span>' + label + '</span><span' + (diff < 0 ? ' class="ibp-neg"' : '') + '>' +
+        (diff === 0 ? '—' : (diff > 0 ? '+' : '−') + _fmtMoney(Math.abs(diff))) +
+      '</span></div></div>';
+  }
+
+  // Phrased so it stays true when the balance is negative — "of this" would not be.
+  if (b.saved > 0) {
+    rows += '<div class="ibp-note">' + _fmtMoney(b.saved) + ' went to savings this month. ' +
+            'Saving isn\'t an expense, so it\'s still counted inside this balance.</div>';
+  }
+
+  pop.innerHTML = rows;
+  pop.style.display = 'block';
+  if (pinned) return;   // keep wherever the user dragged it
+  var r = card.getBoundingClientRect();
+  var pw = pop.offsetWidth, ph = pop.offsetHeight;
+  var left = Math.max(12, Math.min(window.innerWidth - pw - 12, r.left));
+  var top = r.bottom + 8;
+  if (top + ph > window.innerHeight - 12) top = Math.max(12, r.top - ph - 8);
+  pop.style.left = left + 'px';
+  pop.style.top = top + 'px';
+}
+
+function hideBalanceBreakdown() {
+  if (breakdownIsPinned('balance-breakdown-pop')) return;  // pinned stays put
+  var pop = document.getElementById('balance-breakdown-pop');
+  if (pop) pop.style.display = 'none';
+}
+
+// Click pins the panel open so it can be dragged and read alongside the rows
+function toggleBalanceBreakdown(card) {
+  if (breakdownIsPinned('balance-breakdown-pop')) { unpinBreakdown(); return; }
+  var b = _balanceBreakdown;
+  if (!b || !b.has) return;
+  pinBreakdown('balance-breakdown-pop');
+  showBalanceBreakdown(card);
+}
+
+document.addEventListener('scroll', hideBalanceBreakdown, true);
+window.addEventListener('resize', hideBalanceBreakdown);
+document.addEventListener('touchstart', function(e) {
+  if (breakdownIsPinned('balance-breakdown-pop')) return;  // pinned survives taps elsewhere
+  if ('ontouchstart' in window && !e.target.closest('#balance-sum-card')) hideBalanceBreakdown();
+}, { passive: true });
+
 function recalc() {
   // Reads from storage, and recalc always runs after the write, so the goal
   // total stays in step with whatever was just typed.
@@ -10889,6 +10976,18 @@ function recalc() {
     ].filter(function(c) { return c.amt > 0; }).sort(function(a, b) { return b.amt - a.amt; })
   };
   const balance   = incA - totalExpA;
+  // Data for the Net Balance tooltip. `has` gates the whole panel so an
+  // untouched month doesn't advertise a breakdown of zeroes; `hasPlan` gates
+  // just the comparison, for a month with actuals but no budgets set.
+  _balanceBreakdown = {
+    income:     incA,
+    expenses:   totalExpA,
+    net:        balance,
+    plannedNet: incP - totalExpB,
+    hasPlan:    (incP > 0 || totalExpB > 0),
+    saved:      savA,
+    has:        (incA > 0 || totalExpA > 0)
+  };
   const assets    = chkE + savA;
   const liab      = dbtR;
   const netWorth  = assets - liab;
@@ -11025,6 +11124,17 @@ function recalc() {
     }
   }
   set('sum-balance',  fmt(balance));
+  var balSub = document.getElementById('balance-sum-sub');
+  var balCard = document.getElementById('balance-sum-card');
+  if (balSub && balCard) {
+    if (_balanceBreakdown && _balanceBreakdown.has) {
+      balSub.textContent = ('ontouchstart' in window) ? 'tap for breakdown' : 'hover for breakdown';
+      balCard.style.cursor = 'help';
+    } else {
+      balSub.textContent = 'income − expenses';
+      balCard.style.cursor = 'default';
+    }
+  }
   const balEl = document.getElementById('sum-balance');
   if (balEl) balEl.style.color = balance >= 0 ? 'var(--sage)' : 'var(--blush)';
   const savEl = document.getElementById('sum-savings');
