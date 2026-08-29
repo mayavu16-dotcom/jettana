@@ -4861,7 +4861,7 @@ body.month-locked .intention-trigger:not(.has-content) {
 body.month-locked .row-date-btn,
 body.month-locked .paid-color-wrap,
 body.month-locked .note-textarea,
-body.month-locked .note-indicator {
+body.month-locked .note-indicator:not(.has-note) {
   pointer-events: none !important;
   caret-color: transparent !important;
   cursor: default !important;
@@ -4872,6 +4872,19 @@ body.month-locked .row-date-btn:not(.has-date) {
 /* Reordering is a change too. */
 body.month-locked .erow,
 body.month-locked .sec-card { -webkit-user-drag: none; }
+
+/* The lock is a 29x21 hit target on a phone, well under the 44px a finger
+   needs. Grow the BOX with padding rather than the glyph, so it still reads
+   as a small quiet icon next to the moon but is comfortably tappable.
+   Negative margins keep it from pushing its neighbours around in the
+   topbar row. */
+@media (pointer: coarse) {
+  #month-lock-btn {
+    padding: 12px 11px;
+    margin: -12px -7px;
+    opacity: 0.55;
+  }
+}
 
 </style>
 </head>
@@ -9102,6 +9115,8 @@ function setYearMonthsHeight(el, collapsed) {
 function applyMonthLock() {
   var on = monthIsLocked(currentMonthKey);
   document.body.classList.toggle('month-locked', on);
+  if (on) _lockOpenNotes();        // a note left open when the lock went on
+  else    _unlockOpenNotes();      // ...and give it back on unlock
   var btn = document.getElementById('month-lock-btn');
   if (btn) {
     btn.textContent = on ? '\uD83D\uDD12' : '\uD83D\uDD13';
@@ -10026,6 +10041,7 @@ var _bulkMode = 'delete'; // 'delete' | 'paid' | 'color' | 'move' | 'date'
 var _bulkDateVal = '';
 
 function enterBulkMode(section, mode) {
+  if (monthIsLocked(currentMonthKey)) return;   // month lock: view only
   if (_bulkSection && _bulkSection !== section) cancelBulk(_bulkSection);
   _bulkSection = section;
   _bulkSelected = new Set();
@@ -13058,6 +13074,55 @@ function clearSearch() {
 
 
 // ── Notes ────────────────────────────────────────────────────
+// Make an open note panel readable but not editable. Done in JS rather than
+// CSS because the panel is built largely from inline styles, so there is no
+// stable set of classes to target — and because `readOnly` is better than
+// pointer-events here: a read-only textarea still scrolls and selects, so a
+// long note can actually be read, it just can't be typed into.
+function _lockNotePanel(wrap) {
+  if (!wrap) return;
+  // Every element touched is STAMPED, and only stamped ones are undone on
+  // unlock. Some fields in here are legitimately readonly or disabled already
+  // — a card-linked debt amount, for one — and a blanket clear would quietly
+  // make those editable, which is a worse bug than the one being fixed.
+  wrap.querySelectorAll('input, textarea').forEach(function(el) {
+    if (el.readOnly) return;                 // already readonly on its own
+    el.readOnly = true;
+    el.dataset.lockRo = '1';
+  });
+  wrap.querySelectorAll('button, select').forEach(function(el) {
+    if (el.disabled) return;                 // already disabled on its own
+    el.disabled = true;
+    el.dataset.lockDis = '1';
+  });
+  wrap.querySelectorAll('[contenteditable="true"]').forEach(function(el) {
+    el.setAttribute('contenteditable', 'false');
+    el.dataset.lockCe = '1';
+  });
+}
+
+function _unlockNotePanel(wrap) {
+  if (!wrap) return;
+  wrap.querySelectorAll('[data-lock-ro]').forEach(function(el) {
+    el.readOnly = false; delete el.dataset.lockRo;
+  });
+  wrap.querySelectorAll('[data-lock-dis]').forEach(function(el) {
+    el.disabled = false; delete el.dataset.lockDis;
+  });
+  wrap.querySelectorAll('[data-lock-ce]').forEach(function(el) {
+    el.setAttribute('contenteditable', 'true'); delete el.dataset.lockCe;
+  });
+}
+
+// Re-apply to whatever is already open — locking while a note is open, or
+// switching to a locked month with one open, both land here.
+function _lockOpenNotes() {
+  document.querySelectorAll('.note-row.open').forEach(_lockNotePanel);
+}
+function _unlockOpenNotes() {
+  document.querySelectorAll('.note-row').forEach(_unlockNotePanel);
+}
+
 function toggleNote(section, id) {
   var wrap = document.getElementById('note-wrap-' + id);
   if (!wrap) return;
@@ -13073,6 +13138,14 @@ function toggleNote(section, id) {
   }
 
   wrap.classList.toggle('open', opening);
+  if (opening && monthIsLocked(currentMonthKey)) {
+    // View-only: build the panel as normal so templates and entries still
+    // render, then neuter every control in it. Runs on a timeout as well as
+    // now, because some template sections fill themselves in asynchronously.
+    _lockNotePanel(wrap);
+    setTimeout(function() { _lockNotePanel(wrap); }, 0);
+    setTimeout(function() { _lockNotePanel(wrap); }, 250);
+  }
   if (opening) {
     // Snapshot before the user edits anything in this note
     pushUndo('Edit note/template');
@@ -18548,6 +18621,7 @@ function loadFontSize() {
 
 
 function addRowMobile(e, section) {
+  if (monthIsLocked(currentMonthKey)) return;   // month lock: view only
   addRow(section);
   // Focus the last input in the section - it now covers the full label area
   var container = document.getElementById('rows-' + section);
