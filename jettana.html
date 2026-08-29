@@ -4837,9 +4837,37 @@ body.month-locked .del-btn,
 body.month-locked .notes-edit-btn,
 body.month-locked .note-bullet-btn,
 body.month-locked #mchk-open-btn,
-body.month-locked .intention-trigger {
+body.month-locked .intention-dismiss {
   visibility: hidden !important;
   pointer-events: none !important;
+}
+/* The intention itself STAYS VISIBLE on a locked month — .intention-trigger
+   is the element loadIntention() renders the intention's HTML into, so
+   hiding the class blanks the intention, not just the prompt. It only goes
+   inert. The empty "Add intention" prompt (no .has-content) is hidden with
+   visibility so the row keeps its height and nothing below it shifts. */
+body.month-locked .intention-trigger {
+  pointer-events: none !important;
+  cursor: default !important;
+}
+body.month-locked .intention-trigger:not(.has-content) {
+  visibility: hidden !important;
+}
+/* Same trap as the intention: .row-date-btn IS the element that displays a
+   row's date once one is set (.has-date), so hiding the class would hide the
+   date. It goes inert; only the empty "+ date" placeholder is hidden.
+   .row-date-btn sets `pointer-events: all` of its own, so this needs
+   !important to beat it rather than relying on source order. */
+body.month-locked .row-date-btn,
+body.month-locked .paid-color-wrap,
+body.month-locked .note-textarea,
+body.month-locked .note-indicator {
+  pointer-events: none !important;
+  caret-color: transparent !important;
+  cursor: default !important;
+}
+body.month-locked .row-date-btn:not(.has-date) {
+  visibility: hidden !important;
 }
 /* Reordering is a change too. */
 body.month-locked .erow,
@@ -4883,7 +4911,6 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="topbar-left">
         <div style="display:flex;align-items:center;gap:10px;">
           <h2 id="topbar-title" onclick="toggleMonthColorPicker(event)" title="Click to color this month's title" style="cursor:pointer;">Loading…</h2>
-          <button id="month-lock-btn" onclick="toggleMonthLock()" aria-pressed="false" title="Lock this month (view only)">🔓</button>
           <span id="month-emoji-display" onclick="toggleMonthEmojiPicker(event)" title="Add emoji" style="font-size:28px;cursor:pointer;opacity:0;transition:opacity 0.15s,transform 0.15s;flex-shrink:0;line-height:1;display:inline-flex;align-items:center;vertical-align:middle;position:relative;top:2px;"></span>
         </div>
         <div class="sub" id="topbar-sub"></div>
@@ -4898,6 +4925,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
           <input type="text" class="search-input" id="s-input" placeholder="Search by item, amount or date…">
           <button class="search-clear" id="s-clear" title="Clear" onclick="clearSearch()">&#x2715;</button>
         </div>
+        <button id="month-lock-btn" onclick="toggleMonthLock()" aria-pressed="false" title="Lock this month (view only)">🔓</button>
         <button class="dark-toggle" id="dark-toggle" onclick="toggleDark()" title="Toggle dark mode">🌙</button>
         <div class="more-wrap" id="more-wrap">
           <button class="btn btn-ghost" id="more-btn" onclick="toggleMoreMenu(event); dismissMoreHint()" title="More options" style="font-size:18px;width:34px;padding:0;letter-spacing:1px;position:relative;">⋯<span id="more-hint-dot" style="display:none;position:absolute;top:4px;right:4px;width:7px;height:7px;background:#6B9E70;border-radius:50%;animation:hint-pulse 1.5s ease-in-out infinite;"></span></button>
@@ -12104,6 +12132,7 @@ function bindTap(el, fn) {
 var _dgState = null;
 
 function showDayGrid(section, id, isDate2) {
+  if (monthIsLocked(currentMonthKey)) return;   // month lock: view only
   closeDayGrid();
   var all = loadAll();
   var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
@@ -15424,6 +15453,7 @@ function duplicateRow(section, id) {
 var ctxSection = null, ctxId = null;
 
 function showCtxMenuBtn(e, section, id) {
+  if (monthIsLocked(currentMonthKey)) return;   // month lock: view only
   e.preventDefault();
   e.stopPropagation();
   // Position near the button
@@ -15433,6 +15463,7 @@ function showCtxMenuBtn(e, section, id) {
 }
 
 function showCtxMenu(e, section, id) {
+  if (monthIsLocked(currentMonthKey)) return;   // month lock: view only
   e.preventDefault();
   // Close color toolbar if open
   hideColorToolbar();
@@ -17928,6 +17959,7 @@ function updateLastCustomSwatch(color) {
 }
 
 function togglePaidColorPicker(id, e) {
+  if (monthIsLocked(currentMonthKey)) return;   // month lock: view only
   e.stopPropagation();
   var picker = document.getElementById('global-paid-picker');
   if (!picker) return;
@@ -18118,6 +18150,7 @@ var EMOJI_DATA = [
 ];
 
 function toggleMonthEmojiPicker(e) {
+  if (monthIsLocked(currentMonthKey)) return;   // month lock: view only
   e.stopPropagation();
   var existing = document.getElementById('month-emoji-popup');
   if (existing) { existing.remove(); return; }
@@ -18221,6 +18254,7 @@ function applyMonthEmoji() {
 
 // ── Month Title Color ─────────────────────────────────────────
 function toggleMonthColorPicker(e) {
+  if (monthIsLocked(currentMonthKey)) return;   // month lock: view only
   e.stopPropagation();
   var existing = document.getElementById('month-color-popup');
   if (existing) { existing.remove(); return; }
@@ -19746,6 +19780,7 @@ function clearNumColor(section, id, e) {
 }
 
 function toggleNumColorPicker(id, e) {
+  if (monthIsLocked(currentMonthKey)) return;   // month lock: view only
   e.stopPropagation();
   var picker = document.getElementById('global-num-picker');
   if (!picker) return;
@@ -20020,6 +20055,7 @@ function updateLegendSwatches() {
 }
 
 function showColorToolbar(section, id, anchorEl) {
+  if (monthIsLocked(currentMonthKey)) return;   // month lock: view only
   // Close ctx menu if open
   hideCtxMenu();
   _tbSection = section;
@@ -20517,6 +20553,7 @@ function updateFtSwatches() {
 }
 
 function showFtColorPicker(e, section) {
+  if (monthIsLocked(currentMonthKey)) return;   // month lock: view only
   e.preventDefault();
   e.stopPropagation();
   _ftPickerSection = section;
