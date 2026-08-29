@@ -4785,25 +4785,6 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 }
 .dark #ft-color-picker { background: #1E2A38; border-color: #2A3A4A; }
 
-/* ── Welcome: quiet secondary actions ────────────────────────
-   Appended at the END of the stylesheet on purpose. Nothing currently
-   competes with this class, but the mobile @media blocks near line 1400
-   sit BEFORE most base rules, so anything that must hold on a phone
-   belongs down here rather than up there. */
-.welcome-quiet-btn {
-  background: none;
-  border: none;
-  padding: 4px 2px;
-  font-family: 'Outfit', sans-serif;
-  font-size: 12px;
-  color: var(--steel);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-.welcome-quiet-btn:hover { color: var(--ink); }
 </style>
 </head>
 <body>
@@ -6047,12 +6028,9 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
         There's more here once you go looking — colors, cards, templates, charts. None of it is needed today. It's all under <strong>⋯</strong> when you want it.
       </div>
     </div>
-    <div class="welcome-footer" style="flex-direction:column;align-items:stretch;gap:12px;">
+    <div class="welcome-footer" style="flex-direction:column;align-items:stretch;gap:10px;">
       <button class="welcome-start-btn" style="flex:0 0 auto;" onclick="startWithIncome()">Add my income →</button>
-      <div style="display:flex;gap:18px;justify-content:center;">
-        <button class="welcome-quiet-btn" onclick="hideWelcome(); loadDemo();">See an example first</button>
-        <button class="welcome-quiet-btn" onclick="hideWelcome(); startTour();">Take the tour</button>
-      </div>
+      <button class="welcome-features-btn" style="width:100%;font-size:14px;padding:12px;" onclick="hideWelcome(); loadDemo();">Show me a filled-in example</button>
     </div>
   </div>
 </div>
@@ -18743,13 +18721,18 @@ function hideWelcome() {
 }
 
 // The single next step offered by Welcome. It deliberately writes NOTHING:
-// it closes the modal and scrolls to Income, where the existing empty state
-// ("Start here") and the + button are already waiting. Adding a row from here
-// would mean the first-run modal writes month data before the user has typed
-// anything, which is not a thing a welcome screen should ever do.
+// it closes the modal and hands over to the halo guide, whose first step
+// scrolls to and rings the "+ Add income source" button. Adding a row from
+// here would mean the first-run modal writes month data before the user has
+// typed anything, which is not a thing a welcome screen should ever do.
+//
+// It does NOT also call jumpToMonthSection() — that runs its own smooth
+// scroll on a 280ms timer, and the guide's first step scrolls to the same
+// region, so the two fight and the page lands in the wrong place.
+// The short delay lets the modal clear before the spotlight comes up.
 function startWithIncome() {
   hideWelcome();
-  try { jumpToMonthSection(currentMonthKey, 'income'); } catch (e) {}
+  setTimeout(function() { try { startGuide(); } catch (e) {} }, 260);
 }
 
 
@@ -20467,6 +20450,11 @@ window.addEventListener('load', function() {
 var _dguideStep = 0;
 var _dguideEl = null;
 var _dguideRevealEl = null;
+// Points at DEMO_GUIDE_STEPS or START_GUIDE_STEPS while a guide is running.
+// Declared here WITHOUT being re-initialised anywhere below: a second
+// `var _activeDguideSteps = null` further down the block would execute after
+// a start call and wipe it (see the _defaultNumColor bug, Aug 20).
+var _activeDguideSteps = null;
 
 var DEMO_GUIDE_STEPS = [
   {
@@ -20520,7 +20508,57 @@ var DEMO_GUIDE_STEPS = [
   },
 ];
 
+// The same halo, for someone on their OWN empty tracker who skipped the demo.
+// Deliberately about getting started rather than showing features off, and
+// every step targets something that exists in a month with no rows in it.
+// _showDguideStep() skips any step whose target AND fallback both come back
+// null, so this stays safe if any of these ids ever move.
+var START_GUIDE_STEPS = [
+  {
+    target:   function() { return document.getElementById('add-income-btn'); },
+    fallback: function() { return document.querySelector('.sec-card[data-section-id="income"]'); },
+    label: 'Start here',
+    desc: 'Tap + to add what you take home this month. It doesn\'t have to be exact — you can change it whenever you like.',
+    tipSide: 'auto',
+  },
+  {
+    target:   function() { return document.querySelector('.sec-card[data-section-id="housing"]'); },
+    fallback: function() { return document.querySelector('.tracker-grid'); },
+    label: 'Every section works the same way',
+    desc: 'Add a row, put in what you plan to spend, then fill in what you actually spent as the month goes. Only use the sections you need — the rest can sit empty.',
+    tipSide: 'auto',
+  },
+  {
+    target:   function() { return document.querySelector('.summary-strip'); },
+    fallback: function() { return document.querySelector('.page-body'); },
+    label: 'Your totals, live',
+    desc: 'These four update as you type — what came in, what went out, what\'s left, and what you\'ve saved.',
+    tipSide: 'auto',
+  },
+  {
+    target:   function() { return document.getElementById('hamburger-btn'); },
+    fallback: function() { return document.querySelector('.topbar-left button'); },
+    label: 'Your months',
+    desc: 'Open the menu to move between months or start a new one. Each month is its own page.',
+    tipSide: 'right',
+  },
+  {
+    target:   function() { return document.getElementById('more-btn'); },
+    fallback: function() { return document.querySelector('.topbar-right'); },
+    label: 'Everything else is in here',
+    desc: 'Colors, cards, templates, charts, backups — all under \u22EF whenever you want them. None of it is needed to get going.',
+    tipSide: 'auto',
+  },
+];
+
 function startDemoGuide() {
+  _activeDguideSteps = DEMO_GUIDE_STEPS;
+  _dguideStep = 0;
+  _showDguideStep();
+}
+
+function startGuide() {
+  _activeDguideSteps = START_GUIDE_STEPS;
   _dguideStep = 0;
   _showDguideStep();
 }
@@ -20535,8 +20573,9 @@ function _showDguideStep() {
   var _dp = document.getElementById('debt-total-pop'); if (_dp) _dp.style.display = 'none';
   var _sp = document.getElementById('sec-popover'); if (_sp) _sp.remove();
   document.body.classList.remove('sidebar-open');   // mobile overlay from the sidebar step
-  if (_dguideStep >= DEMO_GUIDE_STEPS.length) { _clearDguide(); return; }
-  var step = DEMO_GUIDE_STEPS[_dguideStep];
+  var _steps = _activeDguideSteps || DEMO_GUIDE_STEPS;
+  if (_dguideStep >= _steps.length) { _clearDguide(); return; }
+  var step = _steps[_dguideStep];
   var el = step.target() || step.fallback();
   if (!el) { _dguideStep++; _showDguideStep(); return; }
 
@@ -20621,11 +20660,11 @@ function _showDguideStep() {
     '<div class="dguide-label">' + step.label + '</div>' +
     '<div class="dguide-desc">'  + step.desc  + '</div>' +
     '<div class="dguide-footer">' +
-      '<span class="dguide-step">' + (_dguideStep + 1) + ' of ' + DEMO_GUIDE_STEPS.length + '</span>' +
+      '<span class="dguide-step">' + (_dguideStep + 1) + ' of ' + _steps.length + '</span>' +
       '<div class="dguide-btns">' +
         '<button class="dguide-skip" onclick="_clearDguide()">Skip</button>' +
         '<button class="dguide-next" onclick="_dguideStep++;_showDguideStep()">' +
-          (_dguideStep === DEMO_GUIDE_STEPS.length - 1 ? 'Done \u2713' : 'Next \u2192') +
+          (_dguideStep === _steps.length - 1 ? 'Done \u2713' : 'Next \u2192') +
         '</button>' +
       '</div>' +
     '</div>';
