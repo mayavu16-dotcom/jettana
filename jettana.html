@@ -6011,19 +6011,44 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
   <div class="welcome-modal">
     <div class="welcome-header">
       <h2>Welcome to Jettana 👋</h2>
+      <p>Your personal budget tracker. Add your income, track your expenses, and see exactly where your money goes.</p>
       <p id="welcome-privacy-line" style="margin-top:8px;font-size:12px;opacity:0.85;">🔒 Your budget is private and saved in this browser.</p>
     </div>
-    <div class="welcome-body" style="padding:26px 28px 22px;">
-      <div style="font-size:17px;line-height:1.5;color:var(--ink);font-weight:500;">
-        Start with one number: what you take home this month.
-      </div>
-      <div style="font-size:13.5px;line-height:1.6;color:var(--steel);margin-top:8px;">
-        Everything else builds from there. Add as much or as little as you like.
+    <div class="welcome-body">
+      <div class="welcome-steps">
+        <div class="welcome-step">
+          <div class="welcome-step-icon">💵</div>
+          <div class="welcome-step-text">
+            <strong>Start with your income</strong>
+            <span>Head to the Income section and add your take-home pay. That's your starting point.</span>
+          </div>
+        </div>
+        <div class="welcome-step">
+          <div class="welcome-step-icon">🧾</div>
+          <div class="welcome-step-text">
+            <strong>Add your expenses</strong>
+            <span>Fill in Housing, Food, Transport and other sections with your monthly costs — budget and actual.</span>
+          </div>
+        </div>
+        <div class="welcome-step">
+          <div class="welcome-step-icon">📊</div>
+          <div class="welcome-step-text">
+            <strong>See your picture</strong>
+            <span>The summary at the top updates live — income, expenses, net balance and savings all in one view.</span>
+          </div>
+        </div>
+        <div class="welcome-step">
+          <div class="welcome-step-icon" style="font-size:18px;letter-spacing:2px;">⋯</div>
+          <div class="welcome-step-text">
+            <strong>Explore when you're ready</strong>
+            <span>Color coding, card tracking, templates and more are all in ⋯ → Features whenever you want to go deeper.</span>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="welcome-footer" style="flex-direction:column;align-items:stretch;gap:10px;">
-      <button class="welcome-start-btn" style="flex:0 0 auto;font-size:15px;" onclick="startWithIncome()">Add my income →</button>
-      <button class="welcome-features-btn" style="width:100%;font-size:14px;padding:12px;" onclick="hideWelcome(); loadDemo();">Show me a filled-in example</button>
+    <div class="welcome-footer">
+      <button class="welcome-start-btn" onclick="startWithIncome()">Start fresh →</button>
+      <button class="welcome-features-btn" onclick="hideWelcome(); loadDemo();">▶ Try demo</button>
     </div>
   </div>
 </div>
