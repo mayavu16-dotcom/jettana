@@ -4785,6 +4785,66 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 }
 .dark #ft-color-picker { background: #1E2A38; border-color: #2A3A4A; }
 
+/* ── Locked month (view only) ─────────────────────────────────
+   Appended at the END of the stylesheet deliberately: the mobile @media
+   blocks near line 1400 sit BEFORE most base rules, so anything that has to
+   hold on a phone belongs down here rather than up there.
+
+   Two rules for this block:
+   1. NO nth-child / nth-of-type anywhere in it. Hiding a cell would shift
+      the positional selectors the section footers depend on, on or off.
+   2. Nothing inside a row uses display:none. Controls are hidden with
+      visibility so the row keeps its exact layout — a locked month must
+      look like the same month, not a re-flowed one.
+   Paid checkboxes stay VISIBLE but inert: whether a bill was paid is
+   information you still need to read on a closed month. */
+#month-lock-btn {
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.35;
+  transition: opacity 0.15s, transform 0.15s;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+#month-lock-btn:hover { opacity: 0.85; transform: scale(1.1); }
+#month-lock-btn.is-locked { opacity: 1; }
+
+/* Inputs stay fully readable — they just stop accepting input. */
+body.month-locked .erow input,
+body.month-locked .erow textarea,
+body.month-locked .erow [contenteditable],
+body.month-locked .footer-budget-input,
+body.month-locked #notes-textarea,
+body.month-locked .intention-input,
+body.month-locked .paid-checkbox,
+body.month-locked #credit-score-input {
+  pointer-events: none !important;
+  caret-color: transparent !important;
+}
+/* Affordances that exist only to change something. visibility, not display,
+   so nothing below them moves. */
+body.month-locked .add-row-btn,
+body.month-locked .sec-clear-btn,
+body.month-locked .sec-trash-btn,
+body.month-locked .sec-drag-handle,
+body.month-locked .drag-handle,
+body.month-locked .del-btn,
+body.month-locked .notes-edit-btn,
+body.month-locked .note-bullet-btn,
+body.month-locked #mchk-open-btn,
+body.month-locked .intention-trigger {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+/* Reordering is a change too. */
+body.month-locked .erow,
+body.month-locked .sec-card { -webkit-user-drag: none; }
+
 </style>
 </head>
 <body>
@@ -4823,6 +4883,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       <div class="topbar-left">
         <div style="display:flex;align-items:center;gap:10px;">
           <h2 id="topbar-title" onclick="toggleMonthColorPicker(event)" title="Click to color this month's title" style="cursor:pointer;">Loading…</h2>
+          <button id="month-lock-btn" onclick="toggleMonthLock()" aria-pressed="false" title="Lock this month (view only)">🔓</button>
           <span id="month-emoji-display" onclick="toggleMonthEmojiPicker(event)" title="Add emoji" style="font-size:28px;cursor:pointer;opacity:0;transition:opacity 0.15s,transform 0.15s;flex-shrink:0;line-height:1;display:inline-flex;align-items:center;vertical-align:middle;position:relative;top:2px;"></span>
         </div>
         <div class="sub" id="topbar-sub"></div>
@@ -5322,8 +5383,8 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
           </div>
           <div class="sec-body" id="notes-body" style="display:flex;flex-direction:column;flex:1;">
             <div style="display:flex;gap:4px;padding:8px 12px 0;border-bottom:1px solid var(--mist);flex-shrink:0;">
-              <button onclick="insertNotesText('• ')" title="Bullet point" style="background:none;border:1px solid var(--mist);border-radius:4px;padding:3px 8px;font-size:12px;cursor:pointer;color:var(--ink);">• Bullet</button>
-              <button onclick="insertNotesText('☐ ')" title="Add checkbox" style="background:none;border:1px solid var(--mist);border-radius:4px;padding:3px 8px;font-size:12px;cursor:pointer;color:var(--ink);">☐ Todo</button>
+              <button class="notes-edit-btn" onclick="insertNotesText('• ')" title="Bullet point" style="background:none;border:1px solid var(--mist);border-radius:4px;padding:3px 8px;font-size:12px;cursor:pointer;color:var(--ink);">• Bullet</button>
+              <button class="notes-edit-btn" onclick="insertNotesText('☐ ')" title="Add checkbox" style="background:none;border:1px solid var(--mist);border-radius:4px;padding:3px 8px;font-size:12px;cursor:pointer;color:var(--ink);">☐ Todo</button>
               <button id="notes-expand-btn" onclick="toggleNotesExpand()" title="Expand / collapse notes" style="background:none;border:1px solid var(--mist);border-radius:4px;padding:3px 8px;font-size:12px;cursor:pointer;color:var(--ink);margin-left:auto;touch-action:manipulation;-webkit-tap-highlight-color:transparent;">↕</button>
             </div>
             <textarea id="notes-textarea" placeholder="Jot down financial reminders, goals, or anything on your mind this month…" oninput="saveNotes()" onclick="handleNoteClick(event)" onkeydown="notesKeydown(event)" style="width:100%;flex:1;min-height:140px;border:none;outline:none;resize:none;font-family:'Outfit',sans-serif;font-size:13.5px;line-height:1.6;color:var(--ink);background:transparent;padding:12px 16px;box-sizing:border-box;"></textarea>
@@ -7839,7 +7900,64 @@ function loadAll() {
   }
   try { return JSON.parse(appStore.getItem(activeStorageKey())) || {}; } catch { return {}; }
 }
+// ── Month lock ────────────────────────────────────────────────
+// A locked month is view-only. The flag lives ON THE MONTH OBJECT
+// (`_locked`), beside _emoji / _intention / _savGoalCol, so it travels with
+// the month, syncs with it, and the demo sandbox isolates it for free.
+// Unlocking DELETES the key, so an unlocked month reads byte-identical to a
+// month that was never locked.
+//
+// Declared here, above every caller, and never re-initialised further down
+// the block — a second `var _lockBypass = false` below a call site would
+// execute second and wipe it (the _defaultNumColor bug, Aug 20).
+var _lockBypass = false;      // true only while toggleMonthLock() is saving
+var _lockToastAt = 0;         // throttles the "blocked" toast
+
+function monthIsLocked(key) {
+  if (!key) return false;
+  try {
+    var m = loadAll()[key];
+    return !!(m && m._locked);
+  } catch (e) { return false; }
+}
+
+// The single door. Every one of the ~78 functions that can change a month
+// ends up in saveAll(), so the check lives here rather than in each of them:
+// one place to get right, and it covers anything added later for free.
+// Reads the CURRENTLY STORED copy and puts back any locked month whose
+// contents the outgoing write would have changed. Other months pass through
+// untouched.
+//
+// Note what this deliberately does NOT cover: syncFromSupabase(), the local
+// transfer and restoreSnapshot() all write to storage directly rather than
+// through saveAll(), so a lock can never block a cloud pull or a restore.
+function _enforceMonthLocks(data) {
+  if (_lockBypass || !data) return data;
+  var stored;
+  try { stored = JSON.parse(appStore.getItem(activeStorageKey())) || {}; }
+  catch (e) { return data; }
+  var blocked = null;
+  Object.keys(stored).forEach(function(k) {
+    if (!/^\d{4}-\d{2}$/.test(k)) return;        // real months only
+    var was = stored[k];
+    if (!was || !was._locked) return;             // locked months only
+    var now = data[k];
+    if (now === undefined || JSON.stringify(now) !== JSON.stringify(was)) {
+      data[k] = was;                              // put the stored copy back
+      blocked = k;
+    }
+  });
+  // Should never fire once the UI is read-only — if it does, something got
+  // through, and silently dropping the edit would be worse than saying so.
+  if (blocked && Date.now() - _lockToastAt > 3000) {
+    _lockToastAt = Date.now();
+    try { showToast('\uD83D\uDD12 ' + monthLabel(blocked) + ' is locked — unlock it to make changes', false); } catch (e) {}
+  }
+  return data;
+}
+
 function saveAll(data) {
+  data = _enforceMonthLocks(data);
   // snapshot the PREVIOUS state before overwriting it (throttled)
   takeSnapshot('save', { throttle: true });
   appStore.setItem(activeStorageKey(), JSON.stringify(data));
@@ -8429,6 +8547,10 @@ function renameSectionPrompt(key) {
 
 function renameMonth(oldKey) {
   if (oldKey === 'demo-month') { showToast('Demo month can\'t be renamed', false); return; }
+  if (monthIsLocked(oldKey)) {
+    showToast('\uD83D\uDD12 ' + monthLabel(oldKey) + ' is locked — unlock it first', false);
+    return;
+  }
   var parts = oldKey.split('-').map(Number);
   var oy = parts[0], om = parts[1];
   var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -8883,6 +9005,7 @@ function switchMonth(key) {
   // The flag is per month now, so the body class has to be re-read on every
   // switch — otherwise August's column stays on the screen in September.
   applySavGoalCol();
+  applyMonthLock();
   recalc();
   renderCreditScore();
   renderMonthChecklist();
@@ -8945,6 +9068,50 @@ function setYearMonthsHeight(el, collapsed) {
    should not meet an extra empty box, and that stays true in month two.
    `all` is optional: callers holding a loaded dataset pass it in so one
    recalc doesn't parse the whole thing twice. */
+// Mirrors applySavGoalCol(): the flag is per month, so the body class has to
+// be re-read on every switchMonth — otherwise August's lock stays on the
+// screen while you are looking at September.
+function applyMonthLock() {
+  var on = monthIsLocked(currentMonthKey);
+  document.body.classList.toggle('month-locked', on);
+  var btn = document.getElementById('month-lock-btn');
+  if (btn) {
+    btn.textContent = on ? '\uD83D\uDD12' : '\uD83D\uDD13';
+    btn.title = on ? 'This month is locked — tap to unlock' : 'Lock this month (view only)';
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    btn.classList.toggle('is-locked', on);
+    // Hidden on the demo month, which is a sandbox that saves nothing.
+    btn.style.display = (currentMonthKey === 'demo-month') ? 'none' : '';
+  }
+}
+
+function toggleMonthLock() {
+  if (!currentMonthKey || currentMonthKey === 'demo-month') return;
+  var all = loadAll();
+  var m = all[currentMonthKey];
+  if (!m) return;
+  var turningOn = !m._locked;
+  if (turningOn) {
+    // Anything mid-edit must land BEFORE the lock does, or the guard eats it.
+    try { document.activeElement && document.activeElement.blur(); } catch (e) {}
+    all = loadAll();          // re-read: the blur above may have saved
+    m = all[currentMonthKey];
+    if (!m) return;
+    m._locked = true;
+  } else {
+    delete m._locked;         // an unlocked month reads as never-locked
+  }
+  // The one write that is allowed to change a locked month is the one that
+  // changes its lock. Bypass is set for this call only and always cleared.
+  _lockBypass = true;
+  try { saveAll(all); } finally { _lockBypass = false; }
+  applyMonthLock();
+  renderSidebar();
+  showToast(turningOn
+    ? '\uD83D\uDD12 ' + monthLabel(currentMonthKey) + ' locked — view only'
+    : '\uD83D\uDD13 ' + monthLabel(currentMonthKey) + ' unlocked');
+}
+
 function savGoalColOn(all) {
   try {
     var d = all || loadAll();
@@ -9090,6 +9257,10 @@ function renderSidebar() {
 
 function deleteMonth(e, key) {
   if (e) { e.stopPropagation(); e.preventDefault(); }
+  if (monthIsLocked(key)) {
+    showToast('\uD83D\uDD12 ' + monthLabel(key) + ' is locked — unlock it first', false);
+    return;
+  }
   const label = monthLabel(key);
   const overlay = document.createElement('div');
   overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:2000;display:flex;align-items:center;justify-content:center;`;
@@ -11589,6 +11760,10 @@ window.addEventListener('resize', function() {
 });
 
 function autoCalcDebtFromCards() {
+  // A closed month's derived numbers must not drift on their own — and this
+  // runs inside recalc() on every render, so without this it would trip the
+  // saveAll lock check constantly.
+  if (monthIsLocked(currentMonthKey)) return;
   if (!_legendCards || !_legendCards.length) return;
   var all = loadAll();
   var monthData = all[currentMonthKey];
@@ -11816,6 +11991,7 @@ function applyPaidEffect(section, id, isPaid) {
 function recalcCheckingBalances() {
   // Fully recalculate ending balance for all checking accounts from scratch
   // Called after any paid toggle, color change, date change, or beginDate change
+  if (monthIsLocked(currentMonthKey)) return;   // see autoCalcDebtFromCards
   var all = loadAll();
   var monthData = all[currentMonthKey];
   if (!monthData) return;
@@ -15629,6 +15805,12 @@ function pushUndo(description) {
 
 function doUndo() {
   if (!undoStack.length) return;
+  // Peek before popping — refusing after the pop would throw the step away.
+  var _peek = undoStack[undoStack.length - 1];
+  if (_peek && monthIsLocked(_peek.month)) {
+    showToast('\uD83D\uDD12 ' + monthLabel(_peek.month) + ' is locked — unlock it to undo', false);
+    return;
+  }
   var entry = undoStack.pop();
 
   // Handle month deletion undo
