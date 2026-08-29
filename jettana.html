@@ -6011,25 +6011,18 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
   <div class="welcome-modal">
     <div class="welcome-header">
       <h2>Welcome to Jettana 👋</h2>
-      <p>A budget you fill in yourself — nothing is connected to your bank, and nothing is shared.</p>
       <p id="welcome-privacy-line" style="margin-top:8px;font-size:12px;opacity:0.85;">🔒 Your budget is private and saved in this browser.</p>
     </div>
-    <div class="welcome-body">
-      <div class="welcome-steps" style="margin-bottom:18px;">
-        <div class="welcome-step">
-          <div class="welcome-step-icon">💵</div>
-          <div class="welcome-step-text">
-            <strong>Start with one number</strong>
-            <span>What you take home this month. Everything else builds from there — add as much or as little as you like, and change anything later.</span>
-          </div>
-        </div>
+    <div class="welcome-body" style="padding:26px 28px 22px;">
+      <div style="font-size:17px;line-height:1.5;color:var(--ink);font-weight:500;">
+        Start with one number: what you take home this month.
       </div>
-      <div style="font-size:12px;color:var(--steel);line-height:1.6;background:var(--mist-light);border:1px solid var(--mist);border-radius:10px;padding:11px 14px;">
-        There's more here once you go looking — colors, cards, templates, charts. None of it is needed today. It's all under <strong>⋯</strong> when you want it.
+      <div style="font-size:13.5px;line-height:1.6;color:var(--steel);margin-top:8px;">
+        Everything else builds from there. Add as much or as little as you like.
       </div>
     </div>
     <div class="welcome-footer" style="flex-direction:column;align-items:stretch;gap:10px;">
-      <button class="welcome-start-btn" style="flex:0 0 auto;" onclick="startWithIncome()">Add my income →</button>
+      <button class="welcome-start-btn" style="flex:0 0 auto;font-size:15px;" onclick="startWithIncome()">Add my income →</button>
       <button class="welcome-features-btn" style="width:100%;font-size:14px;padding:12px;" onclick="hideWelcome(); loadDemo();">Show me a filled-in example</button>
     </div>
   </div>
