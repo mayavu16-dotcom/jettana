@@ -4784,6 +4784,26 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
   border-radius: 50%; cursor: pointer; flex-shrink: 0;
 }
 .dark #ft-color-picker { background: #1E2A38; border-color: #2A3A4A; }
+
+/* ── Welcome: quiet secondary actions ────────────────────────
+   Appended at the END of the stylesheet on purpose. Nothing currently
+   competes with this class, but the mobile @media blocks near line 1400
+   sit BEFORE most base rules, so anything that must hold on a phone
+   belongs down here rather than up there. */
+.welcome-quiet-btn {
+  background: none;
+  border: none;
+  padding: 4px 2px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  color: var(--steel);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.welcome-quiet-btn:hover { color: var(--ink); }
 </style>
 </head>
 <body>
@@ -5021,21 +5041,6 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
     <div class="page-body">
 
       <!-- Monthly Intention -->
-      <!-- Start Here Banner (first-time users with no data) -->
-      <div id="start-here-banner" style="display:none;align-items:center;justify-content:space-between;gap:12px;background:var(--sage-light);border:1px solid var(--sage);border-radius:10px;padding:10px 16px;margin:8px 16px 0;font-family:Outfit,sans-serif;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span style="font-size:18px;">🌿</span>
-          <div>
-            <div style="font-size:13px;font-weight:700;color:var(--sage-dark);">Welcome to Jettana!</div>
-            <div style="font-size:12px;color:var(--sage-dark);opacity:0.8;line-height:1.4;">Not sure where to start? Try the demo or take the quick tour.</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:8px;flex-shrink:0;align-items:center;">
-          <button onclick="loadDemo();dismissStartBanner()" style="font-size:12px;font-weight:600;color:white;background:var(--sage);border:none;border-radius:6px;padding:5px 10px;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;">▶ Try demo</button>
-          <button onclick="startTour();dismissStartBanner()" style="font-size:12px;font-weight:600;color:var(--sage-dark);background:rgba(107,158,112,0.15);border:1px solid var(--sage);border-radius:6px;padding:5px 10px;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;">🗺 Take the tour</button>
-          <button onclick="dismissStartBanner()" style="font-size:18px;color:var(--sage);background:none;border:none;cursor:pointer;padding:0 4px;line-height:1;">×</button>
-        </div>
-      </div>
 
       <div id="demo-banner" style="display:none;align-items:center;justify-content:space-between;gap:12px;background:#FFF8E7;border:1px solid #F0C060;border-radius:10px;padding:10px 16px;margin:8px 16px 0;font-family:Outfit,sans-serif;">
         <div style="display:flex;align-items:center;gap:8px;">
@@ -6025,44 +6030,29 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
   <div class="welcome-modal">
     <div class="welcome-header">
       <h2>Welcome to Jettana 👋</h2>
-      <p>Your personal budget tracker. Add your income, track your expenses, and see exactly where your money goes.</p>
+      <p>A budget you fill in yourself — nothing is connected to your bank, and nothing is shared.</p>
       <p id="welcome-privacy-line" style="margin-top:8px;font-size:12px;opacity:0.85;">🔒 Your budget is private and saved in this browser.</p>
     </div>
     <div class="welcome-body">
-      <div class="welcome-steps">
+      <div class="welcome-steps" style="margin-bottom:18px;">
         <div class="welcome-step">
           <div class="welcome-step-icon">💵</div>
           <div class="welcome-step-text">
-            <strong>Start with your income</strong>
-            <span>Head to the Income section and add your take-home pay. That's your starting point.</span>
-          </div>
-        </div>
-        <div class="welcome-step">
-          <div class="welcome-step-icon">🧾</div>
-          <div class="welcome-step-text">
-            <strong>Add your expenses</strong>
-            <span>Fill in Housing, Food, Transport and other sections with your monthly costs — budget and actual.</span>
-          </div>
-        </div>
-        <div class="welcome-step">
-          <div class="welcome-step-icon">📊</div>
-          <div class="welcome-step-text">
-            <strong>See your picture</strong>
-            <span>The summary at the top updates live — income, expenses, net balance and savings all in one view.</span>
-          </div>
-        </div>
-        <div class="welcome-step">
-          <div class="welcome-step-icon" style="font-size:18px;letter-spacing:2px;">⋯</div>
-          <div class="welcome-step-text">
-            <strong>Explore when you're ready</strong>
-            <span>Color coding, card tracking, templates and more are all in ⋯ → Features whenever you want to go deeper.</span>
+            <strong>Start with one number</strong>
+            <span>What you take home this month. Everything else builds from there — add as much or as little as you like, and change anything later.</span>
           </div>
         </div>
       </div>
+      <div style="font-size:12px;color:var(--steel);line-height:1.6;background:var(--mist-light);border:1px solid var(--mist);border-radius:10px;padding:11px 14px;">
+        There's more here once you go looking — colors, cards, templates, charts. None of it is needed today. It's all under <strong>⋯</strong> when you want it.
+      </div>
     </div>
-    <div class="welcome-footer">
-      <button class="welcome-start-btn" onclick="hideWelcome()">Start fresh →</button>
-      <button class="welcome-features-btn" onclick="hideWelcome(); loadDemo();">▶ Try demo</button>
+    <div class="welcome-footer" style="flex-direction:column;align-items:stretch;gap:12px;">
+      <button class="welcome-start-btn" style="flex:0 0 auto;" onclick="startWithIncome()">Add my income →</button>
+      <div style="display:flex;gap:18px;justify-content:center;">
+        <button class="welcome-quiet-btn" onclick="hideWelcome(); loadDemo();">See an example first</button>
+        <button class="welcome-quiet-btn" onclick="hideWelcome(); startTour();">Take the tour</button>
+      </div>
     </div>
   </div>
 </div>
@@ -12390,11 +12380,9 @@ function init() {
     // Local-mode users are past the gate already, so they qualify too.
     if (!_demoIsolated && (_currentUser || _isLocalMode)) {
       setTimeout(showWelcome, 600);
-      setTimeout(maybeShowStartBanner, 800);
     }
   } else {
     switchMonth(key);
-    setTimeout(maybeShowStartBanner, 400);
   }
   renderSidebar();
 }
@@ -18627,21 +18615,6 @@ function loadCollapsedSections() {
 
 
 // ── Welcome modal ─────────────────────────────────────────────
-function dismissStartBanner() {
-  var el = document.getElementById('start-here-banner');
-  if (el) el.style.display = 'none';
-  try { appStore.setItem('jettana_start_dismissed', '1'); } catch(e) {}
-}
-
-function maybeShowStartBanner() {
-  try { if (appStore.getItem('jettana_start_dismissed')) return; } catch(e) { return; }
-  // Only show if user has no real month data
-  var realKeys = allMonthKeys().filter(function(k) { return k !== 'demo-month'; });
-  if (realKeys.length > 0) return;
-  var el = document.getElementById('start-here-banner');
-  if (el) el.style.display = 'flex';
-}
-
 function showBackups() {
   var el = document.getElementById('backups-overlay');
   if (el) el.style.display = 'flex';
@@ -18767,6 +18740,16 @@ function hideWelcome() {
   var el = document.getElementById('welcome-overlay');
   if (el) el.style.display = 'none';
   appStore.setItem(nsKey('intentra_welcomed'), '1');
+}
+
+// The single next step offered by Welcome. It deliberately writes NOTHING:
+// it closes the modal and scrolls to Income, where the existing empty state
+// ("Start here") and the + button are already waiting. Adding a row from here
+// would mean the first-run modal writes month data before the user has typed
+// anything, which is not a thing a welcome screen should ever do.
+function startWithIncome() {
+  hideWelcome();
+  try { jumpToMonthSection(currentMonthKey, 'income'); } catch (e) {}
 }
 
 
