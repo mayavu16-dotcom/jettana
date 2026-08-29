@@ -9115,6 +9115,7 @@ function setYearMonthsHeight(el, collapsed) {
 function applyMonthLock() {
   var on = monthIsLocked(currentMonthKey);
   document.body.classList.toggle('month-locked', on);
+  _setFieldsLocked(document, on);  // readOnly — the part that stops TYPING
   if (on) _lockOpenNotes();        // a note left open when the lock went on
   else    _unlockOpenNotes();      // ...and give it back on unlock
   var btn = document.getElementById('month-lock-btn');
@@ -9482,6 +9483,10 @@ function renderRowEl(section, row, animate = false) {
     if (e.target.closest('button, .paid-checkbox, .del-btn, .note-indicator, .recurring-dot')) return;
     if (e.target.closest('input')) return;
     if ('ontouchstart' in window) {
+      // Tapping a row on touch focuses its label. On a locked month that must
+      // not happen: focus is programmatic, so pointer-events cannot prevent it,
+      // and a focused field takes keystrokes even with pointer-events: none.
+      if (monthIsLocked(currentMonthKey)) return;
       var labelInput = div.querySelector('.erow-label-input');
       if (labelInput) labelInput.focus();
     } else {
@@ -9553,6 +9558,9 @@ function renderRowEl(section, row, animate = false) {
   container.appendChild(div);
   // Shrink font for large numbers
   div.querySelectorAll('.erow-num-input').forEach(applyNumFontSize);
+  // A row rendered while the month is locked must come out read-only — this
+  // runs for every re-render, so nothing can hand an editable field back.
+  if (monthIsLocked(currentMonthKey)) _setFieldsLocked(div, true);
 
   // Note row — sibling div, lives outside the grid
   var noteDiv = document.createElement('div');
@@ -13079,6 +13087,42 @@ function clearSearch() {
 // stable set of classes to target — and because `readOnly` is better than
 // pointer-events here: a read-only textarea still scrolls and selects, so a
 // long note can actually be read, it just can't be typed into.
+// pointer-events only stops a TAP. Typing needs readOnly, because focus can
+// arrive programmatically (the mobile row tap above), from Tab, from a
+// browser's autofill, or from a bluetooth keyboard. Everything stamped so
+// unlocking only undoes what the lock did — some fields are legitimately
+// readonly on their own (a card-linked debt amount) and must stay that way.
+var _LOCK_FIELD_SEL = '.erow input, .erow textarea, .note-row input, .note-row textarea, ' +
+                      '.footer-budget-input, #notes-textarea, #credit-score-input';
+
+function _setFieldsLocked(root, on) {
+  root = root || document;
+  if (on) {
+    root.querySelectorAll(_LOCK_FIELD_SEL).forEach(function(el) {
+      if (el.readOnly) return;
+      el.readOnly = true;
+      el.dataset.lockRo = '1';
+      // Tab must not reach it either — focus handlers still run on a readonly
+      // field, and footerBudgetFocus() blanks the value it displays.
+      if (!el.hasAttribute('tabindex')) { el.tabIndex = -1; el.dataset.lockTab = '1'; }
+    });
+    root.querySelectorAll('.intention-input[contenteditable="true"]').forEach(function(el) {
+      el.setAttribute('contenteditable', 'false');
+      el.dataset.lockCe = '1';
+    });
+  } else {
+    root.querySelectorAll('[data-lock-ro]').forEach(function(el) {
+      el.readOnly = false; delete el.dataset.lockRo;
+    });
+    root.querySelectorAll('[data-lock-tab]').forEach(function(el) {
+      el.removeAttribute('tabindex'); delete el.dataset.lockTab;
+    });
+    root.querySelectorAll('[data-lock-ce]').forEach(function(el) {
+      el.setAttribute('contenteditable', 'true'); delete el.dataset.lockCe;
+    });
+  }
+}
+
 function _lockNotePanel(wrap) {
   if (!wrap) return;
   // Every element touched is STAMPED, and only stamped ones are undone on
@@ -19983,6 +20027,7 @@ function saveFooterBudgets() {
 }
 
 function footerBudgetFocus(el) {
+  if (monthIsLocked(currentMonthKey)) return;   // month lock: do not blank the shown value
   var sec = el.dataset.section;
   var override = _footerBudgetOverrides[sec];
   el.value = override ? override : '';
