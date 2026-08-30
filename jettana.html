@@ -4879,9 +4879,15 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
    Negative margins keep it from pushing its neighbours around in the
    topbar row. */
 @media (pointer: coarse) {
+  /* A finger wants ~44px; the title row is only 23px tall. Rather than shrink
+     the target, grow it UPWARD into the bar's empty top padding instead of
+     downward, where it would sit over the "On track · $825 ahead" line and
+     turn a tap on the status text into a lock toggle. Measured: title row
+     10–33, status line 33–49, so the box runs 0–33 and clears it.
+     Asymmetric padding with matching negative margins, so nothing moves. */
   #month-lock-btn {
-    padding: 12px 11px;
-    margin: -12px -7px;
+    padding: 13px 11px 3px;
+    margin: -13px -7px -3px;
     opacity: 0.55;
   }
 }
@@ -4925,6 +4931,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
         <div style="display:flex;align-items:center;gap:10px;">
           <h2 id="topbar-title" onclick="toggleMonthColorPicker(event)" title="Click to color this month's title" style="cursor:pointer;">Loading…</h2>
           <span id="month-emoji-display" onclick="toggleMonthEmojiPicker(event)" title="Add emoji" style="font-size:28px;cursor:pointer;opacity:0;transition:opacity 0.15s,transform 0.15s;flex-shrink:0;line-height:1;display:inline-flex;align-items:center;vertical-align:middle;position:relative;top:2px;"></span>
+          <button id="month-lock-btn" onclick="toggleMonthLock()" aria-pressed="false" title="Lock this month (view only)">🔓</button>
         </div>
         <div class="sub" id="topbar-sub"></div>
       </div>
@@ -4938,7 +4945,6 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
           <input type="text" class="search-input" id="s-input" placeholder="Search by item, amount or date…">
           <button class="search-clear" id="s-clear" title="Clear" onclick="clearSearch()">&#x2715;</button>
         </div>
-        <button id="month-lock-btn" onclick="toggleMonthLock()" aria-pressed="false" title="Lock this month (view only)">🔓</button>
         <button class="dark-toggle" id="dark-toggle" onclick="toggleDark()" title="Toggle dark mode">🌙</button>
         <div class="more-wrap" id="more-wrap">
           <button class="btn btn-ghost" id="more-btn" onclick="toggleMoreMenu(event); dismissMoreHint()" title="More options" style="font-size:18px;width:34px;padding:0;letter-spacing:1px;position:relative;">⋯<span id="more-hint-dot" style="display:none;position:absolute;top:4px;right:4px;width:7px;height:7px;background:#6B9E70;border-radius:50%;animation:hint-pulse 1.5s ease-in-out infinite;"></span></button>
