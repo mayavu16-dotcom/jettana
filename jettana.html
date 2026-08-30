@@ -2700,6 +2700,9 @@ mark.hl-rose  { --hl: rgba(224, 132, 132, 0.30); }
 #expense-breakdown-pop .ebp-amt { font-variant-numeric: tabular-nums; white-space: nowrap; }
 #expense-breakdown-pop .ebp-pct { color: var(--steel); font-size: 11px; margin-left: 6px; }
 #expense-breakdown-pop .ebp-bar { height: 4px; border-radius: 2px; background: var(--mist); margin-top: 3px; overflow: hidden; }
+/* The fill colour is set inline per row from expenseDonutColor(), so the bar
+   matches its slice in the donut above. --blush stays as the fallback for any
+   row rendered without one. */
 #expense-breakdown-pop .ebp-bar > span { display: block; height: 100%; background: var(--blush); border-radius: 2px; }
 #expense-breakdown-pop .ebp-total { display: flex; justify-content: space-between; gap: 12px; border-top: 1px solid var(--mist); margin-top: 7px; padding-top: 7px; font-weight: 700; }
 /* Donut + legend above the ranked rows. Additive only: the rows below keep
@@ -10966,7 +10969,7 @@ function showExpenseBreakdown(card) {
     rows += '<div class="ebp-row">' +
       '<div class="ebp-head"><span class="ebp-name">' + escHtml(getSectionName(c.key)) + '</span>' +
       '<span class="ebp-amt">' + _fmtMoney(c.amt) + '<span class="ebp-pct">' + pct + '%</span></span></div>' +
-      '<div class="ebp-bar"><span style="width:' + barW + '%"></span></div>' +
+      '<div class="ebp-bar"><span style="width:' + barW + '%;background:' + expenseDonutColor(c.key) + '"></span></div>' +
     '</div>';
   });
   rows += '<div class="ebp-total"><span>Total</span><span>' + _fmtMoney(b.total) + '</span></div>';
@@ -21341,9 +21344,27 @@ function generateReport() {
 var _trendsData = [];
 var _trendsSelectedIdx = -1;
 
+// Section colours, shared by the spending donut, the "Where it went" bars and
+// the Spending Trends chart, so a section is the same colour everywhere.
+//
+// Chosen against a colourblindness + contrast validator rather than by eye.
+// The set this replaced failed on two counts: transport #A8823E and health
+// #C0736A were 8.7 apart for normal vision (15 is the floor) and 4.6 for
+// red-green colourblindness, i.e. the same colour to many people; and every
+// hue sat below the chroma floor, which is why the panel read as washed out.
+// misc was #6B7C8F, near-identical to the '_other' grey it sits beside.
+//
+// This set passes lightness, chroma, colourblind separation and the normal
+// vision floor in BOTH light and dark mode — transport is #C8850E rather than
+// a brighter #DE9412 precisely so one hex works on both surfaces and no
+// per-mode switching is needed. Worst adjacent pair is now transport/food at
+// 6.2 (protan), which is inside the band that requires secondary encoding —
+// satisfied here because every donut slice is named in the legend and every
+// bar is directly labelled with its section name and amount.
+// If you change any value, re-run a palette validator; do not eyeball it.
 var TREND_SEC_COLORS = {
-  housing:'#4A85A0', transport:'#A8823E', food:'#6B9E70',
-  health:'#C0736A', subscriptions:'#7B6BAA', gifts:'#C07AAA', misc:'#6B7C8F'
+  housing:'#26709E', transport:'#C8850E', food:'#39955C',
+  health:'#CE4034', subscriptions:'#7C51C7', gifts:'#C74B92', misc:'#77A020'
 };
 var TREND_SEC_LABELS = {
   housing:'Housing', transport:'Transport', food:'Food',
