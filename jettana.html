@@ -8093,6 +8093,24 @@ function debtSplit(row) {
   return { carried: carried, fresh: Math.max(0, current - carried), current: current };
 }
 
+/* The Beginning-balance date is a CUTOFF, not a label: recalcCheckingBalances()
+   and accountLinkedCharges() both drop any expense dated BEFORE it. Carrying a
+   source month's literal date into another month therefore changes the sums.
+   Forward (Sept -> Oct) is mild — Oct expenses all fall after 09-01, so nothing
+   is excluded and it merely reads wrong. Backward is the dangerous one: copy
+   October's row into September and the cutoff lands after every September
+   expense, so all of them silently drop out of the ending balance and the
+   figure just reads high with nothing on screen to explain it.
+   So rebuild it as the 1st of the month the row actually lands in.
+   A row that never had one stays blank — blank means "no cutoff", and a copy
+   must never invent one. A non-month key (the demo month) also returns blank
+   for the same reason: no real month, so no cutoff. */
+function beginDateForMonth(targetKey, sourceVal) {
+  if (!sourceVal) return '';
+  if (!/^\d{4}-\d{2}$/.test(targetKey || '')) return '';
+  return targetKey + '-01';
+}
+
 function monthLabel(key) {
   if (key === 'demo-month') return '✦ Demo Month';
   const [y, m] = key.split('-');
@@ -8722,7 +8740,7 @@ function createFreshMonth(newKey) {
           _tDir: r._tDir || '',
           alloc: r.alloc || '',
           _cardLink: r._cardLink || '',
-          _beginDate: r._beginDate || '',
+          _beginDate: beginDateForMonth(newKey, r._beginDate),
         };
         if (!all[newKey][section]) all[newKey][section] = [];
         all[newKey][section].push(newRow);
@@ -8899,7 +8917,8 @@ function showCopySectionModal(section) {
         _template: row._template || '', alloc: row.alloc || '', _cardLink: row._cardLink || '',
         _myContrib: row._myContrib || '', _empMatch: row._empMatch || '',
         _apy: row._apy || '', _fund: row._fund || '', _shares: row._shares || '',
-        _price: row._price || '', _tDir: row._tDir || '', _beginDate: row._beginDate || '',
+        _price: row._price || '', _tDir: row._tDir || '',
+        _beginDate: beginDateForMonth(currentMonthKey, row._beginDate),
       };
     });
 
@@ -8981,6 +9000,9 @@ function copyMonthData(sourceKey, newKey) {
       _tDir: row._tDir || '',
       alloc: row.alloc || '',
       _cardLink: row._cardLink || '',
+      // Was omitted entirely here while the other two copy paths carried it
+      // verbatim — three seeding paths, two behaviours. Now all three agree.
+      _beginDate: beginDateForMonth(newKey, row._beginDate),
     }));
   });
   // Auto-carry checking Ending from source month → Beginning in new month
