@@ -2748,6 +2748,20 @@ body.sidebar-open #calc-panel { display: none !important; }
   .calc-btn.calc-op  { font-size: 16px; }
   .calc-btn.calc-eq  { font-size: 18px; }
 }
+
+/* On touch the keys stay as WIDE as they were — that is the dimension a thumb
+   travels along and it is already only ~30 real px, because the phone lays the
+   page out at 700px and scales the whole thing to ~56% (see the viewport block
+   at the top of the file). Only the HEIGHT comes down, 70 -> 56, so the keys
+   read as near-square like the desktop ones instead of tall rectangles, and
+   the panel drops from 509 to ~425.
+   Matching the desktop's actual numbers was considered and rejected: 44px CSS
+   keys land at 23x25 real px on a phone, about a quarter of a 45px fingertip.
+   The radius is inline in the markup, hence !important. */
+@media (pointer: coarse) {
+  #calc-panel { border-radius: 13px !important; }
+  .calc-btn { height: 56px; }
+}
 .calc-btn.calc-eq:active { background: var(--sage-dark); }
 #calc-fab:hover  { transform: scale(1.08); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
 #calc-fab:active { transform: scale(0.95); }
