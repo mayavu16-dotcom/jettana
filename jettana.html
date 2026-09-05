@@ -2761,6 +2761,31 @@ body.sidebar-open #calc-panel { display: none !important; }
 @media (pointer: coarse) {
   #calc-panel { border-radius: 13px !important; }
   .calc-btn { height: 56px; }
+  /* The close × is 19px in the markup, but the phone's ~56% page scale renders
+     that at 10.6 REAL px inside a 14x16 tap target — two-thirds the glyph and
+     a third the target of the desktop one, which is why it still read as tiny
+     after the keys were fixed. 29px CSS lands at ~16 real px, matching how big
+     the desktop × actually looks; the padding takes the target from 14x16 to
+     roughly 27x25 real.
+     Deliberately NOT grown to a full 44px target: this sits in the panel
+     header, which is also the DRAG handle, and a target that big would swallow
+     drags started near the top-right and put an accidental close under the
+     display digits. The calculator button toggles it shut as well.
+     Inline styles in the markup, hence !important. */
+  #calc-close {
+    font-size: 29px !important;
+    padding: 6px 14px !important;
+    top: 2px !important;
+    right: 2px !important;
+  }
+  /* A bigger × needs the digits to get out of its way. Measured with the range
+     over the display's TEXT (its box is full width and right-aligned, so box
+     overlap is meaningless — the shipped desktop version "overlaps" too):
+     without this the × sat over a 31x18 CSS patch of the number, so tapping
+     the top-right of a digit would close the calculator. #calc-expr already
+     carries a 28px right pad for exactly this reason; the display never got
+     one because at 19px the × was too small to reach it. */
+  #calc-display { padding-right: 52px !important; }
 }
 .calc-btn.calc-eq:active { background: var(--sage-dark); }
 #calc-fab:hover  { transform: scale(1.08); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
