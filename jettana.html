@@ -259,20 +259,43 @@ body {
 }
 .month-item.active .dot { opacity: 1; }
 
+/* "+ New month" is the most important action in the sidebar and it was styled
+   like a disabled placeholder. Measured against the sidebar's --ink #1A2332:
+
+     text  rgba(255,255,255,0.40)  ->  3.71:1   FAILS the 4.5:1 floor for
+                                                 12px text — and it was fainter
+                                                 than the month NAMES above it
+                                                 (0.65 white, 7.42:1), the same
+                                                 action-quieter-than-its-label
+                                                 inversion as "+ Add item".
+     border rgba(255,255,255,0.15) ->  1.61:1   far under the 3:1 floor for a
+                                                 UI boundary, and DASHED, which
+                                                 reads as "not yet active".
+
+   New values, computed rather than eyeballed:
+     text   0.92 white -> 13.52:1  (deliberately just under pure white so it
+                                    does not outshout the active month, which
+                                    is solid white on --sage)
+     border 0.34 white ->  3.07:1  (clears the boundary floor) and SOLID.        */
 .add-month-btn {
   margin: 10px 16px 0;
   width: calc(100% - 32px);
-  padding: 8px;
+  padding: 9px 8px;
   border-radius: var(--radius-sm);
-  background: rgba(255,255,255,0.06);
-  border: 1px dashed rgba(255,255,255,0.15);
-  color: rgba(255,255,255,0.4);
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.34);
+  color: rgba(255,255,255,0.92);
   font-size: 12px;
+  font-weight: 600;
   font-family: 'Outfit', sans-serif;
   cursor: pointer;
   transition: all 0.15s;
 }
-.add-month-btn:hover { background: rgba(255,255,255,0.1); color: white; border-color: rgba(255,255,255,0.3); }
+.add-month-btn:hover { background: rgba(255,255,255,0.18); color: white; border-color: rgba(255,255,255,0.5); }
+@media (pointer: coarse) {
+  /* It was ~33px tall — under the tap-target size the top bar settled on. */
+  .add-month-btn { padding: 12px 8px; }
+}
 
 .month-del-btn {
   opacity: 0;
@@ -23311,14 +23334,44 @@ function renderGPChart() {
   function hidePeek() { if (peek) peek.style.display = 'none'; }
   var coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
 
+  /* On a LOCKED month `body.month-locked .erow input` sets
+     `pointer-events: none`, so the label input is never an event target and
+     neither mouseover nor touchend can find it with .closest() — the peek
+     died exactly where it is needed most, because a locked month is the one
+     you are reading rather than editing, and the Left column makes the name
+     field narrower still (374px -> 290px on a phone), so more labels are cut
+     off.
+
+     Resolved by hit-testing the label's rectangle instead of relying on the
+     event target, and ONLY while locked. Deliberately not by relaxing the
+     lock's pointer-events: that rule is load-bearing (house rule 19 / CSS
+     trap 14) and this is a read-only affordance that has no business
+     reopening an editing path. Restricting the fallback to the label's own
+     box keeps unlocked behaviour byte-identical — without it, hovering the
+     Budget cell would pop the name tooltip. */
+  function lockedLabelAt(clientX, clientY, target) {
+    if (!document.body.classList.contains('month-locked')) return null;
+    var row = target && target.closest && target.closest('.erow');
+    if (!row) return null;
+    var inp = row.querySelector('.erow-label-input');
+    if (!inp) return null;
+    var r = inp.getBoundingClientRect();
+    if (clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom) return inp;
+    return null;
+  }
+
   document.addEventListener('mouseover', function(e) {
     if (coarse) return;
-    var inp = e.target.closest && e.target.closest('.erow-label-input');
+    var inp = (e.target.closest && e.target.closest('.erow-label-input'))
+           || lockedLabelAt(e.clientX, e.clientY, e.target);
     if (!inp || document.activeElement === inp) return;
-    if (isOverflowing(inp)) showPeek(inp);
+    if (isOverflowing(inp)) showPeek(inp); else hidePeek();
   });
   document.addEventListener('mouseout', function(e) {
-    if (e.target.closest && e.target.closest('.erow-label-input')) hidePeek();
+    if (!e.target.closest) return;
+    // On a locked month the pointer never enters the input itself, so leaving
+    // the ROW is what has to dismiss it.
+    if (e.target.closest('.erow-label-input') || e.target.closest('.erow')) hidePeek();
   });
   document.addEventListener('mousedown', hidePeek);
 
@@ -23329,11 +23382,17 @@ function renderGPChart() {
   function disarmPeek() { peekArmed = null; hidePeek(); if (peekTimer) { clearTimeout(peekTimer); peekTimer = null; } }
   document.addEventListener('touchend', function(e) {
     if (!coarse) return;
-    var inp = e.target.closest && e.target.closest('.erow-label-input');
+    var t = e.changedTouches && e.changedTouches[0];
+    var inp = (e.target.closest && e.target.closest('.erow-label-input'))
+           || (t ? lockedLabelAt(t.clientX, t.clientY, e.target) : null);
     if (!inp) return;
     if (document.activeElement === inp) return;          // already editing
     if (!isOverflowing(inp)) { disarmPeek(); return; }   // short label → edit normally
-    if (peekArmed === inp) { disarmPeek(); return; }     // second tap → edit normally
+    // On a locked month there is no editing to fall through to, so a second
+    // tap re-peeks rather than dismissing into nothing.
+    if (peekArmed === inp && !document.body.classList.contains('month-locked')) {
+      disarmPeek(); return;                              // second tap → edit normally
+    }
     e.preventDefault();                                  // first tap: peek only
     peekArmed = inp;
     showPeek(inp);
