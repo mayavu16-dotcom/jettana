@@ -4788,6 +4788,77 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 }
 .dark #ft-color-picker { background: #1E2A38; border-color: #2A3A4A; }
 
+/* ── Top bar: the ⋯ menu ──────────────────────────────────────
+   Measured before changing anything: the ⋯ was 34x24 with 6px of gap on each
+   side, wedged between the moon (34x34) and Ask me (81x29). It was the
+   SMALLEST target in the bar while holding 36 items, and Ask me — a help
+   panel — was nearly three times its area. A fingertip is about 45px across,
+   so it covered all three at once and the browser picked the nearest centre.
+
+   Three things fix it, and the first two do most of the work:
+   1. 44x44 with 10px gaps (Apple's minimum; nothing here met it).
+   2. Moved to the END of the row in the markup, so it has ONE neighbour
+      instead of two and the screen edge guards the other side.
+   3. The app's single filled-green button moves here from Ask me. Nothing new
+      is added to the palette — the emphasis just points at the control that
+      opens the whole app rather than at a help panel.
+
+   White dots sit on --sage-dark (4.97:1), not --sage (3.11:1, borderline).
+   Dark mode flips to the lighter --sage with dark dots, because white on a
+   dark green fails the other way. */
+#more-btn {
+  /* position:relative is REQUIRED and was on the inline style I removed — the
+     unseen-features hint dot inside is absolutely positioned and would escape
+     to the nearest positioned ancestor without it. */
+  position: relative;
+  width: 44px !important;
+  height: 44px !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
+  background: var(--sage-dark) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 10px !important;
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  letter-spacing: 1px !important;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+#more-btn:hover { background: #436b48 !important; }
+.dark #more-btn { background: var(--sage) !important; color: #10241a !important; }
+.dark #more-btn:hover { background: #7cb181 !important; }
+
+#dark-toggle {
+  width: 44px !important;
+  height: 44px !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
+  font-size: 19px !important;
+}
+.topbar-right { gap: 10px !important; }
+
+/* Ask me steps back to an outline: two green things in one row compete and
+   neither reads as primary. Green is now unique to the menu, which is what
+   actually makes it stand out — not the green itself. */
+.topbar-right .btn-sage {
+  background: transparent !important;
+  color: var(--steel) !important;
+  border: 1px solid var(--mist) !important;
+  font-weight: 600 !important;
+  height: 44px !important;
+  padding: 0 12px !important;
+}
+.topbar-right .btn-sage:hover {
+  background: var(--mist-light) !important;
+  color: var(--ink) !important;
+}
+
 /* ── "Left" column ────────────────────────────────────────────
    A fourth cell on the seven expense sections showing budget minus actual.
    Off by default; ⋯ → Show remaining turns it on for all of them at once.
@@ -5058,9 +5129,12 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
           <input type="text" class="search-input" id="s-input" placeholder="Search by item, amount or date…">
           <button class="search-clear" id="s-clear" title="Clear" onclick="clearSearch()">&#x2715;</button>
         </div>
+        <div class="export-wrap" id="export-wrap">
+          <button class="btn btn-sage" onclick="showAskMe()">💬 Ask me</button>
+        </div>
         <button class="dark-toggle" id="dark-toggle" onclick="toggleDark()" title="Toggle dark mode">🌙</button>
         <div class="more-wrap" id="more-wrap">
-          <button class="btn btn-ghost" id="more-btn" onclick="toggleMoreMenu(event); dismissMoreHint()" title="More options" style="font-size:18px;width:34px;padding:0;letter-spacing:1px;position:relative;">⋯<span id="more-hint-dot" style="display:none;position:absolute;top:4px;right:4px;width:7px;height:7px;background:#6B9E70;border-radius:50%;animation:hint-pulse 1.5s ease-in-out infinite;"></span></button>
+          <button class="btn btn-ghost" id="more-btn" onclick="toggleMoreMenu(event); dismissMoreHint()" title="More options">⋯<span id="more-hint-dot" style="display:none;position:absolute;top:6px;right:6px;width:7px;height:7px;background:#6B9E70;border-radius:50%;animation:hint-pulse 1.5s ease-in-out infinite;"></span></button>
           <div class="more-menu" id="more-menu" style="display:none;">
 
             <!-- ═══ MAIN PANEL ═══ -->
@@ -5233,9 +5307,6 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
             </div>
 
           </div>
-        </div>
-        <div class="export-wrap" id="export-wrap">
-          <button class="btn btn-sage" onclick="showAskMe()">💬 Ask me</button>
         </div>
       </div>
     </div>
