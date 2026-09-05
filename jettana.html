@@ -4803,9 +4803,13 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
       is added to the palette — the emphasis just points at the control that
       opens the whole app rather than at a help panel.
 
-   White dots sit on --sage-dark (4.97:1), not --sage (3.11:1, borderline).
-   Dark mode flips to the lighter --sage with dark dots, because white on a
-   dark green fails the other way. */
+   The fill is --sage (#6B9E70) — the exact green of "tana" in the wordmark, so
+   the app's one filled button wears the app's own colour. White dots on it
+   measure 3.11:1, which clears the 3:1 bar for large text and the dots are
+   24px bold, so this is legal rather than merely close. --sage-dark (4.97:1)
+   is the fallback if the dots ever shrink below large-text size.
+   Dark mode keeps --sage with dark dots, because white on green fails the
+   other way once the surface is dark. */
 #more-btn {
   /* position:relative is REQUIRED and was on the inline style I removed — the
      unseen-features hint dot inside is absolutely positioned and would escape
@@ -4817,7 +4821,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
   align-items: center;
   justify-content: center;
   padding: 0 !important;
-  background: var(--sage-dark) !important;
+  background: var(--sage) !important;
   color: #fff !important;
   border: none !important;
   border-radius: 10px !important;
@@ -4828,7 +4832,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
-#more-btn:hover { background: #436b48 !important; }
+#more-btn:hover { background: var(--sage-dark) !important; }
 .dark #more-btn { background: var(--sage) !important; color: #10241a !important; }
 .dark #more-btn:hover { background: #7cb181 !important; }
 
@@ -4857,6 +4861,60 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 .topbar-right .btn-sage:hover {
   background: var(--mist-light) !important;
   color: var(--ink) !important;
+}
+
+/* Desktop sizing. 44px is a TOUCH minimum — a mouse is precise and does not
+   need it, and applying one size everywhere left 44px buttons looming over a
+   31px search box. On a fine pointer the whole row drops to a single 40px
+   height so search, Ask me, the moon and the menu read as one unit instead of
+   four differently sized things. Phones keep 44 for thumbs.
+   Gated on (pointer: fine) rather than a width query on purpose: a small
+   laptop is still a mouse, and a large tablet is still a finger. */
+@media (pointer: fine) {
+  #more-btn, #dark-toggle {
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 22px !important;
+  }
+  .topbar-right .btn-sage { height: 40px !important; }
+  .topbar-right .search-wrap { height: 40px !important; }
+  .topbar-right .search-input { height: 40px !important; }
+}
+
+/* At narrow desktop widths (~1024px) the bar ran out of room and flexbox
+   squeezed .more-wrap below the button's fixed 40px, so the button spilled
+   PAST its own container and pushed the page into a horizontal scroll — the
+   whole layout 12px wider than the window. Measured at 1024: topbar-right
+   ended at 996 while the button ended at 1036.
+   The rule is simply which control is allowed to give way. A search field can
+   be narrower and still work; a 40px tap target cannot. So the buttons refuse
+   to shrink and the search box absorbs the squeeze instead.
+   (This became visible once the lock button widened the left-hand side. It
+   was latent before that, waiting for anything to take up space.) */
+/* Only the BUTTONS refuse to shrink. Applying flex-shrink:0 to every child
+   made the phone bar wrap onto two lines, because the search box could no
+   longer give way — so the fix for one screen size broke another. */
+#more-wrap, #export-wrap, #dark-toggle { flex-shrink: 0; }
+.topbar-left { min-width: 0; }
+
+/* Wrapping is a last resort for the narrow-desktop band (roughly 940-1030px)
+   where the bar genuinely cannot fit on one line, and it is gated to a fine
+   pointer so phones are never affected. That band overflowed in the ORIGINAL
+   file too — Ask me spilled past the edge at 960 there — so this also fixes
+   something that predates today. */
+@media (pointer: fine) {
+  .topbar { flex-wrap: wrap; row-gap: 8px; }
+}
+.topbar-right .search-wrap {
+  flex-shrink: 1;
+  min-width: 0;
+}
+.topbar-right .search-input {
+  /* The input carries a fixed width:120px. Without flex-shrink it stopped the
+     wrap shrinking past ~180px, which still overflowed around 980px wide. */
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* ── "Left" column ────────────────────────────────────────────
