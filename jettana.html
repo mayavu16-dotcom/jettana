@@ -2617,10 +2617,28 @@ mark.hl-rose  { --hl: rgba(224, 132, 132, 0.30); }
 .dark .calc-btn.calc-fn { color: rgba(255,255,255,0.5); }
 .dark .calc-btn.calc-op { color: #8FC49A; }
 .dark .calc-btn.calc-eq { background: var(--sage) !important; color: white !important; }
-  border-color: var(--sage) !important;
+
+/* Empty-Income nudge. recalc() toggles .nudge on #add-income-btn, but the
+   selector line for these declarations was missing, so the pulse never ran.
+   Restored as a PILL, not a full-width bar: .add-row-btn is width:100% and
+   both .sec-card and .sec-body are overflow:hidden with no side padding, so a
+   full-width ring gets its left and right edges clipped flat. fit-content plus
+   the margins below keep the whole 6px glow inside the card. border-color is
+   dropped from the original three declarations — .add-row-btn has border:none,
+   so it never did anything. Fires only while Income is empty, which is exactly
+   when the green "Start here" box is also on screen. */
+.add-row-btn.nudge {
+  width: fit-content;
+  opacity: 1;
   color: var(--sage-dark) !important;
+  border-radius: 20px;
+  padding: 6px 12px 6px 10px;
+  margin: 6px 0 8px 6px;
   animation: nudge-pulse 2s ease-in-out infinite;
 }
+/* --sage-dark (#4d7a52) is too dark on the dark card. Same swap the Left
+   column makes (body.dark.show-left .left-col-wrap.left-pos). */
+.dark .add-row-btn.nudge { color: var(--sage) !important; }
 @keyframes nudge-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(107,158,112,0.4); }
   50% { box-shadow: 0 0 0 6px rgba(107,158,112,0); }
@@ -16501,7 +16519,8 @@ function updateSubtitle() {
   var hlhA  = s(d.health,    'actual');
   var gftA  = s(d.gifts,     'actual');
   var mscA  = s(d.misc,      'actual');
-  var totalExp = houA + traA + fooA + hlhA + gftA + mscA;
+  var subA  = s(d.subscriptions, 'actual');
+  var totalExp = houA + traA + fooA + hlhA + gftA + mscA + subA;
   var balance  = incA - totalExp;
 
   // Is this a past month?
