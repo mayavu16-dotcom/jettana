@@ -10833,6 +10833,23 @@ function _fmtMoney(n) {
   return '$' + Math.round(n).toLocaleString('en-US');
 }
 
+/* Money for the "left / over" header badge. Cents appear ONLY when there are
+   cents: most budgets are round numbers and "$250.00 left" is just noise.
+   But rounding them away unconditionally was worse than noise — $0.49 left
+   rendered as "$0 left" (you have nothing, when you have 49c) and $0.40 over
+   rendered as "$0 over", which contradicts itself.
+   The 0.005 threshold is half a cent, so it also absorbs floating-point dust:
+   33.33 + 33.33 + 33.34 does not total exactly 100, and without this a month
+   that is precisely on budget could read "$0 over". */
+function fmtLeftOver(n) {
+  var abs = Math.abs(n);
+  var hasCents = Math.abs(abs - Math.round(abs)) >= 0.005;
+  return '$' + abs.toLocaleString('en-US', {
+    minimumFractionDigits: hasCents ? 2 : 0,
+    maximumFractionDigits: hasCents ? 2 : 0
+  });
+}
+
 function showIncomeBreakdown(card) {
   var b = _incomeBreakdown;
   // Only worth showing when a paycheck contributes a gross figure
@@ -11449,9 +11466,13 @@ function recalc() {
     // had already spent something — exactly backwards for this purpose.)
     if (pctEl) {
       var remaining = budget - actual;
+      // Anything within half a cent of zero IS zero — otherwise floating-point
+      // dust decides between "left" and "over" on a month that is exactly on
+      // budget, and it can land on "over".
+      if (Math.abs(remaining) < 0.005) remaining = 0;
       pctEl.textContent = remaining >= 0
-        ? _fmtMoney(remaining) + ' left'
-        : _fmtMoney(Math.abs(remaining)) + ' over';
+        ? fmtLeftOver(remaining) + ' left'
+        : fmtLeftOver(remaining) + ' over';
       pctEl.className   = 'hdr-pct-label visible';
       if (pctRaw > 100) pctEl.classList.add('pct-over');
       else if (pctRaw >= 80) pctEl.classList.add('pct-approaching');
