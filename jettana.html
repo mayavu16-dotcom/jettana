@@ -17933,6 +17933,9 @@ function toggleCalc() {
   if (!panel) return;
   var isOpen = panel.style.display !== 'none';
   panel.style.display = isOpen ? 'none' : 'block';
+  // Put it back where it was parked. Done on open, not at load, because a
+  // hidden panel has no size to clamp against.
+  if (!isOpen && window._restoreCalcPanelPos) window._restoreCalcPanelPos();
   // Deliberately NOT resetting on open. Clicking a month (or anywhere outside)
   // closes the panel, so resetting here wiped whatever had been typed. Only C
   // and ⌫ clear it now.
@@ -18057,6 +18060,61 @@ document.addEventListener('keydown', function(e) {
 // ── Draggable Calculator ─────────────────────────────────────
 (function() {
   var panel, fab, dragging = false, startX, startY, origLeft, origTop;
+  var panelMoved = false;
+
+  /* ── Remember where the calculator was parked ──────────────────────────
+     Dragging already worked, but nothing remembered it, so every reload put
+     the panel back over the same rows. That is the real complaint behind "it
+     covers my budget": the panel is fixed and always covers ~11% of a phone
+     screen, and no single default suits every screen — on the left it hides
+     the row NAMES (you see $1,500 with no idea what it is), on the right it
+     hides the AMOUNTS you are about to type into. Letting the person park it
+     once and keep it sidesteps having to pick a universal answer.
+
+     Stored through nsKey() so the demo sandbox cannot write a position into
+     the real account. place() clamps on restore rather than trusting the
+     saved coordinates, because the spot may come from a wider window, another
+     device, or the other orientation. */
+  function calcPosKey() { return nsKey('jettana_calc_pos'); }
+
+  function saveCalcPos() {
+    if (!panel || !fab) return;
+    try {
+      var pr = panel.getBoundingClientRect(), fr = fab.getBoundingClientRect();
+      appStore.setItem(calcPosKey(), JSON.stringify({
+        l: Math.round(pr.left), t: Math.round(pr.top),
+        fl: Math.round(fr.left), ft: Math.round(fr.top)
+      }));
+    } catch (e) {}
+  }
+
+  function readCalcPos() {
+    try { return JSON.parse(appStore.getItem(calcPosKey()) || 'null'); } catch (e) { return null; }
+  }
+
+  function place(el, left, top, w, h) {
+    var vw = window.innerWidth, vh = window.innerHeight;
+    el.style.left = Math.max(0, Math.min(vw - w, left)) + 'px';
+    el.style.top  = Math.max(0, Math.min(vh - h, top)) + 'px';
+    el.style.bottom = 'auto';
+  }
+
+  function restoreFabPos() {
+    var st = readCalcPos();
+    if (!st || !fab) return;
+    place(fab, st.fl, st.ft, fab.offsetWidth || 44, fab.offsetHeight || 44);
+    fab.dataset.dragged = '1';
+  }
+
+  /* The panel is display:none until opened, so at init it has no measurable
+     size to clamp against. Its position is applied on OPEN instead, where
+     offsetWidth/offsetHeight are real. toggleCalc() lives outside this
+     closure, hence the window handle. */
+  window._restoreCalcPanelPos = function() {
+    var st = readCalcPos();
+    if (!st || !panel) return;
+    place(panel, st.l, st.t, panel.offsetWidth, panel.offsetHeight);
+  };
 
   function initCalcDrag() {
     panel = document.getElementById('calc-panel');
@@ -18075,6 +18133,8 @@ document.addEventListener('keydown', function(e) {
     // Display area also shows grab cursor
     var display = panel.querySelector('div:first-child');
     if (display) display.style.cursor = 'grab';
+
+    restoreFabPos();
   }
 
   // FAB drag state
@@ -18101,6 +18161,7 @@ document.addEventListener('keydown', function(e) {
       document.removeEventListener('mousemove', onFabMove);
       document.removeEventListener('mouseup', onFabUp);
       if (!fabMoved) toggleCalc(); // treat as click if didn't move
+      else saveCalcPos();
     }
     document.addEventListener('mousemove', onFabMove);
     document.addEventListener('mouseup', onFabUp);
@@ -18130,6 +18191,7 @@ document.addEventListener('keydown', function(e) {
       document.removeEventListener('touchmove', onFabTouchMove);
       document.removeEventListener('touchend', onFabTouchEnd);
       if (!fabMoved) toggleCalc();
+      else saveCalcPos();
     }
     document.addEventListener('touchmove', onFabTouchMove, { passive: false });
     document.addEventListener('touchend', onFabTouchEnd);
@@ -18183,6 +18245,7 @@ document.addEventListener('keydown', function(e) {
 
   function onDrag(e) {
     if (!dragging) return;
+    panelMoved = true;
     var vw = window.innerWidth, vh = window.innerHeight;
     var pw = panel.offsetWidth, ph = panel.offsetHeight;
     var left = Math.max(0, Math.min(vw - pw, e.clientX - startX));
@@ -18198,6 +18261,7 @@ document.addEventListener('keydown', function(e) {
 
   function onDragTouch(e) {
     if (!dragging) return;
+    panelMoved = true;
     e.preventDefault();
     var touch = e.touches[0];
     var vw = window.innerWidth, vh = window.innerHeight;
@@ -18217,12 +18281,18 @@ document.addEventListener('keydown', function(e) {
     panel.style.cursor = '';
     document.removeEventListener('mousemove', onDrag);
     document.removeEventListener('mouseup', stopDrag);
+    // Only on a real move: a plain click on the panel body also runs this, and
+    // saving there would freeze the DEFAULT position as a stored override.
+    if (panelMoved) saveCalcPos();
+    panelMoved = false;
   }
 
   function stopDragTouch() {
     dragging = false;
     document.removeEventListener('touchmove', onDragTouch);
     document.removeEventListener('touchend', stopDragTouch);
+    if (panelMoved) saveCalcPos();
+    panelMoved = false;
   }
 
   document.addEventListener('DOMContentLoaded', function() {
