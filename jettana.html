@@ -9422,6 +9422,7 @@ function switchMonth(key) {
   // switch — otherwise August's column stays on the screen in September.
   applySavGoalCol();
   applyLeftCol();
+  applyMonthTheme();
   applyMonthLock();
   recalc();
   renderCreditScore();
@@ -9533,15 +9534,39 @@ function toggleMonthLock() {
 }
 
 /* ── "Left" column ────────────────────────────────────────────
-   Whether to show it is a DISPLAY PREFERENCE, not month data: it is how the
-   user likes to read the app, identical every month — unlike the savings goal
-   flag, which genuinely varies month to month and therefore lives on the
-   month object. Stored through nsKey() so the demo sandbox isolates it and
-   cannot leak a setting into the real budget. */
-function leftColKey() { return nsKey('jettana_show_left'); }
+   PER MONTH. This reverses the original call that it was a global display
+   preference: some months you are watching every dollar and want the column,
+   others you want the two clean numbers, and Maya asked for that flexibility.
+   The flag lives on the month object as `_showLeft`, beside `_savGoalCol` /
+   `_emoji` / `_intention` / `_locked`, so it travels with the month through
+   storage, sync and demo isolation for free.
 
-function leftColOn() {
+   THREE states, unlike _savGoalCol's two:
+       _showLeft === 1   explicitly ON for this month
+       _showLeft === 0   explicitly OFF for this month
+       absent            fall back to leftColDefault()
+   The explicit 0 is load-bearing. With only "present = on / absent = off",
+   switching the column off in a month would fall through to a global default
+   of ON and switch straight back on.
+
+   leftColDefault() reads the OLD global key, which is NEVER WRITTEN AGAIN.
+   It exists only so anyone who had the column on before this change keeps it
+   in every month they have not explicitly set since. */
+function leftColKey() { return nsKey('jettana_show_left'); }   // legacy, read-only
+
+function leftColDefault() {
   try { return appStore.getItem(leftColKey()) === '1'; } catch (e) { return false; }
+}
+
+/* `all` is optional: callers holding a loaded dataset pass it in so one pass
+   doesn't parse the whole store twice. */
+function leftColOn(all) {
+  try {
+    var d = all || loadAll();
+    var m = d[currentMonthKey];
+    if (m && (m._showLeft === 1 || m._showLeft === 0)) return m._showLeft === 1;
+    return leftColDefault();
+  } catch (e) { return false; }
 }
 
 function applyLeftCol() {
@@ -9550,13 +9575,15 @@ function applyLeftCol() {
 }
 
 function toggleLeftCol() {
-  var on = !leftColOn();
-  try {
-    if (on) appStore.setItem(leftColKey(), '1');
-    else    appStore.removeItem(leftColKey());   // off reads as never-set
-  } catch (e) {}
+  if (monthIsLocked(currentMonthKey)) return;   // month lock: view only
+  var all = loadAll();
+  var on = !leftColOn(all);
+  if (!all[currentMonthKey]) all[currentMonthKey] = {};
+  all[currentMonthKey]._showLeft = on ? 1 : 0;
+  saveAll(all);
   applyLeftCol();
-  showToast(on ? 'Showing what\'s left in each row' : 'Left column hidden');
+  showToast((on ? 'Showing what\'s left in ' : 'Left column hidden for ')
+    + monthLabel(currentMonthKey), true);
 }
 
 /* Fills every Left cell and the seven footer totals. Runs at the end of
@@ -9565,8 +9592,8 @@ function toggleLeftCol() {
    stored. Cheap enough to run unconditionally, but it returns early when the
    column is off so a hidden column costs nothing on every keystroke. */
 function updateLeftColumn() {
-  if (!leftColOn()) return;
   var all = loadAll();
+  if (!leftColOn(all)) return;   // one parse, shared with the check above
   var d = all[currentMonthKey] || {};
   LEFT_SECTIONS.forEach(function(sec) {
     var cfg = CONFIGS[sec];
@@ -16853,29 +16880,83 @@ function toggleThemePicker(e) {
   if (picker) picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
 }
 
-function setTheme(btn, theme) {
-  // Remove all theme classes
+/* ── Colour theme: PER MONTH ──────────────────────────────────
+   Was a single global setting written to the RAW keys `intentra_theme` /
+   `intentra_custom_color`. Two problems with that, both fixed here:
+
+     1. It was global, so a palette chosen for one month repainted them all.
+        Maya asked for per-month, the same flexibility as the Left column.
+     2. Those keys were NOT run through nsKey(), so picking a theme inside
+        ?demo=true repainted the real account. Moving the value onto the month
+        object fixes that for free — month data is sandbox-isolated already.
+
+   `_theme` / `_themeColor` live on the month object beside `_showLeft` and
+   `_savGoalCol`. Absent falls back to the legacy global keys, which are now
+   READ ONLY and never written again, so an existing choice survives.
+
+   applyMonthTheme() is called from switchMonth() beside applySavGoalCol().
+   That also fixes a separate bug: loadTheme() was DEAD CODE with no call
+   sites, so a chosen theme was written to storage and then silently forgotten
+   on every single reload. Nothing restored it. */
+
+function _paintTheme(theme, color) {
   document.body.classList.remove('theme-minimal','theme-mono','theme-warm','theme-custom');
   if (theme) document.body.classList.add('theme-' + theme);
-  // Update active state
-  document.querySelectorAll('.theme-opt').forEach(function(b) { b.classList.remove('active'); });
-  if (btn) btn.classList.add('active');
-  // Save to localStorage
-  appStore.setItem('intentra_theme', theme);
-  // Close more menu after selecting theme
-  hideMoreMenu();
+  if (theme === 'custom' && color) {
+    document.documentElement.style.setProperty('--custom-accent',       color);
+    document.documentElement.style.setProperty('--custom-accent-dark',  adjustColor(color, -40));
+    document.documentElement.style.setProperty('--custom-accent-light', adjustColor(color, 30));
+    document.documentElement.style.setProperty('--custom-accent-mid',   adjustColor(color, 15));
+  }
 }
 
+function monthThemeOf(all) {
+  var d = all || loadAll();
+  var m = d[currentMonthKey];
+  if (m && typeof m._theme === 'string') {
+    return { theme: m._theme, color: m._themeColor || '' };
+  }
+  return { theme: appStore.getItem('intentra_theme') || '',
+           color: appStore.getItem('intentra_custom_color') || '' };
+}
+
+function applyMonthTheme(all) {
+  var t = monthThemeOf(all);
+  _paintTheme(t.theme, t.color);
+  document.querySelectorAll('.theme-opt').forEach(function(b) { b.classList.remove('active'); });
+  var btn = document.querySelector('.theme-opt[data-theme="' + t.theme + '"]');
+  if (btn) btn.classList.add('active');
+  var inp = document.getElementById('custom-color');
+  if (inp && t.color) inp.value = t.color;
+}
+
+function _saveMonthTheme(theme, color) {
+  var all = loadAll();
+  if (!all[currentMonthKey]) all[currentMonthKey] = {};
+  all[currentMonthKey]._theme = theme;
+  if (theme === 'custom' && color) all[currentMonthKey]._themeColor = color;
+  else delete all[currentMonthKey]._themeColor;
+  saveAll(all);
+}
+
+function setTheme(btn, theme) {
+  if (monthIsLocked(currentMonthKey)) return;   // month lock: view only
+  _paintTheme(theme, '');
+  document.querySelectorAll('.theme-opt').forEach(function(b) { b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  _saveMonthTheme(theme, '');
+  hideMoreMenu();   // close the menu after selecting
+}
+
+/* The colour input fires `oninput` on every step of a drag. Paint live, but
+   DEBOUNCE the write — otherwise one drag across the picker is hundreds of
+   saveAll() calls, each of which also schedules a cloud sync. */
+var _themeSaveTimer;
 function setCustomTheme(color) {
-  document.body.classList.remove('theme-minimal','theme-mono','theme-warm');
-  document.body.classList.add('theme-custom');
-  // Generate lighter/darker shades
-  document.documentElement.style.setProperty('--custom-accent', color);
-  document.documentElement.style.setProperty('--custom-accent-dark', adjustColor(color, -40));
-  document.documentElement.style.setProperty('--custom-accent-light', adjustColor(color, 30));
-  document.documentElement.style.setProperty('--custom-accent-mid', adjustColor(color, 15));
-  appStore.setItem('intentra_theme', 'custom');
-  appStore.setItem('intentra_custom_color', color);
+  if (monthIsLocked(currentMonthKey)) return;   // month lock: view only
+  _paintTheme('custom', color);
+  clearTimeout(_themeSaveTimer);
+  _themeSaveTimer = setTimeout(function() { _saveMonthTheme('custom', color); }, 250);
 }
 
 function adjustColor(hex, amount) {
@@ -16888,16 +16969,10 @@ function adjustColor(hex, amount) {
   return '#' + [r,g,b].map(function(x){ return x.toString(16).padStart(2,'0'); }).join('');
 }
 
-function loadTheme() {
-  var saved = appStore.getItem('intentra_theme') || '';
-  var btn = document.querySelector('[data-theme="' + saved + '"]');
-  setTheme(btn, saved);
-  if (saved === 'custom') {
-    var color = appStore.getItem('intentra_custom_color') || '#4A6FA5';
-    document.getElementById('custom-color').value = color;
-    setCustomTheme(color);
-  }
-}
+/* loadTheme() lived here and had NO call sites — which is why a chosen theme
+   never survived a reload. applyMonthTheme(), called from switchMonth(),
+   replaces it and actually runs. Removed rather than left in place: calling
+   the old one now would WRITE the global fallback onto the current month. */
 
 // Close picker on outside click
 document.addEventListener('click', function(e) {
