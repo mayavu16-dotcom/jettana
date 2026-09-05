@@ -4048,6 +4048,24 @@ body.font-large.text-bold .erow-label-input {
   opacity: 0.75;
 }
 .dark .entry-list:empty::before { opacity: 0.5; }
+
+/* An empty section's ONLY action must not be fainter than the sentence
+   describing it. Measured on the deployed demo: the hint above is 12px at
+   0.75 opacity while .add-row-btn sat at 11px / 0.5 — the description
+   outranked the button. Full opacity + the wordmark green, deliberately with
+   NO pulse: on a fresh month every section is empty, and eleven pulsing pills
+   is the "five onboarding doors at once" problem again. Income keeps the
+   pulse because it is genuinely the first step.
+   Adjacent sibling, so this reads the DOM's own emptiness (same mechanism the
+   hint already uses) rather than a hand-kept section list — a new section
+   inherits it for free. Income is excluded automatically: #income-empty-state
+   sits between its .entry-list and its button, so `+` never reaches it. */
+.entry-list:empty + .add-row-btn { opacity: 1; color: var(--sage-dark); }
+.dark .entry-list:empty + .add-row-btn { color: var(--sage); }
+/* .add-row-btn:hover is the same specificity and declared earlier, so it
+   would lose. Restate it here to keep the hover feedback. */
+.entry-list:empty + .add-row-btn:hover { color: var(--sage); }
+.dark .entry-list:empty + .add-row-btn:hover { color: var(--sage-light); }
 .dark .import-drop-zone:hover, .dark .import-drop-zone.drag-over { background: #263545; }
 .dark .import-preview-table th { background: #263545; }
 .dark .import-cat-select { background: #263545; border-color: #3A4A5A; color: var(--ink); }
