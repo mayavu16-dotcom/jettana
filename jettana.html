@@ -1305,8 +1305,18 @@ body.show-sav-goal.font-large .sec-footer-savings {
      fires and the base 0.5 is PERMANENT on a phone — the control is stuck at
      half strength with no way to reveal it. 0.75 keeps it secondary to the
      rows while staying legible. Empty sections still reach full strength via
-     `.entry-list:empty + .add-row-btn` (higher specificity, so it wins here). */
-  .add-row-btn { padding-left: 0; opacity: 0.75; }
+     `.entry-list:empty + .add-row-btn` (higher specificity, so it wins here).
+
+     `padding-left: 0` used to live here too and was REMOVED: it pushed the
+     label flush to the card edge while the row labels (.erow-label-input) and
+     the column header ("ITEM") both sit at 16px, so on a phone — and only on a
+     phone — the button hung 16px left of the column it belongs to. Measured at
+     430/390/360/320: labels and header at 16, button text at 0.
+     Dropping it costs NO tap area: .add-row-btn is `width: 100%`, so the
+     button box already spans the full section either way and padding only
+     moves the text inside it. The base `padding: 6px 0 8px 16px` now applies
+     on touch as well, which is what puts it back in line. */
+  .add-row-btn { opacity: 0.75; }
 }
 .add-row-btn:hover { color: var(--sage); }
 .add-row-btn .plus { font-size: 16px; font-weight: 300; line-height: 1; }
