@@ -2651,6 +2651,22 @@ mark.hl-rose  { --hl: rgba(224, 132, 132, 0.30); }
 #calc-fab { position:fixed;bottom:24px;left:236px;width:44px;height:44px;background:var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:1500;box-shadow:0 4px 16px rgba(0,0,0,0.25);transition:transform 0.2s,box-shadow 0.2s;user-select:none;color:white; }
 .dark #calc-fab { color:#1A2332; }
 #calc-panel { position:fixed;bottom:80px;left:236px; }
+
+/* The floating calculator is `position: fixed` at z-index 1500 — far above the
+   mobile drawer's 200 — so on a phone it sat ON TOP of "+ New month" and stole
+   every tap on the button's left ~28px. Measured with the drawer open:
+       #calc-fab     x 16-60,  y 1447-1491
+       + New month   x 32-188, y 1464-1504
+   Desktop already dodges the sidebar by shifting `left` between 16px and 236px
+   (see the rules above); the mobile drawer never got that, because it OVERLAYS
+   the page rather than pushing it aside. Hidden while the drawer is open — a
+   calculator is for figures you can see, and the drawer is covering them.
+   Panel as well as button, since both are fixed at the same z-index.
+   `body.sidebar-open` is set only by the MOBILE branch of the hamburger
+   handler (desktop sets `sidebar-collapsed` instead), so this cannot reach a
+   desktop. Hiding does not reset the calculator: it keeps its value. */
+body.sidebar-open #calc-fab,
+body.sidebar-open #calc-panel { display: none !important; }
 @media (max-width: 767px) {
   #calc-fab  { left: 16px; }
   #calc-panel { left: 16px; }
@@ -9740,8 +9756,19 @@ function renderSidebar() {
 
     // Year header
     var header = document.createElement('div');
-    var currentYear = currentMonthKey ? currentMonthKey.split('-')[0] : null;
-    var isActiveYear = String(year) === String(currentYear);
+    /* Named activeYear, NOT currentYear. As `currentYear` this `var` hoisted
+       to the top of this callback and shadowed the outer
+       `const currentYear = new Date().getFullYear()`, so the
+       `parseInt(year) === currentYear` test above ran against `undefined` and
+       isCurrentYear was ALWAYS false. That degraded the rule to "collapse any
+       year that lacks the active month" — harmless on a real account, where
+       the active month IS in the current year, but in the DEMO the active
+       month is `demo-month`, which belongs to no year, so every year collapsed
+       and a first-time visitor opened the sidebar to an empty list. The old
+       line also compared a string to a number with ===, which could never be
+       true either, so there were two independent reasons it failed. */
+    var activeYear = currentMonthKey ? currentMonthKey.split('-')[0] : null;
+    var isActiveYear = String(year) === String(activeYear);
     header.className = 'year-header' + (isActiveYear ? ' active-year' : '');
     header.innerHTML = '<span class="year-header-label">' + year + '</span><span class="year-toggle">▾</span>';
     header.onclick = function() {
