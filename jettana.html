@@ -2172,13 +2172,31 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
   grid-template-columns: repeat(3, 1fr);
   gap: 0;
 }
-.mom-grid > div {
+.mom-grid > div, .mom-grid > button {
   padding: 14px 16px;
   border-right: 1px solid var(--mist);
   border-bottom: 1px solid var(--mist);
 }
 
-.mom-grid > div:nth-child(3n) { border-right: none; }
+.mom-grid > div:nth-child(3n), .mom-grid > button:nth-child(3n) { border-right: none; }
+
+/* Each tile is a real <button> so it jumps to that section. A button, not a
+   clickable div: keyboard focus, Enter/Space and screen-reader semantics come
+   free. Border-right/bottom stay with the .mom-grid > button rule above (more
+   specific), and fixMomBorders() still overrides both inline. */
+.mom-tile {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.mom-tile:hover, .mom-tile:focus-visible { background: var(--mist-light); }
+.mom-tile:focus-visible { outline: 2px solid var(--sage); outline-offset: -2px; }
 /* Border-bottom for last row handled dynamically in renderMoM() */
 .mom-cat {
   font-size: 10px;
@@ -2218,15 +2236,15 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
 /* Dark mode */
 .dark .mom-card  { background: var(--white); border-color: #2A3A4A; }
 .dark .mom-hdr   { background: #263545; }
-.dark .mom-grid > div { border-color: #2A3A4A; }
+.dark .mom-grid > div, .dark .mom-grid > button { border-color: #2A3A4A; }
 .dark .mom-amount { color: var(--ink); }
 
 @media (max-width: 900px) {
   .mom-grid { grid-template-columns: repeat(2, 1fr); }
   /* Reset desktop right-border rule */
-  .mom-grid > div:nth-child(3n) { border-right: 1px solid var(--mist); }
+  .mom-grid > div:nth-child(3n), .mom-grid > button:nth-child(3n) { border-right: 1px solid var(--mist); }
   /* Mobile 2-col right border */
-  .mom-grid > div:nth-child(2n) { border-right: none; }
+  .mom-grid > div:nth-child(2n), .mom-grid > button:nth-child(2n) { border-right: none; }
   /* Last row handled dynamically in renderMoM() */
 }
 /* ── Monthly Intention Banner ───────────────────────────────── */
@@ -2259,6 +2277,31 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
   .intention-trigger.has-content { opacity: 1 !important; }
 }
 .intention-trigger.has-content { opacity: 1; color: var(--ink); }
+
+/* "Add intention" was effectively undiscoverable, and colour was the smaller
+   half of it: the base rule is `opacity: 0`, lifted only by
+   `.page-body:hover .intention-trigger`. On a desktop the prompt did not
+   exist until the pointer happened to enter the page body — and even then it
+   was --mist #C8D4DC on white. Now always visible, in the wordmark green.
+
+   `:not(.has-content)` is load-bearing — HOUSE RULE 20. .intention-trigger is
+   ALSO the element loadIntention() renders the SAVED intention's HTML into, so
+   an unqualified rule would repaint the user's own words green and override
+   their chosen intention colour. Same guard the month-lock CSS uses (~5127).
+   Untouched by this: body.month-locked hides the empty prompt with
+   `visibility`, which opacity and colour cannot fight. */
+.intention-trigger:not(.has-content) { opacity: 1; color: var(--sage-dark); }
+@media (pointer: coarse) {
+  /* beats `.intention-trigger { opacity: 0.6 !important }` above */
+  .intention-trigger:not(.has-content) { opacity: 1 !important; }
+}
+.dark .intention-trigger:not(.has-content) { color: var(--sage); }
+/* CSS TRAP 18: `.intention-trigger:hover` is the same specificity and declared
+   earlier, so the rules above would silently kill the hover feedback.
+   Restated at higher specificity. #8FC49A, not --sage-light — see the note at
+   the empty-section rule. */
+.intention-trigger:not(.has-content):hover { color: var(--sage); }
+.dark .intention-trigger:not(.has-content):hover { color: #8FC49A; }
 
 /* The actual input — hidden until open */
 .intention-field {
@@ -4065,7 +4108,10 @@ body.font-large.text-bold .erow-label-input {
 /* .add-row-btn:hover is the same specificity and declared earlier, so it
    would lose. Restate it here to keep the hover feedback. */
 .entry-list:empty + .add-row-btn:hover { color: var(--sage); }
-.dark .entry-list:empty + .add-row-btn:hover { color: var(--sage-light); }
+/* NOT --sage-light: .dark redefines it to #1A2E1C, a near-black green meant
+   for BACKGROUNDS, so using it as a hover colour made the label vanish.
+   #8FC49A is the lighter green the app already uses for .dark .calc-btn.calc-op. */
+.dark .entry-list:empty + .add-row-btn:hover { color: #8FC49A; }
 .dark .import-drop-zone:hover, .dark .import-drop-zone.drag-over { background: #263545; }
 .dark .import-preview-table th { background: #263545; }
 .dark .import-cat-select { background: #263545; border-color: #3A4A5A; color: var(--ink); }
@@ -14893,15 +14939,15 @@ function renderMoM() {
   }
 
   var categories = [
-    { label: secName('income', 'Income'),               cur: s(cur.income,        'received'), prev: s(prev.income,        'received'), good: 'up'   },
-    { label: secName('savings', 'Savings'),             cur: s(cur.savings,       'actual'),   prev: s(prev.savings,       'actual'),   good: 'up'   },
-    { label: secName('housing', 'Housing'),             cur: s(cur.housing,       'actual'),   prev: s(prev.housing,       'actual'),   good: 'down' },
-    { label: secName('food', 'Food'),                   cur: s(cur.food,          'actual'),   prev: s(prev.food,          'actual'),   good: 'down' },
-    { label: secName('transport', 'Transport'),         cur: s(cur.transport,     'actual'),   prev: s(prev.transport,     'actual'),   good: 'down' },
-    { label: secName('health', 'Health'),               cur: s(cur.health,        'actual'),   prev: s(prev.health,        'actual'),   good: 'down' },
-    { label: secName('subscriptions', 'Subscriptions'), cur: s(cur.subscriptions, 'actual'),   prev: s(prev.subscriptions, 'actual'),   good: 'down' },
-    { label: secName('gifts', 'Gifts'),                 cur: s(cur.gifts,         'actual'),   prev: s(prev.gifts,         'actual'),   good: 'down' },
-    { label: secName('misc', 'Misc'),                   cur: s(cur.misc,          'actual'),   prev: s(prev.misc,          'actual'),   good: 'down' },
+    { sec: 'income', label: secName('income', 'Income'),               cur: s(cur.income,        'received'), prev: s(prev.income,        'received'), good: 'up'   },
+    { sec: 'savings', label: secName('savings', 'Savings'),             cur: s(cur.savings,       'actual'),   prev: s(prev.savings,       'actual'),   good: 'up'   },
+    { sec: 'housing', label: secName('housing', 'Housing'),             cur: s(cur.housing,       'actual'),   prev: s(prev.housing,       'actual'),   good: 'down' },
+    { sec: 'food', label: secName('food', 'Food'),                   cur: s(cur.food,          'actual'),   prev: s(prev.food,          'actual'),   good: 'down' },
+    { sec: 'transport', label: secName('transport', 'Transport'),         cur: s(cur.transport,     'actual'),   prev: s(prev.transport,     'actual'),   good: 'down' },
+    { sec: 'health', label: secName('health', 'Health'),               cur: s(cur.health,        'actual'),   prev: s(prev.health,        'actual'),   good: 'down' },
+    { sec: 'subscriptions', label: secName('subscriptions', 'Subscriptions'), cur: s(cur.subscriptions, 'actual'),   prev: s(prev.subscriptions, 'actual'),   good: 'down' },
+    { sec: 'gifts', label: secName('gifts', 'Gifts'),                 cur: s(cur.gifts,         'actual'),   prev: s(prev.gifts,         'actual'),   good: 'down' },
+    { sec: 'misc', label: secName('misc', 'Misc'),                   cur: s(cur.misc,          'actual'),   prev: s(prev.misc,          'actual'),   good: 'down' },
   ];
 
   // Show any category with data in EITHER month — a category that dropped to
@@ -14936,11 +14982,20 @@ function renderMoM() {
 
     // Calculate borders for both 3-col (desktop) and 2-col (mobile)
     // We add data attributes and handle with a post-render function
-    html += '<div data-mom-idx="' + i + '" data-mom-total="' + total + '">' +
+    // The tile jumps to this section IN THE MONTH BEING VIEWED — .mom-amount
+    // shows c.cur, the current month's figure, so that is where a tap belongs.
+    // jumpToMonthSection() is the same helper the Trends "peaks" links use:
+    // expands the section if collapsed, scrolls with the sticky-topbar offset
+    // and gold-flashes the card. Section names are user-renamable, so the
+    // title attribute is escaped.
+    var tip = String(c.label).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+    html += '<button type="button" class="mom-tile" data-mom-idx="' + i + '" data-mom-total="' + total + '"' +
+      ' onclick="jumpToMonthSection(\'' + currentMonthKey + '\',\'' + c.sec + '\')"' +
+      ' title="Go to ' + tip + ' in this month">' +
       '<div class="mom-cat">' + c.label + '</div>' +
       '<div class="mom-amount">' + fmt(c.cur) + '</div>' +
       '<div class="mom-delta ' + deltaClass + '"><span class="arrow">' + arrow + '</span>' + deltaText + '</div>' +
-      '</div>';
+      '</button>';
   });
   html += '</div>';
   body.innerHTML = html;
