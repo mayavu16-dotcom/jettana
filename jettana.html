@@ -11408,6 +11408,10 @@ function recalc() {
     health:    { b: getFooterBudget('health',    hlhB), a: hlhA },
     gifts:     { b: getFooterBudget('gifts',     gftB), a: gftA },
     misc:      { b: getFooterBudget('misc',      mscB), a: mscA },
+    // Subscriptions was absent from this map while its #hdr-pct-subscriptions
+    // span sat in the markup unused, so that section alone never got a fill
+    // or a badge despite having a budget and an actual like the others.
+    subscriptions: { b: getFooterBudget('subscriptions', subB), a: subA },
   };
   Object.keys(HDR_BARS).forEach(function(sec) {
     var budget  = HDR_BARS[sec].b;
@@ -11435,8 +11439,19 @@ function recalc() {
     hdrEl.style.backgroundImage =
       'linear-gradient(to right, ' + overlay + ' ' + pctShow + '%, transparent ' + pctShow + '%)';
 
-    if (pctEl && pctRaw > 0) {
-      pctEl.textContent = Math.round(pctRaw) + '%';
+    // The badge shows MONEY LEFT, not a percentage. The percentage is already
+    // on screen: the header's gradient fill above is drawn from it, and shifts
+    // tone at 80% and again past 100%. Restating it as text answered a question
+    // nobody asks — "can I afford this coffee" needs dollars, not a ratio.
+    // Shown as soon as a budget exists, including before anything is spent:
+    // "how much can I spend here" is most useful at the START of a month.
+    // (The old code gated on pctRaw > 0, so the badge stayed hidden until you
+    // had already spent something — exactly backwards for this purpose.)
+    if (pctEl) {
+      var remaining = budget - actual;
+      pctEl.textContent = remaining >= 0
+        ? _fmtMoney(remaining) + ' left'
+        : _fmtMoney(Math.abs(remaining)) + ' over';
       pctEl.className   = 'hdr-pct-label visible';
       if (pctRaw > 100) pctEl.classList.add('pct-over');
       else if (pctRaw >= 80) pctEl.classList.add('pct-approaching');
