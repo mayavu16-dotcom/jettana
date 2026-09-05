@@ -16526,18 +16526,31 @@ function updateSubtitle() {
     return;
   }
 
-  // Calculate balance
-  function s(rows, key) {
-    return (rows || []).reduce(function(t, r) { return t + (parseFloat(r[key]) || 0); }, 0);
-  }
-  var incA  = s(d.income,    'received');
-  var houA  = s(d.housing,   'actual');
-  var traA  = s(d.transport, 'actual');
-  var fooA  = s(d.food,      'actual');
-  var hlhA  = s(d.health,    'actual');
-  var gftA  = s(d.gifts,     'actual');
-  var mscA  = s(d.misc,      'actual');
-  var subA  = s(d.subscriptions, 'actual');
+  // Calculate balance.
+  //
+  // Uses the SHARED sum() (~10890) — the same helper recalc(), the summary
+  // cards, the Monthly Report and Spending Trends all use. This function used
+  // to carry its own private `s()` doing `parseFloat(r[key]) || 0`, which
+  // differed from sum() in three ways and made the status line disagree with
+  // the Net Balance card directly below it:
+  //   1. it COUNTED exempt rows. toggleExempt() toasts "excluded from totals"
+  //      and every other surface honours that — this one silently didn't.
+  //      Maya's April 2026 read "Ended $1.1k over budget" beside a −$955.58
+  //      card because of this.
+  //   2. bare parseFloat stops at a comma and chokes on a currency symbol, so
+  //      a value stored as "1,200" counted as 1 and "$1,200" as 0.
+  //   3. no leading-minus handling.
+  // The subscriptions omission fixed earlier today was a fourth symptom of the
+  // same root cause: a hand-copied second implementation that drifted. Do not
+  // reintroduce a local summing helper here — call sum().
+  var incA  = sum(d.income,        'received');
+  var houA  = sum(d.housing,       'actual');
+  var traA  = sum(d.transport,     'actual');
+  var fooA  = sum(d.food,          'actual');
+  var hlhA  = sum(d.health,        'actual');
+  var gftA  = sum(d.gifts,         'actual');
+  var mscA  = sum(d.misc,          'actual');
+  var subA  = sum(d.subscriptions, 'actual');
   var totalExp = houA + traA + fooA + hlhA + gftA + mscA + subA;
   var balance  = incA - totalExp;
 
