@@ -1301,7 +1301,12 @@ body.show-sav-goal.font-large .sec-footer-savings {
 }
 .add-row-btn:hover { opacity: 1; }
 @media (pointer: coarse) {
-  .add-row-btn { padding-left: 0; }
+  /* There is no :hover on touch, so `.add-row-btn:hover { opacity: 1 }` never
+     fires and the base 0.5 is PERMANENT on a phone — the control is stuck at
+     half strength with no way to reveal it. 0.75 keeps it secondary to the
+     rows while staying legible. Empty sections still reach full strength via
+     `.entry-list:empty + .add-row-btn` (higher specificity, so it wins here). */
+  .add-row-btn { padding-left: 0; opacity: 0.75; }
 }
 .add-row-btn:hover { color: var(--sage); }
 .add-row-btn .plus { font-size: 16px; font-weight: 300; line-height: 1; }
@@ -14674,7 +14679,12 @@ function applyToColumn(section, id, amount, label) {
   if (section === 'income') {
     var all3 = loadAll();
     var incRows = (all3[currentMonthKey] && all3[currentMonthKey].income) || [];
-    var incA = incRows.reduce(function(t, r) { return t + (parseFloat(r.received) || 0); }, 0);
+    // Shared sum(), not a naive reduce: this value is written DIRECTLY into
+    // #sum-income and #ft-income-1, bypassing recalc(), so a naive total made
+    // the Total Income card flash a figure that disagreed with itself (exempt
+    // rows counted, comma-stored values truncated) until the next render.
+    // Fourth of four hand-copied summing helpers found today.
+    var incA = sum(incRows, 'received');
     var incEl = document.getElementById('ft-income-1');
     if (incEl) {
       incEl.textContent = '$' + Math.abs(incA).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -14927,9 +14937,11 @@ function renderMoM() {
   var cur  = loadAll()[curKey]  || {};
   var prev = loadAll()[prevKey] || {};
 
-  function s(rows, key) {
-    return (rows || []).reduce(function(t, r) { return t + (parseFloat(r[key]) || 0); }, 0);
-  }
+  // Uses the SHARED sum() (~10890), not a private helper. The old local copy
+  // counted exempt rows and read "1,200" as 1 (bare parseFloat stops at the
+  // comma), so a category could be inflated here while the section card below
+  // showed the correct figure — and the percentage change was wrong in BOTH
+  // months at once. Third of four hand-copied summing helpers found today.
 
   // Labels follow the viewed month's rename (then global, then default) —
   // same chain the Trends chart and Peaks use
@@ -14939,15 +14951,15 @@ function renderMoM() {
   }
 
   var categories = [
-    { sec: 'income', label: secName('income', 'Income'),               cur: s(cur.income,        'received'), prev: s(prev.income,        'received'), good: 'up'   },
-    { sec: 'savings', label: secName('savings', 'Savings'),             cur: s(cur.savings,       'actual'),   prev: s(prev.savings,       'actual'),   good: 'up'   },
-    { sec: 'housing', label: secName('housing', 'Housing'),             cur: s(cur.housing,       'actual'),   prev: s(prev.housing,       'actual'),   good: 'down' },
-    { sec: 'food', label: secName('food', 'Food'),                   cur: s(cur.food,          'actual'),   prev: s(prev.food,          'actual'),   good: 'down' },
-    { sec: 'transport', label: secName('transport', 'Transport'),         cur: s(cur.transport,     'actual'),   prev: s(prev.transport,     'actual'),   good: 'down' },
-    { sec: 'health', label: secName('health', 'Health'),               cur: s(cur.health,        'actual'),   prev: s(prev.health,        'actual'),   good: 'down' },
-    { sec: 'subscriptions', label: secName('subscriptions', 'Subscriptions'), cur: s(cur.subscriptions, 'actual'),   prev: s(prev.subscriptions, 'actual'),   good: 'down' },
-    { sec: 'gifts', label: secName('gifts', 'Gifts'),                 cur: s(cur.gifts,         'actual'),   prev: s(prev.gifts,         'actual'),   good: 'down' },
-    { sec: 'misc', label: secName('misc', 'Misc'),                   cur: s(cur.misc,          'actual'),   prev: s(prev.misc,          'actual'),   good: 'down' },
+    { sec: 'income', label: secName('income', 'Income'),               cur: sum(cur.income,        'received'), prev: sum(prev.income,        'received'), good: 'up'   },
+    { sec: 'savings', label: secName('savings', 'Savings'),             cur: sum(cur.savings,       'actual'),   prev: sum(prev.savings,       'actual'),   good: 'up'   },
+    { sec: 'housing', label: secName('housing', 'Housing'),             cur: sum(cur.housing,       'actual'),   prev: sum(prev.housing,       'actual'),   good: 'down' },
+    { sec: 'food', label: secName('food', 'Food'),                   cur: sum(cur.food,          'actual'),   prev: sum(prev.food,          'actual'),   good: 'down' },
+    { sec: 'transport', label: secName('transport', 'Transport'),         cur: sum(cur.transport,     'actual'),   prev: sum(prev.transport,     'actual'),   good: 'down' },
+    { sec: 'health', label: secName('health', 'Health'),               cur: sum(cur.health,        'actual'),   prev: sum(prev.health,        'actual'),   good: 'down' },
+    { sec: 'subscriptions', label: secName('subscriptions', 'Subscriptions'), cur: sum(cur.subscriptions, 'actual'),   prev: sum(prev.subscriptions, 'actual'),   good: 'down' },
+    { sec: 'gifts', label: secName('gifts', 'Gifts'),                 cur: sum(cur.gifts,         'actual'),   prev: sum(prev.gifts,         'actual'),   good: 'down' },
+    { sec: 'misc', label: secName('misc', 'Misc'),                   cur: sum(cur.misc,          'actual'),   prev: sum(prev.misc,          'actual'),   good: 'down' },
   ];
 
   // Show any category with data in EITHER month — a category that dropped to
