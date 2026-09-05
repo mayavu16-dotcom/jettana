@@ -2725,6 +2725,29 @@ body.sidebar-open #calc-panel { display: none !important; }
 .calc-btn.calc-op  { color: var(--sage-dark); font-weight: 700; font-size: 20px; }
 .calc-btn.calc-eq  { background: var(--sage); color: white; font-weight: 700; font-size: 22px; }
 .calc-btn.calc-eq:hover  { background: var(--sage-dark); }
+
+/* The calculator is sized for FINGERS — 54x70px keys, a 220x509 panel that is
+   half the height of a laptop screen. Right on a phone, oversized under a
+   cursor, and once .page-body was centred it sat half in the margin and half
+   over the cards (196px of them at 1440, 52px at 1728).
+   Shrunk on a fine pointer only, the same split the top bar already makes:
+   170x333, a third of the screen instead of half. Touch is untouched, so the
+   keys stay thumb-sized where that matters.
+   The !important flags are unavoidable, not laziness: #calc-panel's width and
+   the display/expr font sizes are INLINE styles in the markup, which a
+   stylesheet rule cannot outrank. The .calc-btn rules need none — they sit
+   after the base rule at the same specificity and simply win on order. */
+@media (pointer: fine) {
+  #calc-panel { width: 170px !important; border-radius: 13px !important; }
+  #calc-panel > div:first-child { padding: 9px 12px 8px !important; }
+  #calc-display { font-size: 26px !important; }
+  #calc-expr   { font-size: 10px !important; min-height: 14px !important; padding-right: 22px !important; }
+  #calc-close  { font-size: 16px !important; }
+  .calc-btn          { height: 44px; font-size: 15px; }
+  .calc-btn.calc-fn  { font-size: 12px; }
+  .calc-btn.calc-op  { font-size: 16px; }
+  .calc-btn.calc-eq  { font-size: 18px; }
+}
 .calc-btn.calc-eq:active { background: var(--sage-dark); }
 #calc-fab:hover  { transform: scale(1.08); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
 #calc-fab:active { transform: scale(0.95); }
