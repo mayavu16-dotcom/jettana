@@ -6035,6 +6035,11 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
           <button class="askme-q" onclick="toggleAskMe(this)">Can I copy last month's setup?<span class="askme-q-arrow">▾</span></button>
           <div class="askme-a">Yes — click <strong>+ New Month</strong> and choose to copy from a previous month. It brings over all your rows, colors, recurring flags, budget overrides, and footer highlights. Actual values are not copied so you start fresh.</div>
         </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">Can I lock a month so I don't change it by accident?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Yes. Tap the <strong>🔓 beside the month name</strong> at the top to lock it. A locked month is <strong>view-only</strong>: you can still read everything, open notes, and hover or tap a long name to see it in full, but nothing can be edited, added, deleted or undone — so a finished month stays finished. Tap the <strong>🔒</strong> again to unlock. Locking one month never affects the others. One thing to know: a locked month still receives updates from cloud sync, so it protects you from accidental taps, not from a change made on another device.</div>
+        </div>
       </div>
 
       <div class="askme-group" data-group>
@@ -6139,8 +6144,13 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
         </div>
 
         <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">How do I see what's left to spend on each row?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Tap the <strong>⋯ on any expense section → 💵 Show what's left</strong>. A third column appears on every expense section showing <strong>budget minus actual</strong> for each row — green while you have room, amber as you get close, red once you're over. It's <strong>set per month</strong>, so you can turn it on for a month you're watching closely and leave your other months clean. It's off to begin with because it makes the name column narrower on a phone. The section's own total in the footer is the section figure, which can differ from adding the rows up when a row has spending but no budget.</div>
+        </div>
+
+        <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">A row name is cut off — how do I read the whole thing?<span class="askme-q-arrow">▾</span></button>
-          <div class="askme-a">Long names fade out at the edge instead of colliding with the row's controls. On desktop, <strong>hover</strong> over the name to see the full text in a small popup. On mobile, <strong>tap once</strong> to peek at the full name — tap again to edit it.</div>
+          <div class="askme-a">Long names fade out at the edge instead of colliding with the row's controls. On desktop, <strong>hover</strong> over the name to see the full text in a small popup. On mobile, <strong>tap once</strong> to peek at the full name — tap again to edit it. This works on <strong>locked months</strong> too, where tapping just shows the name and never opens it for editing.</div>
         </div>
       </div>
 
@@ -6198,7 +6208,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
 
         <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">Can I jump from a chart to the rows behind it?<span class="askme-q-arrow">▾</span></button>
-          <div class="askme-a">Yes, from three places. In the <strong>Spending Calendar</strong>, tap a day and then tap a transaction to land on its row — built for reconciling against a statement. In the <strong>Net Worth Trend</strong>, tap any point on the line to open that month. In <strong>Spending Trends → ⭐ Peaks</strong>, tap an underlined month to jump to those rows. In all three, dragging the panel aside first keeps it open while you jump, so you can work through several without reopening it.</div>
+          <div class="askme-a">Yes, from four places. In the <strong>Spending Calendar</strong>, tap a day and then tap a transaction to land on its row — built for reconciling against a statement. In the <strong>Net Worth Trend</strong>, tap any point on the line to open that month. In <strong>Spending Trends → ⭐ Peaks</strong>, tap an underlined month to jump to those rows. And on the <strong>Month-over-Month card</strong> at the bottom of your dashboard, tap any category tile to jump straight to that section — it opens the section if it's collapsed and flashes it gold so you can see where you landed. With the three panels, dragging one aside first keeps it open while you jump, so you can work through several without reopening it.</div>
         </div>
       </div>
 
@@ -6609,6 +6619,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
     <div class="shortcuts-group">
       <div class="shortcuts-group-title">Tracking</div>
       <div class="shortcut-row"><span>📊 <strong>12 sections</strong> — Income, Savings, Housing, Checking, Transportation, Debt, Food, Health, Subscriptions, Gifts, Misc, and Notes</span></div>
+      <div class="shortcut-row"><span>💵 <strong>Show what's left</strong> — ⋯ on any expense section → Show what's left. Adds a third column to every expense section: budget minus actual for each row, green while you have room, amber as you approach it, red once you're over. Set per month, so you can use it on a month you're watching and leave the others clean. Off by default — it narrows the name column on a phone. The footer shows the section's own figure, which can differ from the rows added up when a row has spending but no budget.</span></div>
       <div class="shortcut-row"><span>💰 <strong>Saved vs Invested</strong> — hover the Total Savings amount to see your split: how much is parked in savings vs growing in investments, with each account, subtotals, and percentages. Jettana guesses from account names ("HYSA" → Saved, "Roth IRA" → Invested); click the "Total Savings" label to pin the panel, then tap any account to flip it — your correction is remembered.</span></div>
       <div class="shortcut-row"><span>✎ <strong>Rename sections</strong> — double-click (desktop) or long-press (mobile) any section header to rename it; choose "This month only" or "All months"</span></div>
       <div class="shortcut-row"><span>✓ <strong>Mark as paid</strong> — click ✓ on any expense row to strike it through; if a card link is set, the debt Current updates and the linked checking/savings account balance decreases</span></div>
@@ -6616,7 +6627,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>📅 <strong>Date stamps</strong> — add planned and actual dates to any row via the date button that appears on hover</span></div>
       <div class="shortcut-row"><span>📅 <strong>Beginning balance date</strong> — open the note on any Checking row to set a beginning balance date; expenses dated before that date won't be deducted from the balance</span></div>
       <div class="shortcut-row"><span>✎ <strong>Row notes</strong> — click ≡ on any row → Add note; a gold dot appears on hover to indicate a note exists</span></div>
-      <div class="shortcut-row"><span>👁 <strong>Full name peek</strong> — long row names fade at the edge; hover (desktop) or tap once (mobile) to see the full text, tap again to edit</span></div>
+      <div class="shortcut-row"><span>👁 <strong>Full name peek</strong> — long row names fade at the edge; hover (desktop) or tap once (mobile) to see the full text, tap again to edit. Works on locked months too, where it only ever shows the name.</span></div>
       <div class="shortcut-row"><span>→ <strong>Income destination</strong> — open the note on any income row to set a "→ goes to" label (e.g. Marcus Savings, HYSA)</span></div>
       <div class="shortcut-row"><span>🔄 <strong>Subscriptions</strong> — dedicated section for recurring services; included in expense totals and month-over-month comparison</span></div>
       <div class="shortcut-row"><span>📝 <strong>Notes</strong> — free-form notes per month with bullet points and checkable to-dos; syncs across devices</span></div>
@@ -6687,6 +6698,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>🔖 <strong>Last month restore</strong> — when you return to the app, it reopens the last month you were viewing</span></div>
       <div class="shortcut-row"><span>📊 <strong>Month-over-month</strong> — scroll to the bottom to compare spending vs any month you choose from the dropdown</span></div>
       <div class="shortcut-row"><span>🔍 <strong>Search</strong> — search across all rows in the current month by label, amount or date; the page scrolls automatically to the first match</span></div>
+      <div class="shortcut-row"><span>🔒 <strong>Lock a month</strong> — tap the 🔓 beside the month name to make that month view-only. You can still read it, open notes and peek at long names, but nothing can be edited, added, deleted or undone until you tap 🔒 to unlock. Set per month, so locking one leaves the rest alone. Cloud sync can still update a locked month — it guards against stray taps, not against an edit made on another device.</span></div>
       <div class="shortcut-row"><span>✕ <strong>Clear month</strong> — ⋯ → Clear month to wipe all rows for the current month</span></div>
       <div class="shortcut-row"><span>▶ <strong>Try demo</strong> — ⋯ → Try demo to load a pre-filled sample month showing card tracking, templates and color coding in action</span></div>
       <div class="shortcut-row"><span>✅ <strong>Setup checklist</strong> — ⋯ → Learn → Setup checklist for a guided 9-step walkthrough of Jettana's key features</span></div>
@@ -6697,7 +6709,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>☁️ <strong>Sync across devices</strong> — cloud backup comes with lifetime access; once you have it, sign in on any device to pick up where you left off</span></div>
       <div class="shortcut-row"><span>↩ <strong>Sign out / Delete account</strong> — ⋯ → Sign out or Delete account to manage your account</span></div>
       <div class="shortcut-row"><span>✦ <strong>Monthly intention</strong> — click "Add intention" at the top to write a quote or goal; pick a color, font (10 options) and size, and use <strong>B</strong> / <strong>H</strong> to bold or highlight words</span></div>
-      <div class="shortcut-row"><span>🎨 <strong>Color themes</strong> — ⋯ → Appearance: Classic, Minimal, Monochrome, Warm, or a fully custom color</span></div>
+      <div class="shortcut-row"><span>🎨 <strong>Color themes</strong> — ⋯ → Appearance: Classic, Minimal, Monochrome, Warm, or a fully custom color. Set per month, so each month can have its own palette — and your choice is remembered between visits.</span></div>
       <div class="shortcut-row"><span>𝐁 <strong>Bold text</strong> — ⋯ → Appearance → Bold text: On/Off</span></div>
       <div class="shortcut-row"><span>𝗔 <strong>Text size</strong> — ⋯ → Appearance → S / M / L; scales all row labels, headers, footers and summary tables</span></div>
       <div class="shortcut-row"><span>🌙 <strong>Dark mode</strong> — toggle with the 🌙 button in the top bar</span></div>
@@ -6708,6 +6720,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcuts-group-title">Layout</div>
       <div class="shortcut-row"><span>✎ <strong>Rename sections</strong> — double-click (desktop) or long-press (mobile) any section header; save for this month only or all months</span></div>
       <div class="shortcut-row"><span>⠿ <strong>Reorder sections</strong> — hover any section header to reveal ⠿; drag on desktop, long-press on mobile</span></div>
+      <div class="shortcut-row"><span>🏷 <strong>"$68 left" header badge</strong> — every section with a budget shows what's left of it right in the coloured header, in dollars rather than a percentage, so you can answer "can I afford this?" without doing the sum. It flips to "$40 over" once you pass the budget, and the header's own fill already shows how far along you are. Cents appear only when there are cents.</span></div>
       <div class="shortcut-row"><span>▾ <strong>Collapse sections</strong> — click ▾ on any section header to hide its rows; click again to expand. Collapsed headers show the section's $ total (and its % of budget), so you can collapse everything and read your whole month at a glance.</span></div>
     </div>
 
@@ -6727,10 +6740,10 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>🎂 <strong>Age on your trend</strong> — enter your birth month + year in the Net Worth Trend (optional) to see "age 23 → 25" alongside your growth. Month and year only — Jettana never asks for your full birthdate. Clear the field anytime to remove it.</span></div>
       <div class="shortcut-row"><span>🧮 <strong>Plan My Savings</strong> — ⋯ → Plan ahead → Plan my savings; works out what's genuinely left over each month from your average take-home and expenses. The retirement half shows what a pre-tax contribution actually costs your take-home (less than the headline number, since it comes out before tax) and what you'd leave behind by contributing under your employer's match.</span></div>
       <div class="shortcut-row"><span>🌍 <strong>Life Elsewhere</strong> — ⋯ → Plan ahead → Life elsewhere; re-prices your current lifestyle in another country with your income held fixed. Optionally type an exchange rate to see the figures in local currency too — rates are never fetched, so it's whatever you enter, and leaving it blank hides that line. A daydream tool, not relocation advice.</span></div>
-      <div class="shortcut-row"><span>↩ <strong>Jump back to your rows</strong> — three of the panels link straight back into the tracker: tap a transaction in the Spending Calendar, a point on the Net Worth Trend, or an underlined month in Spending Trends → Peaks. Drag the panel aside first and it stays open while you jump, so you can work through several in a row — handy for reconciling.</span></div>
+      <div class="shortcut-row"><span>↩ <strong>Jump back to your rows</strong> — four places link straight back into the tracker: tap a transaction in the Spending Calendar, a point on the Net Worth Trend, an underlined month in Spending Trends → Peaks, or any category tile on the Month-over-Month card. Drag the panel aside first and it stays open while you jump, so you can work through several in a row — handy for reconciling.</span></div>
       <div class="shortcut-row"><span>🌱 <strong>Growth Projection</strong> — ⋯ → Insights → Growth projection; a hypothetical compound-growth view seeded from your current savings and average monthly contribution. Adjust the amount, contribution, or return rate; pick 5Y / 10Y / 20Y / 30Y, or type any number of years (1–60) in the custom chip. Drag to reposition.</span></div>
       <div class="shortcut-row"><span>⇄ <strong>Compare months</strong> — ⋯ → Insights → Compare months; any section line-by-line against a baseline month, with color-coded changes and how far apart the two months are (e.g. "2 years, 6 months apart"). The left column follows the month you're viewing. Drag to reposition.</span></div>
-      <div class="shortcut-row"><span>📈 <strong>Month-over-Month card</strong> — on your dashboard below the sections; compares this month's totals per category against any previous month (pick one from the dropdown). Green means moving the right way for that category — income up is good, spending up isn't. A category you cut to zero shows as a 100% win, and renamed sections show your names.</span></div>
+      <div class="shortcut-row"><span>📈 <strong>Month-over-Month card</strong> — on your dashboard below the sections; compares this month's totals per category against any previous month (pick one from the dropdown). Green means moving the right way for that category — income up is good, spending up isn't. A category you cut to zero shows as a 100% win, and renamed sections show your names. Tap any tile to jump to that section — it expands if collapsed and flashes gold so you can see where you landed.</span></div>
     </div>
 
     <div class="shortcuts-group">
