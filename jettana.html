@@ -18354,7 +18354,12 @@ function showManageAccount() {
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;';
   modal.innerHTML = `
     <div style="background:var(--white);border-radius:16px;padding:32px;width:100%;max-width:380px;margin:16px;font-family:'Outfit',sans-serif;">
-      <div style="font-size:20px;font-weight:700;color:#1A2332;margin-bottom:4px;">Manage account</div>
+      <!-- var(--ink), NOT a hardcoded #1A2332. The card itself is var(--white),
+           which flips to #182030 in dark mode, so the fixed ink title landed at
+           1.03:1 against it and vanished. --ink flips with the card (#1A2332
+           light / #E8EDF2 dark): 15.78:1 and 13.84:1. Same hardcoded-colour
+           disease as the report modal and the copy-section dialog. -->
+      <div style="font-size:20px;font-weight:700;color:var(--ink);margin-bottom:4px;">Manage account</div>
       <div style="font-size:13px;color:#8A9AB5;margin-bottom:24px;">${email}</div>
       <button onclick="signOut();document.getElementById('manage-account-modal').remove();" style="width:100%;padding:12px;background:#F0F3F7;border:none;border-radius:10px;font-size:14px;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;color:#1A2332;margin-bottom:10px;text-align:left;">
         ↩ &nbsp;Sign out
