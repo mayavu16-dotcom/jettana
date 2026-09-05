@@ -10080,8 +10080,77 @@ function renderRowEl(section, row, animate = false) {
   // Auto-focus the label input when adding a new row
   if (animate) {
     const labelInput = div.querySelector('.erow-label-input');
-    if (labelInput) labelInput.focus();
+    if (labelInput) {
+      // MUST stay synchronous, inside the tap that triggered it. iOS only
+      // opens the on-screen keyboard for a focus() it considers user-
+      // initiated; move this into a setTimeout/await and the keyboard simply
+      // never appears. revealFocusedRow() does all of its work afterwards.
+      labelInput.focus();
+      revealFocusedRow(div);
+    }
   }
+}
+
+/* Bring a just-added row above the on-screen keyboard.
+   ------------------------------------------------------------------------
+   The add path used to focus the new row and scroll nowhere at all, so on a
+   phone the row could sit below the fold, or behind the keyboard, while the
+   user typed into a field they could not see. The browser's own "scroll the
+   focused element into view" is a heuristic and it loses here three ways:
+
+     1. It runs before the keyboard has opened, and on iOS
+        `window.innerHeight` does NOT shrink when it does — so the browser
+        believes a row is visible while the keyboard covers it. Only
+        `visualViewport.height` tells the truth, and only after the keyboard
+        has finished animating, which is what its `resize` event marks.
+     2. `.erow-new` carries `animation: rowIn 0.2s both`, so at the moment
+        focus() runs the row is still at `opacity: 0` — browsers routinely
+        decline to scroll to something invisible.
+     3. `.topbar` is `position: sticky`, so scrolling the row to viewport top
+        parks it UNDER the bar. Same trap jumpToMonthSection() documents.
+
+   Coarse pointers only: on a desktop there is no keyboard, focus already
+   works, and this is a complete no-op (matchMedia returns false and we
+   return before touching anything).                                        */
+function revealFocusedRow(el) {
+  if (!el || !window.matchMedia || !matchMedia('(pointer: coarse)').matches) return;
+
+  function place(behavior) {
+    if (!el.isConnected) return;
+    var topbar = document.querySelector('.topbar');
+    var topGap = (topbar ? topbar.getBoundingClientRect().height : 0) + 12;
+    var vv      = window.visualViewport;
+    var viewTop = vv ? vv.offsetTop : 0;
+    var viewH   = vv ? vv.height    : window.innerHeight;
+    var r = el.getBoundingClientRect();
+    var hiddenAbove = r.top - (viewTop + topGap);            // <0 = under the sticky bar
+    var hiddenBelow = (r.bottom + 12) - (viewTop + viewH);   // >0 = behind the keyboard
+    var delta = 0;
+    if (hiddenBelow > 0) delta = hiddenBelow;   // pull it up out of the keyboard
+    if (hiddenAbove < 0) delta = hiddenAbove;   // ...unless it is under the bar; that wins
+    if (Math.abs(delta) < 2) return;
+    window.scrollBy({ top: delta, behavior: behavior || 'smooth' });
+  }
+
+  // One frame later, so we are not fighting whatever the browser decided to
+  // do on focus, and so the row has been laid out. Smooth here: the page is
+  // settled and a glide reads as intentional.
+  requestAnimationFrame(function() { place('smooth'); });
+
+  // Then again once the keyboard has actually opened and resized the visual
+  // viewport — that is the only moment the real available height is knowable.
+  var vv = window.visualViewport;
+  if (!vv) return;
+  var t;
+  function cleanup() { vv.removeEventListener('resize', onResize); clearTimeout(t); }
+  // INSTANT, not smooth: the keyboard is mid-animation and a second smooth
+  // scroll runs against it — it either lands late or gets visibly overtaken.
+  // Snapping reads as part of the keyboard opening.
+  function onResize() { cleanup(); requestAnimationFrame(function() { place('auto'); }); }
+  vv.addEventListener('resize', onResize);
+  // The keyboard may never open (hardware keyboard, focus stolen, user taps
+  // away). Stop listening rather than leaving a stray handler on the page.
+  t = setTimeout(cleanup, 1200);
 }
 
 function numFocus(el) {
