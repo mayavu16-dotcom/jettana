@@ -407,6 +407,27 @@ body {
 .page-body {
   padding: 24px 28px 48px;
   max-width: 1140px;
+  /* Centred (Maya's call, Sept 5). Before this there were no margins at all,
+     so the column simply sat against the left and every pixel past
+     220 (sidebar) + 1140 (column) = 1360 piled up on the right — 368px of it
+     at 1728 wide, 640px at 2000, 1200px at 2560, while the top bar kept
+     running to the window edge. Two right edges that far apart read as broken
+     rather than roomy.
+     Auto margins are a no-op below 1360px, where there is no slack to split,
+     so phones and small laptops are untouched. The top bar deliberately still
+     spans the full width — capping it too was the alternative option and was
+     not chosen. */
+  /* width:100% is REQUIRED, not belt-and-braces. .main-content is
+     `display:flex; flex-direction:column`, and horizontal auto margins on a
+     flex item cancel the default cross-axis stretch — the column then shrinks
+     to its CONTENT width. Without this line the tracker collapsed from 700px
+     to 503px on a phone with 98px of dead margin down each side, while wide
+     screens looked fine because max-width was doing the work there. Caught by
+     re-sweeping the narrow widths (house rule 23). box-sizing is border-box,
+     so 100% already accounts for the 28px padding. */
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .summary-strip {
