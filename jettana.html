@@ -2781,13 +2781,16 @@ body.sidebar-open #calc-panel { display: none !important; }
   }
   /* The ⌫ carries an INLINE font-size:16px, so it is the one key that ignores
      both the base rule and the desktop block — 16px in both modes. That reads
-     correctly in a 44px desktop key (16/44 = 0.364, the same weight as + − × ÷)
-     but small in a 56px phone key (16/56 = 0.286), which is why it stood out as
-     the runt of the row. 20px restores the desktop's proportion (20/56 = 0.357).
-     Scaled to the KEY, not to real-world pixels — the mistake made with the ×.
-     Desktop keeps its inline 16px untouched. The id exists only so this rule
-     can beat the inline style without a brittle :nth-child(4). */
-  #calc-back { font-size: 20px !important; }
+     correctly in a 44px desktop key but is the runt of a 56px phone key.
+     20px was tried first: it matches the desktop PROPORTION exactly (ink/key
+     0.393 both ways) and still looked unchanged on a real phone, because the
+     page is laid out at 700px and scaled to ~56%, so 20px is 11 REAL px
+     against the desktop's 16. Unlike the × — where the phone panel is wider
+     than the desktop's, so physical parity overshot — the ⌫ is being asked to
+     match the desktop glyph itself. 29px is 16.2 real px: the same ink the
+     desktop draws. Desktop keeps its inline 16px untouched. The id exists only
+     so this rule can beat the inline style without a brittle :nth-child(4). */
+  #calc-back { font-size: 29px !important; }
 }
 .calc-btn.calc-eq:active { background: var(--sage-dark); }
 #calc-fab:hover  { transform: scale(1.08); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
