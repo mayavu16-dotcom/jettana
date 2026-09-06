@@ -19817,19 +19817,30 @@ function initSectionDrag() {
   });
 }
 
+// Section order is a per-namespace display setting: the account, local mode
+// and the demo each keep their own. Was a raw key, so local mode and a
+// signed-in account shared one order and overwrote each other's.
+// In account mode nsKey() returns the name unchanged, so existing saved
+// orders keep working; only local mode gets a new bucket.
+function sectionOrderKey() { return nsKey('intentra_section_order'); }
+
 function saveSectionOrder() {
   var grid = document.querySelector('.tracker-grid');
   if (!grid) return;
   var order = Array.from(grid.querySelectorAll('.sec-card')).map(function(c) {
     return c.dataset.sectionId;
   });
-  appStore.setItem('intentra_section_order', JSON.stringify(order));
+  appStore.setItem(sectionOrderKey(), JSON.stringify(order));
 }
 
 function loadSectionOrder() {
   var grid = document.querySelector('.tracker-grid');
   if (!grid) return;
-  var saved = appStore.getItem('intentra_section_order');
+  var saved = appStore.getItem(sectionOrderKey());
+  // One-time carry-over: a local-mode user who arranged their sections
+  // before this change has that order under the old shared key. Read it,
+  // never write it — the next drag saves to the namespaced key.
+  if (saved == null && inLocalMode()) saved = appStore.getItem('intentra_section_order');
   if (saved) {
     try {
       var order = JSON.parse(saved);
