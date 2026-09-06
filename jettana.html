@@ -1082,7 +1082,13 @@ body.show-sav-goal.font-large .sec-footer-savings {
 .card-tx-pop {
   position: fixed;
   z-index: 9000;
-  width: 304px;   /* 268 -> 292 (dates) -> 304 (the jump chevron) */
+  /* 268 -> 292 (dates) -> 304 (the jump chevron) -> 380 (names).
+     380 is the widest that still opens IN PLACE under its badge at a 1280px
+     window; 440 has to slide ~59px left there and loses the link to the badge
+     you just clicked. Measured at 1280: 6 of 12 real charge names were cut at
+     304 and 1 at 380, for 12% more of a card covered. Touch overrides this to
+     440 further down — a phone has no hover to fall back on. */
+  width: 380px;
   max-height: 340px;
   overflow-y: auto;
   background: var(--white);
