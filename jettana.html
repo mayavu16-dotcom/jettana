@@ -1687,7 +1687,7 @@ body.show-sav-goal.font-large .sec-footer-savings {
   .hamburger-btn, .theme-wrap, .drag-handle,
   .rec-dot, .note-indicator,
   #calc-fab, #calc-panel,
-  #income-breakdown-pop, #expense-breakdown-pop, #debt-total-pop, #mchk-pop, #savings-breakdown-pop,
+  #income-breakdown-pop, #expense-breakdown-pop, #debt-total-pop, #mchk-pop, #savings-breakdown-pop, #bills-breakdown-pop,
   #label-peek, .intention-swatches, .intention-dismiss { display: none !important; }
 
   /* Dates were being hidden along with the chrome. They're content — print them
@@ -2955,7 +2955,8 @@ body.sidebar-open #calc-panel { display: none !important; }
 .dark #label-peek { background: #EEF2F5; color: #1A2332; }
 #income-breakdown-pop,
 #balance-breakdown-pop,
-#savings-breakdown-pop {
+#savings-breakdown-pop,
+#bills-breakdown-pop {
   position: fixed; z-index: 10050; display: none;
   background: var(--white); color: var(--ink);
   border: 1px solid var(--mist); border-radius: 12px;
@@ -2963,12 +2964,12 @@ body.sidebar-open #calc-panel { display: none !important; }
   padding: 12px 14px; min-width: 210px; max-width: min(280px, calc(100vw - 24px));
   box-shadow: 0 8px 30px rgba(0,0,0,0.16); pointer-events: none;
 }
-#income-breakdown-pop .ibp-row, #balance-breakdown-pop .ibp-row, #savings-breakdown-pop .ibp-row { display: flex; justify-content: space-between; gap: 16px; padding: 2px 0; }
-#income-breakdown-pop .ibp-row.ibp-sub, #balance-breakdown-pop .ibp-row.ibp-sub, #savings-breakdown-pop .ibp-row.ibp-sub { color: var(--steel); }
-#income-breakdown-pop .ibp-row.ibp-total, #balance-breakdown-pop .ibp-row.ibp-total, #savings-breakdown-pop .ibp-row.ibp-total { border-top: 1px solid var(--mist); margin-top: 6px; padding-top: 7px; font-weight: 700; }
+#income-breakdown-pop .ibp-row, #balance-breakdown-pop .ibp-row, #savings-breakdown-pop .ibp-row, #bills-breakdown-pop .ibp-row { display: flex; justify-content: space-between; gap: 16px; padding: 2px 0; }
+#income-breakdown-pop .ibp-row.ibp-sub, #balance-breakdown-pop .ibp-row.ibp-sub, #savings-breakdown-pop .ibp-row.ibp-sub, #bills-breakdown-pop .ibp-row.ibp-sub { color: var(--steel); }
+#income-breakdown-pop .ibp-row.ibp-total, #balance-breakdown-pop .ibp-row.ibp-total, #savings-breakdown-pop .ibp-row.ibp-total, #bills-breakdown-pop .ibp-row.ibp-total { border-top: 1px solid var(--mist); margin-top: 6px; padding-top: 7px; font-weight: 700; }
 #income-breakdown-pop .ibp-neg, #balance-breakdown-pop .ibp-neg, #savings-breakdown-pop .ibp-neg { color: var(--blush); }
-#income-breakdown-pop .ibp-title, #balance-breakdown-pop .ibp-title, #savings-breakdown-pop .ibp-title { font-size: 10.5px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--steel); margin-bottom: 7px; }
-.dark #income-breakdown-pop, .dark #balance-breakdown-pop, .dark #savings-breakdown-pop { background: #1E2A38; border-color: #2A3A4A; }
+#income-breakdown-pop .ibp-title, #balance-breakdown-pop .ibp-title, #savings-breakdown-pop .ibp-title, #bills-breakdown-pop .ibp-title { font-size: 10.5px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--steel); margin-bottom: 7px; }
+.dark #income-breakdown-pop, .dark #balance-breakdown-pop, .dark #savings-breakdown-pop, .dark #bills-breakdown-pop { background: #1E2A38; border-color: #2A3A4A; }
 /* Balance panel only. The sign slot is a fixed width on every row (empty on
    positives) so the "$" lines up in a column; tabular figures keep the digits
    in step whatever the values are. Scoped by id — the income and savings
@@ -2978,6 +2979,19 @@ body.sidebar-open #calc-panel { display: none !important; }
 #balance-breakdown-pop .ibp-op { display: inline-block; width: 0.8em; margin-left: -0.8em; }
 #balance-breakdown-pop .ibp-pos { color: var(--sage-dark); }
 .dark #balance-breakdown-pop .ibp-pos { color: var(--sage); }
+/* Bills panel. Each line is a real bill you can jump to once the panel is
+   pinned — same behaviour as a charge line in the card panel, so "a list row
+   in a popup takes you to the row" means one thing everywhere in the app. */
+#bills-breakdown-pop { max-width: min(320px, calc(100vw - 24px)); }
+#bills-breakdown-pop .bdp-jump { cursor: pointer; border-radius: 5px; margin: 0 -5px; padding-left: 5px; padding-right: 5px; }
+#bills-breakdown-pop .bdp-jump:hover { background: var(--mist-light); }
+.dark #bills-breakdown-pop .bdp-jump:hover { background: rgba(255,255,255,0.07); }
+#bills-breakdown-pop .bdp-sec { font-size: 9.5px; color: var(--steel); margin-left: 6px; }
+#bills-breakdown-pop .bdp-part { font-size: 9.5px; color: var(--steel); }
+#bills-breakdown-pop .ibp-amt { font-variant-numeric: tabular-nums; white-space: nowrap; }
+#bills-breakdown-pop .bdp-free { color: var(--sage-dark); }
+.dark #bills-breakdown-pop .bdp-free { color: var(--sage); }
+#bills-breakdown-pop .bdp-short { color: var(--blush); }
 .dark #mchk-pop { background: #1E2A38; border-color: #2A3A4A; }
 .dark #mchk-pop input[type="text"] { border-color: #2A3A4A; }
 #expense-breakdown-pop {
@@ -3126,7 +3140,8 @@ body.sidebar-open #calc-panel { display: none !important; }
 #income-breakdown-pop.brk-pinned,
 #balance-breakdown-pop.brk-pinned,
 #expense-breakdown-pop.brk-pinned,
-#savings-breakdown-pop.brk-pinned {
+#savings-breakdown-pop.brk-pinned,
+#bills-breakdown-pop.brk-pinned {
   pointer-events: auto;                 /* interactive once pinned */
   box-shadow: 0 14px 44px rgba(0,0,0,0.26);
   border-color: var(--steel);
@@ -5799,7 +5814,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
         <!-- Bills Due is LAST on purpose. The order then never changes between
              a phone and a desktop: five across on a wide screen, and the fifth
              one full width on the third row of a two-column phone grid. -->
-        <div class="sum-card c-amber" id="bills-sum-card" style="position:relative;">
+        <div class="sum-card c-amber" id="bills-sum-card" style="position:relative;" onmouseenter="showBillsBreakdown(this)" onmouseleave="hideBillsBreakdown()" onclick="toggleBillsBreakdown(this)">
           <div class="sum-label">Bills Due</div>
           <div class="sum-amount" id="sum-bills">$0</div>
           <div class="sum-sub" id="bills-sum-sub">nothing unpaid right now</div>
@@ -8624,7 +8639,7 @@ const LEFT_SECTIONS = ['housing','transport','food','health','subscriptions','gi
    identical ("the two columns are Budget and Actual"), so a twelfth section
    joins both features or neither, and there is no hand-kept list to drift. */
 function billsDue(d) {
-  var out = { total: 0, count: 0, bySection: {} };
+  var out = { total: 0, count: 0, bySection: {}, rows: [] };
   if (!d) return out;
   LEFT_SECTIONS.forEach(function(sec) {
     var secTotal = 0;
@@ -8632,6 +8647,12 @@ function billsDue(d) {
       if (!r || !r.recurring || r.paid || r.exempt) return;
       var owed = parseAmt(r.budget) - parseAmt(r.actual);
       if (owed <= 0.005) return;
+      // The rows ride along so the card's panel can SHOW the bills instead of
+      // asserting a total. Same reason accountLinkedCharges returns rows: a
+      // number and the list that explains it can never disagree if they come
+      // from one pass.
+      out.rows.push({ id: r.id, section: sec, label: r.label || '(no label)',
+                      owed: owed, budget: parseAmt(r.budget), paidSoFar: parseAmt(r.actual) });
       secTotal += owed;
       out.count++;
     });
@@ -11388,6 +11409,9 @@ function set(id, val) {
 }
 
 var _incomeBreakdown = null;
+// Filled by recalc() alongside the other breakdown caches, so the Bills Due
+// panel and the card can never show different money.
+var _billsBreakdown = null;
 
 /* ── Pinning + dragging the summary breakdowns ────────────────
    Hovering gives a quick peek. Clicking pins the panel open so it can be
@@ -11486,6 +11510,95 @@ function hideSavingsBreakdown() {
   var pop = document.getElementById('savings-breakdown-pop');
   if (pop) pop.style.display = 'none';
 }
+
+/* ── Bills Due breakdown ──────────────────────────────────────
+   The other four summary cards all open a panel that shows their working;
+   Bills Due was the only one asserting a figure with nothing behind it — and
+   it is the one whose number is least obvious, because "which of my rows
+   counted as a bill" is not visible anywhere else.
+
+   Reads billsDue() rather than re-walking the sections, so the list and the
+   card can never describe different money (house rule 28). Pinned, each line
+   jumps to its row through the same jumpToLinkedRow() the card panel uses. */
+function _billsBreakdownPop() {
+  var pop = document.getElementById('bills-breakdown-pop');
+  if (!pop) { pop = document.createElement('div'); pop.id = 'bills-breakdown-pop'; document.body.appendChild(pop); }
+  return pop;
+}
+
+function showBillsBreakdown(anchor) {
+  /* Reads the figures recalc() already computed, exactly like _incomeBreakdown
+     and _balanceBreakdown do. Re-deriving "income minus expenses" here would
+     be a second copy of the app's most important sum — the thing that produced
+     four drifting helpers last time (house rule 28). */
+  var b = _billsBreakdown;
+  if (!b || !b.info.total) return;         // nothing to explain
+  var info = b.info;
+  var pop = _billsBreakdownPop();
+  var pinned = breakdownIsPinned('bills-breakdown-pop');
+  var esc = function(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
+  var html = pinned ? breakdownHeader('Bills due') : '<div class="ibp-title">Bills due</div>';
+
+  // Grouped by section, in the tracker's own order, so the list reads in the
+  // same sequence as the page behind it.
+  LEFT_SECTIONS.forEach(function(sec) {
+    var rows = info.rows.filter(function(r) { return r.section === sec; });
+    if (!rows.length) return;
+    rows.sort(function(a, b) { return b.owed - a.owed; });
+    rows.forEach(function(r) {
+      html += '<div class="ibp-row' + (pinned ? ' bdp-jump' : '') + '"' +
+        (pinned ? ' data-sec="' + esc(r.section) + '" data-row="' + esc(r.id) + '"' : '') + '>' +
+        '<span>' + esc(r.label) + '<span class="bdp-sec">' + esc(getSectionName(sec)) + '</span></span>' +
+        '<span class="ibp-amt">' + _fmtMoney(r.owed) +
+        // A part-paid bill shows what is still owed, not its budget. Without
+        // this note the line looks like the wrong number.
+        (r.paidSoFar > 0.005 ? ' <span class="bdp-part">of ' + _fmtMoney(r.budget) + '</span>' : '') +
+        '</span></div>';
+    });
+  });
+
+  html += '<div class="ibp-row ibp-total"><span>Still to pay</span><span class="ibp-amt">' +
+    _fmtMoney(info.total) + '</span></div>';
+  // The bridge, spelled out: this is where the card's sub-line comes from.
+  var free = b.free;
+  html += '<div class="ibp-row ibp-sub"><span>Net balance</span><span class="ibp-amt">' + _fmtMoney(b.balance) + '</span></div>' +
+    '<div class="ibp-row ibp-sub"><span>Less bills due</span><span class="ibp-amt">−' + _fmtMoney(info.total) + '</span></div>' +
+    '<div class="ibp-row ibp-total"><span>' + (free >= 0 ? 'Left after these' : 'Short by') +
+      '</span><span class="ibp-amt ' + (free >= 0 ? 'bdp-free' : 'bdp-short') + '">' +
+      _fmtMoney(Math.abs(free)) + '</span></div>';
+  if (pinned) html += '<div style="font-size:9.5px;color:var(--steel);padding-top:5px;">Tap a bill to jump to it</div>';
+
+  pop.innerHTML = html;
+  if (pinned) {
+    pop.querySelectorAll('.bdp-jump').forEach(function(el) {
+      el.onclick = function() { jumpToLinkedRow(el.getAttribute('data-sec'), el.getAttribute('data-row')); };
+    });
+  }
+  pop.style.display = 'block';
+  if (pinned) return;              // stay where the user dragged it
+  var r = anchor.getBoundingClientRect();
+  var pw = pop.offsetWidth, ph = pop.offsetHeight;
+  var left = Math.max(12, Math.min(window.innerWidth - pw - 12, r.right - pw));
+  var top = r.bottom + 8;
+  if (top + ph > window.innerHeight - 12) top = Math.max(12, r.top - ph - 8);
+  pop.style.left = left + 'px';
+  pop.style.top = top + 'px';
+}
+
+function hideBillsBreakdown() {
+  if (breakdownIsPinned('bills-breakdown-pop')) return;
+  var pop = document.getElementById('bills-breakdown-pop');
+  if (pop) pop.style.display = 'none';
+}
+
+function toggleBillsBreakdown(anchor) {
+  if (breakdownIsPinned('bills-breakdown-pop')) { unpinBreakdown(); return; }
+  if (!_billsBreakdown || !_billsBreakdown.info.total) return;
+  pinBreakdown('bills-breakdown-pop');
+  showBillsBreakdown(anchor);
+}
+document.addEventListener('scroll', hideBillsBreakdown, true);
+window.addEventListener('resize', hideBillsBreakdown);
 
 function toggleSavingsBreakdown(anchor) {
   if (breakdownIsPinned('savings-breakdown-pop')) { unpinBreakdown(); return; }
@@ -12236,6 +12349,7 @@ function recalc() {
      helpers happened (house rule 28). The two cards read as arithmetic:
      Net Balance − Bills Due = what's left. */
   const _bills = billsDue(d);
+  _billsBreakdown = { info: _bills, balance: balance, free: balance - _bills.total };
   set('sum-bills', fmt(_bills.total));
   const billsEl = document.getElementById('sum-bills');
   const billsSub = document.getElementById('bills-sum-sub');
@@ -12256,10 +12370,17 @@ function recalc() {
     }
   }
   if (billsCard) {
+    // Only advertise the panel when there is one, same as the savings card.
+    billsCard.style.cursor = _bills.total > 0 ? 'help' : 'default';
     billsCard.title = _bills.total > 0
-      ? _bills.count + (_bills.count === 1 ? ' recurring bill is' : ' recurring bills are') +
+      ? _bills.count + (_bills.count === 1 ? ' recurring bill' : ' recurring bills') +
         ' budgeted this month and not ticked paid'
       : 'Recurring rows you have not ticked paid show up here';
+  }
+  // A pinned panel has to follow the numbers while it is open — tick a bill
+  // paid and it must leave the list, not sit there contradicting the card.
+  if (breakdownIsPinned('bills-breakdown-pop') && billsCard) {
+    if (_bills.total > 0) showBillsBreakdown(billsCard); else unpinBreakdown();
   }
   const savEl = document.getElementById('sum-savings');
   if (savEl) savEl.style.color = savA > 0 ? 'var(--sage-dark)' : '';
