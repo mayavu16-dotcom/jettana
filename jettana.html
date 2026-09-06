@@ -1136,7 +1136,14 @@ body.show-sav-goal.font-large .sec-footer-savings {
 /* The section chip is the one thing on the line that may give way. The check,
    the date and the amount are all fixed, and the label is the point of the
    line, so a long section name ellipses rather than crushing everything. */
-.ctp-sec { font-size: 9.5px; color: var(--steel); flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* max-width is load-bearing, not decoration. .ctp-label is flex:1 1 0, so its
+   basis is ZERO — it grows into leftover space and there is nothing left to
+   give when a renamed section eats the row. Without a cap the label collapses
+   to 0px and the line shows a section name and no name at all, which is the
+   opposite of the intent above. 33% of the 280px row is ~92px; the widest
+   default name (Housing & Utilities) measures 77px, so no stock section is
+   touched — a long custom name ellipses and the peek reads it back. */
+.ctp-sec { font-size: 9.5px; color: var(--steel); flex-shrink: 1; min-width: 0; max-width: 33%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ctp-date { font-size: 9.5px; color: var(--steel); flex-shrink: 0; opacity: 0.85; white-space: nowrap; }
 .ctp-latest { font-size: 10px; color: var(--steel); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ctp-amt { font-size: 11.5px; flex-shrink: 0; min-width: 60px; text-align: right; }
@@ -12449,10 +12456,21 @@ function ctpJumpLine(r, inner, extraClass) {
   if (!r || !r.id || !r.section) {
     return '<div class="ctp-row' + extraClass + '">' + inner + '</div>';
   }
+  // Deliberately NO title attribute. A native tooltip on the line would fight
+  // the full-text peek that pops when a label is cut off — two tooltips over
+  // one line. What the line does is said once, in the panel's sub-heading.
   return '<button type="button" class="ctp-row ctp-jump' + extraClass + '"' +
-    ' data-jump-sec="' + escHtml(r.section) + '" data-jump-id="' + escHtml(r.id) + '"' +
-    ' title="Go to this expense">' + inner +
+    // No aria-label either: it would REPLACE the accessible name, so a screen
+    // reader would hear "go to this expense" instead of "Netflix, Subscriptions,
+    // Sep 1, $18.00". The line's own text is the better name.
+    ' data-jump-sec="' + escHtml(r.section) + '" data-jump-id="' + escHtml(r.id) + '">' + inner +
     '<span class="ctp-go" aria-hidden="true">›</span></button>';
+}
+
+/* "click" on a mouse, "tap" on a phone. Read at build time, not cached at
+   parse time — a hybrid laptop can change pointer type mid-session. */
+function ctpTapWord() {
+  return (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ? 'tap' : 'click';
 }
 
 /* Wait for a smooth scroll to actually stop before measuring anything.
@@ -12544,7 +12562,8 @@ function buildCardTxHtml(rowId, d, section) {
     '<div class="ctp-title"><span class="ctb-dot" style="width:8px;height:8px;border-radius:50%;background:' +
       escHtml(row._cardLink || 'transparent') + ';"></span>' + escHtml(cardName) + '</div>' +
     '<div class="ctp-sub">' + info.rows.length +
-      (info.rows.length === 1 ? ' charge' : ' charges') + ' this month</div>' +
+      (info.rows.length === 1 ? ' charge' : ' charges') + ' this month' +
+      (info.rows.length ? ' · ' + ctpTapWord() + ' one to jump to it' : '') + '</div>' +
     (info.latest ? '<div class="ctp-latest">Latest: ' + escHtml(info.latest.label) +
       ' · ' + escHtml(formatDateLabel(info.latest.date)) + '</div>' : '') +
     '</div>';
@@ -12607,7 +12626,10 @@ function buildAccountTxHtml(rowId, d) {
     '<button class="ctp-close" onclick="hideCardTxPop()" title="Close" aria-label="Close">×</button>' +
     '<div class="ctp-title"><span class="ctb-dot" style="width:8px;height:8px;border-radius:50%;background:' +
       escHtml(info.color || 'transparent') + ';"></span>' + escHtml(name) + '</div>' +
-    '<div class="ctp-sub">' + n + (n === 1 ? ' item' : ' items') + ' this month</div>' +
+    '<div class="ctp-sub">' + n + (n === 1 ? ' item' : ' items') + ' this month' +
+      // Only the expense lines jump; an account with nothing but deposits and
+      // withdrawals must not advertise something none of its lines do.
+      (info.rows.length ? ' · ' + ctpTapWord() + ' an expense to jump to it' : '') + '</div>' +
     (info.latest ? '<div class="ctp-latest">Latest: ' + escHtml(info.latest.label) +
       ' · ' + escHtml(formatDateLabel(info.latest.date)) + '</div>' : '') +
     '</div>';
@@ -23674,12 +23696,20 @@ function renderGPChart() {
     }
     return peek;
   }
+  /* The peek was built for the row label, which is an <input> holding its text
+     in .value. The card/account panel cuts text off the same way but in plain
+     <span>s, so the text has to be read from whichever place the element keeps
+     it. Everything below — overflow test, placement, dismissal — is shared. */
+  var PEEK_TEXT_SEL = '.ctp-label, .ctp-sec, .ctp-latest';
+  function peekTextOf(el) {
+    return el.tagName === 'INPUT' ? el.value : (el.textContent || '').trim();
+  }
   function isOverflowing(inp) {
-    return inp.value && inp.scrollWidth > inp.clientWidth + 2;
+    return !!peekTextOf(inp) && inp.scrollWidth > inp.clientWidth + 2;
   }
   function showPeek(inp) {
     var p = ensurePeek();
-    p.textContent = inp.value;
+    p.textContent = peekTextOf(inp);
     p.style.display = 'block';
     var r = inp.getBoundingClientRect();
     // measure, then place above the input (below if no room)
@@ -23722,6 +23752,7 @@ function renderGPChart() {
   document.addEventListener('mouseover', function(e) {
     if (coarse) return;
     var inp = (e.target.closest && e.target.closest('.erow-label-input'))
+           || (e.target.closest && e.target.closest(PEEK_TEXT_SEL))
            || lockedLabelAt(e.clientX, e.clientY, e.target);
     if (!inp || document.activeElement === inp) return;
     if (isOverflowing(inp)) showPeek(inp); else hidePeek();
@@ -23730,7 +23761,8 @@ function renderGPChart() {
     if (!e.target.closest) return;
     // On a locked month the pointer never enters the input itself, so leaving
     // the ROW is what has to dismiss it.
-    if (e.target.closest('.erow-label-input') || e.target.closest('.erow')) hidePeek();
+    if (e.target.closest('.erow-label-input') || e.target.closest('.erow')
+        || e.target.closest(PEEK_TEXT_SEL) || e.target.closest('.ctp-row')) hidePeek();
   });
   document.addEventListener('mousedown', hidePeek);
 
