@@ -2779,6 +2779,15 @@ body.sidebar-open #calc-panel { display: none !important; }
     top: 0 !important;
     right: 0 !important;
   }
+  /* The ⌫ carries an INLINE font-size:16px, so it is the one key that ignores
+     both the base rule and the desktop block — 16px in both modes. That reads
+     correctly in a 44px desktop key (16/44 = 0.364, the same weight as + − × ÷)
+     but small in a 56px phone key (16/56 = 0.286), which is why it stood out as
+     the runt of the row. 20px restores the desktop's proportion (20/56 = 0.357).
+     Scaled to the KEY, not to real-world pixels — the mistake made with the ×.
+     Desktop keeps its inline 16px untouched. The id exists only so this rule
+     can beat the inline style without a brittle :nth-child(4). */
+  #calc-back { font-size: 20px !important; }
 }
 .calc-btn.calc-eq:active { background: var(--sage-dark); }
 #calc-fab:hover  { transform: scale(1.08); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
@@ -6558,7 +6567,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
     <button ontouchstart="event.preventDefault();calcInput('C')" onclick="calcInput('C')"   class="calc-btn calc-fn">C</button>
     <button ontouchstart="event.preventDefault();calcInput('+/-')" onclick="calcInput('+/-')" class="calc-btn calc-fn">+/−</button>
     <button ontouchstart="event.preventDefault();calcInput('%')" onclick="calcInput('%')"   class="calc-btn calc-fn">%</button>
-    <button ontouchstart="event.preventDefault();calcInput('⌫')" onclick="calcInput('⌫')"   class="calc-btn calc-fn" style="font-size:16px;">⌫</button>
+    <button id="calc-back" ontouchstart="event.preventDefault();calcInput('⌫')" onclick="calcInput('⌫')"   class="calc-btn calc-fn" style="font-size:16px;">⌫</button>
     <button ontouchstart="event.preventDefault();calcInput('7')" onclick="calcInput('7')"   class="calc-btn">7</button>
     <button ontouchstart="event.preventDefault();calcInput('8')" onclick="calcInput('8')"   class="calc-btn">8</button>
     <button ontouchstart="event.preventDefault();calcInput('9')" onclick="calcInput('9')"   class="calc-btn">9</button>
