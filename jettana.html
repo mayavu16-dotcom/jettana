@@ -1082,7 +1082,7 @@ body.show-sav-goal.font-large .sec-footer-savings {
 .card-tx-pop {
   position: fixed;
   z-index: 9000;
-  width: 292px;   /* 268 -> 292: the charge lines now carry a date too */
+  width: 304px;   /* 268 -> 292 (dates) -> 304 (the jump chevron) */
   max-height: 340px;
   overflow-y: auto;
   background: var(--white);
@@ -1156,6 +1156,62 @@ body.show-sav-goal.font-large .sec-footer-savings {
 }
 .ctp-empty { padding: 12px 11px; font-size: 11px; color: var(--steel); line-height: 1.5; }
 .ctp-note { font-size: 10px; color: var(--steel); line-height: 1.45; margin-top: 6px; }
+
+/* ── Charge lines that jump to the expense they name ──────────
+   Only the expense lines get this. A deposit or withdrawal lives inside the
+   account row itself, so there is nothing to scroll to and its line stays a
+   plain div — which is why the affordance has to be visible on the line and
+   not just on the panel. Rendered as a real <button>, so keyboard focus and
+   Enter/Space come free (same reasoning as the Month-over-Month tiles). */
+.ctp-row.ctp-jump {
+  width: 100%;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+}
+.ctp-row.ctp-jump:hover { background: var(--mist-light); }
+.dark .ctp-row.ctp-jump:hover { background: rgba(255,255,255,0.06); }
+.ctp-row.ctp-jump:focus-visible { outline: 2px solid var(--sage); outline-offset: -2px; }
+/* The chevron is the only thing separating a clickable line from a plain one
+   on a touch screen, where there is no hover to reveal anything. */
+.ctp-go { flex-shrink: 0; width: 7px; font-size: 11px; color: var(--steel); opacity: 0.5; text-align: right; }
+.ctp-row.ctp-jump:hover .ctp-go { opacity: 1; color: var(--sage-dark); }
+.dark .ctp-row.ctp-jump:hover .ctp-go { opacity: 1; color: var(--sage); }
+@media (pointer: coarse) {
+  /* 5px padding is a 22px line, which is 12 real pixels once the 700px mobile
+     viewport is scaled to the screen — far too small to aim a thumb at. */
+  .ctp-row.ctp-jump { padding-top: 13px; padding-bottom: 13px; }
+  /* The mobile viewport is pinned to 700px and scaled to the screen, so an
+     11px chevron renders at ~6 real pixels — not an affordance, just noise.
+     18px lands at ~10, in line with the date text beside it. */
+  .ctp-go { font-size: 18px; width: 11px; opacity: 0.8; }
+}
+
+/* The landing flash. A box-shadow RING would be sliced off at both ends —
+   .sec-card and .sec-body are both overflow:hidden with no side padding — so
+   this is an INSET ring plus a tint, which cannot be clipped.
+   Specificity is (0,3,0) on purpose: .erow:hover and .erow:nth-child(even) are
+   both (0,2,0) and could otherwise repaint the row mid-flash. */
+@keyframes jump-flash-fade {
+  0%   { background: rgba(217,182,74,0.30); box-shadow: inset 0 0 0 2px rgba(217,182,74,0.90); }
+  70%  { background: rgba(217,182,74,0.26); box-shadow: inset 0 0 0 2px rgba(217,182,74,0.80); }
+  100% { background: rgba(217,182,74,0);    box-shadow: inset 0 0 0 2px rgba(217,182,74,0); }
+}
+.tracker-grid .erow.jump-flash { animation: jump-flash-fade 1.6s ease-out 1 forwards; }
+/* Finite, so it ends on its own — but someone who asked for less motion still
+   needs to see WHICH row, so the tint holds instead of animating. */
+@media (prefers-reduced-motion: reduce) {
+  .tracker-grid .erow.jump-flash {
+    animation: none;
+    background: rgba(217,182,74,0.26);
+    box-shadow: inset 0 0 0 2px rgba(217,182,74,0.80);
+  }
+}
 
 
 .row-date-wrap {
@@ -12253,7 +12309,8 @@ function accountLinkedCharges(acctRow, monthData) {
         var budget = parseAmt(row[cfg.k1]);
         var amount = actual > 0 ? actual : budget;
         if (amount <= 0) return;
-        out.rows.push({ label: row.label || '(no label)', section: sec, amount: amount, date: expenseDate });
+        // id rides along so the panel line can scroll to the row it names.
+        out.rows.push({ id: row.id, label: row.label || '(no label)', section: sec, amount: amount, date: expenseDate });
         out.chargeTotal += amount;
       });
     });
@@ -12312,6 +12369,8 @@ function cardLinkedCharges(debtRow, monthData) {
       var actual = parseAmt(row[cfg.k2]);
       if (actual <= 0) return;
       out.rows.push({
+        // id rides along so the panel line can scroll to the row it names.
+        id: row.id,
         label: row.label || '(no label)',
         section: sec,
         amount: actual,
@@ -12379,6 +12438,84 @@ function hideCardTxPop() {
   _cardTxPopId = null;
 }
 
+/* One charge line in the panel. Expense lines become a real <button> that
+   scrolls to the row they name; anything without an id falls back to the
+   plain div it has always been, so a line can never LOOK clickable and do
+   nothing. The section and row id go in data attributes rather than into an
+   inline onclick: a label or id containing a quote would break out of the
+   attribute, and escHtml does not escape single quotes. */
+function ctpJumpLine(r, inner, extraClass) {
+  extraClass = extraClass || '';
+  if (!r || !r.id || !r.section) {
+    return '<div class="ctp-row' + extraClass + '">' + inner + '</div>';
+  }
+  return '<button type="button" class="ctp-row ctp-jump' + extraClass + '"' +
+    ' data-jump-sec="' + escHtml(r.section) + '" data-jump-id="' + escHtml(r.id) + '"' +
+    ' title="Go to this expense">' + inner +
+    '<span class="ctp-go" aria-hidden="true">›</span></button>';
+}
+
+/* Wait for a smooth scroll to actually stop before measuring anything.
+   Reading a rect on the next line gives the position the page is scrolling
+   AWAY from — the same class of mistake as reading a transitioned colour
+   immediately (house rule 25). Gives up after ~1s so it can never hang. */
+function _afterScrollSettles(fn) {
+  var last = -1, still = 0, tries = 0;
+  (function tick() {
+    var y = window.pageYOffset;
+    if (y === last) still++; else { still = 0; last = y; }
+    if (still >= 3 || ++tries > 60) { fn(); return; }
+    requestAnimationFrame(tick);
+  })();
+}
+
+/* The panel is pinned on purpose — you can tick rows off while it stays on
+   screen — so jumping does NOT close it. But it is position:fixed, so it can
+   end up sitting on top of the very row it just sent you to. Move it only
+   when it actually collides, and only then. */
+function _keepPanelClearOf(el) {
+  var pop = document.getElementById('card-tx-pop');
+  if (!pop || !el) return;
+  var p = pop.getBoundingClientRect(), r = el.getBoundingClientRect();
+  if (!(p.left < r.right && p.right > r.left && p.top < r.bottom && p.bottom > r.top)) return;
+  var below = r.bottom + 8;
+  var above = r.top - p.height - 8;
+  var top;
+  if (below + p.height <= window.innerHeight - 8) top = below;
+  else if (above >= 8) top = above;
+  // Neither side fits: a tall panel on a short screen has no clear spot, so
+  // clamp it into view rather than push it off the bottom.
+  else top = Math.max(8, window.innerHeight - p.height - 8);
+  pop.style.top = top + 'px';
+}
+
+/* Scroll to the expense row a panel line names and flash it.
+   READ-ONLY — it scrolls and highlights and writes nothing, so a locked month
+   needs no guard here. */
+function jumpToLinkedRow(section, rowId) {
+  var card = document.querySelector('.sec-card[data-section-id="' + section + '"]');
+  // A collapsed section has max-height 0, so the row has no real position
+  // until the 0.3s expand has run. Measuring before that lands on the header.
+  var wasCollapsed = !!(card && card.classList.contains('collapsed'));
+  if (wasCollapsed) toggleSection(section);
+  setTimeout(function() {
+    var list = document.getElementById('rows-' + section);
+    var el = list ? list.querySelector('.erow[data-id="' + rowId + '"]') : null;
+    if (!el) return;   // row deleted, or its section is not on screen
+    var topbar = document.querySelector('.topbar');
+    var offset = (topbar ? topbar.getBoundingClientRect().height : 0) + 14;
+    var y = el.getBoundingClientRect().top + window.pageYOffset - offset;
+    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+    // Restart the animation when the same line is clicked twice in a row —
+    // re-adding a class the element already has does nothing on its own.
+    el.classList.remove('jump-flash');
+    void el.offsetWidth;
+    el.classList.add('jump-flash');
+    setTimeout(function() { el.classList.remove('jump-flash'); }, 1700);
+    _afterScrollSettles(function() { _keepPanelClearOf(el); });
+  }, wasCollapsed ? 320 : 0);
+}
+
 /* Popover body, built separately from the popover itself so it can be rebuilt
    in place while the panel stays open — the panel is pinned until the user
    closes it, and its whole purpose is cross-referencing against the sections,
@@ -12417,15 +12554,15 @@ function buildCardTxHtml(rowId, d, section) {
       'Set a number color on an expense row to have it counted here.</div>';
   } else {
     info.rows.forEach(function(r) {
-      html += '<div class="ctp-row' + (r.paid ? ' is-paid' : '') + '">' +
+      html += ctpJumpLine(r,
         '<span class="ctp-check">' + (r.paid ? '✓' : '') + '</span>' +
         '<span class="ctp-label">' + escHtml(r.label) + '</span>' +
         '<span class="ctp-sec">' + escHtml(secName(r.section)) + '</span>' +
         // Undated charges show nothing at all. A repeated "no date" label
         // would draw the eye straight to what is missing.
         (r.date ? '<span class="ctp-date">' + escHtml(formatDateLabel(r.date)) + '</span>' : '') +
-        '<span class="ctp-amt">' + money(r.amount) + '</span>' +
-        '</div>';
+        '<span class="ctp-amt">' + money(r.amount) + '</span>',
+        r.paid ? ' is-paid' : '');
     });
     html += '<div class="ctp-foot">' +
       '<div class="ctp-fline"><span>Charges this month</span><span>' + money(info.chargeTotal) + '</span></div>';
@@ -12482,14 +12619,16 @@ function buildAccountTxHtml(rowId, d) {
   }
 
   info.rows.forEach(function(r) {
-    html += '<div class="ctp-row">' +
+    html += ctpJumpLine(r,
       '<span class="ctp-check">−</span>' +
       '<span class="ctp-label">' + escHtml(r.label) + '</span>' +
       '<span class="ctp-sec">' + escHtml(secName(r.section)) + '</span>' +
       (r.date ? '<span class="ctp-date">' + escHtml(formatDateLabel(r.date)) + '</span>' : '') +
-      '<span class="ctp-amt">' + money(r.amount) + '</span>' +
-      '</div>';
+      '<span class="ctp-amt">' + money(r.amount) + '</span>', '');
   });
+  // Deposits and withdrawals stay plain divs. They live inside this account
+  // row's own entries — there is no separate expense row to scroll to, and a
+  // line that looks clickable but is not is worse than one that never did.
   info.txs.forEach(function(t) {
     html += '<div class="ctp-row">' +
       '<span class="ctp-check">' + (t.withdrawal ? '−' : '+') + '</span>' +
@@ -12552,7 +12691,13 @@ function toggleCardTxPop(ev, rowId, section) {
   pop.className = 'card-tx-pop';
   pop.id = 'card-tx-pop';
   pop.innerHTML = html;
-  pop.addEventListener('click', function(e) { e.stopPropagation(); });
+  // Delegated, so it survives refreshCardTxPop() replacing the whole innerHTML
+  // while the panel stays open.
+  pop.addEventListener('click', function(e) {
+    e.stopPropagation();
+    var line = e.target && e.target.closest ? e.target.closest('.ctp-jump') : null;
+    if (line && line.dataset.jumpId) jumpToLinkedRow(line.dataset.jumpSec, line.dataset.jumpId);
+  });
   document.body.appendChild(pop);
 
   var btn = ev && ev.currentTarget ? ev.currentTarget : document.getElementById('ctb-' + rowId);
