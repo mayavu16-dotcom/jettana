@@ -1120,6 +1120,14 @@ body.show-sav-goal.font-large .sec-footer-savings {
 @media (pointer: coarse) {
   .ctp-close { width: 30px; height: 30px; font-size: 18px; top: 3px; right: 3px; }
   .ctp-head { padding-right: 38px; }
+  /* 304px is a DESKTOP size: there the panel floats over the tracker cards and
+     staying small is the point, because you read the cards through the gap.
+     On a phone it is an overlay with nothing to avoid, and the layout viewport
+     is a fixed 700px, so 304 left 57% of the width unused while 7 of 12 real
+     charge names were cut off. .ctp-label is flex:1, so every pixel added here
+     goes to the name. Measured: 0 of 12 cut at 440, and 260px of viewport
+     still clear so it does not read as a takeover. */
+  .card-tx-pop { width: 440px; }
 }
 .ctp-title { font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px; }
 .ctp-sub { font-size: 10.5px; color: var(--steel); margin-top: 2px; }
