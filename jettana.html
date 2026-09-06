@@ -8622,37 +8622,49 @@ const LEFT_SECTIONS = ['housing','transport','food','health','subscriptions','gi
    state — spent, committed, free — and it is COMPUTED, never stored
    (house rule 22): the two signals it needs are already on the row.
 
-   What counts as a bill, decided with Maya:
+   What counts as a bill:
      • the row is marked RECURRING — the user's own statement that this
        repeats every month, which is as close to "bill" as the data gets,
        and an explicit choice rather than a guess about the section
      • it is NOT ticked paid
      • it is not exempt (exempt is excluded from every other total too)
-     • budget − actual > 0
 
-   The amount is budget MINUS actual, never the whole budget. Any actual
-   already entered is counted in Total Expenses, so charging the full budget
-   here would count the same money twice on one screen. A part-paid bill
-   contributes only the remainder.
+   HOW MUCH is owed, and this is the part that is easy to get wrong:
+   Budget is an ESTIMATE of the expense. Actual is the REAL amount, entered
+   once the user knows it. Neither field says anything about payment — the
+   STRIKE-THROUGH (paid) is what says the money has gone. So an unpaid row
+   owes its actual when one has been entered, and its budget when one has
+   not; "budget − actual" is a part-payment reading of two fields that do
+   not mean that, and it under-reports every bill whose real amount is known.
+
+   `notYetCounted` exists because Total Expenses sums the ACTUAL column
+   regardless of paid, so a bill with an actual entered has already been
+   taken out of Net Balance. Subtracting the whole of `total` from Net
+   Balance would remove that money twice. Only the estimate-only bills are
+   still to come off.
 
    Runs over the same sections as LEFT_SECTIONS on purpose — the rule is
    identical ("the two columns are Budget and Actual"), so a twelfth section
    joins both features or neither, and there is no hand-kept list to drift. */
 function billsDue(d) {
-  var out = { total: 0, count: 0, bySection: {}, rows: [] };
+  var out = { total: 0, notYetCounted: 0, count: 0, bySection: {}, rows: [] };
   if (!d) return out;
   LEFT_SECTIONS.forEach(function(sec) {
     var secTotal = 0;
     (d[sec] || []).forEach(function(r) {
       if (!r || !r.recurring || r.paid || r.exempt) return;
-      var owed = parseAmt(r.budget) - parseAmt(r.actual);
+      var actual = parseAmt(r.actual);
+      var budget = parseAmt(r.budget);
+      var known = actual > 0.005;
+      var owed = known ? actual : budget;
       if (owed <= 0.005) return;
+      if (!known) out.notYetCounted += owed;
       // The rows ride along so the card's panel can SHOW the bills instead of
       // asserting a total. Same reason accountLinkedCharges returns rows: a
       // number and the list that explains it can never disagree if they come
       // from one pass.
       out.rows.push({ id: r.id, section: sec, label: r.label || '(no label)',
-                      owed: owed, budget: parseAmt(r.budget), paidSoFar: parseAmt(r.actual) });
+                      owed: owed, known: known, budget: budget });
       secTotal += owed;
       out.count++;
     });
@@ -11550,20 +11562,32 @@ function showBillsBreakdown(anchor) {
         (pinned ? ' data-sec="' + esc(r.section) + '" data-row="' + esc(r.id) + '"' : '') + '>' +
         '<span>' + esc(r.label) + '<span class="bdp-sec">' + esc(getSectionName(sec)) + '</span></span>' +
         '<span class="ibp-amt">' + _fmtMoney(r.owed) +
-        // A part-paid bill shows what is still owed, not its budget. Without
-        // this note the line looks like the wrong number.
-        (r.paidSoFar > 0.005 ? ' <span class="bdp-part">of ' + _fmtMoney(r.budget) + '</span>' : '') +
+        // Say which number this is. A bill showing its real amount rather than
+        // the estimate it was budgeted at otherwise looks like a mistake.
+        (r.known ? '' : ' <span class="bdp-part">est.</span>') +
         '</span></div>';
     });
   });
 
   html += '<div class="ibp-row ibp-total"><span>Still to pay</span><span class="ibp-amt">' +
     _fmtMoney(info.total) + '</span></div>';
-  // The bridge, spelled out: this is where the card's sub-line comes from.
+  /* The bridge, spelled out — and it has to be spelled out honestly. Total
+     Expenses already counts the ACTUAL column whether or not a row is ticked
+     paid, so any bill whose real amount is known has come off Net Balance
+     already. Only the estimates are still to be taken off, which is why the
+     subtraction here is smaller than "Still to pay" whenever both kinds are
+     present. Showing the counted part explicitly is the only way the four
+     lines add up on screen. */
   var free = b.free;
-  html += '<div class="ibp-row ibp-sub"><span>Net balance</span><span class="ibp-amt">' + _fmtMoney(b.balance) + '</span></div>' +
-    '<div class="ibp-row ibp-sub"><span>Less bills due</span><span class="ibp-amt">−' + _fmtMoney(info.total) + '</span></div>' +
-    '<div class="ibp-row ibp-total"><span>' + (free >= 0 ? 'Left after these' : 'Short by') +
+  var counted = info.total - info.notYetCounted;
+  html += '<div class="ibp-row ibp-sub"><span>Net balance</span><span class="ibp-amt">' + _fmtMoney(b.balance) + '</span></div>';
+  if (counted > 0.005) {
+    html += '<div class="ibp-row ibp-sub" style="opacity:0.75;"><span>Already in your expenses</span><span class="ibp-amt">' + _fmtMoney(counted) + '</span></div>' +
+      '<div class="ibp-row ibp-sub"><span>Less the estimates</span><span class="ibp-amt">−' + _fmtMoney(info.notYetCounted) + '</span></div>';
+  } else {
+    html += '<div class="ibp-row ibp-sub"><span>Less bills due</span><span class="ibp-amt">−' + _fmtMoney(info.notYetCounted) + '</span></div>';
+  }
+  html += '<div class="ibp-row ibp-total"><span>' + (free >= 0 ? 'Left after these' : 'Short by') +
       '</span><span class="ibp-amt ' + (free >= 0 ? 'bdp-free' : 'bdp-short') + '">' +
       _fmtMoney(Math.abs(free)) + '</span></div>';
   if (pinned) html += '<div style="font-size:9.5px;color:var(--steel);padding-top:5px;">Tap a bill to jump to it</div>';
@@ -12349,7 +12373,9 @@ function recalc() {
      helpers happened (house rule 28). The two cards read as arithmetic:
      Net Balance − Bills Due = what's left. */
   const _bills = billsDue(d);
-  _billsBreakdown = { info: _bills, balance: balance, free: balance - _bills.total };
+  // free subtracts only the bills NOT already sitting in Total Expenses —
+  // see the note on notYetCounted in billsDue().
+  _billsBreakdown = { info: _bills, balance: balance, free: balance - _bills.notYetCounted };
   set('sum-bills', fmt(_bills.total));
   const billsEl = document.getElementById('sum-bills');
   const billsSub = document.getElementById('bills-sum-sub');
@@ -12358,7 +12384,7 @@ function recalc() {
   if (billsEl) billsEl.style.color = _bills.total > 0 ? (_isDark ? '#D9A21B' : '#A8720E') : '';
   if (billsSub) {
     if (_bills.total > 0) {
-      const free = balance - _bills.total;
+      const free = balance - _bills.notYetCounted;
       // The sub-line carries the number Maya actually wants: what is left once
       // the committed money is set aside. Named "left after", not "free to
       // spend" — it comes from the plan, not from a bank balance.
