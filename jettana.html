@@ -432,9 +432,19 @@ body {
 
 .summary-strip {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  /* 5 since Bills Due joined. Measured at 1280: five cards are 191px each and
+     "$3,200.00" still fits on one line; SIX would be 157px and the amount wraps
+     onto two lines, which is why the free-money figure rides in Bills Due's
+     sub-line instead of taking a card of its own. */
+  grid-template-columns: repeat(5, 1fr);
   gap: 12px;
   margin-bottom: 22px;
+}
+/* Two-column phone grid: four cards fill two rows and the fifth would sit
+   alone beside a gap, so it takes the whole third row. Same height either
+   way — it just stops looking like something fell off. */
+@media (max-width: 900px) {
+  .summary-strip > #bills-sum-card { grid-column: 1 / -1; }
 }
 
 .sum-card {
@@ -461,6 +471,11 @@ body {
 .sum-card.c-gold::after   { background: var(--gold); }
 .sum-card.c-teal::after   { background: var(--teal); }
 .sum-card.c-slate::after  { background: var(--steel); }
+/* Bills Due needs its own accent — c-gold is already Total Saved, and two
+   identical gold rules sitting next to each other read as one repeated card.
+   #C8850E is the amber already validated for both light and dark in the chart
+   palette, so it needs no per-mode variant. */
+.sum-card.c-amber::after  { background: #C8850E; }
 
 .sum-label {
   font-size: 9.5px;
@@ -1711,7 +1726,7 @@ body.show-sav-goal.font-large .sec-footer-savings {
   }
   .page-body { padding: 8px; }
   .tracker-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
-  .summary-strip { grid-template-columns: repeat(4,1fr); gap: 8px; }
+  .summary-strip { grid-template-columns: repeat(5,1fr); gap: 8px; }
   .sec-card { break-inside: avoid; }
 }
 
@@ -5781,6 +5796,14 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
           <div class="sum-amount" id="sum-savings">$0</div>
           <div class="sum-sub" id="savings-sum-sub">investments + savings</div>
         </div>
+        <!-- Bills Due is LAST on purpose. The order then never changes between
+             a phone and a desktop: five across on a wide screen, and the fifth
+             one full width on the third row of a two-column phone grid. -->
+        <div class="sum-card c-amber" id="bills-sum-card" style="position:relative;">
+          <div class="sum-label">Bills Due</div>
+          <div class="sum-amount" id="sum-bills">$0</div>
+          <div class="sum-sub" id="bills-sum-sub">nothing unpaid right now</div>
+        </div>
       </div>
 
       <div class="tracker-grid">
@@ -8576,6 +8599,47 @@ const SECTIONS = ['income','savings','housing','checking','transport','debt','fo
    all four, so they are excluded by this rule rather than by a hand-kept list.
    Declared here, above every caller, and never re-assigned lower down. */
 const LEFT_SECTIONS = ['housing','transport','food','health','subscriptions','gifts','misc'];
+
+/* ── Money that is committed but not yet spent ────────────────
+   Every figure on the dashboard was backward-looking: Total Expenses is what
+   HAS been spent, Net Balance is income minus that. A month with rent still
+   to pay therefore reads as if the money is available. This is the third
+   state — spent, committed, free — and it is COMPUTED, never stored
+   (house rule 22): the two signals it needs are already on the row.
+
+   What counts as a bill, decided with Maya:
+     • the row is marked RECURRING — the user's own statement that this
+       repeats every month, which is as close to "bill" as the data gets,
+       and an explicit choice rather than a guess about the section
+     • it is NOT ticked paid
+     • it is not exempt (exempt is excluded from every other total too)
+     • budget − actual > 0
+
+   The amount is budget MINUS actual, never the whole budget. Any actual
+   already entered is counted in Total Expenses, so charging the full budget
+   here would count the same money twice on one screen. A part-paid bill
+   contributes only the remainder.
+
+   Runs over the same sections as LEFT_SECTIONS on purpose — the rule is
+   identical ("the two columns are Budget and Actual"), so a twelfth section
+   joins both features or neither, and there is no hand-kept list to drift. */
+function billsDue(d) {
+  var out = { total: 0, count: 0, bySection: {} };
+  if (!d) return out;
+  LEFT_SECTIONS.forEach(function(sec) {
+    var secTotal = 0;
+    (d[sec] || []).forEach(function(r) {
+      if (!r || !r.recurring || r.paid || r.exempt) return;
+      var owed = parseAmt(r.budget) - parseAmt(r.actual);
+      if (owed <= 0.005) return;
+      secTotal += owed;
+      out.count++;
+    });
+    if (secTotal > 0) out.bySection[sec] = secTotal;
+    out.total += secTotal;
+  });
+  return out;
+}
 
 const CONFIGS = {
   income:        { ph: 'e.g. Salary, Side income…',   k1: 'planned',   k2: 'received',  mainKey: 'received' },
@@ -12165,6 +12229,38 @@ function recalc() {
   }
   const balEl = document.getElementById('sum-balance');
   if (balEl) balEl.style.color = balance >= 0 ? 'var(--sage)' : 'var(--blush)';
+
+  /* Bills Due, and the free figure underneath it. `balance` is reused rather
+     than re-derived — the whole point of the card is that it BRIDGES to Net
+     Balance, and a second copy of that sum is how the four drifting summing
+     helpers happened (house rule 28). The two cards read as arithmetic:
+     Net Balance − Bills Due = what's left. */
+  const _bills = billsDue(d);
+  set('sum-bills', fmt(_bills.total));
+  const billsEl = document.getElementById('sum-bills');
+  const billsSub = document.getElementById('bills-sum-sub');
+  const billsCard = document.getElementById('bills-sum-card');
+  const _isDark = document.body.classList.contains('dark');
+  if (billsEl) billsEl.style.color = _bills.total > 0 ? (_isDark ? '#D9A21B' : '#A8720E') : '';
+  if (billsSub) {
+    if (_bills.total > 0) {
+      const free = balance - _bills.total;
+      // The sub-line carries the number Maya actually wants: what is left once
+      // the committed money is set aside. Named "left after", not "free to
+      // spend" — it comes from the plan, not from a bank balance.
+      billsSub.innerHTML = '<span style="font-weight:600;color:' +
+        (free >= 0 ? 'var(--sage-dark)' : 'var(--blush)') + ';">' +
+        fmtLeftOver(free) + (free >= 0 ? ' left' : ' short') + '</span> after these';
+    } else {
+      billsSub.textContent = 'nothing unpaid right now';
+    }
+  }
+  if (billsCard) {
+    billsCard.title = _bills.total > 0
+      ? _bills.count + (_bills.count === 1 ? ' recurring bill is' : ' recurring bills are') +
+        ' budgeted this month and not ticked paid'
+      : 'Recurring rows you have not ticked paid show up here';
+  }
   const savEl = document.getElementById('sum-savings');
   if (savEl) savEl.style.color = savA > 0 ? 'var(--sage-dark)' : '';
 
@@ -12247,10 +12343,27 @@ function recalc() {
       // dust decides between "left" and "over" on a month that is exactly on
       // budget, and it can land on "over".
       if (Math.abs(remaining) < 0.005) remaining = 0;
+      /* "left" and "due" are the same arithmetic and opposite meanings.
+         Food's "$180 left" is money you MAY SPEND. Housing's "$1,540 left"
+         was money you OWE — the section's remainder was almost entirely rent
+         that had not been paid yet. One word now says which kind it is.
+         The NUMBER is untouched: it is still budget − actual, so the badge
+         still agrees with the footer and the Left column directly below it.
+         Only the word changes, and only when unpaid bills are the majority of
+         the remainder — a section that is mostly spending allowance keeps
+         "left" even if one small bill sits in it. */
+      var secDue = _bills.bySection[sec] || 0;
+      var mostlyBills = remaining > 0 && secDue > remaining / 2;
       pctEl.textContent = remaining >= 0
-        ? fmtLeftOver(remaining) + ' left'
+        ? fmtLeftOver(remaining) + (mostlyBills ? ' due' : ' left')
         : fmtLeftOver(remaining) + ' over';
       pctEl.className   = 'hdr-pct-label visible';
+      // Mixed sections get the split on hover rather than a longer badge.
+      if (secDue > 0 && remaining > 0 && Math.abs(secDue - remaining) > 0.005) {
+        pctEl.title = fmtLeftOver(secDue) + ' of this is unpaid bills';
+      } else {
+        pctEl.removeAttribute('title');
+      }
       if (pctRaw > 100) pctEl.classList.add('pct-over');
       else if (pctRaw >= 80) pctEl.classList.add('pct-approaching');
     }
