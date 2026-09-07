@@ -2992,6 +2992,24 @@ body.sidebar-open #calc-panel { display: none !important; }
 #bills-breakdown-pop .bdp-free { color: var(--sage-dark); }
 .dark #bills-breakdown-pop .bdp-free { color: var(--sage); }
 #bills-breakdown-pop .bdp-short { color: var(--blush); }
+/* The ✕/+ is a second target inside a row that is itself clickable, so it
+   needs a real hit area of its own. 20px at the panel's scale is small on a
+   phone; the coarse block below takes it to 26. */
+#bills-breakdown-pop .bdp-x {
+  font: inherit; font-size: 11px; line-height: 1;
+  width: 20px; height: 20px; margin-left: 7px; padding: 0;
+  border: none; border-radius: 5px; background: none;
+  color: var(--steel); opacity: 0.5; cursor: pointer; vertical-align: middle;
+}
+#bills-breakdown-pop .bdp-x:hover { opacity: 1; background: var(--mist-light); color: var(--blush); }
+#bills-breakdown-pop .bdp-back:hover { color: var(--sage-dark); }
+.dark #bills-breakdown-pop .bdp-x:hover { background: rgba(255,255,255,0.1); }
+.dark #bills-breakdown-pop .bdp-back:hover { color: var(--sage); }
+#bills-breakdown-pop .bdp-out { opacity: 0.6; }
+#bills-breakdown-pop .bdp-out .ibp-amt { text-decoration: line-through; }
+@media (pointer: coarse) {
+  #bills-breakdown-pop .bdp-x { width: 26px; height: 26px; font-size: 13px; opacity: 0.75; }
+}
 .dark #mchk-pop { background: #1E2A38; border-color: #2A3A4A; }
 .dark #mchk-pop input[type="text"] { border-color: #2A3A4A; }
 #expense-breakdown-pop {
@@ -8623,9 +8641,14 @@ const LEFT_SECTIONS = ['housing','transport','food','health','subscriptions','gi
    (house rule 22): the two signals it needs are already on the row.
 
    What counts as a bill:
-     • the row is marked RECURRING — the user's own statement that this
-       repeats every month, which is as close to "bill" as the data gets,
-       and an explicit choice rather than a guess about the section
+     • the row is marked RECURRING — but recurring only means "this happens
+       every month", which is NOT the same as "a fixed bill I owe". A grocery
+       or eating-out budget recurs and is an allowance, not a debt, and left
+       unchallenged a $600 recurring grocery budget was reported as $600 of
+       bills due. So recurring is the GUESS, and `_billClass: 'not'` on the
+       row is the user's override, set from the ✕ in the Bills Due panel.
+       Same shape as _invClass on a savings row: guess, then let them correct
+       it, and never argue with the correction.
      • it is NOT ticked paid
      • it is not exempt (exempt is excluded from every other total too)
 
@@ -8647,7 +8670,7 @@ const LEFT_SECTIONS = ['housing','transport','food','health','subscriptions','gi
    identical ("the two columns are Budget and Actual"), so a twelfth section
    joins both features or neither, and there is no hand-kept list to drift. */
 function billsDue(d) {
-  var out = { total: 0, notYetCounted: 0, count: 0, bySection: {}, rows: [] };
+  var out = { total: 0, notYetCounted: 0, count: 0, bySection: {}, rows: [], excluded: [] };
   if (!d) return out;
   LEFT_SECTIONS.forEach(function(sec) {
     var secTotal = 0;
@@ -8658,6 +8681,13 @@ function billsDue(d) {
       var known = actual > 0.005;
       var owed = known ? actual : budget;
       if (owed <= 0.005) return;
+      // Excluded rows are still LISTED, greyed, in the panel — otherwise the
+      // ✕ is a one-way door and there is no way to undo a mistap.
+      if (r._billClass === 'not') {
+        out.excluded.push({ id: r.id, section: sec, label: r.label || '(no label)',
+                            owed: owed, known: known, budget: budget });
+        return;
+      }
       if (!known) out.notYetCounted += owed;
       // The rows ride along so the card's panel can SHOW the bills instead of
       // asserting a total. Same reason accountLinkedCharges returns rows: a
@@ -9398,6 +9428,12 @@ function createFreshMonth(newKey) {
           _tDir: r._tDir || '',
           alloc: r.alloc || '',
           _cardLink: r._cardLink || '',
+          // Both of these are the user CORRECTING one of the app's guesses.
+          // Dropping them on a new month makes them re-correct it every month
+          // and looks like the app forgetting. _invClass was already being
+          // lost here before _billClass existed.
+          _billClass: r._billClass || '',
+          _invClass: r._invClass || '',
           _beginDate: beginDateForMonth(newKey, r._beginDate),
         };
         if (!all[newKey][section]) all[newKey][section] = [];
@@ -9576,6 +9612,7 @@ function showCopySectionModal(section) {
         _myContrib: row._myContrib || '', _empMatch: row._empMatch || '',
         _apy: row._apy || '', _fund: row._fund || '', _shares: row._shares || '',
         _price: row._price || '', _tDir: row._tDir || '',
+        _billClass: row._billClass || '', _invClass: row._invClass || '',
         _beginDate: beginDateForMonth(currentMonthKey, row._beginDate),
       };
     });
@@ -9658,6 +9695,7 @@ function copyMonthData(sourceKey, newKey) {
       _tDir: row._tDir || '',
       alloc: row.alloc || '',
       _cardLink: row._cardLink || '',
+      _billClass: row._billClass || '', _invClass: row._invClass || '',
       // Was omitted entirely here while the other two copy paths carried it
       // verbatim — three seeding paths, two behaviours. Now all three agree.
       _beginDate: beginDateForMonth(newKey, row._beginDate),
@@ -11548,6 +11586,10 @@ function showBillsBreakdown(anchor) {
   var info = b.info;
   var pop = _billsBreakdownPop();
   var pinned = breakdownIsPinned('bills-breakdown-pop');
+  // The ✕ writes, so it is not offered on a view-only month at all. saveAll()
+  // would refuse it anyway, but a control that only ever toasts an apology is
+  // worse than no control.
+  var locked = monthIsLocked(currentMonthKey);
   var esc = function(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
   var html = pinned ? breakdownHeader('Bills due') : '<div class="ibp-title">Bills due</div>';
 
@@ -11565,6 +11607,10 @@ function showBillsBreakdown(anchor) {
         // Say which number this is. A bill showing its real amount rather than
         // the estimate it was budgeted at otherwise looks like a mistake.
         (r.known ? '' : ' <span class="bdp-part">est.</span>') +
+        // The ✕ is a separate target from the row on purpose: tapping the ROW
+        // still jumps to it, which is what it does in the card panel too.
+        (pinned && !locked ? '<button class="bdp-x" data-drop="' + esc(r.id) + '" data-dsec="' + esc(r.section) +
+          '" title="Not a bill — leave it out of this total">✕</button>' : '') +
         '</span></div>';
     });
   });
@@ -11590,12 +11636,38 @@ function showBillsBreakdown(anchor) {
   html += '<div class="ibp-row ibp-total"><span>' + (free >= 0 ? 'Left after these' : 'Short by') +
       '</span><span class="ibp-amt ' + (free >= 0 ? 'bdp-free' : 'bdp-short') + '">' +
       _fmtMoney(Math.abs(free)) + '</span></div>';
-  if (pinned) html += '<div style="font-size:9.5px;color:var(--steel);padding-top:5px;">Tap a bill to jump to it</div>';
+  /* Excluded rows stay visible, greyed and uncounted, with a + to put them
+     back. Hiding them would make the ✕ a one-way door — you could drop a bill
+     by mistap and never find it again, and you would have no way to see WHY
+     the total is lower than you expect. */
+  if (pinned && info.excluded.length) {
+    html += '<div class="ibp-title" style="margin-top:10px;">Not counted as bills</div>';
+    info.excluded.forEach(function(r) {
+      html += '<div class="ibp-row ibp-sub bdp-out">' +
+        '<span>' + esc(r.label) + '<span class="bdp-sec">' + esc(getSectionName(r.section)) + '</span></span>' +
+        '<span class="ibp-amt">' + _fmtMoney(r.owed) +
+        (locked ? '' : '<button class="bdp-x bdp-back" data-add="' + esc(r.id) + '" data-dsec="' + esc(r.section) +
+          '" title="Count this as a bill again">+</button>') +
+        '</span></div>';
+    });
+  }
+  if (pinned) html += '<div style="font-size:9.5px;color:var(--steel);padding-top:5px;">' +
+    (locked ? 'This month is locked' : 'Tap a bill to jump to it · ✕ if it is not really a bill') + '</div>';
 
   pop.innerHTML = html;
   if (pinned) {
     pop.querySelectorAll('.bdp-jump').forEach(function(el) {
       el.onclick = function() { jumpToLinkedRow(el.getAttribute('data-sec'), el.getAttribute('data-row')); };
+    });
+    pop.querySelectorAll('.bdp-x').forEach(function(el) {
+      el.onclick = function(e) {
+        // Sits inside a row whose own click jumps the page — without this the
+        // panel would scroll away underneath the tap that dropped the bill.
+        e.stopPropagation();
+        setBillClass(el.getAttribute('data-dsec'),
+                     el.getAttribute('data-drop') || el.getAttribute('data-add'),
+                     el.hasAttribute('data-drop') ? 'not' : '', anchor);
+      };
     });
   }
   pop.style.display = 'block';
@@ -11607,6 +11679,21 @@ function showBillsBreakdown(anchor) {
   if (top + ph > window.innerHeight - 12) top = Math.max(12, r.top - ph - 8);
   pop.style.left = left + 'px';
   pop.style.top = top + 'px';
+}
+
+/* Move a row in or out of Bills Due. Mirrors flipSavingsClass: the override
+   lives on the row, it always beats the recurring guess, and recalc() repaints
+   the card and the pinned panel together so the two can never disagree. */
+function setBillClass(section, rowId, cls, anchor) {
+  if (monthIsLocked(currentMonthKey)) return;
+  var all = loadAll();
+  var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
+  var row = rows.find(function(r) { return r.id === rowId; });
+  if (!row) return;
+  if (cls === 'not') row._billClass = 'not'; else delete row._billClass;
+  saveAll(all);
+  recalc();                       // repaints the card; the panel follows below
+  showBillsBreakdown(anchor || document.getElementById('bills-sum-card'));
 }
 
 function hideBillsBreakdown() {
@@ -16776,6 +16863,7 @@ function duplicateRow(section, id) {
     paid: false, date: '', date2: '', note: '',
     recurring: src.recurring || false,
     paidColor: src.paidColor || '',
+    _billClass: src._billClass || '', _invClass: src._invClass || '',
   };
   // Insert directly after source row
   rows.splice(srcIdx + 1, 0, newRow);
