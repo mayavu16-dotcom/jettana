@@ -5039,6 +5039,60 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
      arrows in particular are useless if you can't see them. */
   .legend-del, .legend-copy-btn, .legend-paste-btn, .legend-move { opacity: 1; }
   .legend-move { font-size: 12px; padding: 4px 3px; }
+
+  /* ── The legend at thumb size ───────────────────────────────
+     220px was a desktop width. On a phone the layout viewport is a fixed
+     700px, so the panel was using 31% of the room available to it while
+     packing FIVE controls into a 20px-tall row: the dot measured 7 real
+     pixels, copy 8, the ✕ 6, and the two arrows sat next to each other as
+     identical 10px triangles. Mis-tapping was the only likely outcome.
+
+     Size alone was not the fix — the arrows being an adjacent matched pair
+     is what makes them confusable — so the actions move to a line of their
+     own as real bordered buttons. The wrap is done with flex-basis, not JS:
+     the name field claims the whole line minus the dot, so every button after
+     it is pushed onto the second line and they share it evenly. */
+  .legend-panel { width: 440px; }
+  .legend-hdr { padding: 13px 14px; }
+  .legend-hdr-title { font-size: 20px; }
+  .legend-hdr-toggle { font-size: 15px; }
+  .legend-row { flex-wrap: wrap; gap: 10px; row-gap: 8px; padding: 12px 14px 12px; }
+  .legend-color-dot { width: 36px; height: 36px; border-width: 2px; }
+  /* 36px dot + the 10px gap. Filling the rest of line 1 is what forces the
+     buttons onto line 2 — nothing here is positioned by hand. */
+  .legend-name-input { font-size: 20px; flex: 1 1 calc(100% - 46px); }
+  .legend-row .legend-move,
+  .legend-row .legend-copy-btn,
+  .legend-row .legend-del {
+    flex: 1 1 0; min-width: 0; height: 56px; padding: 0;
+    font-size: 22px; line-height: 1;
+    border: 1px solid var(--mist); border-radius: 10px;
+    background: var(--white); color: var(--steel);
+  }
+  .legend-row .legend-del { color: var(--blush); font-size: 26px; }
+  /* The paste button is a swatch of the copied colour, not a glyph — it has to
+     stay round and stay square-sided, so it takes a fixed cell rather than
+     stretching into an ellipse with the others. */
+  .legend-row .legend-paste-btn {
+    flex: 0 0 56px; width: 56px; height: 56px; border-radius: 50%;
+    border: 2px solid rgba(0,0,0,0.15) !important;
+    /* PRE-EXISTING BUG, not introduced here: the coarse block above lists
+       .legend-paste-btn at opacity 1, but the base `.legend-paste-btn` rule
+       further down sets opacity 0 at the SAME specificity and later in the
+       file, so it won. The paste swatch has been invisible on touch since it
+       shipped — you could copy a colour and never see anywhere to paste it.
+       This selector is (0,2,0) and wins outright. See CSS trap 18. */
+    opacity: 1;
+  }
+  .dark .legend-row .legend-move,
+  .dark .legend-row .legend-copy-btn,
+  .dark .legend-row .legend-del { background: transparent; }
+  .legend-add { font-size: 19px; padding: 16px 14px; }
+  /* Bigger rows overrun the 400px cap: eight cards came to 548px and the last
+     two — plus "+ Add card" — were silently cut off with overflow:hidden and
+     no scrollbar. The cap has to grow AND the body has to scroll. */
+  .legend-body { max-height: 60vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .legend-body.collapsed { max-height: 0; }
 }
 .legend-row:hover .legend-del,
 .legend-row:hover .legend-copy-btn,
