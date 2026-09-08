@@ -1687,7 +1687,7 @@ body.show-sav-goal.font-large .sec-footer-savings {
   .hamburger-btn, .theme-wrap, .drag-handle,
   .rec-dot, .note-indicator,
   #calc-fab, #calc-panel,
-  #income-breakdown-pop, #expense-breakdown-pop, #debt-total-pop, #mchk-pop, #savings-breakdown-pop, #bills-breakdown-pop,
+  #income-breakdown-pop, #expense-breakdown-pop, #debt-total-pop, #mchk-pop, #savings-breakdown-pop, #bills-breakdown-pop, #summary-breakdown-pop,
   #label-peek, .intention-swatches, .intention-dismiss { display: none !important; }
 
   /* Dates were being hidden along with the chrome. They're content — print them
@@ -2956,7 +2956,8 @@ body.sidebar-open #calc-panel { display: none !important; }
 #income-breakdown-pop,
 #balance-breakdown-pop,
 #savings-breakdown-pop,
-#bills-breakdown-pop {
+#bills-breakdown-pop,
+#summary-breakdown-pop {
   position: fixed; z-index: 10050; display: none;
   background: var(--white); color: var(--ink);
   border: 1px solid var(--mist); border-radius: 12px;
@@ -2964,12 +2965,12 @@ body.sidebar-open #calc-panel { display: none !important; }
   padding: 12px 14px; min-width: 210px; max-width: min(280px, calc(100vw - 24px));
   box-shadow: 0 8px 30px rgba(0,0,0,0.16); pointer-events: none;
 }
-#income-breakdown-pop .ibp-row, #balance-breakdown-pop .ibp-row, #savings-breakdown-pop .ibp-row, #bills-breakdown-pop .ibp-row { display: flex; justify-content: space-between; gap: 16px; padding: 2px 0; }
-#income-breakdown-pop .ibp-row.ibp-sub, #balance-breakdown-pop .ibp-row.ibp-sub, #savings-breakdown-pop .ibp-row.ibp-sub, #bills-breakdown-pop .ibp-row.ibp-sub { color: var(--steel); }
-#income-breakdown-pop .ibp-row.ibp-total, #balance-breakdown-pop .ibp-row.ibp-total, #savings-breakdown-pop .ibp-row.ibp-total, #bills-breakdown-pop .ibp-row.ibp-total { border-top: 1px solid var(--mist); margin-top: 6px; padding-top: 7px; font-weight: 700; }
+#income-breakdown-pop .ibp-row, #balance-breakdown-pop .ibp-row, #savings-breakdown-pop .ibp-row, #bills-breakdown-pop .ibp-row, #summary-breakdown-pop .ibp-row { display: flex; justify-content: space-between; gap: 16px; padding: 2px 0; }
+#income-breakdown-pop .ibp-row.ibp-sub, #balance-breakdown-pop .ibp-row.ibp-sub, #savings-breakdown-pop .ibp-row.ibp-sub, #bills-breakdown-pop .ibp-row.ibp-sub, #summary-breakdown-pop .ibp-row.ibp-sub { color: var(--steel); }
+#income-breakdown-pop .ibp-row.ibp-total, #balance-breakdown-pop .ibp-row.ibp-total, #savings-breakdown-pop .ibp-row.ibp-total, #bills-breakdown-pop .ibp-row.ibp-total, #summary-breakdown-pop .ibp-row.ibp-total { border-top: 1px solid var(--mist); margin-top: 6px; padding-top: 7px; font-weight: 700; }
 #income-breakdown-pop .ibp-neg, #balance-breakdown-pop .ibp-neg, #savings-breakdown-pop .ibp-neg { color: var(--blush); }
-#income-breakdown-pop .ibp-title, #balance-breakdown-pop .ibp-title, #savings-breakdown-pop .ibp-title, #bills-breakdown-pop .ibp-title { font-size: 10.5px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--steel); margin-bottom: 7px; }
-.dark #income-breakdown-pop, .dark #balance-breakdown-pop, .dark #savings-breakdown-pop, .dark #bills-breakdown-pop { background: #1E2A38; border-color: #2A3A4A; }
+#income-breakdown-pop .ibp-title, #balance-breakdown-pop .ibp-title, #savings-breakdown-pop .ibp-title, #bills-breakdown-pop .ibp-title, #summary-breakdown-pop .ibp-title { font-size: 10.5px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--steel); margin-bottom: 7px; }
+.dark #income-breakdown-pop, .dark #balance-breakdown-pop, .dark #savings-breakdown-pop, .dark #bills-breakdown-pop, .dark #summary-breakdown-pop { background: #1E2A38; border-color: #2A3A4A; }
 /* Balance panel only. The sign slot is a fixed width on every row (empty on
    positives) so the "$" lines up in a column; tabular figures keep the digits
    in step whatever the values are. Scoped by id — the income and savings
@@ -2992,6 +2993,33 @@ body.sidebar-open #calc-panel { display: none !important; }
 #bills-breakdown-pop .bdp-free { color: var(--sage-dark); }
 .dark #bills-breakdown-pop .bdp-free { color: var(--sage); }
 #bills-breakdown-pop .bdp-short { color: var(--blush); }
+
+/* Monthly Summary breakdown. Three columns instead of two, so it declares a
+   grid rather than inheriting the flex row the other panels use. */
+/* Wide enough that a section name and its "your budget" tag stay on ONE line
+   — at 330px "Food & Dining" pushed the tag onto a second row, which made the
+   line stop reading as a single fact and misaligned it against its amounts. */
+#summary-breakdown-pop { min-width: 264px; max-width: min(384px, calc(100vw - 24px)); }
+#summary-breakdown-pop .ibp-row {
+  display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: baseline;
+}
+#summary-breakdown-pop .ibp-row > span:first-child { min-width: 0; }
+#summary-breakdown-pop .ibp-amt { font-variant-numeric: tabular-nums; white-space: nowrap; min-width: 62px; text-align: right; }
+#summary-breakdown-pop .sbrk-head { font-size: 9.5px; letter-spacing: 0.4px; text-transform: uppercase; color: var(--steel); padding-bottom: 2px; }
+#summary-breakdown-pop .sbrk-muted { opacity: 0.65; }
+#summary-breakdown-pop .sbrk-tag {
+  font-size: 9px; text-transform: uppercase; letter-spacing: 0.3px;
+  color: #A8720E; border: 1px solid rgba(168,114,14,0.35);
+  border-radius: 4px; padding: 0 4px; margin-left: 4px; white-space: nowrap;
+}
+.dark #summary-breakdown-pop .sbrk-tag { color: #D9A21B; border-color: rgba(217,162,27,0.4); }
+
+/* The whole row is the target — the Planned cell alone is 45x27 real pixels
+   on a phone while the row is 375x27. */
+.bs-brk-row { cursor: help; transition: background 0.12s; }
+.bs-data-row.bs-brk-row:hover { background: var(--mist-light); }
+.dark .bs-data-row.bs-brk-row:hover { background: rgba(255,255,255,0.05); }
+.bs-total-row.bs-brk-row:hover { filter: brightness(1.06); }
 /* The ✕/+ is a second target inside a row that is itself clickable, so it
    needs a real hit area of its own. 20px at the panel's scale is small on a
    phone; the coarse block below takes it to 26. */
@@ -3159,7 +3187,8 @@ body.sidebar-open #calc-panel { display: none !important; }
 #balance-breakdown-pop.brk-pinned,
 #expense-breakdown-pop.brk-pinned,
 #savings-breakdown-pop.brk-pinned,
-#bills-breakdown-pop.brk-pinned {
+#bills-breakdown-pop.brk-pinned,
+#summary-breakdown-pop.brk-pinned {
   pointer-events: auto;                 /* interactive once pinned */
   box-shadow: 0 14px 44px rgba(0,0,0,0.26);
   border-color: var(--steel);
@@ -6114,9 +6143,9 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
           <div id="monthly-summary-col">
             <div class="bs-hdr bg-ink">Monthly Summary</div>
             <div class="bs-col-row"><span>Category</span><span>Planned</span><span>Actual</span></div>
-            <div class="bs-data-row"><span>Income <span class="plus-sign">(+)</span></span><span id="bs-inc-p">$0</span><span id="bs-inc-a">$0</span></div>
-            <div class="bs-data-row"><span>Spent <span class="minus-sign">(−)</span></span><span id="bs-exp-p">$0</span><span id="bs-exp-a">$0</span></div>
-            <div class="bs-total-row balance-row">
+            <div class="bs-data-row bs-brk-row" id="bs-row-income" onmouseenter="showSummaryBreakdown('income',this)" onmouseleave="hideSummaryBreakdown()" onclick="toggleSummaryBreakdown('income',this)" title="See how this is calculated"><span>Income <span class="plus-sign">(+)</span></span><span id="bs-inc-p">$0</span><span id="bs-inc-a">$0</span></div>
+            <div class="bs-data-row bs-brk-row" id="bs-row-spent" onmouseenter="showSummaryBreakdown('spent',this)" onmouseleave="hideSummaryBreakdown()" onclick="toggleSummaryBreakdown('spent',this)" title="See how this is calculated"><span>Spent <span class="minus-sign">(−)</span></span><span id="bs-exp-p">$0</span><span id="bs-exp-a">$0</span></div>
+            <div class="bs-total-row balance-row bs-brk-row" id="bs-row-balance" onmouseenter="showSummaryBreakdown('balance',this)" onmouseleave="hideSummaryBreakdown()" onclick="toggleSummaryBreakdown('balance',this)" title="See how this is calculated">
               <span>Balance</span><span id="bs-bal-p">$0</span><span id="bs-bal-a">$0</span>
             </div>
           </div>
@@ -11516,6 +11545,8 @@ var _incomeBreakdown = null;
 // Filled by recalc() alongside the other breakdown caches, so the Bills Due
 // panel and the card can never show different money.
 var _billsBreakdown = null;
+// Backs the three Monthly Summary rows. Filled by recalc() like the others.
+var _summaryBreakdown = null;
 
 /* ── Pinning + dragging the summary breakdowns ────────────────
    Hovering gives a quick peek. Clicking pins the panel open so it can be
@@ -11750,6 +11781,107 @@ function setBillClass(section, rowId, cls, anchor) {
   showBillsBreakdown(anchor || document.getElementById('bills-sum-card'));
 }
 
+/* ── Monthly Summary breakdowns ───────────────────────────────
+   One panel, three views. The whole ROW is the target, not the number: on a
+   phone the Planned cell is 45x27 real pixels and the row is 375x27. */
+var _summaryBrkKind = 'spent';        // what the panel is currently showing
+/* What was showing when it was PINNED. On a mouse, moving onto a row fires
+   mouseenter (which repaints the panel for that row) BEFORE the click lands,
+   so comparing the click against _summaryBrkKind always matched and every
+   click on a second row closed the panel instead of switching to it. */
+var _summaryPinnedKind = null;
+function _summaryBreakdownPop() {
+  var pop = document.getElementById('summary-breakdown-pop');
+  if (!pop) { pop = document.createElement('div'); pop.id = 'summary-breakdown-pop'; document.body.appendChild(pop); }
+  return pop;
+}
+
+function showSummaryBreakdown(kind, anchor) {
+  var b = _summaryBreakdown;
+  if (!b || !b.has) return;
+  // While pinned the panel belongs to the row that pinned it — drifting to
+  // whatever the pointer passes over would make it impossible to read one row
+  // while looking at another, which is the whole point of pinning.
+  if (breakdownIsPinned('summary-breakdown-pop') && _summaryPinnedKind) kind = _summaryPinnedKind;
+  _summaryBrkKind = kind;
+  var pop = _summaryBreakdownPop();
+  var pinned = breakdownIsPinned('summary-breakdown-pop');
+  var esc = function(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
+  var title = kind === 'income' ? 'Income' : kind === 'spent' ? 'Spent' : 'Balance';
+  var html = pinned ? breakdownHeader(title) : '<div class="ibp-title">' + title + '</div>';
+  // Column captions, so a bare pair of figures is never ambiguous.
+  html += '<div class="ibp-row sbrk-head"><span></span><span class="ibp-amt">Planned</span>' +
+          '<span class="ibp-amt">' + (kind === 'income' ? 'Received' : 'Actual') + '</span></div>';
+
+  function line(label, planned, actual, cls, note) {
+    return '<div class="ibp-row ' + (cls || '') + '"><span>' + esc(label) +
+      (note ? ' <span class="sbrk-tag">' + esc(note) + '</span>' : '') + '</span>' +
+      '<span class="ibp-amt">' + (planned === null ? '' : _fmtMoney(planned)) + '</span>' +
+      '<span class="ibp-amt">' + (actual === null ? '' : _fmtMoney(actual)) + '</span></div>';
+  }
+
+  if (kind === 'spent') {
+    if (!b.spent.secs.length) html += '<div class="ibp-row ibp-sub"><span>Nothing budgeted or spent yet</span></div>';
+    b.spent.secs.forEach(function(s) {
+      // A section's planned figure IS the override when there is one, so the
+      // lines still add up to the total — which is exactly why this lists
+      // SECTIONS and not rows. An overridden section's rows sum to something
+      // else, and two disagreeing totals in one panel is the trap.
+      html += line(getSectionName(s.key), s.planned, s.actual, 'ibp-sub', s.overridden ? 'your budget' : '');
+    });
+    html += line('Total', b.spent.planned, b.spent.actual, 'ibp-total');
+  } else if (kind === 'income') {
+    b.income.rows.forEach(function(r) { html += line(r.label, r.planned, r.actual, 'ibp-sub'); });
+    if (!b.income.rows.length) html += '<div class="ibp-row ibp-sub"><span>No income yet</span></div>';
+    // When Planned is overridden it is NOT the sum of the sources above, so
+    // say so on its own line rather than letting the column look broken.
+    if (b.income.overridden) {
+      html += line('Sources add up to', b.income.rowPlanned, null, 'ibp-sub sbrk-muted');
+      html += line('Total', b.income.planned, b.income.actual, 'ibp-total', 'your budget');
+    } else {
+      html += line('Total', b.income.planned, b.income.actual, 'ibp-total');
+    }
+  } else {
+    html += line('Income', b.income.planned, b.income.actual, 'ibp-sub');
+    html += line('Less spending', -b.spent.planned, -b.spent.actual, 'ibp-sub');
+    html += line('Balance', b.balance.planned, b.balance.actual, 'ibp-total');
+  }
+  pop.innerHTML = html;
+  pop.style.display = 'block';
+  if (pinned) return;                       // stays where it was dragged
+  var r = anchor.getBoundingClientRect();
+  var pw = pop.offsetWidth, ph = pop.offsetHeight;
+  var left = Math.max(12, Math.min(window.innerWidth - pw - 12, r.right - pw));
+  var top = r.bottom + 8;
+  if (top + ph > window.innerHeight - 12) top = Math.max(12, r.top - ph - 8);
+  pop.style.left = left + 'px'; pop.style.top = top + 'px';
+}
+
+function hideSummaryBreakdown() {
+  if (breakdownIsPinned('summary-breakdown-pop')) return;
+  var pop = document.getElementById('summary-breakdown-pop');
+  if (pop) pop.style.display = 'none';
+}
+
+function toggleSummaryBreakdown(kind, anchor) {
+  // Clicking a DIFFERENT row while one is pinned switches to that row rather
+  // than closing — the same behaviour as the card badges.
+  if (breakdownIsPinned('summary-breakdown-pop') && _summaryPinnedKind === kind) { unpinBreakdown(); return; }
+  if (!_summaryBreakdown || !_summaryBreakdown.has) return;
+  pinBreakdown('summary-breakdown-pop');
+  _summaryPinnedKind = kind;
+  showSummaryBreakdown(kind, anchor);
+}
+
+/* Keep a pinned panel honest while the numbers move underneath it. */
+function refreshSummaryBreakdown() {
+  var pop = document.getElementById('summary-breakdown-pop');
+  if (!pop || getComputedStyle(pop).display === 'none') return;
+  showSummaryBreakdown(_summaryBrkKind, document.getElementById('bs-row-' + _summaryBrkKind));
+}
+document.addEventListener('scroll', hideSummaryBreakdown, true);
+window.addEventListener('resize', hideSummaryBreakdown);
+
 function hideBillsBreakdown() {
   if (breakdownIsPinned('bills-breakdown-pop')) return;
   var pop = document.getElementById('bills-breakdown-pop');
@@ -11795,6 +11927,7 @@ function pinBreakdown(id) {
 }
 
 function unpinBreakdown() {
+  if (_pinnedBreakdown === 'summary-breakdown-pop') _summaryPinnedKind = null;
   if (!_pinnedBreakdown) return;
   var pop = document.getElementById(_pinnedBreakdown);
   if (pop) {
@@ -12379,6 +12512,44 @@ function recalc() {
     net:      balance,
     has:      (incA > 0 || totalExpA > 0)
   };
+  /* ── What the Monthly Summary is made of ──────────────────────
+     Every other total in the app opens something that shows its working;
+     these three were the last that just asserted a figure. That is how a
+     Planned Spent that ignored the footer overrides went unnoticed — nothing
+     on screen could contradict it.
+
+     Built from the SAME override-aware figures the summary prints, so the
+     panel and the row can never disagree. Exempt rows are skipped here for
+     the same reason sum() skips them: a list that includes money the total
+     excludes is a list that does not add up. */
+  _summaryBreakdown = {
+    income: {
+      rows: (d.income || []).filter(function(r) {
+        return !r.exempt && (parseAmt(r.planned) > 0 || parseAmt(r.received) > 0);
+      }).map(function(r) {
+        return { label: r.label || 'Untitled', planned: parseAmt(r.planned), actual: parseAmt(r.received) };
+      }),
+      rowPlanned: incP, planned: incPlan, actual: incA,
+      overridden: hasFooterOverride('income')
+    },
+    spent: {
+      secs: [
+        { key: 'housing',       planned: houPlan, actual: houA },
+        { key: 'transport',     planned: traPlan, actual: traA },
+        { key: 'food',          planned: fooPlan, actual: fooA },
+        { key: 'health',        planned: hlhPlan, actual: hlhA },
+        { key: 'subscriptions', planned: subPlan, actual: subA },
+        { key: 'gifts',         planned: gftPlan, actual: gftA },
+        { key: 'misc',          planned: mscPlan, actual: mscA }
+      ].filter(function(s) { return s.planned > 0 || s.actual > 0; })
+       .map(function(s) { s.overridden = hasFooterOverride(s.key); return s; }),
+      planned: totalExpB, actual: totalExpA
+    },
+    balance: { planned: incPlan - totalExpB, actual: balance },
+    has: (incP > 0 || incA > 0 || totalExpB > 0 || totalExpA > 0)
+  };
+  if (breakdownIsPinned('summary-breakdown-pop')) refreshSummaryBreakdown();
+
   const assets    = chkE + savA;
   const liab      = dbtR;
   const netWorth  = assets - liab;
@@ -21608,6 +21779,14 @@ function footerBudgetBlur(el) {
   }
   saveFooterBudgets();
   recalc();
+}
+
+/* Is this section's budget a number the user typed, rather than the sum of
+   its rows? The breakdown panel marks those, because an override is otherwise
+   invisible everywhere except the footer input it was typed into. */
+function hasFooterOverride(sec) {
+  var o = _footerBudgetOverrides[sec];
+  return !(o === undefined || o === null || o === '' || isNaN(parseFloat(o)));
 }
 
 function getFooterBudget(sec, autoCalc) {
