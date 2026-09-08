@@ -5293,20 +5293,37 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
 }
 .topbar-right { gap: 10px !important; }
 
-/* Ask me steps back to an outline: two green things in one row compete and
-   neither reads as primary. Green is now unique to the menu, which is what
-   actually makes it stand out — not the green itself. */
+/* Ask me is not the primary action — green stays unique to the ⋯ menu, and
+   two filled buttons in one row compete until neither reads as primary. But a
+   plain grey outline made it disappear, and for a first-time budgeter it is
+   the one control worth finding. So: a soft sage tint carries the presence
+   while the LABEL stays ink. Colouring the text green as well made the button
+   read as a green thing and started competing with the menu again; ink keeps
+   the word a word. Measured 13.9:1.
+   The tint is written literally and NOT as var(--sage-light): that variable is
+   #EAF3EB normally and #1A2E1C — a near-black green — under .dark, so one
+   shared rule would give a near-black chip with near-black text and the button
+   would vanish. House rule 29. The dark values are picked separately below. */
 .topbar-right .btn-sage {
-  background: transparent !important;
-  color: var(--steel) !important;
-  border: 1px solid var(--mist) !important;
+  background: #EAF3EB !important;
+  color: var(--ink) !important;
+  border: 1px solid #B9D6BD !important;
   font-weight: 600 !important;
   height: 44px !important;
   padding: 0 12px !important;
 }
 .topbar-right .btn-sage:hover {
-  background: var(--mist-light) !important;
-  color: var(--ink) !important;
+  background: #DCEBDE !important;
+  border-color: #A3C9A8 !important;
+}
+.dark .topbar-right .btn-sage {
+  background: #1A2E1C !important;
+  color: var(--ink) !important;          /* --ink is #E8EDF2 under .dark — 12.3:1 */
+  border-color: #2F4A33 !important;
+}
+.dark .topbar-right .btn-sage:hover {
+  background: #234029 !important;
+  border-color: #3C5C42 !important;
 }
 
 /* Desktop sizing. 44px is a TOUCH minimum — a mouse is precise and does not
