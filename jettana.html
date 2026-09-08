@@ -3050,6 +3050,20 @@ body.sidebar-open #calc-panel { display: none !important; }
 }
 #expense-breakdown-pop .ebp-title { font-size: 10.5px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--steel); margin-bottom: 8px; }
 #expense-breakdown-pop .ebp-row { padding: 3px 0; }
+/* A category line that jumps. Button reset first — a <button> brings its own
+   font, centring and background, none of which belong here. */
+#expense-breakdown-pop button.ebp-row {
+  display: block; width: 100%; margin: 0; padding: 4px 6px;
+  font: inherit; color: inherit; text-align: left;
+  background: none; border: none; border-radius: 7px; cursor: pointer;
+}
+#expense-breakdown-pop button.ebp-row:hover { background: var(--mist-light); }
+.dark #expense-breakdown-pop button.ebp-row:hover { background: rgba(255,255,255,0.06); }
+#expense-breakdown-pop button.ebp-row:focus-visible { outline: 2px solid var(--sage); outline-offset: -2px; }
+#expense-breakdown-pop .ebp-hint { font-size: 9.5px; color: var(--steel); padding-top: 6px; }
+@media (pointer: coarse) {
+  #expense-breakdown-pop button.ebp-row { padding-top: 9px; padding-bottom: 9px; }
+}
 #expense-breakdown-pop .ebp-head { display: flex; justify-content: space-between; gap: 12px; }
 #expense-breakdown-pop .ebp-name { color: var(--ink); }
 #expense-breakdown-pop .ebp-amt { font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -12257,14 +12271,29 @@ function showExpenseBreakdown(card) {
   b.cats.forEach(function(c) {
     var pct = b.total > 0 ? Math.round((c.amt / b.total) * 100) : 0;
     var barW = Math.max(3, Math.round((c.amt / maxAmt) * 100));
-    rows += '<div class="ebp-row">' +
+    /* Pinned, each category line jumps to its section. A real <button> so it
+       is keyboard reachable, same as the Month-over-Month tiles; unpinned the
+       whole panel is pointer-events:none, so a plain div is all it can be.
+       The donut is deliberately left alone — the legend beside it includes an
+       "Other" bucket that is several sections at once and has nowhere to go,
+       and a chart where some wedges act and others don't is worse than one
+       that never acts. */
+    rows += (pinned
+        ? '<button type="button" class="ebp-row ebp-jump" data-sec="' + escHtml(c.key) + '">'
+        : '<div class="ebp-row">') +
       '<div class="ebp-head"><span class="ebp-name">' + escHtml(getSectionName(c.key)) + '</span>' +
       '<span class="ebp-amt">' + _fmtMoney(c.amt) + '<span class="ebp-pct">' + pct + '%</span></span></div>' +
       '<div class="ebp-bar"><span style="width:' + barW + '%;background:' + expenseDonutColor(c.key) + '"></span></div>' +
-    '</div>';
+      (pinned ? '</button>' : '</div>');
   });
   rows += '<div class="ebp-total"><span>Total</span><span>' + _fmtMoney(b.total) + '</span></div>';
+  if (pinned) rows += '<div class="ebp-hint">Tap a category to jump to it</div>';
   pop.innerHTML = rows;
+  if (pinned) {
+    pop.querySelectorAll('.ebp-jump').forEach(function(el) {
+      el.onclick = function() { jumpToSectionFromPanel(el.getAttribute('data-sec'), 'expense-breakdown-pop'); };
+    });
+  }
   pop.style.display = 'block';
   if (pinned) return;   // keep wherever the user dragged it
   var r = card.getBoundingClientRect();
@@ -13100,8 +13129,8 @@ function _afterScrollSettles(fn) {
    screen — so jumping does NOT close it. But it is position:fixed, so it can
    end up sitting on top of the very row it just sent you to. Move it only
    when it actually collides, and only then. */
-function _keepPanelClearOf(el) {
-  var pop = document.getElementById('card-tx-pop');
+function _keepPanelClearOf(el, popId) {
+  var pop = document.getElementById(popId || 'card-tx-pop');
   if (!pop || !el) return;
   var p = pop.getBoundingClientRect(), r = el.getBoundingClientRect();
   if (!(p.left < r.right && p.right > r.left && p.top < r.bottom && p.bottom > r.top)) return;
@@ -13114,6 +13143,22 @@ function _keepPanelClearOf(el) {
   // clamp it into view rather than push it off the bottom.
   else top = Math.max(8, window.innerHeight - p.height - 8);
   pop.style.top = top + 'px';
+}
+
+/* Jump to a SECTION from inside a pinned panel. jumpToMonthSection() already
+   expands, scrolls and gold-flashes the card; the part it cannot know about is
+   that a fixed panel may now be sitting on top of the thing it just scrolled
+   to. Same treatment the card panel gets: nudge only on a real collision. */
+function jumpToSectionFromPanel(sec, popId) {
+  if (!sec || sec === '_other') return;       // "Other" is several sections at once
+  jumpToMonthSection(currentMonthKey, sec);
+  // jumpToMonthSection waits 280ms before it even starts scrolling.
+  setTimeout(function() {
+    _afterScrollSettles(function() {
+      var card = document.querySelector('.sec-card[data-section-id="' + sec + '"]');
+      if (card) _keepPanelClearOf(card, popId);
+    });
+  }, 320);
 }
 
 /* Scroll to the expense row a panel line names and flash it.
