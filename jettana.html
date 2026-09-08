@@ -12335,7 +12335,28 @@ function recalc() {
   const subB = sum(d.subscriptions, 'budget');  const subA = sum(d.subscriptions, 'actual');
 
   const totalExpA = houA + traA + fooA + hlhA + gftA + mscA + subA;
-  const totalExpB = houB + traB + fooB + hlhB + gftB + mscB + subB;
+
+  /* ── Planned figures honour the footer overrides ──────────────
+     A section's footer budget can be typed over ("auto" → your own number),
+     and the section footer and the header badge both read it through
+     getFooterBudget(). The Monthly Summary did not: it summed the ROW budgets
+     and ignored the override entirely, so overriding Food to $700 left the
+     summary still showing the sum of the food rows, and Planned Balance wrong
+     by the same amount. Income has an override too, and had the same bug.
+
+     These are the one place the overridden budgets are resolved; the header
+     bars below read them rather than calling getFooterBudget() a second time.
+     Three implementations of "planned spend" was how the numbers drifted —
+     the Monthly Report has its own private copy, now removed as well. */
+  const incPlan = getFooterBudget('income',        incP);
+  const houPlan = getFooterBudget('housing',       houB);
+  const traPlan = getFooterBudget('transport',     traB);
+  const fooPlan = getFooterBudget('food',          fooB);
+  const hlhPlan = getFooterBudget('health',        hlhB);
+  const gftPlan = getFooterBudget('gifts',         gftB);
+  const mscPlan = getFooterBudget('misc',          mscB);
+  const subPlan = getFooterBudget('subscriptions', subB);
+  const totalExpB = houPlan + traPlan + fooPlan + hlhPlan + gftPlan + mscPlan + subPlan;
   // Category breakdown for the Total Expenses tooltip
   _expenseBreakdown = {
     total: totalExpA,
@@ -12552,7 +12573,7 @@ function recalc() {
   const savEl = document.getElementById('sum-savings');
   if (savEl) savEl.style.color = savA > 0 ? 'var(--sage-dark)' : '';
 
-  set('bs-inc-p',  fmt(incP));
+  set('bs-inc-p',  fmt(incPlan));
   (function() {
     var el = document.getElementById('bs-inc-a');
     if (el) { el.textContent = fmt(incA); el.style.color = incA > 0 ? 'var(--sage-dark)' : ''; el.style.fontWeight = incA > 0 ? '600' : ''; }
@@ -12562,7 +12583,7 @@ function recalc() {
     var el = document.getElementById('bs-exp-a');
     if (el) { el.textContent = fmt(totalExpA); el.style.color = totalExpA > 0 ? 'var(--blush)' : ''; el.style.fontWeight = totalExpA > 0 ? '600' : ''; }
   })();
-  set('bs-bal-p',  fmt(incP - totalExpB)); set('bs-bal-a', fmt(balance));
+  set('bs-bal-p',  fmt(incPlan - totalExpB)); set('bs-bal-a', fmt(balance));
   (function() {
     var asEl = document.getElementById('bs-assets');
     if (asEl) { asEl.textContent = fmt(assets); asEl.style.color = assets > 0 ? 'var(--sage-dark)' : ''; asEl.style.fontWeight = assets > 0 ? '600' : ''; }
@@ -12580,16 +12601,18 @@ function recalc() {
 
   // ── Header progress fill via background-image gradient ───────
   var HDR_BARS = {
-    housing:   { b: getFooterBudget('housing',   houB), a: houA },
-    transport: { b: getFooterBudget('transport', traB), a: traA },
-    food:      { b: getFooterBudget('food',      fooB), a: fooA },
-    health:    { b: getFooterBudget('health',    hlhB), a: hlhA },
-    gifts:     { b: getFooterBudget('gifts',     gftB), a: gftA },
-    misc:      { b: getFooterBudget('misc',      mscB), a: mscA },
+    // Reads the figures resolved once above, so a badge and the Monthly
+    // Summary can never be looking at different budgets.
+    housing:   { b: houPlan, a: houA },
+    transport: { b: traPlan, a: traA },
+    food:      { b: fooPlan, a: fooA },
+    health:    { b: hlhPlan, a: hlhA },
+    gifts:     { b: gftPlan, a: gftA },
+    misc:      { b: mscPlan, a: mscA },
     // Subscriptions was absent from this map while its #hdr-pct-subscriptions
     // span sat in the markup unused, so that section alone never got a fill
     // or a badge despite having a budget and an actual like the others.
-    subscriptions: { b: getFooterBudget('subscriptions', subB), a: subA },
+    subscriptions: { b: subPlan, a: subA },
   };
   Object.keys(HDR_BARS).forEach(function(sec) {
     var budget  = HDR_BARS[sec].b;
@@ -21589,7 +21612,12 @@ function footerBudgetBlur(el) {
 
 function getFooterBudget(sec, autoCalc) {
   var override = _footerBudgetOverrides[sec];
-  return override !== undefined ? override : autoCalc;
+  // An empty string is "no override", not zero. The report's private copy
+  // checked for it and this one did not; now that they are the same function
+  // the stricter check is the one that survives.
+  if (override === undefined || override === null || override === '') return autoCalc;
+  var n = parseFloat(override);
+  return isNaN(n) ? autoCalc : n;
 }
 
 function formatFooterBudget(sec, autoCalc) {
@@ -22752,11 +22780,10 @@ function generateReport() {
 
   var fmt2 = function(n) { return '$' + Math.abs(n).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); };
   var pct  = function(a, b) { return b > 0 ? Math.min(Math.round(a / b * 100), 100) : (a > 0 ? 100 : 0); };
-  // Use footer override if set, otherwise sum row budgets
-  var getBudget = function(sec, rowSum) {
-    var ov = _footerBudgetOverrides[sec];
-    return (ov !== undefined && ov !== '') ? (parseFloat(ov) || 0) : rowSum;
-  };
+  // Was a private copy of getFooterBudget(). It happened to be correct while
+  // recalc()'s version was not, which is exactly why the report and the
+  // dashboard could show different Planned figures. One function now.
+  var getBudget = getFooterBudget;
 
   // Totals
   var incA = sum(d.income,        'received');
