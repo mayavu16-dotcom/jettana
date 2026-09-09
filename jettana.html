@@ -10411,6 +10411,15 @@ function renderRowEl(section, row, animate = false) {
   const PAID_SECTIONS = ['housing','transport','debt','food','health','gifts','misc','subscriptions'];
   const allowPaid = PAID_SECTIONS.includes(section);
   const DATE_SECTIONS = ['housing','transport','debt','food','health','gifts','misc','subscriptions','income','savings','checking'];
+  /* No recurring marker in debt or checking, and not only because those rows
+     are the narrowest in the app once a card badge appears. billsDue() walks
+     LEFT_SECTIONS, which excludes both — so a recurring debt row feeds nothing,
+     and the marker's whole job is showing which rows feed Bills Due. The
+     history peek is about what something costs per month, and a card balance
+     or a checking beginning/ending is not a monthly cost. It would be
+     decoration in the two sections with the least room for it. */
+  const RECUR_MARK_SECTIONS = ['housing','transport','food','health','gifts','misc','subscriptions','income','savings'];
+  const allowRecurMark = RECUR_MARK_SECTIONS.includes(section);
   const allowDate = DATE_SECTIONS.includes(section);
   const isPaid = allowPaid && !!row.paid;
   if (isPaid) div.classList.add('paid');
@@ -10508,12 +10517,12 @@ function renderRowEl(section, row, animate = false) {
         onkeydown="labelKeyDown(event,this); acKeyDown(event,this,'${section}')"
         onblur="setTimeout(hideAutocomplete, 150)"
         >
-      <span class="recurring-dot" id="rec-dot-${row.id}" title="Repeats every month — click for its history"
+      ${allowRecurMark ? `<span class="recurring-dot" id="rec-dot-${row.id}" title="Repeats every month — click for its history"
         onclick="event.stopPropagation();event.preventDefault();toggleRecurHistory('${section}','${row.id}',this)"
         ontouchstart="event.stopPropagation();event.preventDefault();toggleRecurHistory('${section}','${row.id}',this)"
         ontouchend="event.stopPropagation();event.preventDefault()"
         onmouseenter="showRecurHistory('${section}','${row.id}',this)"
-        onmouseleave="hideRecurHistory()">\u27F3</span>
+        onmouseleave="hideRecurHistory()">\u27F3</span>` : ''}
       <span class="note-indicator ${rowHasNote(row) ? 'has-note' : ''}" id="note-dot-${row.id}" title="Has note" onclick="event.stopPropagation();event.preventDefault();toggleNote('${section}','${row.id}')" ontouchstart="event.stopPropagation();event.preventDefault();toggleNote('${section}','${row.id}')" ontouchend="event.stopPropagation();event.preventDefault()"></span>
       <span class="exempt-badge" id="exempt-badge-${row.id}" title="Exempt — not included in totals">exempt</span>
 
