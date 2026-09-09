@@ -4780,6 +4780,19 @@ body.font-large.text-bold .erow-label-input {
   display: grid; grid-template-columns: 96px 1fr 80px 36px;
   gap: 8px; align-items: center; margin-bottom: 7px;
 }
+/* Month links inside the Trends lists (peaks and recurring items). */
+.trends-mlink {
+  background: none; border: none; padding: 0;
+  font-family: inherit; font-size: 12px; font-weight: 700;
+  cursor: pointer; text-decoration: underline; text-underline-offset: 2px;
+}
+.trends-mlink:hover { text-decoration-thickness: 2px; }
+.trends-mlink:focus-visible { outline: 2px solid var(--sage); outline-offset: 2px; border-radius: 3px; }
+@media (pointer: coarse) {
+  /* A 12px word is ~7 real px of height at the mobile scale — pad it out
+     without moving the text off its line. */
+  .trends-mlink { padding: 8px 4px; margin: -8px -4px; font-size: 13px; }
+}
 .trends-sec-label { font-size: 11px; color: var(--steel); }
 .trends-sec-bar-wrap { height: 6px; background: var(--mist-light); border-radius: 3px; overflow: hidden; }
 .trends-sec-bar { height: 100%; border-radius: 3px; transition: width 0.35s ease; }
@@ -24823,6 +24836,16 @@ function toggleTrendsView() {
 
 var _trendsItemsMode = false;
 
+/* An underlined month that opens that month and scrolls to the section. The
+   peaks list built this inline; it is shared now so the two lists cannot drift
+   apart in look or behaviour. */
+function _trendsMonthLink(mk, sec) {
+  var label = _recurMonthLabel(mk);
+  return '<button class="trends-mlink" onclick="jumpToMonthSection(\'' + mk + '\',\'' + sec + '\')"'
+    + ' title="Open ' + label + ' and jump to this section"'
+    + ' style="color:' + (TREND_SEC_COLORS[sec] || 'var(--ink)') + ';">' + label + '</button>';
+}
+
 // "2026-01" -> "Jan '26"
 function _recurMonthLabel(mk) {
   var pr = String(mk).split('-');
@@ -24930,7 +24953,14 @@ function renderTrendsItems() {
       right = '<div style="font-weight:700;">' + _fmtMoney(g.avg)
         + ' <span style="font-size:9.5px;font-weight:400;color:var(--steel);">avg</span></div>'
         + '<div style="font-size:10px;color:var(--steel);">'
-        + (g.flat ? 'same every month' : 'high ' + _fmtMoney(g.high.amt) + ' \u00B7 ' + _recurMonthLabel(g.high.mk))
+        /* The highest month is a link to that month, styled and behaved exactly
+           like the peaks list's month links — same underline, same colour rule,
+           same jumpToMonthSection() — so "an underlined month opens that month"
+           means one thing in both lists. A flat bill has no interesting month
+           to open, so it gets no link rather than a link that goes nowhere
+           useful. */
+        + (g.flat ? 'same every month'
+                  : 'high ' + _fmtMoney(g.high.amt) + ' \u00B7 ' + _trendsMonthLink(g.high.mk, g.sec))
         + ' \u00B7 ' + g.months + ' mo</div>';
     }
     html += '<div class="trends-sec-row" style="align-items:center;">'
@@ -24997,7 +25027,7 @@ function renderTrendsPeaks() {
       + '<div class="trends-sec-bar-wrap"><div class="trends-sec-bar" style="width:' + barPct + '%;background:' + TREND_SEC_COLORS[g.sec] + '"></div></div>'
       + '<div style="text-align:right;min-width:122px;line-height:1.4;white-space:nowrap;">'
       + '<span style="font-weight:700;">' + peak$ + '</span> '
-      + '<button onclick="jumpToMonthSection(\'' + g.best.mk + '\',\'' + g.sec + '\')" title="Open ' + mLabel + ' and jump to this section" style="background:none;border:none;padding:0;font-family:inherit;font-size:12px;font-weight:700;color:' + TREND_SEC_COLORS[g.sec] + ';cursor:pointer;text-decoration:underline;text-underline-offset:2px;">' + mLabel + '</button>'
+      + _trendsMonthLink(g.best.mk, g.sec)
       + '<div style="font-size:9.5px;font-weight:400;color:var(--steel);">' + (g.activeMonths <= 1 ? 'one-time' : 'avg ' + avg$ + '/mo') + '</div>'
       + '</div>'
       + '</div>';
