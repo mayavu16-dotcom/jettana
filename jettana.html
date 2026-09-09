@@ -1685,7 +1685,7 @@ body.show-sav-goal.font-large .sec-footer-savings {
      position:fixed so it printed on top of the page. */
   .sidebar, .topbar-right, .add-row-btn, .del-btn, .paid-checkbox,
   .hamburger-btn, .theme-wrap, .drag-handle,
-  .rec-dot, .note-indicator,
+  .rec-dot, .recurring-dot, #recur-pop, .note-indicator,
   #calc-fab, #calc-panel,
   #income-breakdown-pop, #expense-breakdown-pop, #debt-total-pop, #mchk-pop, #savings-breakdown-pop, #bills-breakdown-pop, #summary-breakdown-pop,
   #label-peek, .intention-swatches, .intention-dismiss { display: none !important; }
@@ -2711,17 +2711,63 @@ mark.hl-rose  { --hl: rgba(224, 132, 132, 0.30); }
 .dark .ctx-item { color: var(--ink); }
 .dark .ctx-item:hover { background: #263545; }
 
-/* ── Recurring indicator dot ─────────────────────────────────── */
+/* ── Recurring indicator ─────────────────────────────────────
+   This class had full styling and was never rendered into a row, and
+   `has-recurring` was toggled on the row with no CSS behind it — so nothing
+   in the tracker showed which rows repeat. That was survivable until
+   "recurring" started deciding Bills Due; now you have to be able to see
+   which rows feed that total.
+
+   It sits between the label and the note dot, in the same badge run as the
+   note, exempt and card badges, so it takes its place in the flex flow rather
+   than floating over anything. It is NOT absolutely positioned on purpose —
+   the date button already owns the top-right corner of this cell. */
 .recurring-dot {
   display: none;
-  width: 5px; height: 5px;
-  border-radius: 50%;
-  background: var(--sage-dark);
+  align-items: center; justify-content: center;
+  width: 16px; height: 16px;
   margin-left: 5px;
   flex-shrink: 0;
-  vertical-align: middle;
-  opacity: 0.8;
+  font-size: 12px; line-height: 1;
+  color: var(--sage-dark);
+  opacity: 0.75;
+  cursor: pointer;
+  border-radius: 4px;
+  user-select: none;
 }
+.erow.has-recurring .recurring-dot { display: inline-flex; }
+.recurring-dot:hover { opacity: 1; background: var(--mist-light); }
+.dark .recurring-dot { color: var(--sage); }
+.dark .recurring-dot:hover { background: rgba(255,255,255,0.08); }
+/* A locked month is read-only, but this is a read — it stays live. */
+@media (pointer: coarse) {
+  .recurring-dot { width: 26px; height: 26px; font-size: 15px; opacity: 0.85; margin-left: 3px; }
+}
+
+/* The history peek. Same shell as the other read-only peeks: it never takes
+   pointer events, so it cannot swallow a tap meant for the row underneath. */
+#recur-pop {
+  position: fixed; z-index: 10060; display: none;
+  background: var(--white); color: var(--ink);
+  border: 1px solid var(--mist); border-radius: 12px;
+  font-family: 'Outfit', sans-serif; font-size: 12.5px; line-height: 1.5;
+  padding: 12px 14px; width: 250px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.16); pointer-events: none;
+}
+.dark #recur-pop { background: #1E2A38; border-color: #2A3A4A; }
+#recur-pop .rp-title { font-size: 10.5px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--steel); margin-bottom: 7px; }
+#recur-pop .rp-row { display: flex; justify-content: space-between; gap: 14px; padding: 2px 0; }
+#recur-pop .rp-row.rp-sub { color: var(--steel); }
+#recur-pop .rp-amt { font-variant-numeric: tabular-nums; white-space: nowrap; }
+#recur-pop .rp-strong { font-weight: 700; }
+#recur-pop .rp-bars { display: flex; gap: 7px; align-items: flex-end; margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--mist-light); }
+#recur-pop .rp-b { display: flex; flex-direction: column; align-items: center; gap: 3px; flex: 1 1 0; }
+#recur-pop .rp-b i { display: block; width: 100%; background: #B9C7D2; border-radius: 2px; }
+#recur-pop .rp-b.rp-hi i { background: #A8720E; }
+.dark #recur-pop .rp-b i { background: #3A4A5A; }
+.dark #recur-pop .rp-b.rp-hi i { background: #D9A21B; }
+#recur-pop .rp-b span { font-size: 8.5px; color: var(--steel); }
+#recur-pop .rp-note { font-size: 10px; color: var(--steel); line-height: 1.45; margin-top: 7px; }
 /* ── Dark mode — modals & dynamic components ── */
 .dark #tour-tooltip { background: #1E2A38 !important; }
 .dark #tour-title { color: var(--ink) !important; }
@@ -10462,6 +10508,12 @@ function renderRowEl(section, row, animate = false) {
         onkeydown="labelKeyDown(event,this); acKeyDown(event,this,'${section}')"
         onblur="setTimeout(hideAutocomplete, 150)"
         >
+      <span class="recurring-dot" id="rec-dot-${row.id}" title="Repeats every month — click for its history"
+        onclick="event.stopPropagation();event.preventDefault();toggleRecurHistory('${section}','${row.id}',this)"
+        ontouchstart="event.stopPropagation();event.preventDefault();toggleRecurHistory('${section}','${row.id}',this)"
+        ontouchend="event.stopPropagation();event.preventDefault()"
+        onmouseenter="showRecurHistory('${section}','${row.id}',this)"
+        onmouseleave="hideRecurHistory()">\u27F3</span>
       <span class="note-indicator ${rowHasNote(row) ? 'has-note' : ''}" id="note-dot-${row.id}" title="Has note" onclick="event.stopPropagation();event.preventDefault();toggleNote('${section}','${row.id}')" ontouchstart="event.stopPropagation();event.preventDefault();toggleNote('${section}','${row.id}')" ontouchend="event.stopPropagation();event.preventDefault()"></span>
       <span class="exempt-badge" id="exempt-badge-${row.id}" title="Exempt — not included in totals">exempt</span>
 
@@ -17088,6 +17140,131 @@ function toggleExempt(section, id) {
   recalc();
   showToast(row.exempt ? 'Marked as exempt — excluded from totals' : 'Exemption removed', false);
 }
+/* ── What a recurring item has actually cost ──────────────────
+   Recurring rows are re-created for each new month with a BRAND NEW id, so
+   there is no identity to follow an item by. Matching is therefore by name,
+   the same rule the app already uses to carry checking balances forward
+   (label.trim().toLowerCase(), four places). The consequence is real and
+   worth knowing: rename "PG&E" to "PGE" and it starts a fresh series. That is
+   the same trade the Trends peaks list already makes with renamed sections.
+
+   Only months where the item actually has a spent amount are counted. A bill
+   you started in January must not be averaged as though it were $0 for the
+   six months before it existed — so the panel always prints how many months
+   the average is over, and a single month is never called an average. */
+var RECUR_WINDOW = 12;                    // most recent months considered
+
+function recurHistory(section, label) {
+  var out = { points: [], avg: 0, months: 0, high: null, low: null, flat: false };
+  var name = String(label || '').trim().toLowerCase();
+  if (!name) return out;
+  var all = loadAll();
+  var keys = allMonthKeys().filter(function(k) { return /^\d{4}-\d{2}$/.test(k); }).sort();
+  keys = keys.slice(-RECUR_WINDOW);
+  keys.forEach(function(mk) {
+    var rows = (all[mk] && all[mk][section]) || [];
+    var r = rows.find(function(x) {
+      return x.label && String(x.label).trim().toLowerCase() === name;
+    });
+    if (!r || r.exempt) return;
+    var amt = parseAmt(r.actual);
+    if (!(amt > 0.005)) return;           // no amount yet is not a $0 month
+    out.points.push({ mk: mk, amt: amt });
+  });
+  out.months = out.points.length;
+  if (!out.months) return out;
+  var sum = 0;
+  out.points.forEach(function(pt) {
+    sum += pt.amt;
+    if (!out.high || pt.amt > out.high.amt) out.high = pt;
+    if (!out.low  || pt.amt < out.low.amt)  out.low  = pt;
+  });
+  out.avg = sum / out.months;
+  // "Averages $18" is a strange thing to say about a bill that is $18 every
+  // single month; say it is the same every month instead.
+  out.flat = (out.high.amt - out.low.amt) < 0.005;
+  return out;
+}
+
+function _recurPop() {
+  var el = document.getElementById('recur-pop');
+  if (!el) { el = document.createElement('div'); el.id = 'recur-pop'; document.body.appendChild(el); }
+  return el;
+}
+
+function _recurMonthLabel(mk) {
+  var pr = mk.split('-');
+  return (typeof TREND_MONTHS !== 'undefined' ? TREND_MONTHS[parseInt(pr[1], 10) - 1] : pr[1]) + " '" + pr[0].slice(2);
+}
+
+var _recurPopFor = null;
+
+function showRecurHistory(section, id, anchorEl) {
+  var all = loadAll();
+  var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
+  var row = rows.find(function(r) { return r.id === id; });
+  if (!row) return;
+  var h = recurHistory(section, row.label);
+  var pop = _recurPop();
+  var esc = function(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
+  var name = (row.label || '').trim() || 'This item';
+  var html = '<div class="rp-title">' + esc(name) +
+    (h.months ? ' · last ' + h.months + (h.months === 1 ? ' month' : ' months') : '') + '</div>';
+
+  if (!h.months) {
+    html += '<div class="rp-note">No months with an amount yet. Once this row has a spent amount in a month or two, its average shows up here.</div>';
+  } else if (h.months === 1) {
+    // One data point is not an average and must not be dressed up as one.
+    html += '<div class="rp-row"><span>Only month so far</span><span class="rp-amt rp-strong">' +
+      _fmtMoney(h.points[0].amt) + '</span></div>' +
+      '<div class="rp-note">' + _recurMonthLabel(h.points[0].mk) + '. An average needs at least two months.</div>';
+  } else {
+    html += '<div class="rp-row"><span>' + (h.flat ? 'Every month' : 'Average') + '</span>' +
+      '<span class="rp-amt rp-strong">' + _fmtMoney(h.avg) + (h.flat ? '' : ' / mo') + '</span></div>';
+    if (!h.flat) {
+      html += '<div class="rp-row rp-sub"><span>Highest</span><span class="rp-amt">' + _fmtMoney(h.high.amt) +
+        ' · ' + _recurMonthLabel(h.high.mk) + '</span></div>' +
+        '<div class="rp-row rp-sub"><span>Lowest</span><span class="rp-amt">' + _fmtMoney(h.low.amt) +
+        ' · ' + _recurMonthLabel(h.low.mk) + '</span></div>';
+    }
+    var max = h.high.amt || 1;
+    html += '<div class="rp-bars">' + h.points.map(function(pt) {
+      var ht = Math.max(4, Math.round(pt.amt / max * 30));
+      return '<div class="rp-b' + (pt.amt === h.high.amt && !h.flat ? ' rp-hi' : '') + '">' +
+        '<i style="height:' + ht + 'px;"></i><span>' + _recurMonthLabel(pt.mk).split(" '")[0] + '</span></div>';
+    }).join('') + '</div>';
+    if (h.flat) html += '<div class="rp-note">Same amount every month it appears.</div>';
+  }
+  pop.innerHTML = html;
+  pop.style.display = 'block';
+  _recurPopFor = id;
+  var r = anchorEl.getBoundingClientRect();
+  var pw = pop.offsetWidth, ph = pop.offsetHeight;
+  var left = Math.max(8, Math.min(window.innerWidth - pw - 8, r.left - pw / 2 + r.width / 2));
+  var top = r.bottom + 8;
+  if (top + ph > window.innerHeight - 8) top = Math.max(8, r.top - ph - 8);
+  pop.style.left = left + 'px';
+  pop.style.top = top + 'px';
+}
+
+function hideRecurHistory() {
+  var pop = document.getElementById('recur-pop');
+  if (pop) pop.style.display = 'none';
+  _recurPopFor = null;
+}
+
+/* Touch has no hover, so the marker toggles instead. */
+function toggleRecurHistory(section, id, anchorEl) {
+  if (_recurPopFor === id) { hideRecurHistory(); return; }
+  showRecurHistory(section, id, anchorEl);
+}
+document.addEventListener('scroll', hideRecurHistory, true);
+window.addEventListener('resize', hideRecurHistory);
+document.addEventListener('touchstart', function(e) {
+  if (!_recurPopFor) return;
+  if (!e.target.closest || !e.target.closest('.recurring-dot')) hideRecurHistory();
+}, { passive: true });
+
 function toggleRecurring(section, id) {
   const all = loadAll();
   const rows = all[currentMonthKey][section] || [];
