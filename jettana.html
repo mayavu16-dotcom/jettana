@@ -6559,8 +6559,28 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
         </div>
 
         <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">What is the Bills Due card?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">It's the money you've committed but haven't paid yet. Every other figure on your dashboard looks backwards — Total Expenses is what you <strong>have</strong> spent — so a month with rent still to pay could read as if that money were free. A row counts as a bill when you've marked it <strong>recurring</strong>, it isn't ticked paid, and it has an amount. It owes its <strong>Actual</strong> if you've entered one (you know the real figure) or its <strong>Budget</strong> if you haven't (the estimate is your best guess). Underneath the total is what's left once those are set aside. Hover or tap the card for the full list, and use the <strong>✕</strong> on any line that isn't really a bill — a grocery budget recurs every month but it's an allowance, not something you owe. Excluded items drop to a greyed list with a <strong>+</strong> to bring them back, and the choice carries into new months.</div>
+        </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">Why does one section say "$40 left" and another "$1,540 due"?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Because they mean opposite things. In Food, <strong>left</strong> is money you may still spend. In Housing, that same remainder was mostly unpaid rent — money you <strong>owe</strong>. A section now says <strong>due</strong> when unpaid bills make up more than half of what's remaining, and <strong>left</strong> otherwise, so one small bill inside a big spending allowance doesn't flip the whole section. Hover the badge on a mixed section and it tells you how much of it is bills. The number itself is unchanged — it's still budget minus actual.</div>
+        </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">How was a number on my dashboard worked out?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Most totals show their working. On the <strong>Monthly Summary</strong> at the bottom, hover or tap the <strong>Income</strong>, <strong>Spent</strong> or <strong>Balance</strong> row: Spent breaks down by section with Planned against Actual, Income by source, and Balance spells out the subtraction. If you've typed your own budget over a section footer, that line is marked <strong>your budget</strong> — the summary uses your number, not the sum of the rows. The four cards above (Total Income, Total Expenses, Net Balance, Total Saved) and Bills Due all open a panel the same way.</div>
+        </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">What does each of my bills cost per month on average?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Open <strong>⋯ → Insights → Spending Trends</strong> and tap <strong>🔁 Items</strong>. It lists every recurring expense item — rent, power, insurance, each subscription — ranked by what it averages per month, with the number of months behind each figure so a two-month average isn't mistaken for a year's. Use the <strong>6M / YTD / 1Y / All</strong> chips to set the window; YTD gives you this year. A bill that's identical every month says <strong>same every month</strong> rather than pretending to have an average, and a variable one names its highest month — tap that underlined month to open it and see what happened. Items are matched by name across months, so renaming one starts a fresh series.</div>
+        </div>
+
+        <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">Can I jump from a chart to the rows behind it?<span class="askme-q-arrow">▾</span></button>
-          <div class="askme-a">Yes, from four places. In the <strong>Spending Calendar</strong>, tap a day and then tap a transaction to land on its row — built for reconciling against a statement. In the <strong>Net Worth Trend</strong>, tap any point on the line to open that month. In <strong>Spending Trends → ⭐ Peaks</strong>, tap an underlined month to jump to those rows. And on the <strong>Month-over-Month card</strong> at the bottom of your dashboard, tap any category tile to jump straight to that section — it opens the section if it's collapsed and flashes it gold so you can see where you landed. With the three panels, dragging one aside first keeps it open while you jump, so you can work through several without reopening it.</div>
+          <div class="askme-a">Yes, from eight places. <strong>To a month:</strong> tap a point on the <strong>Net Worth Trend</strong>, or an underlined month in <strong>Spending Trends → ⭐ Peaks</strong> or <strong>→ 🔁 Items</strong>. <strong>To a section:</strong> tap a category tile on the <strong>Month-over-Month card</strong>, or a category line in the <strong>Total Expenses</strong> breakdown once you've clicked the card to pin it. <strong>To a row:</strong> tap a transaction in the <strong>Spending Calendar</strong>, a charge in a <strong>card or account badge panel</strong>, or a bill in the <strong>Bills Due</strong> panel — the last two need the panel pinned first. Wherever you land, a collapsed section opens itself and the row or card flashes gold so you can see where you arrived. Dragging a panel aside first keeps it open while you jump, so you can work through several without reopening it.</div>
         </div>
       </div>
 
@@ -6985,7 +7005,9 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>📝 <strong>Notes</strong> — free-form notes per month with bullet points and checkable to-dos; syncs across devices</span></div>
       <div class="shortcut-row"><span>🎨 <strong>Footer highlight</strong> — click the Actual/Received total in any section footer to set a background and number color; supports copy, paste and clear</span></div>
       <div class="shortcut-row"><span>👻 <strong>Savings goal column</strong> — ⋯ on the Savings header → 👻 Show goal column; adds an optional Goal cell next to each account for what you're aiming to have in it, shown in dark green so it reads as intent rather than balance. Hidden by default, set per month, and the footer totals your goals. Goals carry into new months on recurring rows even though balances start fresh.</span></div>
-      <div class="shortcut-row"><span>🔢 <strong>Charge badges</strong> — a small count next to a card or account name showing how many expense rows feed its balance; tap it for the full list with sections, amounts and dates, sorted earliest to latest, with a "Latest" line for the most recent activity. Undated charges still appear, sorted to the end.</span></div>
+      <div class="shortcut-row"><span>🔢 <strong>Charge badges</strong> — a small count next to a card or account name showing how many expense rows feed its balance; tap it for the full list with sections, amounts and dates, sorted earliest to latest, with a "Latest" line for the most recent activity. Undated charges still appear, sorted to the end. Click the badge to pin the panel and each charge becomes a link straight to that row; deposits and withdrawals stay plain, since they live inside the account row itself. Names cut off by the panel edge show in full on hover.</span></div>
+      <div class="shortcut-row"><span>💳 <strong>Bills Due</strong> — a fifth summary card: what you've committed but not yet paid, with what's left after it underneath. Counts rows you've marked recurring that aren't ticked paid — the Actual if you've entered one, the Budget if you haven't. Hover or tap for the list; click to pin it, then <strong>✕</strong> anything that isn't really a bill (a grocery budget recurs but it's an allowance). Excluded items sit in a greyed list with a <strong>+</strong> to restore them, and the choice carries into new months. Pinned, tap any bill to jump to its row.</span></div>
+      <div class="shortcut-row"><span>🏷 <strong>"due" vs "left"</strong> — a section badge says <strong>due</strong> when unpaid bills are more than half of what's remaining, and <strong>left</strong> when it's mostly money you can still spend. Same number either way — it's still budget minus actual. Hover a mixed section to see how much of it is bills.</span></div>
       <div class="shortcut-row"><span>🏦 <strong>Starting balance</strong> — open the note on a card-linked Debt row to set what was already owed before this month; it's added on top of this month's charges and shows as its own line in the charge breakdown</span></div>
       <div class="shortcut-row"><span>🎯 <strong>Net worth goal</strong> — click the Goal cell in the Net Worth Overview to set a target</span></div>
       <div class="shortcut-row"><span>💳 <strong>Credit score</strong> — type your score (300–850) in the pill on the Debt section header; each month keeps its own, with a ▲/▼ change vs the last month you logged one</span></div>
@@ -7088,11 +7110,13 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcuts-group-title">Insights</div>
       <div class="shortcut-row"><span>📅 <strong>Spending Calendar</strong> — ⋯ → Insights → Spending Calendar; see daily spending laid out on a calendar grid with weekly totals. Filter by section, search by transaction name, and tap any day for a breakdown. Tap a transaction in that breakdown to jump straight to its row in the tracker — useful when reconciling. Drag to reposition over the tracker.</span></div>
       <div class="shortcut-row"><span>📊 <strong>Spending Trends</strong> — ⋯ → Insights → Spending Trends; bar chart of your last 6 months with a dashed gold line marking your average monthly spend. Tap any bar and it splits into colored blocks — one per category, sized by its share — with a full breakdown below. Tap ⭐ Peaks for each category's highest month (with its monthly average, or "one-time" for one-offs) — tap the month name to jump straight to those rows, and the last line shows your worst-case month if everything peaked at once. Tap ? for a quick guide to reading the chart. Drag to reposition.</span></div>
+      <div class="shortcut-row"><span>🔁 <strong>Recurring items</strong> — ⋯ → Insights → Spending Trends → 🔁 Items; what each recurring bill actually costs per month, ranked by average, with the number of months behind each figure. Follows the 6M / YTD / 1Y / All chips, so YTD gives you the year. A bill that never changes says "same every month" instead of an average; a variable one names its highest month — tap it to open that month. Items are matched by name, so renaming one starts a fresh series.</span></div>
+      <div class="shortcut-row"><span>🧾 <strong>Monthly Summary breakdowns</strong> — hover or tap the Income, Spent or Balance row at the bottom of your dashboard to see how it was worked out. Spent lists each section with Planned against Actual, Income lists each source, and Balance spells out the subtraction. A section whose budget you typed yourself is marked "your budget", and the Planned column uses your figure rather than the sum of the rows.</span></div>
       <div class="shortcut-row"><span>📈 <strong>Net Worth Trend</strong> — ⋯ → Insights → Net worth trend; a line chart of your net worth (checking + savings − debt) by month. Pick 6M, YTD, 1Y, All, or a custom start month. Tap any point on the line to jump straight to that month — drag the chart aside first and it stays open, so you can step through months one dot at a time. The summary shows your growth, how far apart the months are, and — optionally — your age across the range. Drag to reposition.</span></div>
       <div class="shortcut-row"><span>🎂 <strong>Age on your trend</strong> — enter your birth month + year in the Net Worth Trend (optional) to see "age 23 → 25" alongside your growth. Month and year only — Jettana never asks for your full birthdate. Clear the field anytime to remove it.</span></div>
       <div class="shortcut-row"><span>🧮 <strong>Plan My Savings</strong> — ⋯ → Insights → Plan my savings; works out what's genuinely left over each month from your average take-home and expenses. The retirement half shows what a pre-tax contribution actually costs your take-home (less than the headline number, since it comes out before tax) and what you'd leave behind by contributing under your employer's match.</span></div>
       <div class="shortcut-row"><span>🌍 <strong>Life Elsewhere</strong> — ⋯ → Insights → Life elsewhere; re-prices your current lifestyle in another country with your income held fixed. Optionally type an exchange rate to see the figures in local currency too — rates are never fetched, so it's whatever you enter, and leaving it blank hides that line. A daydream tool, not relocation advice.</span></div>
-      <div class="shortcut-row"><span>↩ <strong>Jump back to your rows</strong> — four places link straight back into the tracker: tap a transaction in the Spending Calendar, a point on the Net Worth Trend, an underlined month in Spending Trends → Peaks, or any category tile on the Month-over-Month card. Drag the panel aside first and it stays open while you jump, so you can work through several in a row — handy for reconciling.</span></div>
+      <div class="shortcut-row"><span>↩ <strong>Jump back to your rows</strong> — eight places link straight back into the tracker. To a <strong>month</strong>: a point on the Net Worth Trend, or an underlined month in Spending Trends → ⭐ Peaks or → 🔁 Items. To a <strong>section</strong>: a category tile on the Month-over-Month card, or a category line in the Total Expenses breakdown (pin it first). To a <strong>row</strong>: a transaction in the Spending Calendar, a charge in a card or account badge panel, or a bill in the Bills Due panel. Collapsed sections open themselves and whatever you land on flashes gold. Drag a panel aside first and it stays open while you jump — handy for reconciling.</span></div>
       <div class="shortcut-row"><span>🌱 <strong>Growth Projection</strong> — ⋯ → Insights → Growth projection; a hypothetical compound-growth view seeded from your current savings and average monthly contribution. Adjust the amount, contribution, or return rate; pick 5Y / 10Y / 20Y / 30Y, or type any number of years (1–60) in the custom chip. Drag to reposition.</span></div>
       <div class="shortcut-row"><span>⇄ <strong>Compare months</strong> — ⋯ → Insights → Compare months; any section line-by-line against a baseline month, with color-coded changes and how far apart the two months are (e.g. "2 years, 6 months apart"). The left column follows the month you're viewing. Drag to reposition.</span></div>
       <div class="shortcut-row"><span>📈 <strong>Month-over-Month card</strong> — on your dashboard below the sections; compares this month's totals per category against any previous month (pick one from the dropdown). Green means moving the right way for that category — income up is good, spending up isn't. A category you cut to zero shows as a 100% win, and renamed sections show your names. Tap any tile to jump to that section — it expands if collapsed and flashes gold so you can see where you landed.</span></div>
@@ -11604,6 +11628,23 @@ var _pinnedBreakdown = null;   // id of the pinned popup, if any
 
 function breakdownIsPinned(id) { return _pinnedBreakdown === id; }
 
+/* Every breakdown panel is built the first time it opens, which means
+   pinBreakdown() can run before its element exists — a tap that arrives with
+   no hover in front of it, or anything that opens a panel in code. So pinning
+   only records the id, and the class that makes a panel pinned is put on here,
+   where the element is made. One helper for all of them, so a panel added
+   later can't quietly miss it. */
+function _breakdownPop(id) {
+  var pop = document.getElementById(id);
+  if (!pop) {
+    pop = document.createElement('div');
+    pop.id = id;
+    document.body.appendChild(pop);
+  }
+  if (_pinnedBreakdown === id) pop.classList.add('brk-pinned');
+  return pop;
+}
+
 /* ── Saved vs Invested breakdown (Total Savings footer) ──────────
    Auto-detects each savings row from its name; the user can pin the
    panel (click the "Total Savings" label) and tap any account to flip
@@ -11620,11 +11661,7 @@ function classifySavingsRow(row) {
   return 'save';   // unrecognized names count as saved until the user says otherwise
 }
 
-function _savingsBreakdownPop() {
-  var pop = document.getElementById('savings-breakdown-pop');
-  if (!pop) { pop = document.createElement('div'); pop.id = 'savings-breakdown-pop'; document.body.appendChild(pop); }
-  return pop;
-}
+function _savingsBreakdownPop() { return _breakdownPop('savings-breakdown-pop'); }
 
 function _savingsSplitData() {
   var all = loadAll();
@@ -11704,11 +11741,7 @@ function hideSavingsBreakdown() {
    Reads billsDue() rather than re-walking the sections, so the list and the
    card can never describe different money (house rule 28). Pinned, each line
    jumps to its row through the same jumpToLinkedRow() the card panel uses. */
-function _billsBreakdownPop() {
-  var pop = document.getElementById('bills-breakdown-pop');
-  if (!pop) { pop = document.createElement('div'); pop.id = 'bills-breakdown-pop'; document.body.appendChild(pop); }
-  return pop;
-}
+function _billsBreakdownPop() { return _breakdownPop('bills-breakdown-pop'); }
 
 function showBillsBreakdown(anchor) {
   /* Reads the figures recalc() already computed, exactly like _incomeBreakdown
@@ -11839,11 +11872,7 @@ var _summaryBrkKind = 'spent';        // what the panel is currently showing
    so comparing the click against _summaryBrkKind always matched and every
    click on a second row closed the panel instead of switching to it. */
 var _summaryPinnedKind = null;
-function _summaryBreakdownPop() {
-  var pop = document.getElementById('summary-breakdown-pop');
-  if (!pop) { pop = document.createElement('div'); pop.id = 'summary-breakdown-pop'; document.body.appendChild(pop); }
-  return pop;
-}
+function _summaryBreakdownPop() { return _breakdownPop('summary-breakdown-pop'); }
 
 function showSummaryBreakdown(kind, anchor) {
   var b = _summaryBreakdown;
@@ -11967,12 +11996,15 @@ document.addEventListener('scroll', hideSavingsBreakdown, true);
 window.addEventListener('resize', hideSavingsBreakdown);
 
 function pinBreakdown(id) {
-  var pop = document.getElementById(id);
-  if (!pop) return;
   // only one pinned at a time
   if (_pinnedBreakdown && _pinnedBreakdown !== id) unpinBreakdown();
+  /* Record it whether or not the element exists yet — the panel is built by
+     the show...() call that always follows, and _breakdownPop() puts the class
+     on then. Bailing out here left the panel open but unpinned: no header, no
+     drag, and none of the lines clickable. */
   _pinnedBreakdown = id;
-  pop.classList.add('brk-pinned');
+  var pop = document.getElementById(id);
+  if (pop) pop.classList.add('brk-pinned');
 }
 
 function unpinBreakdown() {
@@ -12037,15 +12069,7 @@ document.addEventListener('keydown', function(e) {
 });
 
 /* ── Outstanding Debt: what's already counted elsewhere ───── */
-function _debtTotalPop() {
-  var pop = document.getElementById('debt-total-pop');
-  if (!pop) {
-    pop = document.createElement('div');
-    pop.id = 'debt-total-pop';
-    document.body.appendChild(pop);
-  }
-  return pop;
-}
+function _debtTotalPop() { return _breakdownPop('debt-total-pop'); }
 
 function showDebtTotalBreakdown(el) {
   var b = debtDoubleCount();
@@ -12111,15 +12135,7 @@ function toggleDebtTotalBreakdown(el) {
 document.addEventListener('scroll', hideDebtTotalBreakdown, true);
 window.addEventListener('resize', hideDebtTotalBreakdown);
 
-function _incomeBreakdownPop() {
-  var pop = document.getElementById('income-breakdown-pop');
-  if (!pop) {
-    pop = document.createElement('div');
-    pop.id = 'income-breakdown-pop';
-    document.body.appendChild(pop);
-  }
-  return pop;
-}
+function _incomeBreakdownPop() { return _breakdownPop('income-breakdown-pop'); }
 
 function _fmtMoney(n) {
   return '$' + Math.round(n).toLocaleString('en-US');
@@ -12202,15 +12218,7 @@ document.addEventListener('touchstart', function(e) {
 
 var _expenseBreakdown = null;
 
-function _expenseBreakdownPop() {
-  var pop = document.getElementById('expense-breakdown-pop');
-  if (!pop) {
-    pop = document.createElement('div');
-    pop.id = 'expense-breakdown-pop';
-    document.body.appendChild(pop);
-  }
-  return pop;
-}
+function _expenseBreakdownPop() { return _breakdownPop('expense-breakdown-pop'); }
 
 /* Donut for the "Where it went" panel — the same numbers as the ranked rows
    below it, but as a shape you can read without reading.
@@ -12369,11 +12377,7 @@ document.addEventListener('touchstart', function(e) {
    expense and therefore still sits inside this balance. */
 var _balanceBreakdown = null;
 
-function _balanceBreakdownPop() {
-  var pop = document.getElementById('balance-breakdown-pop');
-  if (!pop) { pop = document.createElement('div'); pop.id = 'balance-breakdown-pop'; document.body.appendChild(pop); }
-  return pop;
-}
+function _balanceBreakdownPop() { return _breakdownPop('balance-breakdown-pop'); }
 
 function showBalanceBreakdown(card) {
   var b = _balanceBreakdown;
