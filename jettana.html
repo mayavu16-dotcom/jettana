@@ -6638,12 +6638,12 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
 
         <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">Can I get to my bank from here?<span class="askme-q-arrow">▾</span></button>
-          <div class="askme-a">Jettana never connects to your bank, but you can keep a link to it on the row. On a <strong>Debt</strong>, <strong>Checking</strong> or <strong>Savings &amp; Investments</strong> row, open <strong>⋮ → Add link</strong>, paste the page you normally sign in on, and give it a name you'll recognise. After that the row's name is <strong>underlined</strong>, and <strong>⋮ → Open</strong> takes you there in a new tab. Nothing is saved but the address — no username, no password, and Jettana never signs in for you.</div>
+          <div class="askme-a">Jettana never connects to your bank, but you can keep a link to it on the row. On a <strong>Debt</strong>, <strong>Checking</strong> or <strong>Savings &amp; Investments</strong> row, open <strong>≡ → Add link</strong>, paste the page you normally sign in on, and give it a name you'll recognise. After that the row's name is <strong>underlined</strong>, and <strong>≡ → Open</strong> takes you there in a new tab. Nothing is saved but the address — no username, no password, and Jettana never signs in for you.</div>
         </div>
 
         <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">Why is one of my account names underlined?<span class="askme-q-arrow">▾</span></button>
-          <div class="askme-a">That row has a link saved to it. Open <strong>⋮</strong> on the row and the first item shows the website it goes to — <em>Open chase.com</em>, for instance. The menu always shows you the <strong>real web address</strong> rather than the name you typed, so you can see where you're going before you tap. Use <strong>⋮ → Edit link</strong> to change it or remove it. A row you've marked <strong>paid</strong> isn't underlined, since the strikethrough already has that line — the link still works from the menu.</div>
+          <div class="askme-a">That row has a link saved to it. Open <strong>≡</strong> on the row and the first item shows the website it goes to — <em>Open chase.com</em>, for instance. The menu always shows you the <strong>real web address</strong> rather than the name you typed, so you can see where you're going before you tap. Use <strong>≡ → Edit link</strong> to change it or remove it. A row you've marked <strong>paid</strong> isn't underlined, since the strikethrough already has that line — the link still works from the menu.</div>
         </div>
 
         <div class="askme-item">
@@ -7146,7 +7146,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>📅 <strong>Beginning balance date</strong> — open the note on any Checking row to set a beginning balance date; expenses dated before that date won't be deducted from the balance</span></div>
       <div class="shortcut-row"><span>✎ <strong>Row notes</strong> — click ≡ on any row → Add note; a gold dot appears on hover to indicate a note exists</span></div>
       <div class="shortcut-row"><span>👁 <strong>Full name peek</strong> — long row names fade at the edge; hover (desktop) or tap once (mobile) to see the full text, tap again to edit. Works on locked months too, where it only ever shows the name.</span></div>
-      <div class="shortcut-row"><span>🔗 <strong>Account links</strong> — keep a link to the institution behind a Debt, Checking or Savings &amp; Investments row: ⋮ → Add link, paste the page you sign in on, name it whatever you like. The row's name is then underlined, and ⋮ → Open takes you there in a new tab. The menu names the <strong>real web address</strong> rather than your label, so you always see where you're going first. Only secure (https) sites are accepted, the address is all that's stored — never a username or password — and the link carries into every new month. Paid rows aren't underlined, since the strikethrough already occupies that line.</span></div>
+      <div class="shortcut-row"><span>🔗 <strong>Account links</strong> — keep a link to the institution behind a Debt, Checking or Savings &amp; Investments row: ≡ → Add link, paste the page you sign in on, name it whatever you like. The row's name is then underlined, and ≡ → Open takes you there in a new tab. The menu names the <strong>real web address</strong> rather than your label, so you always see where you're going first. Only secure (https) sites are accepted, the address is all that's stored — never a username or password — and the link carries into every new month. Paid rows aren't underlined, since the strikethrough already occupies that line.</span></div>
       <div class="shortcut-row"><span>→ <strong>Income destination</strong> — open the note on any income row to set a "→ goes to" label (e.g. Marcus Savings, HYSA)</span></div>
       <div class="shortcut-row"><span>🔄 <strong>Subscriptions</strong> — dedicated section for recurring services; included in expense totals and month-over-month comparison</span></div>
       <div class="shortcut-row"><span>📝 <strong>Notes</strong> — free-form notes per month with bullet points and checkable to-dos; syncs across devices</span></div>
@@ -10668,7 +10668,7 @@ function renderRowEl(section, row, animate = false) {
       <button class="drag-handle" title="Options" onclick="showCtxMenuBtn(event,'${section}','${row.id}');dismissRowMenuHint()" ontouchend="event.preventDefault();showCtxMenuBtn(event,'${section}','${row.id}');dismissRowMenuHint()"><span></span><span></span><span></span><span id="row-menu-hint-dot" style="display:none;position:absolute;top:2px;right:2px;width:6px;height:6px;background:#6B9E70;border-radius:50%;animation:hint-pulse 1.5s ease-in-out infinite;pointer-events:none;"></span></button>
       <button class="del-btn" onmousedown="event.preventDefault();event.stopPropagation();this._md=1;delRow('${section}','${row.id}')" onclick="event.stopPropagation();if(!this._md)delRow('${section}','${row.id}');this._md=0" title="Remove row">×</button>
       <input type="text" class="erow-label-input${sectionTakesLink(section) && rowHasLink(row) ? ' has-link' : ''}" placeholder="${cfg.ph}" value="${escHtml(row.label||'')}"
-        ${sectionTakesLink(section) && rowHasLink(row) ? `title="Link: ${escHtml(accountUrlHost(row._linkUrl))} — open it from the ⋮ menu"` : ''}
+        ${sectionTakesLink(section) && rowHasLink(row) ? `title="Link: ${escHtml(accountUrlHost(row._linkUrl))} — open it from the ≡ menu"` : ''}
         data-section="${section}" data-id="${row.id}" data-key="label" data-col="0"
         oninput="updateRow('${section}','${row.id}','label',this.value); this.closest('.erow').style.display=''; showAutocomplete(this,'${section}')"
         onkeydown="labelKeyDown(event,this); acKeyDown(event,this,'${section}')"
@@ -11942,7 +11942,7 @@ function showBillsBreakdown(anchor) {
 
      It deliberately does not offer to fix anything. Marking a row recurring
      also copies it into every later month, which is a reasonable thing to do
-     from the ⋮ menu where you went looking for it, and a surprise from a
+     from the ≡ menu where you went looking for it, and a surprise from a
      button on a summary card. The panel points at the gesture instead. */
   if (!info.total) {
     html += '<div class="bdp-say">A row counts here when it is <b>marked recurring</b>, ' +
@@ -11961,7 +11961,7 @@ function showBillsBreakdown(anchor) {
           '</span></div>';
       });
     });
-    html += '<div class="bdp-howto">Mark one recurring — <b>⋮ → Mark as recurring</b> on the row — ' +
+    html += '<div class="bdp-howto">Open <b>≡</b> on the row and choose <b>Mark as recurring</b>, ' +
             'and it will show up here.' +
             (pinned ? ' Tap a row above to jump to it.' : '') + '</div>';
   } else {
@@ -14552,7 +14552,7 @@ function _paintLinkState(section, id) {
   var row = _linkRow(section, id);
   var host = (row && sectionTakesLink(section)) ? accountUrlHost(row._linkUrl) : '';
   inp.classList.toggle('has-link', !!host);
-  if (host) inp.setAttribute('title', 'Link: ' + host + ' — open it from the ⋮ menu');
+  if (host) inp.setAttribute('title', 'Link: ' + host + ' — open it from the ≡ menu');
   else inp.removeAttribute('title');
 }
 
