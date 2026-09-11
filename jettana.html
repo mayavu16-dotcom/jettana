@@ -17555,6 +17555,28 @@ function toggleRecurring(section, id) {
   } else {
     showToast('Recurring removed');
   }
+
+  /* Bills Due reads `recurring`, so changing it changes the card — and until
+     this line, nothing here repainted it. Marking Rent recurring qualified it
+     instantly and the card went on showing the old figure; striking the row
+     and unstriking it "fixed" it, because togglePaid → applyPaidEffect →
+     recalc() forced the refresh that this function never did. The bill was
+     always due. Only the number on screen was behind.
+
+     Worth being clear that this function was not wrong when it was written.
+     Before Bills Due, `recurring` affected no figure on the dashboard — it
+     only decided whether a row copied into next month — so skipping recalc()
+     was correct. Bills Due then took a dependency on the flag, and the code
+     that changes the flag was never told.
+
+     > When a new feature reads an existing flag, go and find every place that
+     > WRITES that flag and make sure each one repaints. The other three
+     > (togglePaid, toggleExempt, setBillClass) already did; this one predated
+     > them all.
+
+     Runs in both directions on purpose: turning recurring OFF left exactly the
+     same stale number. */
+  recalc();
 }
 
 function duplicateRow(section, id) {
