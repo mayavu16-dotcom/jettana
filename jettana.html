@@ -3046,6 +3046,15 @@ body.sidebar-open #calc-panel { display: none !important; }
 .dark #bills-breakdown-pop .bdp-jump:hover { background: rgba(255,255,255,0.07); }
 #bills-breakdown-pop .bdp-sec { font-size: 9.5px; color: var(--steel); margin-left: 6px; }
 #bills-breakdown-pop .bdp-part { font-size: 9.5px; color: var(--steel); }
+/* The empty state's prose. Wider line-height than the ledger rows because it
+   is read as a sentence rather than scanned as a column of figures. */
+#bills-breakdown-pop .bdp-say { font-size: 11.5px; color: var(--slate); line-height: 1.5; }
+#bills-breakdown-pop .bdp-say b { color: var(--ink); font-weight: 600; }
+#bills-breakdown-pop .bdp-howto {
+  font-size: 10.5px; color: var(--steel); line-height: 1.45;
+  margin-top: 9px; padding-top: 8px; border-top: 1px solid var(--mist);
+}
+#bills-breakdown-pop .bdp-howto b { color: var(--slate); font-weight: 600; }
 #bills-breakdown-pop .ibp-amt { font-variant-numeric: tabular-nums; white-space: nowrap; }
 #bills-breakdown-pop .bdp-free { color: var(--sage-dark); }
 .dark #bills-breakdown-pop .bdp-free { color: var(--sage); }
@@ -8966,17 +8975,32 @@ const LEFT_SECTIONS = ['housing','transport','food','health','subscriptions','gi
    identical ("the two columns are Budget and Actual"), so a twelfth section
    joins both features or neither, and there is no hand-kept list to drift. */
 function billsDue(d) {
-  var out = { total: 0, notYetCounted: 0, count: 0, bySection: {}, rows: [], excluded: [] };
+  var out = { total: 0, notYetCounted: 0, count: 0, bySection: {}, rows: [], excluded: [],
+              candidates: [] };
   if (!d) return out;
   LEFT_SECTIONS.forEach(function(sec) {
     var secTotal = 0;
     (d[sec] || []).forEach(function(r) {
-      if (!r || !r.recurring || r.paid || r.exempt) return;
+      if (!r || r.paid || r.exempt) return;
       var actual = parseAmt(r.actual);
       var budget = parseAmt(r.budget);
       var known = actual > 0.005;
       var owed = known ? actual : budget;
       if (owed <= 0.005) return;
+      /* NEAR MISSES. A row that is unpaid and has an amount but is NOT marked
+         recurring fails the rule on one condition only — and that is exactly
+         the person who looks at a $0.00 card with their rent sitting unpaid on
+         screen and concludes the card is broken.
+
+         They come out of THIS pass rather than a second one, for the same
+         reason `rows` does: a card that says "3 aren't counted" and a list that
+         shows four is the drift this file has been bitten by before. One loop,
+         one truth. */
+      if (!r.recurring) {
+        out.candidates.push({ id: r.id, section: sec, label: r.label || '(no label)',
+                              owed: owed, known: known });
+        return;
+      }
       // Excluded rows are still LISTED, greyed, in the panel — otherwise the
       // ✕ is a one-way door and there is no way to undo a mistap.
       if (r._billClass === 'not') {
@@ -11896,7 +11920,9 @@ function showBillsBreakdown(anchor) {
      be a second copy of the app's most important sum — the thing that produced
      four drifting helpers last time (house rule 28). */
   var b = _billsBreakdown;
-  if (!b || !b.info.total) return;         // nothing to explain
+  // Nothing to explain means no bills AND no near misses. With near misses
+  // there is plenty to explain — that is the whole point of the empty state.
+  if (!b || (!b.info.total && !b.info.candidates.length)) return;
   var info = b.info;
   var pop = _billsBreakdownPop();
   var pinned = breakdownIsPinned('bills-breakdown-pop');
@@ -11906,6 +11932,39 @@ function showBillsBreakdown(anchor) {
   var locked = monthIsLocked(currentMonthKey);
   var esc = function(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
   var html = pinned ? breakdownHeader('Bills due') : '<div class="ibp-title">Bills due</div>';
+
+  /* ── The empty state, which is really the teaching state ────────────────
+     Reached when the total is zero but rows exist that fail on the recurring
+     condition alone. It states the rule, then shows the rule applied to THEIR
+     rows — the near misses, by name and amount. An abstract sentence about
+     what counts as a bill is forgettable; the same sentence next to your own
+     rent is not.
+
+     It deliberately does not offer to fix anything. Marking a row recurring
+     also copies it into every later month, which is a reasonable thing to do
+     from the ⋮ menu where you went looking for it, and a surprise from a
+     button on a summary card. The panel points at the gesture instead. */
+  if (!info.total) {
+    html += '<div class="bdp-say">A row counts here when it is <b>marked recurring</b>, ' +
+            'has an amount, and <b>is not ticked paid</b> — the things you owe again every month.</div>';
+    html += '<div class="ibp-title" style="margin-top:10px;">Not counted yet</div>';
+    LEFT_SECTIONS.forEach(function(sec) {
+      var rows = info.candidates.filter(function(r) { return r.section === sec; });
+      if (!rows.length) return;
+      rows.sort(function(a, b) { return b.owed - a.owed; });
+      rows.forEach(function(r) {
+        html += '<div class="ibp-row ibp-sub' + (pinned ? ' bdp-jump' : '') + '"' +
+          (pinned ? ' data-sec="' + esc(r.section) + '" data-row="' + esc(r.id) + '"' : '') + '>' +
+          '<span>' + esc(r.label) + '<span class="bdp-sec">' + esc(getSectionName(sec)) + '</span></span>' +
+          '<span class="ibp-amt">' + _fmtMoney(r.owed) +
+          (r.known ? '' : ' <span class="bdp-part">est.</span>') +
+          '</span></div>';
+      });
+    });
+    html += '<div class="bdp-howto">Mark one recurring — <b>⋮ → Mark as recurring</b> on the row — ' +
+            'and it will show up here.' +
+            (pinned ? ' Tap a row above to jump to it.' : '') + '</div>';
+  } else {
 
   // Grouped by section, in the tracker's own order, so the list reads in the
   // same sequence as the page behind it.
@@ -11967,6 +12026,9 @@ function showBillsBreakdown(anchor) {
   }
   if (pinned) html += '<div style="font-size:9.5px;color:var(--steel);padding-top:5px;">' +
     (locked ? 'This month is locked' : 'Tap a bill to jump to it · ✕ if it is not really a bill') + '</div>';
+
+  }   // ← end of the has-bills branch; both paths share the tail below, so
+      //   there is still only one copy of the pin binding and the positioning
 
   pop.innerHTML = html;
   if (pinned) {
@@ -12939,22 +13001,42 @@ function recalc() {
       billsSub.innerHTML = '<span style="font-weight:600;color:' +
         (free >= 0 ? 'var(--sage-dark)' : 'var(--blush)') + ';">' +
         fmtLeftOver(free) + (free >= 0 ? ' left' : ' short') + '</span> after these';
+    } else if (_bills.candidates.length) {
+      /* "Nothing unpaid right now" is a claim about THEIR MONEY, and with rent
+         sitting unpaid two inches below it, it is a claim they can see is
+         false — so the card reads as broken rather than as empty. Say what is
+         true about the app instead: these rows exist, and here is the one
+         condition they do not meet. */
+      var n = _bills.candidates.length;
+      billsSub.textContent = n + ' unpaid, not recurring';
     } else {
+      // Genuinely nothing owed — the original sentence is honest here.
       billsSub.textContent = 'nothing unpaid right now';
     }
   }
   if (billsCard) {
-    // Only advertise the panel when there is one, same as the savings card.
-    billsCard.style.cursor = _bills.total > 0 ? 'help' : 'default';
+    /* The panel used to be switched off whenever the total was zero, which put
+       the explanation of the rule behind already understanding the rule: you
+       could only find out what Bills Due counts once you had already made it
+       count something. An empty card with near misses is the moment the
+       explanation is worth most, so that is now exactly when it opens. */
+    var billsHasStory = _bills.total > 0 || _bills.candidates.length > 0;
+    billsCard.style.cursor = billsHasStory ? 'help' : 'default';
     billsCard.title = _bills.total > 0
       ? _bills.count + (_bills.count === 1 ? ' recurring bill' : ' recurring bills') +
         ' budgeted this month and not ticked paid'
-      : 'Recurring rows you have not ticked paid show up here';
+      : (_bills.candidates.length
+          ? 'Unpaid rows that are not marked recurring — open to see them'
+          : 'Recurring rows you have not ticked paid show up here');
   }
   // A pinned panel has to follow the numbers while it is open — tick a bill
   // paid and it must leave the list, not sit there contradicting the card.
   if (breakdownIsPinned('bills-breakdown-pop') && billsCard) {
-    if (_bills.total > 0) showBillsBreakdown(billsCard); else unpinBreakdown();
+    // Includes the empty-with-near-misses state now: marking one of the listed
+    // rows recurring must move it from that list into the bills above it while
+    // the panel is open, not close the panel out from under the tap.
+    if (_bills.total > 0 || _bills.candidates.length > 0) showBillsBreakdown(billsCard);
+    else unpinBreakdown();
   }
   const savEl = document.getElementById('sum-savings');
   if (savEl) savEl.style.color = savA > 0 ? 'var(--sage-dark)' : '';
