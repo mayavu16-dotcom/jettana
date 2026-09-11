@@ -11993,7 +11993,13 @@ function showBillsBreakdown(anchor) {
            row, choose which item — and at 10.5px the ≡ glyph was too small to
            read as a button anyway. */
         ? '<b>⟳</b> counts one as a bill · tap a row to jump to it'
-        : 'Open <b>≡</b> on the row and choose <b>Mark as recurring</b>, and it will show up here.') +
+        /* The hover panel cannot hold a control: the card's own onmouseleave
+           hides it, and the panel is a child of <body>, so reaching for a
+           button dismisses the thing you were reaching into. That is why the
+           ✕ has always been pinned-only and why the ⟳ is too.
+           So the unpinned caption's job is to point at the gesture that DOES
+           work rather than leave someone at a dead end. */
+        : 'Click this card to count one of these as a bill, or use <b>≡</b> on the row.') +
       '</div>';
   } else {
 
@@ -12227,7 +12233,19 @@ function hideBillsBreakdown() {
 
 function toggleBillsBreakdown(anchor) {
   if (breakdownIsPinned('bills-breakdown-pop')) { unpinBreakdown(); return; }
-  if (!_billsBreakdown || !_billsBreakdown.info.total) return;
+  /* Near misses count as something to show. This guard still read `.total`
+     after the empty state was built, so clicking an empty card did NOTHING —
+     and since the ⟳ only renders on a PINNED panel, the control was
+     unreachable in the exact state it exists for. Hover showed the panel,
+     clicking did nothing, and it looked like the deploy had failed.
+
+     Same shape as pinBreakdown()'s silent early return: a guard that predates
+     the thing it is now guarding, failing by doing nothing at all. Whenever
+     `.info.total` is used as a proxy for "is there anything here", it needs to
+     ask about candidates too — there are four such places and this was the
+     fourth. */
+  if (!_billsBreakdown) return;
+  if (!_billsBreakdown.info.total && !_billsBreakdown.info.candidates.length) return;
   pinBreakdown('bills-breakdown-pop');
   showBillsBreakdown(anchor);
 }
