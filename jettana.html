@@ -2726,6 +2726,59 @@ mark.hl-rose  { --hl: rgba(224, 132, 132, 0.30); }
 .dark .ctx-item { color: var(--ink); }
 .dark .ctx-item:hover { background: #263545; }
 
+/* ── Account link editor ───────────────────────────────────────────── */
+.link-ed-overlay {
+  position: fixed; inset: 0; z-index: 10000;
+  background: rgba(26,35,50,0.45);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.link-ed {
+  background: var(--white);
+  border: 1px solid var(--mist);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  padding: 16px;
+  width: 100%; max-width: 380px;
+  display: flex; flex-direction: column; gap: 12px;
+  font-family: 'Outfit', sans-serif;
+}
+.link-ed-title { margin: 0; font-size: 14px; font-weight: 600; color: var(--ink); }
+.link-ed-fld { display: flex; flex-direction: column; gap: 4px; }
+.link-ed-fld label {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--steel);
+}
+/* 16px is not a style choice: iOS zooms the whole page in on focus for
+   anything smaller, and the row behind it never comes back straight. */
+.link-ed-fld input {
+  border: 1px solid var(--mist); border-radius: 7px;
+  padding: 9px 10px; width: 100%;
+  font-size: 16px; font-family: 'Outfit', sans-serif;
+  color: var(--ink); background: var(--white);
+}
+.link-ed-fld input:focus {
+  outline: 2px solid var(--sage); outline-offset: 1px; border-color: var(--sage);
+}
+.link-ed-hint { font-size: 11px; color: var(--steel); }
+.link-ed-hint.is-bad { color: var(--blush); }
+.link-ed-actions { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+.link-ed-spacer { flex: 1 1 auto; }
+.link-ed-btn {
+  padding: 9px 16px; border-radius: 7px;
+  font-family: 'Outfit', sans-serif; font-size: 13px; cursor: pointer;
+}
+.link-ed-save   { border: none; background: var(--sage); color: #fff; font-weight: 600; }
+.link-ed-cancel { border: 1px solid var(--mist); background: none; color: var(--steel); font-weight: 500; }
+.link-ed-remove { border: 1px solid var(--mist); background: none; color: var(--blush); font-weight: 500; }
+@media (pointer: coarse) {
+  .link-ed { max-width: 440px; }
+  .link-ed-btn { padding: 12px 18px; min-height: 44px; }
+}
+.dark .link-ed { background: #1E2A38; border-color: #2A3A4A; }
+.dark .link-ed-fld input { background: #263545; border-color: #3A4A5A; color: var(--ink); }
+.dark .link-ed-cancel, .dark .link-ed-remove { background: #263545; border-color: #3A4A5A; }
+
 /* ── Dark mode — modals & dynamic components ── */
 .dark #tour-tooltip { background: #1E2A38 !important; }
 .dark #tour-title { color: var(--ink) !important; }
@@ -3280,6 +3333,45 @@ body.sidebar-open #calc-panel { display: none !important; }
 @media (pointer: coarse) {
   .erow:has(.note-indicator.has-note) .erow-label-wrap .erow-label-input { padding-right: 44px; }
   .erow:has(.erow-label-wrap.has-cardbadge):has(.note-indicator.has-note) .erow-label-wrap .erow-label-input { padding-right: 58px; }
+}
+
+/* ── Account link: the whole thing the row shows ───────────────────────
+   A row with a link underlines its own name. Nothing is added to the row —
+   no chip, no dot — so no clearance changes and the 104px badge rule above
+   is untouched.
+
+   NOT on paid rows, and that is a real constraint rather than taste. A paid
+   row is already struck through, an element gets exactly ONE
+   text-decoration-color, and the strike's colour is the USER'S
+   (--paid-color, set from strikeColor). Underlining a paid row would make
+   the link signal silently take on whatever colour they picked for "paid".
+   A signal that changes colour on someone else's setting is worse than no
+   signal, and a bill already paid is not one you need the bank for.
+
+   Specificity note (CSS trap 18 all over again): `.erow.paid
+   .erow-label-input` above is (0,3,0) and uses the text-decoration
+   SHORTHAND, which resets text-decoration-line. The underline rule below is
+   also (0,3,0) and sits later, so it would win on paid rows. The paid
+   override after it is (0,4,0) and settles it in both directions.
+
+   The offset is 1px and that number is measured, not chosen. The name is an
+   <input>, 20px tall, and an input carries `overflow: clip` from the browser
+   itself — so an underline pushed below the text is cut off by the field's
+   own edge. At 3px it vanished COMPLETELY while getComputedStyle still
+   reported `underline`: the style was right and the pixels were empty. 2px
+   was already fraying. 1px renders in sans, serif and monospace alike, so it
+   survives whatever the font falls back to. Check this one by looking at it,
+   never by reading the computed style. */
+.erow .erow-label-input.has-link {
+  text-decoration-line: underline;
+  text-decoration-color: var(--sage);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 1px;
+  text-decoration-skip-ink: auto;   /* step around the descenders in "Sapphire" */
+}
+.erow.paid .erow-label-input.has-link {
+  text-decoration-line: line-through;
+  text-decoration-color: var(--paid-color, var(--steel));
 }
 
 /* ── In-app day grid (mobile date picking) ─────────────────────────────
@@ -6504,6 +6596,21 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
           <button class="askme-q" onclick="toggleAskMe(this)">A row name is cut off — how do I read the whole thing?<span class="askme-q-arrow">▾</span></button>
           <div class="askme-a">Long names fade out at the edge instead of colliding with the row's controls. On desktop, <strong>hover</strong> over the name to see the full text in a small popup. On mobile, <strong>tap once</strong> to peek at the full name — tap again to edit it. This works on <strong>locked months</strong> too, where tapping just shows the name and never opens it for editing.</div>
         </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">Can I get to my bank from here?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Jettana never connects to your bank, but you can keep a link to it on the row. On a <strong>Debt</strong> or <strong>Checking</strong> row, open <strong>⋮ → Add link</strong>, paste the page you normally sign in on, and give it a name you'll recognise. After that the row's name is <strong>underlined</strong>, and <strong>⋮ → Open</strong> takes you there in a new tab. Nothing is saved but the address — no username, no password, and Jettana never signs in for you.</div>
+        </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">Why is one of my account names underlined?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">That row has a link saved to it. Open <strong>⋮</strong> on the row and the first item shows the website it goes to — <em>Open chase.com</em>, for instance. The menu always shows you the <strong>real web address</strong> rather than the name you typed, so you can see where you're going before you tap. Use <strong>⋮ → Edit link</strong> to change it or remove it. A row you've marked <strong>paid</strong> isn't underlined, since the strikethrough already has that line — the link still works from the menu.</div>
+        </div>
+
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">Jettana won't accept my bank's address — why?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Jettana only opens <strong>secure</strong> websites, so an address has to be a real site like <em>chase.com</em> or <em>secure.bankofamerica.com</em>. If you type something that isn't one — a name with no dot in it, or anything that isn't an ordinary web address — it won't save, and nothing is stored until you fix it. You don't need to type the <em>https://</em> part; Jettana adds it for you.</div>
+        </div>
       </div>
 
       <div class="askme-group" data-group>
@@ -7000,6 +7107,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>📅 <strong>Beginning balance date</strong> — open the note on any Checking row to set a beginning balance date; expenses dated before that date won't be deducted from the balance</span></div>
       <div class="shortcut-row"><span>✎ <strong>Row notes</strong> — click ≡ on any row → Add note; a gold dot appears on hover to indicate a note exists</span></div>
       <div class="shortcut-row"><span>👁 <strong>Full name peek</strong> — long row names fade at the edge; hover (desktop) or tap once (mobile) to see the full text, tap again to edit. Works on locked months too, where it only ever shows the name.</span></div>
+      <div class="shortcut-row"><span>🔗 <strong>Account links</strong> — keep a link to the bank behind a Debt or Checking row: ⋮ → Add link, paste the page you sign in on, name it whatever you like. The row's name is then underlined, and ⋮ → Open takes you there in a new tab. The menu names the <strong>real web address</strong> rather than your label, so you always see where you're going first. Only secure (https) sites are accepted, the address is all that's stored — never a username or password — and the link carries into every new month. Paid rows aren't underlined, since the strikethrough already occupies that line.</span></div>
       <div class="shortcut-row"><span>→ <strong>Income destination</strong> — open the note on any income row to set a "→ goes to" label (e.g. Marcus Savings, HYSA)</span></div>
       <div class="shortcut-row"><span>🔄 <strong>Subscriptions</strong> — dedicated section for recurring services; included in expense totals and month-over-month comparison</span></div>
       <div class="shortcut-row"><span>📝 <strong>Notes</strong> — free-form notes per month with bullet points and checkable to-dos; syncs across devices</span></div>
@@ -7327,8 +7435,11 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
 
 <!-- Right-click context menu -->
 <div class="ctx-menu" id="ctx-menu" style="display:none;" role="menu" aria-label="Row options">
+  <button class="ctx-item" id="ctx-link-open" style="display:none;"><span class="ctx-icon">🔗</span><span id="ctx-link-open-label">Open</span></button>
+  <div class="ctx-divider" id="ctx-link-divider" style="display:none;"></div>
   <button class="ctx-item" id="ctx-note"><span class="ctx-icon">✎</span><span id="ctx-note-label">Add note</span></button>
   <button class="ctx-item" id="ctx-date"><span class="ctx-icon">📅</span><span id="ctx-date-label">Add date</span></button>
+  <button class="ctx-item" id="ctx-link-edit" style="display:none;"><span class="ctx-icon">🔗</span><span id="ctx-link-edit-label">Add link</span></button>
   <button class="ctx-item" id="ctx-color"><span class="ctx-icon">🎨</span>Color</button>
   <div class="ctx-divider" id="ctx-color-divider" style="display:none;"></div>
   <div class="ctx-submenu-wrap" id="ctx-paste-wrap" style="display:none;">
@@ -9589,6 +9700,9 @@ function createFreshMonth(newKey) {
           // lost here before _billClass existed.
           _billClass: r._billClass || '',
           _invClass: r._invClass || '',
+          // Your bank does not move house in January. A link that had to be
+          // re-pasted every month would read as the app forgetting.
+          _linkName: r._linkName || '', _linkUrl: r._linkUrl || '',
           _beginDate: beginDateForMonth(newKey, r._beginDate),
         };
         if (!all[newKey][section]) all[newKey][section] = [];
@@ -9768,6 +9882,7 @@ function showCopySectionModal(section) {
         _apy: row._apy || '', _fund: row._fund || '', _shares: row._shares || '',
         _price: row._price || '', _tDir: row._tDir || '',
         _billClass: row._billClass || '', _invClass: row._invClass || '',
+        _linkName: row._linkName || '', _linkUrl: row._linkUrl || '',
         _beginDate: beginDateForMonth(currentMonthKey, row._beginDate),
       };
     });
@@ -9851,6 +9966,7 @@ function copyMonthData(sourceKey, newKey) {
       alloc: row.alloc || '',
       _cardLink: row._cardLink || '',
       _billClass: row._billClass || '', _invClass: row._invClass || '',
+      _linkName: row._linkName || '', _linkUrl: row._linkUrl || '',
       // Was omitted entirely here while the other two copy paths carried it
       // verbatim — three seeding paths, two behaviours. Now all three agree.
       _beginDate: beginDateForMonth(newKey, row._beginDate),
@@ -10497,7 +10613,8 @@ function renderRowEl(section, row, animate = false) {
     <div class="erow-label-wrap${(section === 'debt' && row._cardLink) || (section === 'checking' && (row.paidColor || row.numColor || (row._entries || []).some(function(e){ return e._type === 'transaction'; }))) ? ' has-cardbadge' : ''}">
       <button class="drag-handle" title="Options" onclick="showCtxMenuBtn(event,'${section}','${row.id}');dismissRowMenuHint()" ontouchend="event.preventDefault();showCtxMenuBtn(event,'${section}','${row.id}');dismissRowMenuHint()"><span></span><span></span><span></span><span id="row-menu-hint-dot" style="display:none;position:absolute;top:2px;right:2px;width:6px;height:6px;background:#6B9E70;border-radius:50%;animation:hint-pulse 1.5s ease-in-out infinite;pointer-events:none;"></span></button>
       <button class="del-btn" onmousedown="event.preventDefault();event.stopPropagation();this._md=1;delRow('${section}','${row.id}')" onclick="event.stopPropagation();if(!this._md)delRow('${section}','${row.id}');this._md=0" title="Remove row">×</button>
-      <input type="text" class="erow-label-input" placeholder="${cfg.ph}" value="${escHtml(row.label||'')}"
+      <input type="text" class="erow-label-input${sectionTakesLink(section) && rowHasLink(row) ? ' has-link' : ''}" placeholder="${cfg.ph}" value="${escHtml(row.label||'')}"
+        ${sectionTakesLink(section) && rowHasLink(row) ? `title="Link: ${escHtml(accountUrlHost(row._linkUrl))} — open it from the ⋮ menu"` : ''}
         data-section="${section}" data-id="${row.id}" data-key="label" data-col="0"
         oninput="updateRow('${section}','${row.id}','label',this.value); this.closest('.erow').style.display=''; showAutocomplete(this,'${section}')"
         onkeydown="labelKeyDown(event,this); acKeyDown(event,this,'${section}')"
@@ -14218,6 +14335,224 @@ function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
 }
 
+/* ── Account links ─────────────────────────────────────────────────────
+   THE one place a typed-in web address is judged. The save path and the
+   render path both call this, so there is never a second opinion about what
+   counts as safe — the same mistake as the three planned-spend helpers, just
+   with a worse failure mode.
+
+   Everything this returns ends up in an href. An address field that accepts
+   any scheme accepts `javascript:` too, and that runs as the page. So: https
+   only, http quietly upgraded, and every other scheme refused outright.
+
+   Returns '' for anything it cannot make safe. '' means "no link" everywhere
+   downstream, so a rejected address can never be half-stored. */
+/* Drop every space-like and invisible character, by code point rather than by
+   a regex full of escapes. Written out longhand deliberately: this is the
+   guard that stops "java<tab>script:alert(1)" — which browsers happily parse
+   as javascript: — from slipping past a scheme test that only looks for the
+   literal word. */
+function _stripBlankAndControl(str) {
+  var out = '';
+  for (var i = 0; i < str.length; i++) {
+    var c = str.charCodeAt(i);
+    if (c <= 32) continue;                    // control characters and space
+    if (c === 127) continue;                  // delete
+    if (c >= 128 && c <= 160) continue;       // C1 block and non-breaking space
+    if (c === 8232 || c === 8233) continue;   // line / paragraph separator
+    if (c === 65279) continue;                // zero-width no-break space
+    out += str.charAt(i);
+  }
+  return out;
+}
+
+function safeAccountUrl(raw) {
+  var s = String(raw == null ? '' : raw);
+  // Strip whitespace AND control characters before looking at the scheme:
+  // "java\tscript:alert(1)" is parsed as javascript: by browsers but does not
+  // match a naive /^javascript:/ test.
+  s = _stripBlankAndControl(s);
+  if (!s) return '';
+  // A bare domain is what people actually paste or type. Give it a scheme
+  // before parsing, or "chase.com" parses as a relative path.
+  if (!/^[a-zA-Z][a-zA-Z0-9+.\-]*:/.test(s)) s = 'https://' + s;
+  var u;
+  try { u = new URL(s); } catch (e) { return ''; }
+  if (u.protocol === 'http:') u.protocol = 'https:';   // upgrade, don't reject
+  if (u.protocol !== 'https:') return '';              // javascript:, data:, file:, …
+  // A hostname with no dot is not a site someone banks at, and it is the
+  // shape a typo takes ("chasecom", "https://chase").
+  if (!u.hostname || u.hostname.indexOf('.') === -1) return '';
+  return u.href;
+}
+
+/* The domain, for showing someone where a link actually goes. Deliberately
+   NOT derived from the name they typed — the name is the one part that can
+   be wrong. */
+function accountUrlHost(url) {
+  var safe = safeAccountUrl(url);
+  if (!safe) return '';
+  try { return new URL(safe).hostname.replace(/^www\./, ''); } catch (e) { return ''; }
+}
+
+/* Links belong on things you hold an account with. Everywhere else a link is
+   noise, and gating here keeps that a rule rather than a habit. */
+function sectionTakesLink(section) {
+  return section === 'debt' || section === 'checking';
+}
+
+function rowHasLink(row) {
+  return !!(row && safeAccountUrl(row._linkUrl));
+}
+
+function _linkRow(section, id) {
+  var all = loadAll();
+  var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
+  for (var i = 0; i < rows.length; i++) if (rows[i].id === id) return rows[i];
+  return null;
+}
+
+/* Find a rendered row without a selector built from its id — ids are
+   generated, and building a selector out of data is how an escaping bug
+   gets in. */
+function _linkRowEl(section, id) {
+  var found = null;
+  document.querySelectorAll('.erow[data-section="' + section + '"]').forEach(function(el) {
+    if (el.dataset.id === String(id)) found = el;
+  });
+  return found;
+}
+
+/* Repaint just this row's underline instead of re-rendering the section.
+   Re-rendering #rows-* wipes the hidden blank placeholder the section keeps,
+   and nothing here needs the row rebuilt. */
+function _paintLinkState(section, id) {
+  var el = _linkRowEl(section, id);
+  if (!el) return;
+  var inp = el.querySelector('.erow-label-input');
+  if (!inp) return;
+  var row = _linkRow(section, id);
+  var host = (row && sectionTakesLink(section)) ? accountUrlHost(row._linkUrl) : '';
+  inp.classList.toggle('has-link', !!host);
+  if (host) inp.setAttribute('title', 'Link: ' + host + ' — open it from the ⋮ menu');
+  else inp.removeAttribute('title');
+}
+
+function openAccountLink(section, id) {
+  var row = _linkRow(section, id);
+  var url = row ? safeAccountUrl(row._linkUrl) : '';   // checked again on the way out
+  if (!url) return;
+  // noopener/noreferrer both ways: without it the page that opens holds a
+  // handle on this tab through window.opener and can navigate it elsewhere.
+  var w = window.open(url, '_blank', 'noopener,noreferrer');
+  if (w) w.opener = null;
+}
+
+function openLinkEditor(section, id) {
+  if (!sectionTakesLink(section)) return;
+  if (monthIsLocked(currentMonthKey)) return;   // month lock: view only
+  var row = _linkRow(section, id);
+  if (!row) return;
+
+  var old = document.getElementById('link-editor-overlay');
+  if (old) old.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = 'link-editor-overlay';
+  overlay.className = 'link-ed-overlay';
+
+  var box = document.createElement('div');
+  box.className = 'link-ed';
+  box.setAttribute('role', 'dialog');
+  box.setAttribute('aria-modal', 'true');
+  box.setAttribute('aria-label', 'Account link');
+  // Static skeleton only. Everything the user typed goes in through .value
+  // below, so none of it is ever parsed as markup.
+  box.innerHTML =
+    '<h3 class="link-ed-title">🔗 Account link</h3>' +
+    '<div class="link-ed-fld">' +
+      '<label for="link-ed-name">Name</label>' +
+      '<input type="text" id="link-ed-name" placeholder="Chase login" maxlength="60">' +
+    '</div>' +
+    '<div class="link-ed-fld">' +
+      '<label for="link-ed-url">Web address</label>' +
+      '<input type="url" id="link-ed-url" placeholder="chase.com" inputmode="url" ' +
+        'autocapitalize="off" autocorrect="off" spellcheck="false">' +
+      '<span class="link-ed-hint" id="link-ed-hint">Paste the page you normally sign in on.</span>' +
+    '</div>' +
+    '<div class="link-ed-actions">' +
+      '<button type="button" class="link-ed-btn link-ed-remove" id="link-ed-remove">Remove</button>' +
+      '<span class="link-ed-spacer"></span>' +
+      '<button type="button" class="link-ed-btn link-ed-cancel" id="link-ed-cancel">Cancel</button>' +
+      '<button type="button" class="link-ed-btn link-ed-save" id="link-ed-save">Save</button>' +
+    '</div>';
+
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+
+  var nameEl = box.querySelector('#link-ed-name');
+  var urlEl  = box.querySelector('#link-ed-url');
+  var hintEl = box.querySelector('#link-ed-hint');
+  nameEl.value = row._linkName || '';
+  urlEl.value  = row._linkUrl || '';
+  box.querySelector('#link-ed-remove').style.display = row._linkUrl ? '' : 'none';
+
+  function close() {
+    document.removeEventListener('keydown', onKey);
+    overlay.remove();
+  }
+  function onKey(e) {
+    if (e.key === 'Escape') { e.preventDefault(); close(); }
+    else if (e.key === 'Enter' && (e.target === nameEl || e.target === urlEl)) { e.preventDefault(); doSave(); }
+  }
+
+  function write(safeUrl, name) {
+    pushUndo('Account link');
+    var all = loadAll();
+    var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
+    var r = null;
+    for (var i = 0; i < rows.length; i++) if (rows[i].id === id) r = rows[i];
+    if (!r) return false;
+    r._linkUrl  = safeUrl;              // only ever the checked value, never the raw one
+    r._linkName = safeUrl ? name : '';  // a name with no link is just litter
+    saveAll(all);
+    _paintLinkState(section, id);
+    return true;
+  }
+
+  function doSave() {
+    var raw  = urlEl.value;
+    var safe = safeAccountUrl(raw);
+    if (raw.trim() && !safe) {
+      hintEl.textContent = 'That is not an address Jettana can open. It needs to be a secure site, like chase.com.';
+      hintEl.classList.add('is-bad');
+      urlEl.focus();
+      urlEl.select();
+      return;
+    }
+    var ok = write(safe, nameEl.value.trim().slice(0, 60));
+    close();
+    if (ok) showToast(safe ? 'Link saved' : 'Link removed');
+  }
+
+  function doRemove() {
+    var ok = write('', '');
+    close();
+    if (ok) showToast('Link removed');
+  }
+
+  box.querySelector('#link-ed-save').addEventListener('click', doSave);
+  box.querySelector('#link-ed-cancel').addEventListener('click', close);
+  box.querySelector('#link-ed-remove').addEventListener('click', doRemove);
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) close(); });
+  urlEl.addEventListener('input', function() {
+    hintEl.classList.remove('is-bad');
+    hintEl.textContent = 'Paste the page you normally sign in on.';
+  });
+  document.addEventListener('keydown', onKey);
+  setTimeout(function() { (row._linkUrl ? urlEl : nameEl).focus(); }, 50);
+}
+
 function init() {
   const now = new Date();
   const todayKey = monthKey(now.getFullYear(), now.getMonth());
@@ -17202,6 +17537,7 @@ function duplicateRow(section, id) {
     recurring: src.recurring || false,
     paidColor: src.paidColor || '',
     _billClass: src._billClass || '', _invClass: src._invClass || '',
+    _linkName: src._linkName || '', _linkUrl: src._linkUrl || '',
   };
   // Insert directly after source row
   rows.splice(srcIdx + 1, 0, newRow);
@@ -17264,6 +17600,26 @@ function showCtxMenu(e, section, id) {
   if (noteLabel && row) {
     noteLabel.textContent = row.note ? 'Edit note' : 'Add note';
   }
+
+  // Account link. The open item names the DOMAIN, never the name they typed —
+  // the menu is the last thing seen before the browser leaves, so it has to
+  // say where it is actually going. textContent, not innerHTML.
+  var takesLink = sectionTakesLink(section);
+  var linkHost  = (takesLink && row) ? accountUrlHost(row._linkUrl) : '';
+  var linkEditBtn = document.getElementById('ctx-link-edit');
+  if (linkEditBtn) {
+    linkEditBtn.style.display = takesLink ? 'flex' : 'none';
+    var editLbl = document.getElementById('ctx-link-edit-label');
+    if (editLbl) editLbl.textContent = linkHost ? 'Edit link' : 'Add link';
+  }
+  var linkOpenBtn = document.getElementById('ctx-link-open');
+  if (linkOpenBtn) {
+    linkOpenBtn.style.display = linkHost ? 'flex' : 'none';
+    var openLbl = document.getElementById('ctx-link-open-label');
+    if (openLbl) openLbl.textContent = 'Open ' + linkHost;
+  }
+  var linkDiv = document.getElementById('ctx-link-divider');
+  if (linkDiv) linkDiv.style.display = linkHost ? 'block' : 'none';
 
 
   // Date button — show on mobile only
@@ -17563,6 +17919,18 @@ window.addEventListener('load', function() {
   if (ctxExempt) ctxExempt.addEventListener('click', function() {
     if (ctxSection && ctxId) toggleExempt(ctxSection, ctxId);
     hideCtxMenu();
+  });
+  var ctxLinkEdit = document.getElementById('ctx-link-edit');
+  if (ctxLinkEdit) ctxLinkEdit.addEventListener('click', function() {
+    var sec = ctxSection, id = ctxId;   // hideCtxMenu clears them
+    hideCtxMenu();
+    if (sec && id) openLinkEditor(sec, id);
+  });
+  var ctxLinkOpen = document.getElementById('ctx-link-open');
+  if (ctxLinkOpen) ctxLinkOpen.addEventListener('click', function() {
+    var sec = ctxSection, id = ctxId;
+    hideCtxMenu();
+    if (sec && id) openAccountLink(sec, id);
   });
   var ctxDup = document.getElementById('ctx-duplicate');
   if (ctxDup) ctxDup.addEventListener('click', function() {
