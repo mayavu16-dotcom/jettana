@@ -4070,9 +4070,39 @@ body.font-large.text-bold .erow-label-input {
    expanded sections already show the total in their footer. The %-of-budget
    pill stays visible in BOTH states (it pairs with the header fill bar). */
 .sec-card:not(.collapsed) .sec-hdr .sec-total { display: none; }
-/* Birth-month picker: let the browser draw its calendar icon in a colour
-   that matches the theme (dark mode was rendering a near-black icon). */
-.dark #nw-birth { color-scheme: dark; }
+/* ── Native controls in dark mode ──────────────────────────────────────
+   The parts of a date field or a <select> that the BROWSER draws — the
+   calendar glyph, the calendar drop-down, the option list — are not styled
+   by any CSS here. They follow `color-scheme`, and with no value they render
+   light: a near-black calendar icon on a near-black field, and a white
+   option list dropping out of a dark control.
+
+   This was found once before and fixed on #nw-birth alone, by id. Every date
+   field and select added since then quietly inherited the bug — 18 of the 19
+   native controls in the app were still rendering their pop-ups light when
+   this rule was written, and the count grows with every row, since each one
+   carries two date inputs.
+
+   So it is keyed on the ELEMENT TYPE rather than on a list of ids, and
+   anything added later is covered without anyone having to remember. Same
+   reasoning as nsKey(): make it a rule the code enforces, not a list to keep
+   in your head.
+
+   Note what this does NOT change: the closed boxes. Those are styled here
+   and were always correct. If one of them shifts, the cause is that
+   `color-scheme` also drives an element's DEFAULT background — but every one
+   of these sets its own background (or transparent), so there should be
+   nothing to shift.
+
+   Verify with getComputedStyle(el).colorScheme, which is the honest
+   instrument for this one: the failure is "the browser drew its own UI in
+   the wrong scheme", and that property IS the thing being read. (Contrast
+   the account-link underline, where the computed style was right and the
+   pixels were empty.) Headless browsers do not open native pop-ups, so
+   a screenshot cannot prove this either way. */
+.dark input[type="date"],
+.dark input[type="month"],
+.dark select { color-scheme: dark; }
 #nw-birth::-webkit-calendar-picker-indicator { opacity: 0.75; cursor: pointer; }
 /* Drag hint on draggable modal headers — shown on phones too (touch drag
    works, and dragging a modal down to peek at the tracker underneath is
