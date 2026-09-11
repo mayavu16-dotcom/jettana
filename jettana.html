@@ -6599,7 +6599,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
 
         <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">Can I get to my bank from here?<span class="askme-q-arrow">▾</span></button>
-          <div class="askme-a">Jettana never connects to your bank, but you can keep a link to it on the row. On a <strong>Debt</strong> or <strong>Checking</strong> row, open <strong>⋮ → Add link</strong>, paste the page you normally sign in on, and give it a name you'll recognise. After that the row's name is <strong>underlined</strong>, and <strong>⋮ → Open</strong> takes you there in a new tab. Nothing is saved but the address — no username, no password, and Jettana never signs in for you.</div>
+          <div class="askme-a">Jettana never connects to your bank, but you can keep a link to it on the row. On a <strong>Debt</strong>, <strong>Checking</strong> or <strong>Savings &amp; Investments</strong> row, open <strong>⋮ → Add link</strong>, paste the page you normally sign in on, and give it a name you'll recognise. After that the row's name is <strong>underlined</strong>, and <strong>⋮ → Open</strong> takes you there in a new tab. Nothing is saved but the address — no username, no password, and Jettana never signs in for you.</div>
         </div>
 
         <div class="askme-item">
@@ -7107,7 +7107,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>📅 <strong>Beginning balance date</strong> — open the note on any Checking row to set a beginning balance date; expenses dated before that date won't be deducted from the balance</span></div>
       <div class="shortcut-row"><span>✎ <strong>Row notes</strong> — click ≡ on any row → Add note; a gold dot appears on hover to indicate a note exists</span></div>
       <div class="shortcut-row"><span>👁 <strong>Full name peek</strong> — long row names fade at the edge; hover (desktop) or tap once (mobile) to see the full text, tap again to edit. Works on locked months too, where it only ever shows the name.</span></div>
-      <div class="shortcut-row"><span>🔗 <strong>Account links</strong> — keep a link to the bank behind a Debt or Checking row: ⋮ → Add link, paste the page you sign in on, name it whatever you like. The row's name is then underlined, and ⋮ → Open takes you there in a new tab. The menu names the <strong>real web address</strong> rather than your label, so you always see where you're going first. Only secure (https) sites are accepted, the address is all that's stored — never a username or password — and the link carries into every new month. Paid rows aren't underlined, since the strikethrough already occupies that line.</span></div>
+      <div class="shortcut-row"><span>🔗 <strong>Account links</strong> — keep a link to the institution behind a Debt, Checking or Savings &amp; Investments row: ⋮ → Add link, paste the page you sign in on, name it whatever you like. The row's name is then underlined, and ⋮ → Open takes you there in a new tab. The menu names the <strong>real web address</strong> rather than your label, so you always see where you're going first. Only secure (https) sites are accepted, the address is all that's stored — never a username or password — and the link carries into every new month. Paid rows aren't underlined, since the strikethrough already occupies that line.</span></div>
       <div class="shortcut-row"><span>→ <strong>Income destination</strong> — open the note on any income row to set a "→ goes to" label (e.g. Marcus Savings, HYSA)</span></div>
       <div class="shortcut-row"><span>🔄 <strong>Subscriptions</strong> — dedicated section for recurring services; included in expense totals and month-over-month comparison</span></div>
       <div class="shortcut-row"><span>📝 <strong>Notes</strong> — free-form notes per month with bullet points and checkable to-dos; syncs across devices</span></div>
@@ -14395,10 +14395,16 @@ function accountUrlHost(url) {
   try { return new URL(safe).hostname.replace(/^www\./, ''); } catch (e) { return ''; }
 }
 
-/* Links belong on things you hold an account with. Everywhere else a link is
-   noise, and gating here keeps that a rule rather than a habit. */
+/* Links belong on things you hold an account with — a card, a current account,
+   a HYSA or a 401(k). Everywhere else (a grocery budget, a category of
+   expenses) there is nothing to sign in to, and gating here keeps that a rule
+   rather than a habit.
+
+   Savings cannot be marked paid — it is not in PAID_SECTIONS — so the
+   strike-versus-underline collision that keeps the underline off paid debt
+   rows simply cannot arise here. */
 function sectionTakesLink(section) {
-  return section === 'debt' || section === 'checking';
+  return section === 'debt' || section === 'checking' || section === 'savings';
 }
 
 function rowHasLink(row) {
