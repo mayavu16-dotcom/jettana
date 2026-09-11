@@ -11933,37 +11933,68 @@ function showBillsBreakdown(anchor) {
   var esc = function(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
   var html = pinned ? breakdownHeader('Bills due') : '<div class="ibp-title">Bills due</div>';
 
-  /* ── The empty state, which is really the teaching state ────────────────
-     Reached when the total is zero but rows exist that fail on the recurring
-     condition alone. It states the rule, then shows the rule applied to THEIR
-     rows — the near misses, by name and amount. An abstract sentence about
-     what counts as a bill is forgettable; the same sentence next to your own
-     rent is not.
+  /* ── The near-miss list ─────────────────────────────────────────────────
+     Rows that are unpaid and have an amount but are not marked recurring —
+     they fail the rule on one condition only.
 
-     It deliberately does not offer to fix anything. Marking a row recurring
-     also copies it into every later month, which is a reasonable thing to do
-     from the ≡ menu where you went looking for it, and a surprise from a
-     button on a summary card. The panel points at the gesture instead. */
-  if (!info.total) {
-    html += '<div class="bdp-say">A row counts here when it is <b>marked recurring</b>, ' +
-            'has an amount, and <b>is not ticked paid</b> — the things you owe again every month.</div>';
-    html += '<div class="ibp-title" style="margin-top:10px;">Not counted yet</div>';
+     ONE implementation, rendered in BOTH states, because the alternative was a
+     bug: with the list living only in the empty state, marking the first row
+     recurring made the card non-empty and the other eight near misses vanished
+     mid-task. You would tick one thing off a list of nine and the list would
+     disappear. It appears under the ledger exactly like the "Not counted as
+     bills" list already does, so working through them is uninterrupted. */
+  function candidateBlock() {
+    if (!info.candidates.length) return '';
+    var out = '<div class="ibp-title" style="margin-top:10px;">Not counted yet</div>';
     LEFT_SECTIONS.forEach(function(sec) {
       var rows = info.candidates.filter(function(r) { return r.section === sec; });
       if (!rows.length) return;
       rows.sort(function(a, b) { return b.owed - a.owed; });
       rows.forEach(function(r) {
-        html += '<div class="ibp-row ibp-sub' + (pinned ? ' bdp-jump' : '') + '"' +
+        out += '<div class="ibp-row ibp-sub' + (pinned ? ' bdp-jump' : '') + '"' +
           (pinned ? ' data-sec="' + esc(r.section) + '" data-row="' + esc(r.id) + '"' : '') + '>' +
           '<span>' + esc(r.label) + '<span class="bdp-sec">' + esc(getSectionName(sec)) + '</span></span>' +
           '<span class="ibp-amt">' + _fmtMoney(r.owed) +
           (r.known ? '' : ' <span class="bdp-part">est.</span>') +
+          /* The mirror of the ✕ on a bill row: ✕ takes one out of the total, ⟳
+             brings one in. Same panel, same grammar, and ⟳ is already the
+             recurring icon in the ≡ menu, so it is not a new symbol to learn.
+
+             It is a separate target from the row, exactly like the ✕ — tapping
+             the ROW still jumps to it. One gesture, one meaning, whichever of
+             the two lists it lands in.
+
+             Deliberately NOT a "make these all bills" button. This list is
+             genuinely mixed: Electric and Netflix are bills, Chipotle and a
+             grocery run are not. Marking them wholesale would put "Chipotle"
+             in every future month. Only the person reading it can tell which
+             is which, so the choice stays one row at a time. */
+          (pinned && !locked ? '<button class="bdp-x bdp-back bdp-rec" data-rec="' + esc(r.id) +
+            '" data-dsec="' + esc(r.section) +
+            '" title="Count this as a bill — marks the row recurring">⟳</button>' : '') +
           '</span></div>';
       });
     });
-    html += '<div class="bdp-howto">Open <b>≡</b> on the row and choose <b>Mark as recurring</b>, ' +
-            'and it will show up here.' +
-            (pinned ? ' Tap a row above to jump to it.' : '') + '</div>';
+    return out;
+  }
+
+  /* The teaching state: no bills at all, but near misses to explain. The rule
+     is stated once, then shown applied to THEIR rows. An abstract sentence
+     about what counts as a bill is forgettable; the same sentence next to your
+     own rent is not. */
+  if (!info.total) {
+    html += '<div class="bdp-say">A row counts here when it is <b>marked recurring</b>, ' +
+            'has an amount, and <b>is not ticked paid</b> — the things you owe again every month.</div>';
+    html += candidateBlock();
+    html += '<div class="bdp-howto">' +
+      (pinned && !locked
+        /* With a control on every row the instruction shrinks to a caption.
+           The old sentence had to explain a journey — open the menu on which
+           row, choose which item — and at 10.5px the ≡ glyph was too small to
+           read as a button anyway. */
+        ? '<b>⟳</b> counts one as a bill · tap a row to jump to it'
+        : 'Open <b>≡</b> on the row and choose <b>Mark as recurring</b>, and it will show up here.') +
+      '</div>';
   } else {
 
   // Grouped by section, in the tracker's own order, so the list reads in the
@@ -12024,8 +12055,14 @@ function showBillsBreakdown(anchor) {
         '</span></div>';
     });
   }
+  // Near misses ride below the ledger too — see candidateBlock(). Pinned only,
+  // same as the excluded list: the hover panel stays a summary.
+  if (pinned) html += candidateBlock();
+
   if (pinned) html += '<div style="font-size:9.5px;color:var(--steel);padding-top:5px;">' +
-    (locked ? 'This month is locked' : 'Tap a bill to jump to it · ✕ if it is not really a bill') + '</div>';
+    (locked ? 'This month is locked'
+            : 'Tap a bill to jump to it · ✕ if it is not really a bill' +
+              (info.candidates.length ? ' · ⟳ to count one in' : '')) + '</div>';
 
   }   // ← end of the has-bills branch; both paths share the tail below, so
       //   there is still only one copy of the pin binding and the positioning
@@ -12035,7 +12072,20 @@ function showBillsBreakdown(anchor) {
     pop.querySelectorAll('.bdp-jump').forEach(function(el) {
       el.onclick = function() { jumpToLinkedRow(el.getAttribute('data-sec'), el.getAttribute('data-row')); };
     });
-    pop.querySelectorAll('.bdp-x').forEach(function(el) {
+    /* ⟳ marks a near miss recurring. toggleRecurring() calls recalc(), which
+       re-renders this panel while it is pinned — so the row leaves "Not
+       counted yet" and appears in the bills above it, in place, which is the
+       feedback that the tap did something. */
+    pop.querySelectorAll('.bdp-rec').forEach(function(el) {
+      el.onclick = function(e) {
+        e.stopPropagation();          // the row underneath jumps; this must not
+        toggleRecurring(el.getAttribute('data-dsec'), el.getAttribute('data-rec'));
+      };
+    });
+    // :not(.bdp-rec) — the ⟳ shares .bdp-x for its size and position, but it is
+    // not a bill-class button and must not be handed to setBillClass with a
+    // null id.
+    pop.querySelectorAll('.bdp-x:not(.bdp-rec)').forEach(function(el) {
       el.onclick = function(e) {
         // Sits inside a row whose own click jumps the page — without this the
         // panel would scroll away underneath the tap that dropped the bill.
@@ -17633,7 +17683,14 @@ function toggleRecurring(section, id) {
       }
     });
     if (injected > 0) saveAll(all);
-    showToast('⟳ Recurring on — added to ' + injected + ' existing month' + (injected !== 1 ? 's' : ''));
+    /* "Added to 0 existing months" is what this said to anyone who has not made
+       a second month yet — which is every new user, on the first thing they
+       ever mark recurring. Nothing was added because there was nowhere to add
+       it, and that is worth saying as a promise rather than as a count of
+       zero. */
+    showToast(injected > 0
+      ? '⟳ Recurring on — added to ' + injected + ' later month' + (injected !== 1 ? 's' : '')
+      : '⟳ Recurring on — it will carry into new months');
   } else {
     showToast('Recurring removed');
   }
