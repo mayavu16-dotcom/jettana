@@ -20454,6 +20454,25 @@ function _checklistIsDragged() {
   return !!(modal && modal.style.position === 'fixed');
 }
 
+/* Every step OPENS something to demonstrate it, so every step also has to
+   clear what the last one left behind — otherwise they stack. Worst case
+   observed: "Know your backups" leaves a full-screen overlay up, and the next
+   two steps scroll invisibly behind it, which reads as the checklist having
+   stopped working.
+
+   The My Cards panel is deliberately NOT closed: it persists its own open
+   state (intentra_legend_open), so an open card panel is the person's setting
+   rather than this step's leftover, and closing it would overrule them. */
+function _closePriorDemo() {
+  try { hideCtxMenu(); } catch (e) {}
+  try { hideColorToolbar(); } catch (e) {}
+  var bk = document.getElementById('backups-overlay');
+  if (bk && bk.style.display !== 'none') { try { hideBackups(); } catch (e) {} }
+  // Notes already close each other inside toggleNote(), but only when another
+  // note OPENS — a step that opens no note would leave the last one hanging.
+  document.querySelectorAll('.note-row.open').forEach(function(n) { n.classList.remove('open'); });
+}
+
 function checklistGo(stepId) {
   var step = CHECKLIST_STEPS.find(function(s) { return s.id === stepId; });
   if (!step || !step.go) return;
@@ -20464,6 +20483,7 @@ function checklistGo(stepId) {
      the drag already told us. */
   var keepOpen = _checklistIsDragged();
   if (!keepOpen) hideChecklist();
+  _closePriorDemo();    // clear the last step's demonstration before staging this one
   // No overlay to get out of the way when it stays put, so no delay needed.
   setTimeout(function() { try { step.go(); } catch (e) {} }, keepOpen ? 0 : 40);
 }
