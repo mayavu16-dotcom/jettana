@@ -4878,6 +4878,70 @@ body.font-large.text-bold .erow-label-input {
 .dguide-skip  { font-size: 12px; color: rgba(255,255,255,0.55); background: none; border: none; cursor: pointer; font-family: 'Outfit',sans-serif; padding: 0; }
 .dguide-next  { font-size: 12px; font-weight: 700; color: #1A2332; background: #F0C060; border: none; border-radius: 6px; padding: 5px 14px; cursor: pointer; font-family: 'Outfit',sans-serif; }
 
+/* ── Suggest budgets ─────────────────────────────────────── */
+.sgb-sum { display: flex; flex-direction: column; gap: 5px; font-variant-numeric: tabular-nums; }
+.sgb-sum .r { display: flex; justify-content: space-between; gap: 14px; font-size: 13px; color: var(--slate); }
+.sgb-sum .r b { color: var(--ink); font-weight: 600; }
+.sgb-src { display: block; font-size: 10px; color: var(--steel); font-weight: 400; }
+.sgb-sum .r.tot { border-top: 1px solid var(--mist); margin-top: 4px; padding-top: 7px; font-weight: 700; color: var(--ink); }
+.sgb-ask { border-radius: 8px; background: var(--mist-light); padding: 12px; margin-top: 12px; }
+.sgb-ask p { margin: 0 0 9px; font-size: 12.5px; color: var(--slate); line-height: 1.5; }
+.sgb-ask label { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.3px;
+  text-transform: uppercase; color: var(--steel); margin-bottom: 5px; }
+.sgb-money { display: flex; align-items: baseline; gap: 5px; border-bottom: 1.5px solid var(--mist); padding-bottom: 4px; }
+.sgb-money span { font-size: 17px; font-weight: 600; color: var(--steel); }
+.sgb-money input { font-family: 'Outfit', sans-serif; font-size: 21px; font-weight: 600; color: var(--ink);
+  background: transparent; border: none; outline: none; width: 100%; padding: 0; font-variant-numeric: tabular-nums; }
+.sgb-money:focus-within { border-bottom-color: var(--sage); }
+.sgb-cushion { margin-top: 12px; display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; flex-wrap: wrap; font-size: 12px; color: var(--slate); background: var(--mist-light);
+  border-radius: 8px; padding: 9px 11px; }
+.sgb-cushion b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.sgb-link { font-family: 'Outfit', sans-serif; background: none; border: none; padding: 0; cursor: pointer;
+  font-size: 12px; font-weight: 600; color: var(--sage-dark); text-decoration: underline; text-underline-offset: 2px; }
+.dark .sgb-link { color: var(--sage); }
+.sgb-split { margin-top: 14px; display: flex; flex-direction: column; gap: 9px; }
+.sgb-slice { display: grid; grid-template-columns: 4px 1fr auto; align-items: center; gap: 11px;
+  padding: 9px 11px; border-radius: 8px; background: var(--mist-light); }
+.sgb-slice .bar { align-self: stretch; min-height: 26px; border-radius: 2px; }
+.sgb-slice .who { font-size: 12.5px; font-weight: 600; color: var(--ink); }
+.sgb-why { display: block; font-size: 10.5px; color: var(--steel); font-weight: 400; }
+.sgb-slice .amt { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink); }
+.sgb-slice.save { background: var(--sage-light); }
+.sgb-slice.save .bar { background: var(--sage); }
+.sgb-slice.spend .bar { background: var(--teal); }
+.sgb-slice.loose .bar { background: var(--mist); }
+.sgb-buckets { margin-top: 10px; border: 1px solid var(--mist); border-radius: 8px; overflow: hidden; }
+.sgb-bk { display: flex; justify-content: space-between; gap: 12px; padding: 7px 11px; font-size: 12.5px;
+  color: var(--slate); border-bottom: 1px solid var(--mist-light); }
+.sgb-bk:last-child { border-bottom: none; }
+.sgb-bk b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.sgb-bk.taken { color: var(--steel); }
+.sgb-bk.taken b { color: var(--steel); font-weight: 400; }
+.sgb-flag { margin-top: 13px; border-radius: 8px; padding: 11px 12px; font-size: 12px; line-height: 1.45; }
+.sgb-flag.good { background: var(--sage-light); color: var(--sage-dark); }
+.dark .sgb-flag.good { color: var(--sage); }
+.sgb-flag.warn { background: var(--gold-light); color: var(--gold); }
+.sgb-flag.stop { background: var(--blush-light); color: var(--blush); }
+.sgb-flag ul { margin: 7px 0 0; padding-left: 16px; }
+.sgb-flag li { margin-top: 2px; font-variant-numeric: tabular-nums; }
+.sgb-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; }
+.sgb-btn { font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 600; border-radius: 8px;
+  padding: 9px 15px; cursor: pointer; border: 1px solid var(--mist); background: var(--white); color: var(--slate); }
+.sgb-btn.go { background: var(--sage-dark); border-color: var(--sage-dark); color: #fff; }
+.sgb-btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+.sgb-set { margin: 4px 20px 14px; border-top: 1px solid var(--mist); padding-top: 11px; }
+.sgb-set summary { cursor: pointer; font-size: 12px; font-weight: 700; color: var(--slate); }
+.sgb-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px 14px; margin-top: 12px; }
+.sgb-f label { display: block; font-size: 11.5px; font-weight: 600; color: var(--slate); margin-bottom: 4px; }
+.sgb-f .w { display: flex; align-items: baseline; gap: 3px; border: 1px solid var(--mist); border-radius: 6px;
+  padding: 6px 9px; background: var(--white); }
+.sgb-f .w:focus-within { border-color: var(--sage); }
+.sgb-f input { font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 600; color: var(--ink);
+  border: none; outline: none; background: transparent; width: 100%; padding: 0; font-variant-numeric: tabular-nums; }
+.sgb-f .u { font-size: 12px; color: var(--steel); font-weight: 600; }
+.sgb-f .h { display: block; font-size: 10.5px; color: var(--steel); margin-top: 3px; }
+
 /* ── Ask Me ──────────────────────────────────────────────── */
 .askme-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.5);
@@ -6030,6 +6094,9 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
                 <span>⇄</span> Compare months
               </button>
               <div class="more-menu-title">Plan ahead</div>
+              <button class="more-menu-item" onclick="showSuggestBudgets(); hideMoreMenu()">
+                <span>🧭</span> Suggest budgets
+              </button>
               <button class="more-menu-item" onclick="showPlanSavings(); hideMoreMenu()">
                 <span>🧮</span> Plan my savings
               </button>
@@ -7036,6 +7103,36 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
     </div>
     <div id="psav-bottom" style="margin:8px 20px 14px;padding:12px 14px;background:var(--mist-light);border-radius:10px;font-size:13px;color:var(--ink);line-height:1.7;"></div>
     <div class="gp-note">Planning estimates — taxes are simplified (pre-tax contributions reduce taxable income; your real brackets and plan rules vary).</div>
+  </div>
+</div>
+
+<!-- Suggest budgets -->
+<div class="trends-overlay" id="sgb-overlay" style="display:none;" onclick="if(event.target===this)hideSuggestBudgets()">
+  <div class="trends-modal" id="sgb-modal" style="max-width:440px;">
+    <div class="trends-header" id="sgb-header">
+      <h3>🧭 Suggest budgets</h3>
+      <button class="trends-close" onclick="hideSuggestBudgets()">×</button>
+    </div>
+    <div class="trends-subtitle" id="sgb-sub">A starting point you can change</div>
+    <div style="padding:14px 20px 4px;" id="sgb-body"></div>
+    <details class="sgb-set">
+      <summary>How Jettana splits what's left</summary>
+      <div class="sgb-fields">
+        <div class="sgb-f"><label for="sgb-buf">Keep loose</label>
+          <div class="w"><input id="sgb-buf" type="number" inputmode="decimal" min="0" max="40" step="1" oninput="sgbSetting()"><span class="u">%</span></div>
+          <span class="h">Left unassigned on purpose</span></div>
+        <div class="sgb-f"><label for="sgb-sv1">To savings while building</label>
+          <div class="w"><input id="sgb-sv1" type="number" inputmode="decimal" min="0" max="100" step="1" oninput="sgbSetting()"><span class="u">%</span></div>
+          <span class="h">Until one month is set aside</span></div>
+        <div class="sgb-f"><label for="sgb-sv2">To savings after that</label>
+          <div class="w"><input id="sgb-sv2" type="number" inputmode="decimal" min="0" max="100" step="1" oninput="sgbSetting()"><span class="u">%</span></div>
+          <span class="h">The long-run habit</span></div>
+        <div class="sgb-f"><label for="sgb-floor">Smallest workable food budget</label>
+          <div class="w"><span class="u">$</span><input id="sgb-floor" type="number" inputmode="decimal" min="0" max="2000" step="10" oninput="sgbSetting()"></div>
+          <span class="h">Below this it won't split at all</span></div>
+      </div>
+    </details>
+    <div class="gp-note">A starting point worked out from your own rows, not advice — change any number afterwards.</div>
   </div>
 </div>
 
@@ -25592,6 +25689,348 @@ function _psavNum(id) {
   var n = parseFloat(String(el.value).replace(/[$,%\s]/g, ''));
   return isNaN(n) ? 0 : n;
 }
+/* ── Suggest budgets ───────────────────────────────────────────
+   A starting plan for someone staring at empty Budget columns. It invents no
+   data: take-home comes from the Income section, commitments from the rows
+   already marked recurring (honouring the ✕ / ⟳ judgment made in Bills Due),
+   and what is already saved from the Savings section.
+
+   NOTE the one difference from billsDue(): that function answers "what do I
+   still owe this month", so it skips rows ticked paid. Planning needs the
+   monthly COMMITMENT whether or not it has been paid yet, so this pass keeps
+   them. Same rows, different question — which is exactly why it is a separate
+   function rather than a reused total.
+
+   Everything it writes lands in the footer budget overrides, which is the
+   per-section budget the app already has. No rows are created, and a section
+   that already has a budget is never touched. */
+var SGB_SHAPE = [
+  { key: 'food',      w: 0.50 },
+  { key: 'transport', w: 0.22 },
+  { key: 'health',    w: 0.10 },
+  { key: 'misc',      w: 0.10 },
+  { key: 'gifts',     w: 0.08 }
+];
+var SGB_DEFAULTS = { buf: 10, sv1: 50, sv2: 33, floor: 150 };
+/* Session-only answers: what they typed when Income is empty, whether they
+   said their income varies, and a manual correction to the cushion question.
+   Deliberately NOT stored — they describe this sitting, not this month. */
+var _sgbTyped = null, _sgbIrregular = false, _sgbLow = null, _sgbCushion = null;
+
+function sgbSettings() {
+  var raw = {};
+  try { raw = JSON.parse(appStore.getItem(nsKey('intentra_sgb')) || '{}') || {}; } catch (e) { raw = {}; }
+  var n = function (v, d, max) {
+    var x = parseFloat(v);
+    return (isFinite(x) && x >= 0 && x <= max) ? x : d;
+  };
+  return {
+    buf:   n(raw.buf,   SGB_DEFAULTS.buf,   40),
+    sv1:   n(raw.sv1,   SGB_DEFAULTS.sv1,   100),
+    sv2:   n(raw.sv2,   SGB_DEFAULTS.sv2,   100),
+    floor: n(raw.floor, SGB_DEFAULTS.floor, 5000)
+  };
+}
+function sgbSetting() {
+  var g = function (id) { var v = parseFloat(document.getElementById(id).value); return isFinite(v) ? v : undefined; };
+  var s = { buf: g('sgb-buf'), sv1: g('sgb-sv1'), sv2: g('sgb-sv2'), floor: g('sgb-floor') };
+  try { appStore.setItem(nsKey('intentra_sgb'), JSON.stringify(s)); } catch (e) {}
+  renderSuggestBudgets();
+}
+
+// Fixed monthly commitments — recurring, not excluded, paid or not.
+function sgbFixed(d) {
+  var out = { total: 0, rows: [] };
+  if (!d) return out;
+  LEFT_SECTIONS.forEach(function (sec) {
+    (d[sec] || []).forEach(function (r) {
+      if (!r || r.exempt || !r.recurring || r._billClass === 'not') return;
+      var actual = parseAmt(r.actual), budget = parseAmt(r.budget);
+      var amt = actual > 0.005 ? actual : budget;
+      if (amt <= 0.005) return;
+      out.total += amt;
+      out.rows.push({ label: r.label || '(no label)', section: sec, amt: amt });
+    });
+  });
+  out.rows.sort(function (a, b) { return b.amt - a.amt; });
+  return out;
+}
+
+function sgbIncome(d) {
+  var planned = 0, received = 0;
+  ((d && d.income) || []).forEach(function (r) {
+    if (!r || r.exempt) return;
+    planned += parseAmt(r.planned); received += parseAmt(r.received);
+  });
+  // Planned is the intent; Received is the fallback for someone who only
+  // fills the column that already happened.
+  return getFooterBudget('income', planned > 0.005 ? planned : received);
+}
+
+function sgbSaved(d) {
+  var t = 0;
+  ((d && d.savings) || []).forEach(function (r) { if (r && !r.exempt) t += parseAmt(r.actual); });
+  return t;
+}
+
+/* Does this section already have a budget? Either one typed over the footer,
+   or the rows inside it add up to something. Either way it is not ours to
+   overwrite — the same rule the copy paths follow. */
+function sgbTaken(d, sec) {
+  if (hasFooterOverride(sec)) return true;
+  var t = 0;
+  ((d && d[sec]) || []).forEach(function (r) { if (r) t += parseAmt(r.budget); });
+  return t > 0.005;
+}
+
+/* Split to the cent, remainder to the largest share, so the parts equal the
+   whole exactly. A plain percentage of each leaves a cent on the floor and
+   the panel stops adding up. */
+function sgbSplit(total) {
+  var cents = Math.round(total * 100);
+  var raw = SGB_SHAPE.map(function (b) { return b.w * cents; });
+  var out = raw.map(function (x) { return Math.floor(x); });
+  var rem = cents - out.reduce(function (a, b) { return a + b; }, 0);
+  var order = SGB_SHAPE.map(function (_, i) { return i; }).sort(function (a, b) {
+    return (raw[b] - out[b]) - (raw[a] - out[a]);
+  });
+  for (var i = 0; i < rem; i++) out[order[i % out.length]]++;
+  return SGB_SHAPE.map(function (b, i) { return { key: b.key, amt: out[i] / 100 }; });
+}
+
+function sgbCompute() {
+  var s = sgbSettings();
+  var all = loadAll();
+  var d = all[currentMonthKey] || {};
+  var fixed = sgbFixed(d);
+  var income = sgbIncome(d);
+  var saved = sgbSaved(d);
+  var fromData = income > 0.005;
+  var take = fromData ? income : (_sgbTyped || 0);
+  var base = { s: s, fixed: fixed, saved: saved, fromData: fromData, d: d };
+  if (take <= 0.005) { base.state = 'empty'; return base; }
+
+  var planned = _sgbIrregular ? (_sgbLow || 0) : take;
+  if (planned <= 0.005) { base.state = 'empty'; base.awaitingLow = true; return base; }
+
+  var target = fixed.total;
+  var hasCushion = (_sgbCushion !== null) ? _sgbCushion : (target > 0.005 && saved >= target);
+  base.planned = planned; base.target = target; base.hasCushion = hasCushion;
+
+  var left = Math.round((planned - target) * 100) / 100;
+  if (left <= 0.005) { base.state = 'short'; base.gap = Math.abs(left); return base; }
+
+  var buffer   = Math.round(left * (s.buf / 100) * 100) / 100;
+  var workable = Math.round((left - buffer) * 100) / 100;
+  var toSave   = Math.round(workable * ((hasCushion ? s.sv2 : s.sv1) / 100) * 100) / 100;
+  var toSpend  = Math.round((workable - toSave) * 100) / 100;
+  var buckets  = sgbSplit(toSpend);
+
+  var food = 0;
+  buckets.forEach(function (b) { if (b.key === 'food') food = b.amt; });
+  if (food < s.floor) { base.state = 'thin'; base.left = left; base.food = food; return base; }
+
+  buckets.forEach(function (b) { b.taken = sgbTaken(d, b.key); });
+  base.state = hasCushion ? 'steady' : 'building';
+  base.left = left; base.buffer = buffer; base.toSave = toSave; base.toSpend = toSpend;
+  base.buckets = buckets;
+  base.finish = null;
+  if (!hasCushion && target > 0.005) {
+    var need = Math.round((target - saved) * 100) / 100;
+    if (need > 0 && toSave > need) base.finish = need;
+  }
+  base.months = hasCushion ? 0 : Math.ceil((target - saved) / Math.max(toSave, 0.01));
+  return base;
+}
+
+function showSuggestBudgets() {
+  var ov = document.getElementById('sgb-overlay');
+  if (!ov) return;
+  var s = sgbSettings();
+  var put = function (id, v) { var el = document.getElementById(id); if (el) el.value = v; };
+  put('sgb-buf', s.buf); put('sgb-sv1', s.sv1); put('sgb-sv2', s.sv2); put('sgb-floor', s.floor);
+  ov.style.display = 'flex';
+  renderSuggestBudgets();
+}
+function hideSuggestBudgets() {
+  var ov = document.getElementById('sgb-overlay');
+  if (ov) ov.style.display = 'none';
+}
+function sgbFlipCushion() { var r = sgbCompute(); _sgbCushion = !r.hasCushion; renderSuggestBudgets(); }
+function sgbFlipIrregular() { _sgbIrregular = !_sgbIrregular; renderSuggestBudgets(); }
+function sgbTypeTake(el) {
+  var v = parseFloat(String(el.value).replace(/[^0-9.]/g, ''));
+  _sgbTyped = isFinite(v) ? v : null;
+  sgbKeepCaret(el, 'sgb-take');
+}
+function sgbTypeLow(el) {
+  var v = parseFloat(String(el.value).replace(/[^0-9.]/g, ''));
+  _sgbLow = isFinite(v) ? v : null;
+  sgbKeepCaret(el, 'sgb-low');
+}
+/* The panel redraws on every keystroke, which would otherwise throw the caret
+   to the end of the field — the same shape of bug as the date input. */
+function sgbKeepCaret(el, id) {
+  var pos = el.selectionStart, raw = el.value;
+  renderSuggestBudgets();
+  var next = document.getElementById(id);
+  if (next) { next.value = raw; next.focus(); try { next.setSelectionRange(pos, pos); } catch (e) {} }
+}
+
+function sgbLine(r) {
+  return '<div class="r"><span>' + (_sgbIrregular ? 'A typical low month' : 'Coming in') +
+    '<span class="sgb-src">' + (r.fromData ? 'your Income section' : 'you told us') + '</span></span>' +
+    '<b>' + fmt(r.planned) + '</b></div>' +
+    '<div class="r"><span>Already committed<span class="sgb-src">your recurring rows</span></span>' +
+    '<b>−' + fmt(r.fixed.total) + '</b></div>';
+}
+
+function renderSuggestBudgets() {
+  var body = document.getElementById('sgb-body');
+  if (!body) return;
+  var r = sgbCompute();
+  var locked = monthIsLocked(currentMonthKey);
+  var h = '';
+
+  if (r.state === 'empty') {
+    h += '<div class="sgb-ask"><p>Jettana knows your bills, but not what comes in. Tell it once and it can suggest the rest.</p>' +
+      '<label for="sgb-take">Your take-home this month</label>' +
+      '<div class="sgb-money"><span>$</span><input id="sgb-take" type="text" inputmode="decimal" autocomplete="off" ' +
+      'placeholder="3,400" value="' + (_sgbTyped !== null ? _sgbTyped : '') + '" oninput="sgbTypeTake(this)"></div></div>';
+    if (r.fixed.total > 0.005) {
+      h += '<div class="sgb-sum" style="margin-top:13px;"><div class="r"><span>Already committed' +
+        '<span class="sgb-src">your recurring rows</span></span><b>−' + fmt(r.fixed.total) + '</b></div></div>';
+    } else {
+      h += '<div class="sgb-flag warn">No recurring rows yet either. Mark your rent and bills <b>recurring</b> and Jettana can tell what is committed before it suggests anything.</div>';
+    }
+    h += '<div class="sgb-acts"><button class="sgb-btn go" type="button" disabled>Use these budgets</button></div>';
+    body.innerHTML = h;
+    return;
+  }
+
+  if (r.state === 'short') {
+    h += '<div class="sgb-sum">' + sgbLine(r) +
+      '<div class="r tot"><span>Short by</span><span style="color:var(--blush)">' + fmt(r.gap) + '</span></div></div>';
+    h += '<div class="sgb-flag stop"><b>No split fixes this month.</b> Your commitments are larger than what comes in, so any plan here would be one you can already see is wrong.';
+    if (r.fixed.rows.length) {
+      h += ' Your largest are:<ul>';
+      r.fixed.rows.slice(0, 3).forEach(function (x) {
+        h += '<li>' + escHtml(x.label) + ' — ' + fmt(x.amt) + '</li>';
+      });
+      h += '</ul>';
+    }
+    h += '</div>';
+    h += '<div class="sgb-acts"><button class="sgb-btn go" type="button" disabled>Use these budgets</button>' +
+      '<button class="sgb-btn" type="button" onclick="hideSuggestBudgets()">Close</button>' +
+      '<button class="sgb-link" type="button" style="margin-left:auto;" onclick="sgbFlipIrregular()">' +
+      (_sgbIrregular ? 'My income is steady' : 'My income varies') + '</button></div>';
+    body.innerHTML = h + sgbLowField();
+    sgbBindLow();
+    return;
+  }
+
+  if (r.state === 'thin') {
+    h += '<div class="sgb-sum">' + sgbLine(r) +
+      '<div class="r tot"><span>Left over</span><span>' + fmt(r.left) + '</span></div></div>';
+    h += '<div class="sgb-flag warn"><b>Not enough left to plan categories around.</b> Split across your sections this comes to about ' +
+      fmt(r.food) + ' for a month of food, which is not a plan. Here is what is left — you know better than Jettana does where it needs to go.</div>';
+    h += '<div class="sgb-acts"><button class="sgb-btn go" type="button" disabled>Use these budgets</button>' +
+      '<button class="sgb-btn" type="button" onclick="hideSuggestBudgets()">Close</button>' +
+      '<button class="sgb-link" type="button" style="margin-left:auto;" onclick="sgbFlipIrregular()">' +
+      (_sgbIrregular ? 'My income is steady' : 'My income varies') + '</button></div>';
+    body.innerHTML = h + sgbLowField();
+    sgbBindLow();
+    return;
+  }
+
+  h += '<div class="sgb-sum">' + sgbLine(r) +
+    '<div class="r tot"><span>Left to plan</span><span>' + fmt(r.left) + '</span></div></div>';
+
+  h += '<div class="sgb-cushion"><span>Set aside so far <b>' + fmt(r.saved) + '</b> of ' + fmt(r.target) +
+    ' — ' + (r.hasCushion ? 'a month covered' : 'still building') + '</span>' +
+    '<button class="sgb-link" type="button" onclick="sgbFlipCushion()">' +
+    (r.hasCushion ? 'Not really' : 'I have one elsewhere') + '</button></div>';
+
+  h += '<div class="sgb-split">' +
+    '<div class="sgb-slice save"><span class="bar"></span><span class="who">Savings<span class="sgb-why">' +
+      (r.hasCushion ? 'toward your goals' : 'building one month of cover') + '</span></span>' +
+      '<span class="amt">' + fmt(r.toSave) + '</span></div>' +
+    '<div class="sgb-slice spend"><span class="bar"></span><span class="who">Spending<span class="sgb-why">' +
+      'split across your sections</span></span><span class="amt">' + fmt(r.toSpend) + '</span></div>' +
+    '<div class="sgb-slice loose"><span class="bar"></span><span class="who">Kept loose<span class="sgb-why">' +
+      'unassigned on purpose</span></span><span class="amt">' + fmt(r.buffer) + '</span></div></div>';
+
+  h += '<div class="sgb-buckets">';
+  r.buckets.forEach(function (b) {
+    h += '<div class="sgb-bk' + (b.taken ? ' taken' : '') + '"><span>' + escHtml(getSectionName(b.key)) +
+      (b.taken ? ' <span style="font-size:10.5px;">already has a budget</span>' : '') +
+      '</span><b>' + fmt(b.amt) + '</b></div>';
+  });
+  h += '</div>';
+
+  if (r.finish) {
+    h += '<div class="sgb-flag good"><b>Your cushion finishes this month.</b> Only ' + fmt(r.finish) +
+      ' completes one month of commitments — the rest of the savings share goes to your own goals, so next month does not suddenly feel different.</div>';
+  } else if (r.state === 'building' && r.months && r.months <= 12) {
+    h += '<div class="sgb-flag good">At this rate one month of commitments — ' + fmt(r.target) +
+      ' — is set aside in about <b>' + r.months + ' month' + (r.months === 1 ? '' : 's') + '</b>.</div>';
+  } else if (r.hasCushion) {
+    h += '<div class="sgb-flag good">A month of commitments is already covered, so less has to go to the cushion and more is yours to use.</div>';
+  }
+
+  // Savings has no budget column of its own, so say where its share goes
+  // rather than quietly dropping it.
+  h += '<div class="sgb-flag good" style="background:var(--mist-light);color:var(--steel);">' +
+    'Only the spending sections are filled in. The ' + fmt(r.toSave) +
+    ' for savings is yours to move — add it to a Savings row when you transfer it.</div>';
+
+  var fillable = r.buckets.filter(function (b) { return !b.taken; }).length;
+  h += '<div class="sgb-acts">' +
+    '<button class="sgb-btn go" type="button" onclick="sgbApply()"' +
+      (locked || !fillable ? ' disabled' : '') + '>' +
+      (locked ? 'Month is locked' : (fillable ? 'Use these budgets' : 'Nothing left to fill')) + '</button>' +
+    '<button class="sgb-btn" type="button" onclick="hideSuggestBudgets()">Not now</button>' +
+    '<button class="sgb-link" type="button" style="margin-left:auto;" onclick="sgbFlipIrregular()">' +
+    (_sgbIrregular ? 'My income is steady' : 'My income varies') + '</button></div>';
+
+  body.innerHTML = h + sgbLowField();
+  sgbBindLow();
+}
+
+function sgbLowField() {
+  if (!_sgbIrregular) return '';
+  return '<div class="sgb-ask"><label for="sgb-low">A typical low month</label>' +
+    '<div class="sgb-money"><span>$</span><input id="sgb-low" type="text" inputmode="decimal" autocomplete="off" ' +
+    'value="' + (_sgbLow !== null ? _sgbLow : '') + '" placeholder="2,600"></div>' +
+    '<p style="margin:9px 0 0;font-size:11.5px;color:var(--steel);">Planning on your low month rather than your average means the plan still works in a quiet one.</p></div>';
+}
+function sgbBindLow() {
+  var el = document.getElementById('sgb-low');
+  if (el) el.oninput = function () { sgbTypeLow(el); };
+}
+
+/* Writing. Three guards, in order: a locked month refuses outright, a section
+   that already has a budget is skipped rather than overwritten, and the whole
+   set is confirmed by name and amount before anything is stored. */
+function sgbApply() {
+  if (monthIsLocked(currentMonthKey)) { showToast('This month is locked'); return; }
+  var r = sgbCompute();
+  if (!r.buckets) return;
+  var will = r.buckets.filter(function (b) { return !b.taken; });
+  if (!will.length) { showToast('Every section already has a budget — nothing to fill'); return; }
+  var list = will.map(function (b) { return '  ' + getSectionName(b.key) + '   ' + fmt(b.amt); }).join('\n');
+  var skipped = r.buckets.length - will.length;
+  var msg = 'Set these budgets for ' + monthLabel(currentMonthKey) + '?\n\n' + list + '\n\n' +
+    (skipped ? skipped + ' section' + (skipped === 1 ? '' : 's') + ' already had a budget and will be left alone.\n\n' : '') +
+    'You can change any of them afterwards.';
+  if (!confirm(msg)) return;
+  will.forEach(function (b) { _footerBudgetOverrides[b.key] = b.amt; });
+  saveFooterBudgets();
+  recalc();
+  hideSuggestBudgets();
+  showToast(will.length + ' budget' + (will.length === 1 ? '' : 's') + ' set — change any of them any time');
+}
+
 function showPlanSavings() {
   var ov = document.getElementById('psav-overlay');
   if (ov) ov.style.display = 'flex';
