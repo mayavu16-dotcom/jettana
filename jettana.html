@@ -12676,8 +12676,23 @@ window.addEventListener('resize', hideDebtTotalBreakdown);
 
 function _incomeBreakdownPop() { return _breakdownPop('income-breakdown-pop'); }
 
+/* Money inside every breakdown panel — Bills Due, Total Income, Total
+   Expenses, Savings, the Monthly Summary lines and Spending Trends → Items.
+
+   It used to be `'$' + Math.round(n)`, and that put a panel at odds with the
+   card it exists to explain: the Bills Due card face renders with fmt() and
+   said $2,318.68 while the panel underneath it said $2,319. A breakdown whose
+   whole job is to show the working cannot be the one place that rounds.
+
+   So it delegates to fmt() rather than re-implementing two decimals — one
+   money format for the file, which is the same reason the summing helpers
+   were collapsed (house rule 28). Second-order and deliberate: fmt() also
+   formats negatives as −$2,318.68, where Math.round().toLocaleString() gave
+   "$-2,319" with the sign inside the dollar sign. Only one call site can be
+   negative today (Net balance in the Bills Due panel); the rest already pass
+   Math.abs() and prepend their own −. */
 function _fmtMoney(n) {
-  return '$' + Math.round(n).toLocaleString('en-US');
+  return fmt(n);
 }
 
 /* Money for the "left / over" header badge. Cents appear ONLY when there are
