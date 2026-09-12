@@ -3056,6 +3056,48 @@ body.sidebar-open #calc-panel { display: none !important; }
    pinned — same behaviour as a charge line in the card panel, so "a list row
    in a popup takes you to the row" means one thing everywhere in the app. */
 #bills-breakdown-pop { max-width: min(320px, calc(100vw - 24px)); }
+/* A long list used to run straight off the bottom of the screen with nothing
+   to scroll: 30 bills measured 1171px pinned on a 720px window, so "Still to
+   pay", "Left after these", the excluded list and every ⟳ sat below the screen
+   edge and could not be reached at all. Same cure as the two caps already in
+   this file — .card-tx-pop (max-height 340px, overflow-y auto) and .legend-body
+   on touch (60vh) — and the same rule: the BODY scrolls, never the panel,
+   because the pinned panel's header is what you drag it by and its title is
+   what tells you which panel you are in.
+   The height itself is set in JS by _fitBillsPanel(), not here: it depends on
+   where the panel's top edge landed, and a pinned panel can be dragged
+   anywhere. */
+#bills-breakdown-pop .bdp-scroll { overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
+/* The cue that there is more below. It cannot be the scrollbar: measured, the
+   scroll gutter is 0px — this is an overlay scrollbar that fades after a
+   second, which is also the macOS default — so a list that scrolls looked
+   exactly like one that does not, and not knowing there was more was the whole
+   complaint. The bottom edge fades instead, and only while something is still
+   below it (see _billsFadeMark), so the last line does not look broken once
+   you have reached the end. */
+#bills-breakdown-pop .bdp-scroll.bdp-fade {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 26px), transparent 100%);
+          mask-image: linear-gradient(to bottom, #000 calc(100% - 26px), transparent 100%);
+}
+/* Styled anyway, for the platforms that do reserve a gutter. Same thin bar as
+   .month-list's. */
+#bills-breakdown-pop .bdp-scroll::-webkit-scrollbar { width: 6px; }
+#bills-breakdown-pop .bdp-scroll::-webkit-scrollbar-thumb { background: var(--mist); border-radius: 3px; }
+#bills-breakdown-pop .bdp-scroll::-webkit-scrollbar-track { background: transparent; }
+#bills-breakdown-pop .bdp-scroll:hover::-webkit-scrollbar-thumb { background: var(--steel); }
+.dark #bills-breakdown-pop .bdp-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); }
+.dark #bills-breakdown-pop .bdp-scroll:hover::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.32); }
+/* Unpinned the panel has pointer-events:none — reaching for it dismisses it,
+   which is why the ✕ and ⟳ have always been pinned-only. So it cannot be
+   scrolled, and clipping it silently would be the old bug in a smaller box:
+   it clips and names the gesture that does work instead. */
+#bills-breakdown-pop:not(.brk-pinned) .bdp-scroll { overflow: hidden; }
+#bills-breakdown-pop .bdp-more {
+  margin-top: 8px; padding-top: 7px; border-top: 1px solid var(--mist);
+  font-size: 10.5px; color: var(--steel); line-height: 1.45;
+}
+#bills-breakdown-pop .bdp-more b { color: var(--slate); font-weight: 600; }
+.dark #bills-breakdown-pop .bdp-more { border-top-color: #2A3A4A; }
 #bills-breakdown-pop .bdp-jump { cursor: pointer; border-radius: 5px; margin: 0 -5px; padding-left: 5px; padding-right: 5px; }
 #bills-breakdown-pop .bdp-jump:hover { background: var(--mist-light); }
 .dark #bills-breakdown-pop .bdp-jump:hover { background: rgba(255,255,255,0.07); }
@@ -11953,6 +11995,11 @@ function showBillsBreakdown(anchor) {
   var locked = monthIsLocked(currentMonthKey);
   var esc = function(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
   var html = pinned ? breakdownHeader('Bills due') : '<div class="ibp-title">Bills due</div>';
+  /* Everything below the header goes in ONE scroller. One, not two: splitting
+     "bills above, ledger pinned below" reads better right up until the excluded
+     list and the near misses — which come AFTER the totals — get long too, and
+     then the panel overflows again with a scrollbar already on screen. */
+  html += '<div class="bdp-scroll">';
 
   /* ── The near-miss list ─────────────────────────────────────────────────
      Rows that are unpaid and have an amount but are not marked recurring —
@@ -12094,6 +12141,13 @@ function showBillsBreakdown(anchor) {
   }   // ← end of the has-bills branch; both paths share the tail below, so
       //   there is still only one copy of the pin binding and the positioning
 
+  html += '</div>';               // close .bdp-scroll
+  /* Shown only when the unpinned panel actually clipped something —
+     _fitBillsPanel() measures the scroller and unhides it, then fits a second
+     time because the line it just added took room of its own. */
+  if (!pinned) html += '<div class="bdp-more" style="display:none;">' +
+    'More below — <b>click this card</b> to pin the list and scroll it.</div>';
+
   pop.innerHTML = html;
   if (pinned) {
     pop.querySelectorAll('.bdp-jump').forEach(function(el) {
@@ -12124,14 +12178,67 @@ function showBillsBreakdown(anchor) {
     });
   }
   pop.style.display = 'block';
-  if (pinned) return;              // stay where the user dragged it
+  if (pinned) { _fitBillsPanel(pop); return; }   // stays where the user dragged it
   var r = anchor.getBoundingClientRect();
+  /* Measure unclamped, so the decision to flip above the card is made on the
+     panel's real height rather than on last render's cap. */
+  var scr = pop.querySelector('.bdp-scroll');
+  if (scr) scr.style.maxHeight = '';
   var pw = pop.offsetWidth, ph = pop.offsetHeight;
   var left = Math.max(12, Math.min(window.innerWidth - pw - 12, r.right - pw));
   var top = r.bottom + 8;
   if (top + ph > window.innerHeight - 12) top = Math.max(12, r.top - ph - 8);
   pop.style.left = left + 'px';
   pop.style.top = top + 'px';
+  _fitBillsPanel(pop);
+}
+
+/* Fade the bottom edge only while there is still something under it. Off at the
+   end of the list, so the last bill is never left looking half-drawn. */
+function _billsFadeMark(scr) {
+  if (!scr) return;
+  scr.classList.toggle('bdp-fade', scr.scrollHeight - scr.clientHeight - scr.scrollTop > 4);
+}
+
+/* Give the panel's body whatever room is left below its top edge and let it
+   scroll. It has to run after every render rather than live in the stylesheet
+   because the top edge moves: the unpinned panel is repositioned on each hover
+   and the pinned one can be dragged anywhere, including most of the way down. */
+function _fitBillsPanel(pop) {
+  pop = pop || document.getElementById('bills-breakdown-pop');
+  if (!pop || pop.style.display === 'none') return;
+  var scr = pop.querySelector('.bdp-scroll');
+  if (!scr) return;
+  var pinned = pop.classList.contains('brk-pinned');
+  var more = pop.querySelector('.bdp-more');
+
+  function fit() {
+    var pr = pop.getBoundingClientRect();
+    var sr = scr.getBoundingClientRect();
+    // Everything in the panel that is NOT the scroller: header or title,
+    // the "more below" line if it is showing, and the panel's own padding.
+    var chrome = pr.height - sr.height;
+    var room = window.innerHeight - pr.top - 12 - chrome;
+    /* Capped at 68vh even when there IS more room. Given the whole screen the
+       panel grew to 708px of a 720px window — technically correct and it read
+       as a wall, with no gap at the bottom to say "this is a panel floating
+       over the page, and it ends". The gap is the affordance.
+       And a floor, so a very short window leaves a usable panel rather than a
+       9px slot: below roughly 170px of viewport it will overflow again, which
+       is shorter than any phone in portrait. */
+    room = Math.min(room, Math.round(window.innerHeight * 0.68));
+    scr.style.maxHeight = Math.max(120, room) + 'px';
+    _billsFadeMark(scr);
+  }
+
+  scr.onscroll = function() { _billsFadeMark(scr); };
+  fit();
+  if (!more) return;
+  var clipped = scr.scrollHeight - scr.clientHeight > 2;
+  var showing = more.style.display !== 'none';
+  if (clipped === showing) return;
+  more.style.display = clipped ? 'block' : 'none';
+  fit();                           // the line it just added takes room of its own
 }
 
 /* Move a row in or out of Bills Due. Mirrors flipSavingsClass: the override
@@ -12271,7 +12378,10 @@ function toggleBillsBreakdown(anchor) {
   showBillsBreakdown(anchor);
 }
 document.addEventListener('scroll', hideBillsBreakdown, true);
-window.addEventListener('resize', hideBillsBreakdown);
+/* hideBillsBreakdown bows out when the panel is pinned, and a pinned panel
+   survives a resize on purpose — so it is the one that needs re-fitting, or a
+   window dragged shorter leaves the bottom of the list off-screen again. */
+window.addEventListener('resize', function() { hideBillsBreakdown(); _fitBillsPanel(); });
 
 function toggleSavingsBreakdown(anchor) {
   if (breakdownIsPinned('savings-breakdown-pop')) { unpinBreakdown(); return; }
@@ -12351,7 +12461,13 @@ function breakdownHeader(title) {
     if (touch) e.preventDefault();
   }
   function end() {
-    if (dragging) dragging.classList.remove('brk-dragging');
+    if (dragging) {
+      dragging.classList.remove('brk-dragging');
+      /* Dragged down, there is less room below it than there was. Re-fit on
+         release rather than on every mousemove, so the list does not shrink
+         and reflow under the cursor while you are still moving it. */
+      if (dragging.id === 'bills-breakdown-pop') _fitBillsPanel(dragging);
+    }
     dragging = null;
   }
   document.addEventListener('mousedown', function(e) { start(e, false); });
