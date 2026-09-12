@@ -1239,10 +1239,16 @@ body.show-sav-goal.font-large .sec-footer-savings {
   100% { background: rgba(217,182,74,0);    box-shadow: inset 0 0 0 2px rgba(217,182,74,0); }
 }
 .tracker-grid .erow.jump-flash { animation: jump-flash-fade 1.6s ease-out 1 forwards; }
+/* A whole section flashes the same way a row does — the setup checklist sends
+   people to a SECTION ("add your income"), and often to one with no rows in it
+   yet, which is exactly when there is no row to point at. Same keyframes, so
+   arriving somewhere always looks like one thing. */
+.tracker-grid .sec-card.jump-flash { animation: jump-flash-fade 1.6s ease-out 1 forwards; }
 /* Finite, so it ends on its own — but someone who asked for less motion still
    needs to see WHICH row, so the tint holds instead of animating. */
 @media (prefers-reduced-motion: reduce) {
-  .tracker-grid .erow.jump-flash {
+  .tracker-grid .erow.jump-flash,
+  .tracker-grid .sec-card.jump-flash {
     animation: none;
     background: rgba(217,182,74,0.26);
     box-shadow: inset 0 0 0 2px rgba(217,182,74,0.80);
@@ -13506,28 +13512,66 @@ function jumpToSectionFromPanel(sec, popId) {
 /* Scroll to the expense row a panel line names and flash it.
    READ-ONLY — it scrolls and highlights and writes nothing, so a locked month
    needs no guard here. */
-function jumpToLinkedRow(section, rowId) {
+/* Scroll something into view under the topbar and flash it. Shared by the row
+   jump and the section jump so "you have arrived" never means two different
+   things depending on which one sent you. */
+function _scrollAndFlash(el) {
+  if (!el) return;
+  var topbar = document.querySelector('.topbar');
+  var offset = (topbar ? topbar.getBoundingClientRect().height : 0) + 14;
+  var y = el.getBoundingClientRect().top + window.pageYOffset - offset;
+  window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+  // Restart the animation when the same thing is clicked twice in a row —
+  // re-adding a class the element already has does nothing on its own.
+  el.classList.remove('jump-flash');
+  void el.offsetWidth;
+  el.classList.add('jump-flash');
+  setTimeout(function() { el.classList.remove('jump-flash'); }, 1700);
+}
+
+/* Expand a collapsed section first, then run fn once it has room. A collapsed
+   section has max-height 0, so anything inside it has no real position until
+   the 0.3s expand has run — measuring before that lands on the header. */
+function _withSectionOpen(section, fn) {
   var card = document.querySelector('.sec-card[data-section-id="' + section + '"]');
-  // A collapsed section has max-height 0, so the row has no real position
-  // until the 0.3s expand has run. Measuring before that lands on the header.
   var wasCollapsed = !!(card && card.classList.contains('collapsed'));
   if (wasCollapsed) toggleSection(section);
-  setTimeout(function() {
+  setTimeout(fn, wasCollapsed ? 320 : 0);
+}
+
+function jumpToLinkedRow(section, rowId) {
+  _withSectionOpen(section, function() {
     var list = document.getElementById('rows-' + section);
     var el = list ? list.querySelector('.erow[data-id="' + rowId + '"]') : null;
     if (!el) return;   // row deleted, or its section is not on screen
-    var topbar = document.querySelector('.topbar');
-    var offset = (topbar ? topbar.getBoundingClientRect().height : 0) + 14;
-    var y = el.getBoundingClientRect().top + window.pageYOffset - offset;
-    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
-    // Restart the animation when the same line is clicked twice in a row —
-    // re-adding a class the element already has does nothing on its own.
-    el.classList.remove('jump-flash');
-    void el.offsetWidth;
-    el.classList.add('jump-flash');
-    setTimeout(function() { el.classList.remove('jump-flash'); }, 1700);
+    _scrollAndFlash(el);
     _afterScrollSettles(function() { _keepPanelClearOf(el); });
-  }, wasCollapsed ? 320 : 0);
+  });
+}
+
+/* Take someone to a whole section. Unlike jumpToLinkedRow this works on an
+   EMPTY section, which is the normal case for the setup checklist: "add your
+   income" is for people who have not added any. */
+function jumpToSection(section) {
+  var card = document.querySelector('.sec-card[data-section-id="' + section + '"]');
+  if (!card) return false;
+  _withSectionOpen(section, function() {
+    _scrollAndFlash(document.querySelector('.sec-card[data-section-id="' + section + '"]'));
+  });
+  return true;
+}
+
+/* The first section that actually has a row, for checklist steps phrased as
+   "on any row". Sending someone to an empty section to do something to a row
+   is a dead end; sending them where their rows already are is not. */
+function _firstSectionWithRow(preferred) {
+  var all = loadAll();
+  var d = (all[currentMonthKey] || {});
+  var order = (preferred || []).concat(SECTIONS);
+  for (var i = 0; i < order.length; i++) {
+    if ((d[order[i]] || []).some(function(r) { return r && (r.label || '').trim(); })) return order[i];
+  }
+  return null;
 }
 
 /* Popover body, built separately from the popover itself so it can be rebuilt
@@ -20236,17 +20280,57 @@ function hideAbout() {
 }
 
 // ── Setup Checklist ───────────────────────────────────────────
+/* Each step knows where it happens. `go` runs after the checklist closes, and
+   `where` is what the arrow's tooltip says — written once, next to the step it
+   describes, so a step can never advertise a destination it does not go to.
+
+   Three of these ("on any row") have no single home. They resolve to whichever
+   section already HAS rows, falling back to a sensible one — because sending
+   someone to an empty section to do something to a row is a dead end, and a
+   new user working through this checklist is exactly the person with empty
+   sections. */
 var CHECKLIST_STEPS = [
-  { id: 'add_income',    icon: '💵', title: 'Add your income',          desc: 'Go to the Income section and add your salary or any other income source.' },
-  { id: 'add_expense',   icon: '🧾', title: 'Add an expense',           desc: 'Pick any section (Housing, Food, etc.) and add a row with a budget and actual amount.' },
-  { id: 'explore_notes', icon: '✎',  title: 'Add a note to a row',      desc: 'Click ≡ on any row → Add note. Income rows also let you set a "→ goes to" destination. Notes are where templates and card links live, so you\'ll use this a lot.' },
-  { id: 'color_row',     icon: '🎨', title: 'Color-code a row',         desc: 'On desktop, click any row to open the color toolbar. On mobile, tap the ≡ button on the row → 🎨 Color. Set a number color to match your card.' },
-  { id: 'add_card',      icon: '🃏', title: 'Set up My Cards legend',   desc: 'Tap ⋯ → Appearance → My Cards legend and add your credit/debit cards with their colors.' },
-  { id: 'link_debt',     icon: '🔗', title: 'Link a card to Debt',      desc: 'Open the note on a Debt row and use the 🔗 Auto-calc dropdown to link a card. Your Current balance will auto-fill.' },
-  { id: 'mark_paid',     icon: '✓',  title: 'Mark an expense as paid',  desc: 'Click the ✓ circle on any expense row. Watch the linked card balance and account update automatically.' },
-  { id: 'try_template',  icon: '📋', title: 'Try a template',           desc: 'Open the note on an Income row → Paycheck, or a Debt row → Payment to log detailed transaction info.' },
-  { id: 'know_backups',  icon: '🛡', title: 'Know your backups',        desc: 'Every change saves to your account automatically. Tap ⋯ → Backups to see your restore points, and ⋯ → Import / Export → Export CSV whenever you want an offline copy of your budget.' },
+  { id: 'add_income',    icon: '💵', title: 'Add your income',          desc: 'Go to the Income section and add your salary or any other income source.',
+    where: 'the Income section',  go: function() { jumpToSection('income'); } },
+  { id: 'add_expense',   icon: '🧾', title: 'Add an expense',           desc: 'Pick any section (Housing, Food, etc.) and add a row with a budget and actual amount.',
+    where: 'Housing & Utilities', go: function() { jumpToSection('housing'); } },
+  { id: 'explore_notes', icon: '✎',  title: 'Add a note to a row',      desc: 'Click ≡ on any row → Add note. Income rows also let you set a "→ goes to" destination. Notes are where templates and card links live, so you\'ll use this a lot.',
+    where: 'a row you can open a note on',
+    go: function() { jumpToSection(_firstSectionWithRow(['income']) || 'income'); } },
+  { id: 'color_row',     icon: '🎨', title: 'Color-code a row',         desc: 'On desktop, click any row to open the color toolbar. On mobile, tap the ≡ button on the row → 🎨 Color. Set a number color to match your card.',
+    where: 'a row you can colour',
+    go: function() { jumpToSection(_firstSectionWithRow(['housing']) || 'housing'); } },
+  { id: 'add_card',      icon: '🃏', title: 'Set up My Cards legend',   desc: 'Tap ⋯ → Appearance → My Cards legend and add your credit/debit cards with their colors.',
+    where: 'My Cards',
+    go: function() {
+      var panel = document.getElementById('legend-panel');
+      // toggleLegendPanel() TOGGLES — calling it on an already-open panel would
+      // close the very thing the step is sending you to.
+      if (panel && panel.style.display === 'none') toggleLegendPanel();
+      else if (panel) panel.style.display = 'block';
+      if (panel) _scrollAndFlash(panel);
+    } },
+  { id: 'link_debt',     icon: '🔗', title: 'Link a card to Debt',      desc: 'Open the note on a Debt row and use the 🔗 Auto-calc dropdown to link a card. Your Current balance will auto-fill.',
+    where: 'the Debt section',    go: function() { jumpToSection('debt'); } },
+  { id: 'mark_paid',     icon: '✓',  title: 'Mark an expense as paid',  desc: 'Click the ✓ circle on any expense row. Watch the linked card balance and account update automatically.',
+    where: 'an expense you can tick',
+    go: function() { jumpToSection(_firstSectionWithRow(['housing','food','transport']) || 'housing'); } },
+  { id: 'try_template',  icon: '📋', title: 'Try a template',           desc: 'Open the note on an Income row → Paycheck, or a Debt row → Payment to log detailed transaction info.',
+    where: 'the Income section',  go: function() { jumpToSection('income'); } },
+  { id: 'know_backups',  icon: '🛡', title: 'Know your backups',        desc: 'Every change saves to your account automatically. Tap ⋯ → Backups to see your restore points, and ⋯ → Import / Export → Export CSV whenever you want an offline copy of your budget.',
+    where: 'your backups',        go: function() { showBackups(); } },
 ];
+
+/* Close the checklist, THEN travel. Scrolling the page behind a full-screen
+   overlay is the whole feature failing silently — you arrive somewhere you
+   cannot see. The frame's delay lets the overlay actually leave the screen
+   before anything measures a position. */
+function checklistGo(stepId) {
+  var step = CHECKLIST_STEPS.find(function(s) { return s.id === stepId; });
+  if (!step || !step.go) return;
+  hideChecklist();
+  setTimeout(function() { try { step.go(); } catch (e) {} }, 40);
+}
 
 function loadChecklistState() {
   try { return JSON.parse(appStore.getItem('intentra_checklist') || '{}'); } catch { return {}; }
@@ -20273,13 +20357,30 @@ function renderChecklist() {
   else { html = progressHtml; }   // fallback: old layout keeps working
   CHECKLIST_STEPS.forEach(function(step) {
     var done = !!state[step.id];
-    html += '<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--mist);cursor:pointer;" onclick="toggleChecklistStep(\'' + step.id + '\')">' +
-      '<div style="flex-shrink:0;width:22px;height:22px;border-radius:50%;border:2px solid ' + (done ? 'var(--sage)' : 'var(--mist)') + ';background:' + (done ? 'var(--sage)' : 'transparent') + ';display:flex;align-items:center;justify-content:center;margin-top:1px;transition:all 0.2s;">' +
+    /* Two actions, two targets, no ambiguity: the circle ticks the step off,
+       everything else takes you to where the step happens. The circle stops
+       the click so it never also navigates — one press can only ever mean one
+       thing. 22px is small under a thumb, so it carries 8px of padding and its
+       own title. */
+    var whereTxt = step.where ? 'Take me to ' + step.where : '';
+    html += '<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--mist);' +
+      (step.go ? 'cursor:pointer;' : '') + '" ' +
+      (step.go ? 'onclick="checklistGo(\'' + step.id + '\')" title="' + escHtml(whereTxt) + '"' : '') + '>' +
+      '<div onclick="event.stopPropagation();toggleChecklistStep(\'' + step.id + '\')" ' +
+        'title="' + (done ? 'Mark as not done' : 'Mark as done') + '" ' +
+        'style="flex-shrink:0;width:22px;height:22px;border-radius:50%;border:2px solid ' + (done ? 'var(--sage)' : 'var(--mist)') + ';background:' + (done ? 'var(--sage)' : 'transparent') + ';display:flex;align-items:center;justify-content:center;margin-top:1px;transition:all 0.2s;cursor:pointer;box-sizing:border-box;">' +
       (done ? '<span style="color:white;font-size:11px;">✓</span>' : '') + '</div>' +
-      '<div style="flex:1;">' +
+      '<div style="flex:1;min-width:0;">' +
       '<div style="font-size:13px;font-weight:600;color:' + (done ? 'var(--steel)' : 'var(--ink)') + ';' + (done ? 'text-decoration:line-through;' : '') + '">' + step.icon + ' ' + step.title + '</div>' +
       '<div style="font-size:12px;color:var(--steel);margin-top:2px;line-height:1.5;">' + step.desc + '</div>' +
-      '</div></div>';
+      '</div>' +
+      /* The row already had cursor:pointer for ticking, so nothing on screen
+         said it now travels. This is that signal — and it is \u2197 rather than
+         \u2192 because the descriptions already spend \u2192 as a path separator
+         ("\u2261 on any row \u2192 Add note"). One glyph, two meanings, same row was
+         a collision worth one character to avoid. */
+      (step.go ? '<div style="flex-shrink:0;align-self:center;color:var(--sage);font-size:14px;padding-left:2px;" aria-hidden="true">\u2197</div>' : '') +
+      '</div>';
   });
   container.innerHTML = html;
 }
