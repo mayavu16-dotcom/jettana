@@ -3535,6 +3535,15 @@ body.sidebar-open #calc-panel { display: none !important; }
    quiet again the moment the next character makes it one, so a half-typed
    2/2 does not shout at you on the way to 2/25. */
 .dg-type-bad { border-color: var(--blush); }
+.dg-echo {
+  min-height: 14px; margin-top: 5px; text-align: center;
+  font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 600;
+  color: var(--sage-dark); letter-spacing: 0.1px;
+}
+/* --sage-dark is #4d7a52 in BOTH themes — it does not flip — and that green on
+   the panel's #1E2A38 is too dim to read. Same swap .bdp-free already makes. */
+.dark .dg-echo { color: var(--sage); }
+.dg-echo.dg-echo-bad { color: var(--blush); font-weight: 500; }
 /* Border only. The palette TOKENS already flip — --ink is #1A2332 in light and
    #E8EDF2 in dark, --mist #C8D4DC and #3A4A5A — so the base rule above is
    correct in both themes and a .dark colour override does not help it.
@@ -3561,7 +3570,13 @@ body.sidebar-open #calc-panel { display: none !important; }
   font-size: 13px; font-weight: 600; cursor: pointer; touch-action: manipulation;
   border: 1px solid var(--mist); background: var(--white); color: var(--slate);
 }
-.dark .dg-btn { background: #24313F; color: var(--mist); border-color: #2A3A4A; }
+/* Background and border only. The colour override used to be var(--mist), which
+   is #C8D4DC in light but #3A4A5A in dark — a border tone, not a text one — so
+   Cancel rendered at 1.45:1 on this button's #24313F and was effectively
+   invisible. The base rule's var(--slate) already flips to #B0BEC8 in dark and
+   is correct on its own. Third time this file has been bitten by a .dark
+   override reaching for a token that means something else in dark. */
+.dark .dg-btn { background: #24313F; border-color: #2A3A4A; }
 .dg-btn.dg-save { background: var(--sage); border-color: var(--sage); color: #fff; }
 .dg-btn.dg-save[disabled] { opacity: 0.45; }
 .dg-btn.dg-remove { color: var(--blush); border-color: var(--blush); background: none; }
@@ -14393,9 +14408,19 @@ function showDayGrid(section, id, isDate2) {
          replaces that element's innerHTML on every keystroke, which would blow
          away this field and the caret in it. */
       '<div class="dg-typewrap">' +
+        /* One example, not three. "or type 25 · 2/25 · 2/25/2025" began
+           mid-sentence with nothing before it and then listed three formats
+           separated by middots, which reads as syntax to decode rather than an
+           invitation. 2/25 and 2/25/2025 still work — they just stop being
+           advertised, because the echo below says what was understood. */
         '<input type="text" class="dg-type" id="dg-type" autocomplete="off" ' +
-          'inputmode="numeric" placeholder="or type 25 · 2/25 · 2/25/2025" ' +
+          'inputmode="numeric" placeholder="Type a day, e.g. 25" ' +
           'aria-label="Type a date">' +
+        /* Says the date back in words while you type, so there is never a
+           question of what "2/25" was taken to mean. Always in the DOM with a
+           reserved height — appearing and disappearing would jog the calendar
+           down by a line on every keystroke. */
+        '<div class="dg-echo" id="dg-echo" aria-live="polite"></div>' +
       '</div>' +
       '<div class="dg-dow"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>' +
       '<div class="dg-grid" id="dg-grid"></div>' +
@@ -14432,7 +14457,13 @@ function showDayGrid(section, id, isDate2) {
   if (typeEl) {
     typeEl.addEventListener('input', function() {
       var parsed = dgParseTyped(this.value, _dgState.y, _dgState.m);
-      this.classList.toggle('dg-type-bad', !!this.value.trim() && !parsed);
+      var typing = !!this.value.trim();
+      this.classList.toggle('dg-type-bad', typing && !parsed);
+      var echo = document.getElementById('dg-echo');
+      if (echo) {
+        echo.textContent = parsed ? dgEchoLabel(parsed) : (typing ? 'Not a date yet' : '');
+        echo.classList.toggle('dg-echo-bad', typing && !parsed);
+      }
       if (!parsed) return;
       // Move the grid to what was typed and select it, so the calendar always
       // shows the date that is about to be saved rather than two sources of
@@ -14454,6 +14485,15 @@ function showDayGrid(section, id, isDate2) {
   }
 
   dgRender();
+}
+
+/* "2025-02-25" → "Wed, Feb 25, 2025". Built from the parts rather than by
+   handing the string to Date(), which reads a bare YYYY-MM-DD as UTC and can
+   come back a day early west of Greenwich. */
+function dgEchoLabel(iso) {
+  var d = new Date(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10));
+  return d.toLocaleDateString('en-US',
+    { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 /* Read a date out of what someone typed, against the month the grid is showing.
@@ -14514,9 +14554,17 @@ function dgRender() {
   var monthKey = y + '-' + pad(m + 1);
   var sub = document.getElementById('dg-sub');
   if (sub) {
-    // A date outside the month being budgeted will not appear in that month's
-    // calendar or totals. Worth saying plainly rather than letting them find out.
-    sub.textContent = monthKey === currentMonthKey ? '' : 'Outside ' + monthLabel(currentMonthKey);
+    /* A date outside the month being budgeted will not appear in that month's
+       calendar or totals. Worth saying plainly rather than letting them find out.
+
+       Only when the month being budgeted IS a month, though. The demo's key is
+       'demo-month', which no calendar page can ever equal, so this read
+       "Outside ✦ Demo Month" permanently — a warning about being outside
+       something that is not on a calendar at all, shown on every date in the
+       demo. It was invisible until the grid reached desktop. */
+    var budgetingARealMonth = /^\d{4}-\d{2}$/.test(currentMonthKey);
+    sub.textContent = (!budgetingARealMonth || monthKey === currentMonthKey)
+      ? '' : 'Outside ' + monthLabel(currentMonthKey);
   }
 
   var first = new Date(y, m, 1).getDay();
