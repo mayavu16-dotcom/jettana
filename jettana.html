@@ -3509,7 +3509,16 @@ body.sidebar-open #calc-panel { display: none !important; }
 .dark .dg-panel { background: #1E2A38; }
 .dg-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 8px; border-bottom: 1px solid var(--mist); }
 .dg-title { font-size: 14px; font-weight: 700; color: var(--ink); }
-.dg-nav { background: none; border: none; font-size: 20px; line-height: 1; color: var(--steel); padding: 6px 14px; cursor: pointer; touch-action: manipulation; font-family: 'Outfit', sans-serif; }
+/* Four arrows now, so the per-arrow padding comes down or the header outgrows
+   the 340px panel. 34px wide still clears the 44px touch target once the 6px
+   vertical padding and the line box are counted. */
+.dg-nav { background: none; border: none; font-size: 20px; line-height: 1; color: var(--steel); padding: 6px 9px; min-width: 34px; cursor: pointer; touch-action: manipulation; font-family: 'Outfit', sans-serif; }
+/* The year pair reads as secondary — same target, lighter ink — so the month
+   arrows stay the obvious ones for the common hop. */
+.dg-nav-yr { font-size: 17px; color: var(--mist); }
+.dg-nav-yr:hover { color: var(--steel); }
+.dark .dg-nav-yr { color: #3A4A5A; }
+.dark .dg-nav-yr:hover { color: var(--steel); }
 .dg-sub { text-align: center; font-size: 11px; color: var(--steel); padding: 6px 10px 0; }
 .dg-dow { display: grid; grid-template-columns: repeat(7, 1fr); padding: 8px 10px 0; }
 .dg-dow span { text-align: center; font-size: 10px; font-weight: 700; color: var(--steel); }
@@ -14346,10 +14355,16 @@ function showDayGrid(section, id, isDate2) {
   ov.id = 'dg-overlay';
   ov.innerHTML =
     '<div class="dg-panel" id="dg-panel">' +
+      /* Year arrows as well as month arrows. The grid opens on the month being
+         budgeted, which is the right guess nearly every time — but when it is
+         not, ‹ twelve times is not a way to reach last February. « and » are
+         the outer pair so the order reads year, month, month, year. */
       '<div class="dg-head">' +
-        '<button class="dg-nav" id="dg-prev" aria-label="Previous month">‹</button>' +
+        '<button class="dg-nav dg-nav-yr" id="dg-prev-yr" aria-label="Previous year" title="Previous year">«</button>' +
+        '<button class="dg-nav" id="dg-prev" aria-label="Previous month" title="Previous month">‹</button>' +
         '<span class="dg-title" id="dg-title"></span>' +
-        '<button class="dg-nav" id="dg-next" aria-label="Next month">›</button>' +
+        '<button class="dg-nav" id="dg-next" aria-label="Next month" title="Next month">›</button>' +
+        '<button class="dg-nav dg-nav-yr" id="dg-next-yr" aria-label="Next year" title="Next year">»</button>' +
       '</div>' +
       '<div class="dg-sub" id="dg-sub"></div>' +
       '<div class="dg-dow"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>' +
@@ -14364,6 +14379,10 @@ function showDayGrid(section, id, isDate2) {
 
   bindTap(document.getElementById('dg-prev'), function() { dgNav(-1); });
   bindTap(document.getElementById('dg-next'), function() { dgNav(1); });
+  // ±12 through the same dgNav, so a year hop rolls the month exactly the way
+  // twelve single steps would — no second copy of the date arithmetic.
+  bindTap(document.getElementById('dg-prev-yr'), function() { dgNav(-12); });
+  bindTap(document.getElementById('dg-next-yr'), function() { dgNav(12); });
   bindTap(document.getElementById('dg-cancel'), closeDayGrid);
   bindTap(document.getElementById('dg-save'), dgSave);
   var rm = document.getElementById('dg-remove');
@@ -14469,11 +14488,43 @@ function toggleDateInput(rowId) {
   }
   if (wrap) wrap.style.display = 'flex';
   input.style.display = 'block';
-  // Don't pre-fill — let iOS open the picker at its own default (today).
-  // Pre-filling causes onchange to fire immediately when the user taps Done
-  // on the pre-filled date without getting a chance to change it first.
+  /* Open the calendar on the month being budgeted, not on today.
+
+     An empty <input type="date"> opens its picker at today, so reconciling
+     February 2025 meant changing the year and then the month before getting
+     to a single day. The input's own value is the only lever there is for
+     where the picker opens, so the field is seeded with the 1st of the month
+     on screen — the same rule the touch day grid already follows ("the month
+     being budgeted ... is nearly always the one they want").
+
+     Seeded, not set: dataset.placeholder marks it as scaffolding and
+     hideDateInput() throws it away, so clicking "+ date" and then clicking
+     away saves nothing. Only a real `change` — a day picked, or a year typed
+     out — commits.
+
+     Skipped when the month on screen IS this real month, because there the
+     native default (today) is already the better guess, and seeding would put
+     a date in the field that is neither today nor chosen. */
+  if (!input.value) {
+    var seed = seedDateFor(currentMonthKey);
+    if (seed) {
+      input.value = seed;
+      input.dataset.placeholder = '1';
+    }
+  }
   input.focus();
   setTimeout(function() { input.click(); }, 50);
+}
+
+/* The 1st of the month being viewed, or '' when that is the current real month
+   (the native picker's own default is better there). */
+function seedDateFor(monthKey) {
+  if (!/^\d{4}-\d{2}$/.test(String(monthKey || ''))) return '';
+  var now = new Date();
+  var pad = function(n) { return n < 10 ? '0' + n : '' + n; };
+  var thisMonth = now.getFullYear() + '-' + pad(now.getMonth() + 1);
+  if (monthKey === thisMonth) return '';
+  return monthKey + '-01';
 }
 
 function hideDateInput(rowId) {
@@ -14482,7 +14533,11 @@ function hideDateInput(rowId) {
   setTimeout(() => {
     const input = document.getElementById(`date-input-${rowId}`);
     if (input) {
-      if (input.dataset.placeholder) {
+      // The seeded 1st-of-the-month was scaffolding for where the picker opens,
+      // never a choice — throw it away. And throw away a year abandoned halfway
+      // through too (see dateStillBeingTyped), or reopening the field would
+      // show the 0002 nobody meant to type.
+      if (input.dataset.placeholder || dateStillBeingTyped(input.value)) {
         input.value = '';
         delete input.dataset.placeholder;
       }
@@ -14551,7 +14606,33 @@ function autoSortSectionByDate(section) {
   recalc();
 }
 
+/* Is this `change` a finished date, or a year halfway through being typed?
+
+   Chrome fires `change` the moment the three segments form a valid date — and
+   the FIRST digit of the year does that. Typing 02/25/2025 produces, in order:
+     0002-02-25   ← change fires here
+     0020-02-25
+     0202-02-25
+     2025-02-25
+   Committing on the first one closed the field and blurred it, so the last
+   three keystrokes went nowhere and year 0002 was saved. formatDateLabel()
+   prints no year, so the row read "Feb 25" and looked completely correct —
+   and dates are compared as plain strings elsewhere (bills, statement date
+   filters, autoSortSectionByDate), so that row sorted ahead of everything.
+
+   A year under 1000 is never a date anyone means in a budget; it is always a
+   year mid-typing. Ignoring it leaves the field open and focused, and the next
+   digit fires `change` again, so the fourth one lands a real date.
+
+   An EMPTY value is not "still typing" — it is how the field clears a date. */
+function dateStillBeingTyped(dateVal) {
+  if (!dateVal) return false;
+  var m = /^(\d{4})-/.exec(String(dateVal));
+  return !!m && +m[1] < 1000;
+}
+
 function saveDate(section, id, dateVal) {
+  if (dateStillBeingTyped(dateVal)) return;
   // On mobile: empty means the picker was dismissed without a selection — ignore
   if ('ontouchstart' in window) {
     if (!dateVal) return;
@@ -14676,6 +14757,7 @@ function commitDate2(section, id, dateVal) {
 }
 
 function saveDate2(section, id, dateVal) {
+  if (dateStillBeingTyped(dateVal)) return;   // see saveDate — same half-typed year
   if ('ontouchstart' in window) {
     if (!dateVal) return;
     showDateConfirmBar(section, id, dateVal, true);
