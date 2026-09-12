@@ -20312,19 +20312,19 @@ function hideAbout() {
    sections. */
 var CHECKLIST_STEPS = [
   { id: 'add_income',    icon: '💵', title: 'Add your income',          desc: 'Go to the Income section and add your salary or any other income source.',
-    where: function() { return getSectionName('income'); }, go: function() { jumpToSection('income'); } },
+    where: function() { return getSectionName('income'); }, go: function() { _demoAddRow('income'); } },
   { id: 'add_expense',   icon: '🧾', title: 'Add an expense',           desc: 'Pick any section (Housing, Food, etc.) and add a row with a budget and actual amount.',
-    where: function() { return getSectionName('housing'); }, go: function() { jumpToSection('housing'); } },
+    where: function() { return getSectionName('housing'); }, go: function() { _demoAddRow('housing'); } },
   { id: 'explore_notes', icon: '✎',  title: 'Add a note to a row',      desc: 'Click ≡ on any row → Add note. Income rows also let you set a "→ goes to" destination. Notes are where templates and card links live, so you\'ll use this a lot.',
     /* `where` is a FUNCTION here because the destination is decided at click
        time from the person's own data. A fixed string like "a row you can open
        a note on" named no section, so wherever you landed felt arbitrary —
        the step and the place it took you have to agree. */
-    where: function() { return getSectionName(_firstSectionWithRow(['income']) || 'income'); },
-    go: function() { jumpToSection(_firstSectionWithRow(['income']) || 'income'); } },
+    where: function() { var h = _checklistRow(['income']); return h ? getSectionName(h.section) : getSectionName('income'); },
+    go: function() { _demoOnRow(['income'], 'income', function(sec, id) { _openNoteFor(sec, id); }); } },
   { id: 'color_row',     icon: '🎨', title: 'Color-code a row',         desc: 'On desktop, click any row to open the color toolbar. On mobile, tap the ≡ button on the row → 🎨 Color. Set a number color to match your card.',
-    where: function() { return getSectionName(_firstSectionWithRow(['housing']) || 'housing'); },
-    go: function() { jumpToSection(_firstSectionWithRow(['housing']) || 'housing'); } },
+    where: function() { var h = _checklistRow(['housing']); return h ? getSectionName(h.section) : getSectionName('housing'); },
+    go: function() { _demoOnRow(['housing'], 'housing', _demoColorUI); } },
   { id: 'add_card',      icon: '🃏', title: 'Set up My Cards legend',   desc: 'Tap ⋯ → Appearance → My Cards legend and add your credit/debit cards with their colors.',
     where: 'My Cards',
     go: function() {
@@ -20336,12 +20336,32 @@ var CHECKLIST_STEPS = [
       if (panel) _scrollAndFlash(panel);
     } },
   { id: 'link_debt',     icon: '🔗', title: 'Link a card to Debt',      desc: 'Open the note on a Debt row and use the 🔗 Auto-calc dropdown to link a card. Your Current balance will auto-fill.',
-    where: function() { return getSectionName('debt'); }, go: function() { jumpToSection('debt'); } },
+    where: function() { return getSectionName('debt'); },
+    go: function() {
+      // strict: this can only be demonstrated on a Debt row.
+      _demoOnRow(['debt'], 'debt', function(sec, id) {
+        _openNoteFor(sec, id);
+        // The 🔗 Auto-calc dropdown is injected at the top of a debt row's note.
+        setTimeout(function() {
+          var w = document.getElementById('card-link-wrap-' + id);
+          if (w) _scrollAndFlash(w);
+        }, 280);
+      }, true);
+    } },
   { id: 'mark_paid',     icon: '✓',  title: 'Mark an expense as paid',  desc: 'Click the ✓ circle on any expense row. Watch the linked card balance and account update automatically.',
-    where: function() { return getSectionName(_firstSectionWithRow(['housing','food','transport']) || 'housing'); },
-    go: function() { jumpToSection(_firstSectionWithRow(['housing','food','transport']) || 'housing'); } },
+    where: function() { var h = _checklistRow(['housing','food','transport']); return h ? getSectionName(h.section) : getSectionName('housing'); },
+    go: function() {
+      _demoOnRow(['housing','food','transport'], 'housing', function(sec, id, el) {
+        /* Flash the tick, do NOT press it. Every other step opens something
+           the person could have opened themselves; ticking a row paid changes
+           their budget, and a checklist must never do that on their behalf. */
+        var box = el.querySelector('.paid-checkbox');
+        if (box) _scrollAndFlash(box);
+      });
+    } },
   { id: 'try_template',  icon: '📋', title: 'Try a template',           desc: 'Open the note on an Income row → Paycheck, or a Debt row → Payment to log detailed transaction info.',
-    where: function() { return getSectionName('income'); }, go: function() { jumpToSection('income'); } },
+    where: function() { var h = _checklistRow(['income'], true); return getSectionName(h ? h.section : 'income'); },
+    go: function() { _demoOnRow(['income'], 'income', function(sec, id) { _openNoteFor(sec, id); }); } },
   { id: 'know_backups',  icon: '🛡', title: 'Know your backups',        desc: 'Every change saves to your account automatically. Tap ⋯ → Backups to see your restore points, and ⋯ → Import / Export → Export CSV whenever you want an offline copy of your budget.',
     where: 'your backups',        go: function() { showBackups(); } },
 ];
@@ -20350,6 +20370,81 @@ var CHECKLIST_STEPS = [
    overlay is the whole feature failing silently — you arrive somewhere you
    cannot see. The frame's delay lets the overlay actually leave the screen
    before anything measures a position. */
+/* ── Showing, not pointing ──────────────────────────────────────────────
+   A checklist step that scrolls you near a section and stops has told you
+   where to look, not what to do. These take you to a real ROW and then open
+   the actual thing the step is about — the note panel, the colour toolbar,
+   the card-link dropdown — so the answer to "how do I do this" is on screen
+   rather than one more search away.
+
+   Nothing here changes the person's data. Opening a note or a toolbar is
+   something they could do themselves; ticking a row paid is not, so the
+   "mark as paid" step points at the control and lets them press it. */
+
+/* The first real row to demonstrate on. `strict` keeps the search inside the
+   preferred sections — "link a card to Debt" can only be shown on a Debt row,
+   whereas "add a note" is happy anywhere. */
+function _checklistRow(prefer, strict) {
+  var d = (loadAll()[currentMonthKey] || {});
+  var order = strict ? (prefer || []) : (prefer || []).concat(SECTIONS);
+  for (var i = 0; i < order.length; i++) {
+    var rows = d[order[i]] || [];
+    for (var j = 0; j < rows.length; j++) {
+      if (rows[j] && (rows[j].label || '').trim()) return { section: order[i], id: rows[j].id };
+    }
+  }
+  return null;
+}
+
+/* No row to demonstrate on — which is the normal case for a new user. Go to
+   the section and flash the button that creates one, so the next move is still
+   obvious. */
+function _demoAddRow(section) {
+  jumpToSection(section);
+  setTimeout(function() {
+    var btn = document.querySelector('.sec-card[data-section-id="' + section + '"] .add-row-btn');
+    if (btn) _scrollAndFlash(btn);
+  }, 380);
+}
+
+function _demoOnRow(prefer, fallbackSection, after, strict) {
+  var hit = _checklistRow(prefer, strict);
+  if (!hit) { _demoAddRow(fallbackSection || (prefer && prefer[0]) || 'income'); return; }
+  _withSectionOpen(hit.section, function() {
+    var list = document.getElementById('rows-' + hit.section);
+    var el = list ? list.querySelector('.erow[data-id="' + hit.id + '"]') : null;
+    if (!el) { jumpToSection(hit.section); return; }
+    _scrollAndFlash(el);
+    if (!after) return;
+    // Wait for the scroll to land before opening anything — a panel that
+    // appears mid-flight ends up measured against a position that moved.
+    _afterScrollSettles(function() { try { after(hit.section, hit.id, el); } catch (e) {} });
+  });
+}
+
+/* toggleNote() TOGGLES. On a row whose note is already open it would close the
+   very thing the step is meant to show — the same trap as toggleLegendPanel(). */
+function _openNoteFor(section, id) {
+  var wrap = document.getElementById('note-wrap-' + id);
+  if (wrap && wrap.classList.contains('open')) return;
+  toggleNote(section, id);
+}
+
+/* The colour toolbar is a DESKTOP affordance — the row click handler only opens
+   it when there is a real pointer. On touch the app's own documented path is
+   "≡ on the row → 🎨 Color", so that is what gets shown there. Demonstrating a
+   control that does not exist on the device in your hand is worse than
+   demonstrating nothing. */
+function _demoColorUI(section, id, el) {
+  if (monthIsLocked(currentMonthKey)) return;   // view-only month: nothing to open
+  if ('ontouchstart' in window) {
+    var r = el.getBoundingClientRect();
+    showCtxMenu({ clientX: r.left + 40, clientY: r.top + 20, preventDefault: function() {} }, section, id);
+  } else {
+    showColorToolbar(section, id, el);
+  }
+}
+
 /* Has the checklist been dragged aside? startDrag() is the only thing that
    sets position:fixed on the modal, and it also makes the overlay transparent
    and pointer-events:none — which is precisely the side-by-side mode. So this
