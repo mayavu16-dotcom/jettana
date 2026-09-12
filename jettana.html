@@ -6638,7 +6638,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
 
         <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">Do I have to retype my contributions every month?<span class="askme-q-arrow">▾</span></button>
-          <div class="askme-a">No. Open <strong>≡</strong> on the row → Add note, and if that same account had entries last month you'll see a <strong>⧉ Copy <em>[month]</em></strong> button next to the template buttons. It brings last month's entries back — the fund, your percentage, the employer match, the subscription status — but leaves the <strong>amounts and dates blank</strong>, because those are the parts that change. Fill in what actually happened and you're done. It adds to whatever is already there rather than replacing it, so you can press it safely at any point.</div>
+          <div class="askme-a">No. Open <strong>≡</strong> on the row → Add note, fill in your entries once, then press <strong>⧉ Copy</strong> in that panel. Move to any other month (or any other row), open its note, and press <strong>⎘ Paste</strong>. Everything comes across filled in — amounts, percentages, employer match, fund, status — and only the <strong>dates are left blank</strong>, since last month’s date would be wrong here rather than just old. Pasting adds to whatever is already in the panel instead of replacing it, so it is safe to press at any point. The copy stays available until you copy something else.</div>
         </div>
 
         <div class="askme-item">
@@ -7151,7 +7151,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>📅 <strong>Beginning balance date</strong> — open the note on any Checking row to set a beginning balance date; expenses dated before that date won't be deducted from the balance</span></div>
       <div class="shortcut-row"><span>✎ <strong>Row notes</strong> — click ≡ on any row → Add note; a gold dot appears on hover to indicate a note exists</span></div>
       <div class="shortcut-row"><span>👁 <strong>Full name peek</strong> — long row names fade at the edge; hover (desktop) or tap once (mobile) to see the full text, tap again to edit. Works on locked months too, where it only ever shows the name.</span></div>
-      <div class="shortcut-row"><span>⧉ <strong>Copy last month's entries</strong> — open a note on any row that had template entries in an earlier month and a <strong>⧉ Copy [month]</strong> button appears beside the template pills. It brings those entries back with the setup intact (fund, percentages, employer match, status) and the <strong>amounts and dates left blank</strong>. Matches the row by name across months, walks back past a skipped month, appends rather than replacing, and is offered only when there is something to copy.</span></div>
+      <div class="shortcut-row"><span>⧉ <strong>Copy / paste template entries</strong> — fill in a row’s note entries once, press <strong>⧉ Copy</strong> in the panel, then <strong>⎘ Paste</strong> them into another month or another row. Every value comes across — amounts, percentages, employer match, fund, status — with only the <strong>dates blanked</strong>, because a date from another month is wrong rather than stale. Pastes append rather than replace, Paste is offered only when something has been copied, and a locked month refuses it. Same shape as Copy colour / Paste colour on the row menu.</span></div>
       <div class="shortcut-row"><span>🔗 <strong>Account links</strong> — keep a link to the institution behind a Debt, Checking or Savings &amp; Investments row: ≡ → Add link, paste the page you sign in on, name it whatever you like. The row's name is then underlined, and ≡ → Open takes you there in a new tab. The menu names the <strong>real web address</strong> rather than your label, so you always see where you're going first. Only secure (https) sites are accepted, the address is all that's stored — never a username or password — and the link carries into every new month. Paid rows aren't underlined, since the strikethrough already occupies that line.</span></div>
       <div class="shortcut-row"><span>→ <strong>Income destination</strong> — open the note on any income row to set a "→ goes to" label (e.g. Marcus Savings, HYSA)</span></div>
       <div class="shortcut-row"><span>🔄 <strong>Subscriptions</strong> — dedicated section for recurring services; included in expense totals and month-over-month comparison</span></div>
@@ -15395,21 +15395,11 @@ function toggleNote(section, id) {
             'style="padding:3px 8px;border-radius:12px;border:1px solid var(--mist);font-size:10px;font-family:Outfit,sans-serif;cursor:pointer;transition:all 0.15s;background:none;color:var(--steel);">' +
             templateLabels[t] + '</button>';
         });
-        /* Offered only when there is genuinely something to copy — a button
-           that does nothing when pressed teaches people to distrust the panel.
-           Named with the month it will pull from, so it is never a guess about
-           which "last month" is meant, including when a month was skipped. */
-        var _prevEntries = lastMonthEntries(section, id);
-        if (_prevEntries.entries.length && !monthIsLocked(currentMonthKey)) {
-          var _srcName = monthLabel(_prevEntries.key).split(' ')[0];
-          pillHtml += '<button onclick="copyEntriesFromLastMonth(\'' + section + '\',\'' + id + '\')" ' +
-            'ontouchstart="var w=this.closest(\'.note-wrap\');if(w)w.dataset.pillTapped=\'1\';" ' +
-            'id="st-copyprev-' + id + '" ' +
-            'title="Bring in ' + escHtml(_srcName) + '’s entries for this row — the setup only, with amounts and dates left blank" ' +
-            'style="padding:3px 8px;border-radius:12px;border:1px solid var(--mist);font-size:10px;' +
-            'font-family:Outfit,sans-serif;cursor:pointer;transition:all 0.15s;background:var(--sage-light);' +
-            'color:var(--ink);margin-left:auto;">⧉ Copy ' + escHtml(_srcName) + '</button>';
-        }
+        /* Copy / Paste ride in their own holder so _refreshEntryClipButtons()
+           can repaint just this pair — copying in one open panel has to make
+           Paste appear in the others without rebuilding their fields. */
+        pillHtml += '<span class="st-clip" data-sec="' + section + '" data-row="' + id + '" ' +
+          'style="display:contents;">' + entryClipButtonsHtml(section, id, row) + '</span>';
         pillHtml += '</div><div id="st-fields-' + id + '" style="padding:8px 10px 0;"></div>';
 
         var pillDiv = document.createElement('div');
@@ -15998,97 +15988,152 @@ function addTypedEntry(section, id, type) {
   renderAllEntries(section, id, rowTemplate, row._entries, true);
 }
 
-/* ── Copying last month's template entries ──────────────────────────────
+/* ── Copy / paste template entries ──────────────────────────────────────
    Note entries live in row._entries and are on NONE of the four month copy
    paths, on purpose: an entry records something that happened, and last
-   month's transactions are not this month's. But the SHAPE of a recurring
-   contribution — which fund, what percentage, whose match — is the same every
-   month, and retyping it is the actual cost.
+   month's transactions are not this month's.
 
-   So this copies the setup and blanks what happened. */
+   But a recurring contribution is the same numbers every month — same
+   amount, same percentage, same employer match — and retyping all of it is
+   the real cost. So: copy a row's entries, paste them wherever you want
+   them, values and all.
 
-/* Which of a template's fields are "what happened" rather than "how it is set
-   up". Derived by asking the renderer, never a hand-kept list of key names —
-   a flat list would be actively WRONG, because `rate` is a PERCENTAGE in a
-   contribution and an HOURLY RATE in a paycheck. The template that owns the
-   field is the only thing that knows which it is.
+   Deliberately a CLIPBOARD rather than an automatic pull from last month.
+   An automatic version has to guess which month you meant and what you
+   wanted kept; copy/paste lets you say both. It is also the shape this app
+   already uses for colours (Copy colour → Paste colour), so it is a pattern
+   here rather than a new idea. */
 
-   Money fields are the ones wired to templateMoneyBlur; dates are type=date.
-   A template added later is covered without anyone remembering to update a
-   list. */
-var _entryClearCache = {};
-function entryClearedKeys(template) {
-  if (_entryClearCache[template]) return _entryClearCache[template];
+/* Which of a template's fields are dates. Derived by asking the RENDERER,
+   never a hand-kept list of key names — a flat list would be actively wrong,
+   since `rate` is a PERCENTAGE in a contribution and an HOURLY RATE in a
+   paycheck. Only the template that owns a field knows what it means.
+   A template added later is covered without anyone updating a list. */
+var _entryDateCache = {};
+function entryDateKeys(template) {
+  if (_entryDateCache[template]) return _entryDateCache[template];
   var keys = {};
   try {
     var d = document.createElement('div');
     d.innerHTML = renderEntryFields('savings', '_probe', template, {}, 0);
     d.querySelectorAll('[data-key]').forEach(function(el) {
-      var k = el.getAttribute('data-key');
-      if (!k) return;
-      if (/templateMoneyBlur/.test(el.outerHTML) || el.getAttribute('type') === 'date') keys[k] = true;
+      if (el.getAttribute('type') === 'date') keys[el.getAttribute('data-key')] = true;
     });
   } catch (e) {
-    // An unrecognised template copies verbatim rather than losing its content.
+    // Unknown template: paste it verbatim rather than silently dropping fields.
   }
-  _entryClearCache[template] = keys;
+  _entryDateCache[template] = keys;
   return keys;
 }
 
-/* The most recent earlier month that has entries for this row.
-   Matched BY LABEL, not by id — ids are regenerated for every month, so the
-   same account is a different id in August. createFreshMonth and the copy
-   modal already match rows this way; this follows them rather than inventing
-   a second rule.
+function _entryClipKey() { return nsKey('intentra_copied_entries'); }
 
-   Walks back through months rather than looking only at the immediately
-   previous one: skipping a month should not mean losing the setup. */
-function lastMonthEntries(section, id) {
-  var empty = { key: null, entries: [] };
-  var all = loadAll();
-  var row = ((all[currentMonthKey] || {})[section] || []).find(function(r) { return r.id === id; });
-  if (!row || !row.label) return empty;
-  var label = row.label.trim().toLowerCase();
-  if (!label) return empty;
-  var keys = allMonthKeys().filter(function(k) { return k < currentMonthKey; });  // newest first
-  for (var i = 0; i < keys.length; i++) {
-    var prev = ((all[keys[i]] || {})[section] || []).find(function(r) {
-      return r.label && r.label.trim().toLowerCase() === label;
-    });
-    if (prev && (prev._entries || []).length) return { key: keys[i], entries: prev._entries };
-  }
-  return empty;
+/* What is on the clipboard, or null. Anything unreadable is treated as empty
+   rather than thrown — a corrupt slot should hide the Paste button, not break
+   the note panel it lives in. */
+function copiedEntries() {
+  try {
+    var raw = appStore.getItem(_entryClipKey());
+    if (!raw) return null;
+    var clip = JSON.parse(raw);
+    if (!clip || !clip.entries || !clip.entries.length) return null;
+    return clip;
+  } catch (e) { return null; }
 }
 
-function copyEntriesFromLastMonth(section, id) {
+function copyRowEntries(section, id) {
+  var all = loadAll();
+  var row = ((all[currentMonthKey] || {})[section] || []).find(function(r) { return r.id === id; });
+  if (!row || !(row._entries || []).length) return;
+  appStore.setItem(_entryClipKey(), JSON.stringify({
+    section: section,
+    label: row.label || '',
+    entries: row._entries,          // verbatim, values and all
+  }));
+  // Repaint every OPEN note panel: a Paste button has just become available on
+  // all of them, and a control that only appears after a reload is a control
+  // nobody finds.
+  _refreshEntryClipButtons();
+  showToast('⧉ Copied ' + row._entries.length +
+            (row._entries.length === 1 ? ' entry' : ' entries') +
+            (row.label ? ' from ' + row.label : ''));
+}
+
+function pasteRowEntries(section, id) {
   if (monthIsLocked(currentMonthKey)) return;   // month lock: view only
-  var src = lastMonthEntries(section, id);
-  if (!src.entries.length) return;
+  var clip = copiedEntries();
+  if (!clip) return;
   var all = loadAll();
   var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
   var row = rows.find(function(r) { return r.id === id; });
   if (!row) return;
-  pushUndo('Copy entries from ' + monthLabel(src.key));
+  pushUndo('Paste entries into "' + (row.label || 'row') + '"');
   if (!row._entries) row._entries = [];
   var added = 0;
-  src.entries.forEach(function(e) {
+  clip.entries.forEach(function(e) {
     if (!e) return;
-    var clear = entryClearedKeys(e._type || row._template || 'general');
+    var dates = entryDateKeys(e._type || row._template || 'general');
     var copy = {};
     Object.keys(e).forEach(function(k) {
-      if (clear[k]) return;     // an amount or a date — this month's is not last month's
+      /* Every number comes across — that is the entire point. Only DATES are
+         blanked, and only because a date is the one field that is wrong rather
+         than merely stale when it lands in another month: August 15th sitting
+         in September is not a value you can leave alone. Shifting it to
+         September 15th was the other option and was rejected — it would put a
+         date on screen that nobody typed. */
+      if (dates[k]) return;
       copy[k] = e[k];
     });
-    // APPEND rather than replace: pressing this after already typing something
-    // must never eat what is there.
+    // APPEND, never replace: pasting on top of work you have already done must
+    // not eat it.
     row._entries.push(copy);
     added++;
   });
   saveAll(all);
   refreshNoteDot(section, id, row);
-  renderAllEntries(section, id, row._template || 'general', row._entries, true);
-  showToast('Copied ' + added + ' from ' + monthLabel(src.key) +
-            ' — amounts and dates left blank');
+  renderAllEntries(section, id, row._template || 'general', row._entries);
+  showToast('⎘ Pasted ' + added + (added === 1 ? ' entry' : ' entries') +
+            ' — check the dates');
+}
+
+/* The Copy/Paste pair for a note panel's pill row. Built in one place so the
+   two buttons can never disagree about when they are offered. */
+function entryClipButtonsHtml(section, id, row) {
+  var out = '';
+  var base = 'padding:3px 8px;border-radius:12px;border:1px solid var(--mist);font-size:10px;' +
+             'font-family:Outfit,sans-serif;cursor:pointer;transition:all 0.15s;';
+  var has = (row && (row._entries || []).length);
+  if (has) {
+    out += '<button onclick="copyRowEntries(\'' + section + '\',\'' + id + '\')" ' +
+      'ontouchstart="var w=this.closest(\'.note-wrap\');if(w)w.dataset.pillTapped=\'1\';" ' +
+      'id="st-copy-' + id + '" title="Copy these entries, to paste into another month or another row" ' +
+      'style="' + base + 'background:none;color:var(--steel);margin-left:auto;">⧉ Copy</button>';
+  }
+  var clip = copiedEntries();
+  if (clip && !monthIsLocked(currentMonthKey)) {
+    out += '<button onclick="pasteRowEntries(\'' + section + '\',\'' + id + '\')" ' +
+      'ontouchstart="var w=this.closest(\'.note-wrap\');if(w)w.dataset.pillTapped=\'1\';" ' +
+      'id="st-paste-' + id + '" ' +
+      'title="Paste ' + clip.entries.length + ' copied ' +
+        (clip.entries.length === 1 ? 'entry' : 'entries') +
+        (clip.label ? ' from ' + escHtml(clip.label) : '') + ' — amounts kept, dates blank" ' +
+      'style="' + base + 'background:var(--sage-light);color:var(--ink);' +
+      (has ? '' : 'margin-left:auto;') + '">⎘ Paste ' + clip.entries.length + '</button>';
+  }
+  return out;
+}
+
+/* Keep every open note panel's pair in sync. Copying in one row must make
+   Paste appear in the others without closing and reopening anything. */
+function _refreshEntryClipButtons() {
+  var all = loadAll();
+  document.querySelectorAll('.note-row.open, .note-wrap.open').forEach(function(wrap) {
+    var holder = wrap.querySelector('.st-clip');
+    if (!holder) return;
+    var sec = holder.getAttribute('data-sec'), rid = holder.getAttribute('data-row');
+    var row = ((all[currentMonthKey] || {})[sec] || []).find(function(r) { return r.id === rid; });
+    holder.innerHTML = entryClipButtonsHtml(sec, rid, row);
+  });
 }
 
 function addEntry(section, id, template) {
