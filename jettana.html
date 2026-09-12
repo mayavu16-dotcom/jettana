@@ -15340,6 +15340,11 @@ function toggleNote(section, id) {
   }
 
   wrap.classList.toggle('open', opening);
+  /* A panel's pill row is built once and kept, so the Copy/Paste pair inside
+     it can be older than the clipboard. Repaint on every open: the belt to
+     _refreshEntryClipButtons()'s braces, and the reason a stale holder can no
+     longer outlive a copy made somewhere else. */
+  if (opening) { try { _refreshEntryClipButtons(); } catch (e) {} }
   if (opening && monthIsLocked(currentMonthKey)) {
     // View-only: build the panel as normal so templates and entries still
     // render, then neuter every control in it. Runs on a timeout as well as
@@ -16187,10 +16192,16 @@ function entryClipButtonsHtml(section, id, row) {
    Paste appear in the others without closing and reopening anything. */
 function _refreshEntryClipButtons() {
   var all = loadAll();
-  document.querySelectorAll('.note-row.open, .note-wrap.open').forEach(function(wrap) {
-    var holder = wrap.querySelector('.st-clip');
-    if (!holder) return;
+  /* EVERY holder, open panel or not. Filtering to `.open` was a real bug:
+     toggleNote() builds a panel's pill row ONCE and never rebuilds it, so a
+     row whose note had been opened before anything was copied kept a holder
+     frozen from that moment — no Paste button on it, ever, in any month.
+     Closed panels are still in the DOM and still show stale buttons the
+     moment they are reopened, so they have to be repainted too. There are a
+     handful of these; repainting all of them costs nothing. */
+  document.querySelectorAll('.st-clip').forEach(function(holder) {
     var sec = holder.getAttribute('data-sec'), rid = holder.getAttribute('data-row');
+    if (!sec || !rid) return;
     var row = ((all[currentMonthKey] || {})[sec] || []).find(function(r) { return r.id === rid; });
     holder.innerHTML = entryClipButtonsHtml(sec, rid, row);
   });
