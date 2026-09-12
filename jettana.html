@@ -2510,14 +2510,36 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
 }
 .intention-input::placeholder { color: var(--mist); }
 .intention-input:focus { border-bottom-color: var(--sage); color: var(--ink); }
-/* contenteditable behaviour: single line + placeholder */
+/* contenteditable behaviour: up to three lines + placeholder.
+   It used to be one nowrap line that scrolled sideways. Measured at the old
+   200-character cap that made the text 1585px long inside a 1059px box on a
+   desktop and a 341px box on a phone — so you could see about a fifth of your
+   own sentence while writing it. It wraps now, and the cap is the box rather
+   than a character count: three lines at whatever size the slider is set to.
+   The 1.35 line-height is declared rather than left at `normal` for exactly
+   that reason — a cap of "3 lines" needs a line height it can multiply, and
+   `normal` is a number only the font knows. Sizes are in em so the slider's
+   14px–36px all land on three lines rather than three lines' worth of 20px.
+   content-box is deliberate against the page-wide border-box: it makes
+   max-height mean three lines of TEXT, with the element's own padding added on
+   top, so the cap cannot be thrown off by whatever padding the rule carries.
+   Under border-box the display element's 2px/2px silently ate 4px and clipped
+   the third line by exactly that much. */
 .intention-input {
-  white-space: nowrap;
-  overflow-x: auto;
-  overflow-y: hidden;
-  min-height: 1.4em;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  overflow-x: hidden;
+  overflow-y: auto;
+  line-height: 1.35;
+  box-sizing: content-box;
+  min-height: 1.35em;
+  max-height: calc(1.35em * 3);
   cursor: text;
 }
+.intention-input::-webkit-scrollbar { width: 5px; }
+.intention-input::-webkit-scrollbar-thumb { background: var(--mist); border-radius: 3px; }
+.intention-input::-webkit-scrollbar-track { background: transparent; }
 .intention-input:empty:before {
   content: attr(data-ph);
   color: var(--mist);
@@ -2535,6 +2557,34 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
    inline-block (not the base inline-flex) because rich text splits into several
    children — as flex items they'd each pick up the 5px gap as phantom spaces. */
 .intention-trigger.has-content { font-weight: 500; display: inline-block; }
+/* The SAME three-line cap on the displayed intention, and it is not redundant
+   with the one on the editor: the editor stops you at three lines on the screen
+   you are typing on, and the months sync. Three desktop lines is roughly 300
+   characters, which redraws as about eight lines on a 390px phone — the exact
+   complaint, in reverse. So the display is capped too and scrolls in place.
+   In place rather than "tap to open the editor", because on a locked month the
+   editor does not open at all (see _LOCK_FIELD_SEL) and the tail would be
+   unreachable. */
+.intention-trigger.has-content {
+  line-height: 1.35;
+  box-sizing: content-box;
+  max-height: calc(1.35em * 3);
+  overflow-y: auto;
+  overflow-x: hidden;
+  white-space: normal;
+  overflow-wrap: break-word;
+  text-align: center;
+}
+.intention-trigger.has-content::-webkit-scrollbar { width: 5px; }
+.intention-trigger.has-content::-webkit-scrollbar-thumb { background: var(--mist); border-radius: 3px; }
+.intention-trigger.has-content::-webkit-scrollbar-track { background: transparent; }
+/* Same cue as the bills panel: the scroll gutter is 0px here too, so an
+   overlay scrollbar that fades after a second cannot be what tells you the
+   sentence continues. Applied only while something is actually below. */
+.intention-trigger.has-content.int-clipped {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 14px), transparent 100%);
+          mask-image: linear-gradient(to bottom, #000 calc(100% - 14px), transparent 100%);
+}
 .intention-bold-btn {
   font-family: 'Outfit', sans-serif;
   font-size: 11px;
@@ -17225,8 +17275,35 @@ function clearNotes() {
 /* ── Intention rich text (bold only) ─────────────────────────
    The field is a contenteditable, so its content is HTML. Everything is
    escaped and only <b> survives — stored values can never carry markup. */
-var INTENTION_MAX = 200;
+/* A backstop, not the limit anyone meets. The real cap is the box: three lines
+   at whatever font size the slider is on (see _intentionOverflows), which is
+   about 350 characters on a desktop and about 120 on a phone. This number only
+   stops something pathological — a value arriving from an import or an older
+   sync — from being stored at all. It was 200 when it WAS the limit.
+   It has to sit clear of anything three lines can actually hold, or it becomes
+   the limit again by accident: measured at the smallest font size the slider
+   offers (14px Cormorant, the most characters per line of any combination) a
+   400 backstop cut in first and left the third line visibly half empty. */
+var INTENTION_MAX = 800;
 var _lastIntentionHtml = '';
+
+/* Has the field outgrown its three lines? max-height plus overflow-y:auto makes
+   that exactly "the content is taller than the box". Asked of the live element
+   rather than counted in characters, so it stays true at 14px and at 36px, in
+   Cormorant and in Courier, on a phone and on a desktop. */
+function _intentionOverflows(el) {
+  return !!el && el.scrollHeight - el.clientHeight > 1;
+}
+
+/* Fade the bottom of the DISPLAYED intention while there is more below it.
+   Only bites on an intention written somewhere wider than the screen reading
+   it — on the device you wrote it, the editor already stopped you at three. */
+function markIntentionClipped() {
+  var trigger = document.getElementById('intention-trigger');
+  if (!trigger) return;
+  trigger.classList.toggle('int-clipped',
+    trigger.classList.contains('has-content') && _intentionOverflows(trigger));
+}
 
 function sanitizeIntentionHtml(html) {
   var tmp = document.createElement('div');
@@ -17942,8 +18019,14 @@ window.addEventListener('load', function() {
       // Browsers leave a stray <br> behind when the field is emptied, which
       // would defeat the :empty placeholder — clear it.
       if (/^(<br\s*\/?>|\u200B)+$/i.test(this.innerHTML.trim())) this.innerHTML = '';
-      // maxlength isn't available on contenteditable, so cap it manually
-      if (intentionText(this.innerHTML).length > INTENTION_MAX) {
+      /* maxlength isn't available on contenteditable, so cap it manually — and
+         the cap that matters is the box, not the character count. Both revert
+         the same way: put back the last good HTML and return the caret to the
+         end, so the keystroke simply does not land. A paste that is too long
+         reverts whole rather than being cut mid-word, which is what the
+         character cap has always done. */
+      if (intentionText(this.innerHTML).length > INTENTION_MAX ||
+          _intentionOverflows(this)) {
         this.innerHTML = _lastIntentionHtml || '';
         placeIntentionCaretEnd(this);
         return;
@@ -17952,6 +18035,9 @@ window.addEventListener('load', function() {
       saveIntention(this.innerHTML);
       updateIntentionBoldState();
     });
+    /* Rotating a phone, or dragging a window narrower, re-wraps the sentence —
+       three lines can become five without a keystroke. */
+    window.addEventListener('resize', markIntentionClipped);
     // Paste as plain text so outside formatting can't leak in
     intentEl.addEventListener('paste', function(e) {
       e.preventDefault();
@@ -23131,6 +23217,10 @@ function applyIntentionSize(size) {
   if (trigger) trigger.style.fontSize = size + 'px';
   if (range) range.value = size;
   if (label) label.textContent = size;
+  /* The single place both loadIntention() and saveIntention() finish on, and
+     it is also where the font size — which decides what three lines means —
+     has just been applied. One call site instead of four. */
+  markIntentionClipped();
 }
 
 function setIntentionFont(fontKey) {
