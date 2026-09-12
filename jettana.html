@@ -1238,17 +1238,26 @@ body.show-sav-goal.font-large .sec-footer-savings {
   70%  { background: rgba(217,182,74,0.26); box-shadow: inset 0 0 0 2px rgba(217,182,74,0.80); }
   100% { background: rgba(217,182,74,0);    box-shadow: inset 0 0 0 2px rgba(217,182,74,0); }
 }
-.tracker-grid .erow.jump-flash { animation: jump-flash-fade 1.6s ease-out 1 forwards; }
 /* A whole section flashes the same way a row does — the setup checklist sends
    people to a SECTION ("add your income"), and often to one with no rows in it
-   yet, which is exactly when there is no row to point at. Same keyframes, so
-   arriving somewhere always looks like one thing. */
-.tracker-grid .sec-card.jump-flash { animation: jump-flash-fade 1.6s ease-out 1 forwards; }
+   yet, which is exactly when there is no row to point at.
+
+   The bare `.jump-flash` on the end is not decoration: #legend-panel is a
+   direct child of <body>, NOT inside .tracker-grid, so the two scoped
+   selectors never matched it. "Set up My Cards" added the class, nothing
+   animated, and the step looked like it had done nothing at all. The scoped
+   selectors stay because they need the weight to beat .erow's own background
+   rules; the unscoped one catches everything else. One declaration, so
+   arriving somewhere always looks like one thing wherever you land. */
+.tracker-grid .erow.jump-flash,
+.tracker-grid .sec-card.jump-flash,
+.jump-flash { animation: jump-flash-fade 1.6s ease-out 1 forwards; }
 /* Finite, so it ends on its own — but someone who asked for less motion still
    needs to see WHICH row, so the tint holds instead of animating. */
 @media (prefers-reduced-motion: reduce) {
   .tracker-grid .erow.jump-flash,
-  .tracker-grid .sec-card.jump-flash {
+  .tracker-grid .sec-card.jump-flash,
+  .jump-flash {
     animation: none;
     background: rgba(217,182,74,0.26);
     box-shadow: inset 0 0 0 2px rgba(217,182,74,0.80);
@@ -13521,12 +13530,24 @@ function _scrollAndFlash(el) {
   var offset = (topbar ? topbar.getBoundingClientRect().height : 0) + 14;
   var y = el.getBoundingClientRect().top + window.pageYOffset - offset;
   window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
-  // Restart the animation when the same thing is clicked twice in a row —
-  // re-adding a class the element already has does nothing on its own.
+  /* Restart the animation when the same thing is arrived at twice in a row —
+     re-adding a class the element already has does nothing on its own.
+
+     And cancel the PREVIOUS removal timer, which is the subtler half: flash
+     something, flash it again a second later, and the first timer was still
+     pending — it fired at its original 1.7s and stripped the class the second
+     flash had just added, so the newer arrival silently lost its highlight.
+     Only reachable when two jumps land on one element inside 1.7s, which is
+     exactly what happens when someone works down the setup checklist with it
+     dragged open beside them. */
+  if (el._flashTimer) clearTimeout(el._flashTimer);
   el.classList.remove('jump-flash');
   void el.offsetWidth;
   el.classList.add('jump-flash');
-  setTimeout(function() { el.classList.remove('jump-flash'); }, 1700);
+  el._flashTimer = setTimeout(function() {
+    el.classList.remove('jump-flash');
+    el._flashTimer = null;
+  }, 1700);
 }
 
 /* Expand a collapsed section first, then run fn once it has room. A collapsed
@@ -20291,14 +20312,18 @@ function hideAbout() {
    sections. */
 var CHECKLIST_STEPS = [
   { id: 'add_income',    icon: '💵', title: 'Add your income',          desc: 'Go to the Income section and add your salary or any other income source.',
-    where: 'the Income section',  go: function() { jumpToSection('income'); } },
+    where: function() { return getSectionName('income'); }, go: function() { jumpToSection('income'); } },
   { id: 'add_expense',   icon: '🧾', title: 'Add an expense',           desc: 'Pick any section (Housing, Food, etc.) and add a row with a budget and actual amount.',
-    where: 'Housing & Utilities', go: function() { jumpToSection('housing'); } },
+    where: function() { return getSectionName('housing'); }, go: function() { jumpToSection('housing'); } },
   { id: 'explore_notes', icon: '✎',  title: 'Add a note to a row',      desc: 'Click ≡ on any row → Add note. Income rows also let you set a "→ goes to" destination. Notes are where templates and card links live, so you\'ll use this a lot.',
-    where: 'a row you can open a note on',
+    /* `where` is a FUNCTION here because the destination is decided at click
+       time from the person's own data. A fixed string like "a row you can open
+       a note on" named no section, so wherever you landed felt arbitrary —
+       the step and the place it took you have to agree. */
+    where: function() { return getSectionName(_firstSectionWithRow(['income']) || 'income'); },
     go: function() { jumpToSection(_firstSectionWithRow(['income']) || 'income'); } },
   { id: 'color_row',     icon: '🎨', title: 'Color-code a row',         desc: 'On desktop, click any row to open the color toolbar. On mobile, tap the ≡ button on the row → 🎨 Color. Set a number color to match your card.',
-    where: 'a row you can colour',
+    where: function() { return getSectionName(_firstSectionWithRow(['housing']) || 'housing'); },
     go: function() { jumpToSection(_firstSectionWithRow(['housing']) || 'housing'); } },
   { id: 'add_card',      icon: '🃏', title: 'Set up My Cards legend',   desc: 'Tap ⋯ → Appearance → My Cards legend and add your credit/debit cards with their colors.',
     where: 'My Cards',
@@ -20311,12 +20336,12 @@ var CHECKLIST_STEPS = [
       if (panel) _scrollAndFlash(panel);
     } },
   { id: 'link_debt',     icon: '🔗', title: 'Link a card to Debt',      desc: 'Open the note on a Debt row and use the 🔗 Auto-calc dropdown to link a card. Your Current balance will auto-fill.',
-    where: 'the Debt section',    go: function() { jumpToSection('debt'); } },
+    where: function() { return getSectionName('debt'); }, go: function() { jumpToSection('debt'); } },
   { id: 'mark_paid',     icon: '✓',  title: 'Mark an expense as paid',  desc: 'Click the ✓ circle on any expense row. Watch the linked card balance and account update automatically.',
-    where: 'an expense you can tick',
+    where: function() { return getSectionName(_firstSectionWithRow(['housing','food','transport']) || 'housing'); },
     go: function() { jumpToSection(_firstSectionWithRow(['housing','food','transport']) || 'housing'); } },
   { id: 'try_template',  icon: '📋', title: 'Try a template',           desc: 'Open the note on an Income row → Paycheck, or a Debt row → Payment to log detailed transaction info.',
-    where: 'the Income section',  go: function() { jumpToSection('income'); } },
+    where: function() { return getSectionName('income'); }, go: function() { jumpToSection('income'); } },
   { id: 'know_backups',  icon: '🛡', title: 'Know your backups',        desc: 'Every change saves to your account automatically. Tap ⋯ → Backups to see your restore points, and ⋯ → Import / Export → Export CSV whenever you want an offline copy of your budget.',
     where: 'your backups',        go: function() { showBackups(); } },
 ];
@@ -20325,11 +20350,27 @@ var CHECKLIST_STEPS = [
    overlay is the whole feature failing silently — you arrive somewhere you
    cannot see. The frame's delay lets the overlay actually leave the screen
    before anything measures a position. */
+/* Has the checklist been dragged aside? startDrag() is the only thing that
+   sets position:fixed on the modal, and it also makes the overlay transparent
+   and pointer-events:none — which is precisely the side-by-side mode. So this
+   is a real signal, not a guess. */
+function _checklistIsDragged() {
+  var modal = document.getElementById('checklist-modal');
+  return !!(modal && modal.style.position === 'fixed');
+}
+
 function checklistGo(stepId) {
   var step = CHECKLIST_STEPS.find(function(s) { return s.id === stepId; });
   if (!step || !step.go) return;
-  hideChecklist();
-  setTimeout(function() { try { step.go(); } catch (e) {} }, 40);
+  /* Centred, the checklist covers the page — closing it is the only way to see
+     where you arrived. Dragged aside, someone has deliberately put it where
+     they can read it WHILE they work, and closing it throws away the thing
+     they are following. So the answer depends on what they did with it, and
+     the drag already told us. */
+  var keepOpen = _checklistIsDragged();
+  if (!keepOpen) hideChecklist();
+  // No overlay to get out of the way when it stays put, so no delay needed.
+  setTimeout(function() { try { step.go(); } catch (e) {} }, keepOpen ? 0 : 40);
 }
 
 function loadChecklistState() {
@@ -20362,7 +20403,11 @@ function renderChecklist() {
        the click so it never also navigates — one press can only ever mean one
        thing. 22px is small under a thumb, so it carries 8px of padding and its
        own title. */
-    var whereTxt = step.where ? 'Take me to ' + step.where : '';
+    /* Resolved at RENDER time, because a step's destination can depend on the
+       month's own data. A step must never advertise somewhere it will not go. */
+    var whereName = '';
+    try { whereName = typeof step.where === 'function' ? step.where() : (step.where || ''); } catch (e) {}
+    var whereTxt = whereName ? 'Take me to ' + whereName : '';
     html += '<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--mist);' +
       (step.go ? 'cursor:pointer;' : '') + '" ' +
       (step.go ? 'onclick="checklistGo(\'' + step.id + '\')" title="' + escHtml(whereTxt) + '"' : '') + '>' +
