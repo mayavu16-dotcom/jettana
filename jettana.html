@@ -6638,7 +6638,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
 
         <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">Do I have to retype my contributions every month?<span class="askme-q-arrow">▾</span></button>
-          <div class="askme-a">No. Open <strong>≡</strong> on the row → Add note, fill in your entries once, then press <strong>⧉ Copy</strong> in that panel. Move to any other month (or any other row), open its note, and press <strong>⎘ Paste</strong>. Everything comes across filled in — amounts, percentages, employer match, fund, status — and only the <strong>dates are left blank</strong>, since last month’s date would be wrong here rather than just old. Pasting adds to whatever is already in the panel instead of replacing it, so it is safe to press at any point. The copy stays available until you copy something else.</div>
+          <div class="askme-a">No. Fill the entries in once, then copy them. The <strong>⧉</strong> at the top of an entry copies just that one; <strong>⧉ Copy all</strong> beside the template buttons takes the whole set. Open any other month (or any other row), press <strong>⎘ Paste</strong>, and everything comes across filled in — amounts, percentages, employer match, fund, status. Only the <strong>dates are left blank</strong>, since last month’s date would be wrong here rather than just old. If the row already has entries, Jettana asks whether to <strong>Add</strong> them or <strong>Replace</strong> what is there, so nothing piles up or disappears without you choosing it.</div>
         </div>
 
         <div class="askme-item">
@@ -7151,7 +7151,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>📅 <strong>Beginning balance date</strong> — open the note on any Checking row to set a beginning balance date; expenses dated before that date won't be deducted from the balance</span></div>
       <div class="shortcut-row"><span>✎ <strong>Row notes</strong> — click ≡ on any row → Add note; a gold dot appears on hover to indicate a note exists</span></div>
       <div class="shortcut-row"><span>👁 <strong>Full name peek</strong> — long row names fade at the edge; hover (desktop) or tap once (mobile) to see the full text, tap again to edit. Works on locked months too, where it only ever shows the name.</span></div>
-      <div class="shortcut-row"><span>⧉ <strong>Copy / paste template entries</strong> — fill in a row’s note entries once, press <strong>⧉ Copy</strong> in the panel, then <strong>⎘ Paste</strong> them into another month or another row. Every value comes across — amounts, percentages, employer match, fund, status — with only the <strong>dates blanked</strong>, because a date from another month is wrong rather than stale. Pastes append rather than replace, Paste is offered only when something has been copied, and a locked month refuses it. Same shape as Copy colour / Paste colour on the row menu.</span></div>
+      <div class="shortcut-row"><span>⧉ <strong>Copy / paste template entries</strong> — <strong>⧉</strong> on an entry copies that one, <strong>⧉ Copy all</strong> in the pill row takes every entry in the row. <strong>⎘ Paste</strong> drops them into another month or another row with every value intact — amounts, percentages, employer match, fund, status — and only the <strong>dates blanked</strong>. Pasting into a row that already has entries asks <strong>Add</strong> or <strong>Replace</strong> first; an empty row just pastes. Locked months refuse it. Same shape as Copy colour / Paste colour on the row menu.</span></div>
       <div class="shortcut-row"><span>🔗 <strong>Account links</strong> — keep a link to the institution behind a Debt, Checking or Savings &amp; Investments row: ≡ → Add link, paste the page you sign in on, name it whatever you like. The row's name is then underlined, and ≡ → Open takes you there in a new tab. The menu names the <strong>real web address</strong> rather than your label, so you always see where you're going first. Only secure (https) sites are accepted, the address is all that's stored — never a username or password — and the link carries into every new month. Paid rows aren't underlined, since the strikethrough already occupies that line.</span></div>
       <div class="shortcut-row"><span>→ <strong>Income destination</strong> — open the note on any income row to set a "→ goes to" label (e.g. Marcus Savings, HYSA)</span></div>
       <div class="shortcut-row"><span>🔄 <strong>Subscriptions</strong> — dedicated section for recurring services; included in expense totals and month-over-month comparison</span></div>
@@ -15644,6 +15644,11 @@ function renderAllEntries(section, id, template, entries, skipTotal) {
     // Type header label
     entryDiv.innerHTML = '<div style="font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:' + typeColor + ';margin-bottom:6px;">' + typeLabel + '</div>';
     entryDiv.innerHTML += '<button onclick="removeEntry(\'' + section + '\',\'' + id + '\',' + idx + ')" style="position:absolute;top:6px;right:6px;background:none;border:none;cursor:pointer;font-size:14px;color:var(--steel);line-height:1;padding:2px 4px;border-radius:4px;" title="Remove entry" onmousedown="event.stopPropagation()">×</button>';
+    /* Copy just this one. Sits left of the × rather than in the panel header,
+       because "copy THIS entry" only means anything next to the entry it
+       copies. The row-level Copy all is still in the pill row for the whole
+       set. */
+    entryDiv.innerHTML += '<button onclick="copyOneEntry(\'' + section + '\',\'' + id + '\',' + idx + ')" style="position:absolute;top:6px;right:26px;background:none;border:none;cursor:pointer;font-size:12px;color:var(--steel);line-height:1;padding:2px 4px;border-radius:4px;opacity:0.7;" title="Copy this entry" onmousedown="event.stopPropagation()">⧉</button>';
     entryDiv.innerHTML += renderEntryFields(section, id, entryType, entry, idx);
     container.appendChild(entryDiv);
   });
@@ -16041,6 +16046,22 @@ function copiedEntries() {
   } catch (e) { return null; }
 }
 
+/* One entry, not the row. Same clipboard shape — a single-entry list — so
+   paste has exactly one thing to understand however the copy was made. */
+function copyOneEntry(section, id, idx) {
+  var all = loadAll();
+  var row = ((all[currentMonthKey] || {})[section] || []).find(function(r) { return r.id === id; });
+  var entry = row && (row._entries || [])[idx];
+  if (!entry) return;
+  appStore.setItem(_entryClipKey(), JSON.stringify({
+    section: section,
+    label: row.label || '',
+    entries: [entry],
+  }));
+  _refreshEntryClipButtons();
+  showToast('⧉ Copied 1 entry' + (row.label ? ' from ' + row.label : ''));
+}
+
 function copyRowEntries(section, id) {
   var all = loadAll();
   var row = ((all[currentMonthKey] || {})[section] || []).find(function(r) { return r.id === id; });
@@ -16059,7 +16080,26 @@ function copyRowEntries(section, id) {
             (row.label ? ' from ' + row.label : ''));
 }
 
-function pasteRowEntries(section, id) {
+/* Which row is mid-question, if any. Pasting into a row that ALREADY has
+   entries asks Add or Replace rather than silently doing either: appending
+   without asking is how a panel becomes a pile nobody chose, and replacing
+   without asking would throw away entries someone typed by hand. An empty row
+   has neither problem, so it just pastes. */
+var _pasteAsking = null;
+
+function askPasteMode(section, id) {
+  if (monthIsLocked(currentMonthKey)) return;
+  if (!copiedEntries()) return;
+  var all = loadAll();
+  var row = ((all[currentMonthKey] || {})[section] || []).find(function(r) { return r.id === id; });
+  if (!row || !(row._entries || []).length) { pasteRowEntries(section, id, 'add'); return; }
+  _pasteAsking = { section: section, id: id };
+  _refreshEntryClipButtons();
+}
+
+function cancelPasteMode() { _pasteAsking = null; _refreshEntryClipButtons(); }
+
+function pasteRowEntries(section, id, mode) {
   if (monthIsLocked(currentMonthKey)) return;   // month lock: view only
   var clip = copiedEntries();
   if (!clip) return;
@@ -16067,8 +16107,10 @@ function pasteRowEntries(section, id) {
   var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
   var row = rows.find(function(r) { return r.id === id; });
   if (!row) return;
-  pushUndo('Paste entries into "' + (row.label || 'row') + '"');
-  if (!row._entries) row._entries = [];
+  _pasteAsking = null;
+  pushUndo((mode === 'replace' ? 'Replace entries in "' : 'Paste entries into "') +
+           (row.label || 'row') + '"');
+  if (!row._entries || mode === 'replace') row._entries = [];
   var added = 0;
   clip.entries.forEach(function(e) {
     if (!e) return;
@@ -16092,33 +16134,51 @@ function pasteRowEntries(section, id) {
   saveAll(all);
   refreshNoteDot(section, id, row);
   renderAllEntries(section, id, row._template || 'general', row._entries);
-  showToast('⎘ Pasted ' + added + (added === 1 ? ' entry' : ' entries') +
-            ' — check the dates');
+  showToast('⎘ ' + (mode === 'replace' ? 'Replaced with ' : 'Pasted ') + added +
+            (added === 1 ? ' entry' : ' entries') + ' — check the dates');
 }
 
 /* The Copy/Paste pair for a note panel's pill row. Built in one place so the
    two buttons can never disagree about when they are offered. */
 function entryClipButtonsHtml(section, id, row) {
-  var out = '';
   var base = 'padding:3px 8px;border-radius:12px;border:1px solid var(--mist);font-size:10px;' +
              'font-family:Outfit,sans-serif;cursor:pointer;transition:all 0.15s;';
-  var has = (row && (row._entries || []).length);
-  if (has) {
+  var clip = copiedEntries();
+
+  /* Mid-question: the pair is replaced by the question itself, in the same
+     strip. No modal — the choice is about the panel you are looking at, and a
+     dialog over the top of it would hide the very entries being decided. */
+  if (_pasteAsking && _pasteAsking.section === section && _pasteAsking.id === id && clip) {
+    var n = clip.entries.length;
+    return '<span style="font-size:10px;color:var(--steel);align-self:center;margin-left:auto;">' +
+        'Paste ' + n + ':</span>' +
+      '<button onclick="pasteRowEntries(\'' + section + '\',\'' + id + '\',\'add\')" ' +
+        'id="st-paste-add-' + id + '" title="Keep what is here and add the copied entries after it" ' +
+        'style="' + base + 'background:var(--sage-light);color:var(--ink);">Add</button>' +
+      '<button onclick="pasteRowEntries(\'' + section + '\',\'' + id + '\',\'replace\')" ' +
+        'id="st-paste-rep-' + id + '" title="Clear this row\u2019s entries and put the copied ones in their place" ' +
+        'style="' + base + 'background:none;color:var(--blush);">Replace</button>' +
+      '<button onclick="cancelPasteMode()" id="st-paste-x-' + id + '" title="Never mind" ' +
+        'style="' + base + 'background:none;color:var(--steel);border-color:transparent;">\u00d7</button>';
+  }
+
+  var out = '';
+  var count = (row && (row._entries || []).length) || 0;
+  if (count) {
     out += '<button onclick="copyRowEntries(\'' + section + '\',\'' + id + '\')" ' +
       'ontouchstart="var w=this.closest(\'.note-wrap\');if(w)w.dataset.pillTapped=\'1\';" ' +
-      'id="st-copy-' + id + '" title="Copy these entries, to paste into another month or another row" ' +
-      'style="' + base + 'background:none;color:var(--steel);margin-left:auto;">⧉ Copy</button>';
+      'id="st-copy-' + id + '" title="Copy all ' + count + ' of this row\u2019s entries" ' +
+      'style="' + base + 'background:none;color:var(--steel);margin-left:auto;">\u29C9 Copy all ' + count + '</button>';
   }
-  var clip = copiedEntries();
   if (clip && !monthIsLocked(currentMonthKey)) {
-    out += '<button onclick="pasteRowEntries(\'' + section + '\',\'' + id + '\')" ' +
+    out += '<button onclick="askPasteMode(\'' + section + '\',\'' + id + '\')" ' +
       'ontouchstart="var w=this.closest(\'.note-wrap\');if(w)w.dataset.pillTapped=\'1\';" ' +
       'id="st-paste-' + id + '" ' +
       'title="Paste ' + clip.entries.length + ' copied ' +
         (clip.entries.length === 1 ? 'entry' : 'entries') +
         (clip.label ? ' from ' + escHtml(clip.label) : '') + ' — amounts kept, dates blank" ' +
       'style="' + base + 'background:var(--sage-light);color:var(--ink);' +
-      (has ? '' : 'margin-left:auto;') + '">⎘ Paste ' + clip.entries.length + '</button>';
+      (count ? '' : 'margin-left:auto;') + '">\u2398 Paste ' + clip.entries.length + '</button>';
   }
   return out;
 }
