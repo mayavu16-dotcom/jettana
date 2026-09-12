@@ -2572,7 +2572,21 @@ body, .topbar, .sec-card, .sum-card, .bottom-card, .sidebar,
   overflow-y: auto;
   overflow-x: hidden;
   white-space: normal;
-  overflow-wrap: break-word;
+  /* `anywhere`, NOT `break-word`, and the difference is the whole bug.
+     This element is an inline-block, so its width is shrink-to-fit: the
+     browser sizes it from the content's min-content width and only then
+     wraps. `overflow-wrap: break-word` is explicitly defined NOT to count
+     toward min-content width — so one unbroken 300-character string made
+     min-content 1966px, the box grew to 1966px inside a 1084px page, and
+     nothing ever needed to wrap. Measured: page scrollWidth 2214 at a
+     1280px viewport, 1978 at 390px.
+     `anywhere` is the same line-breaking behaviour (it still only breaks a
+     word that does not fit) but its break opportunities DO count toward
+     min-content, so the box stays inside its container and the text wraps.
+     Second-order: because nothing wrapped, scrollHeight equalled
+     clientHeight, so the three-line cap and the fade both saw no overflow
+     and correctly did nothing. The cap was never broken — it was starved. */
+  overflow-wrap: anywhere;
   text-align: center;
 }
 .intention-trigger.has-content::-webkit-scrollbar { width: 5px; }
@@ -4949,7 +4963,12 @@ body.font-large.text-bold .erow-label-input {
 }
 .report-brand { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.6; margin-bottom: 4px; }
 .report-month { font-size: 22px; font-weight: 700; margin: 0 0 6px; }
-.report-intention { font-size: 12px; opacity: 0.75; font-style: italic; }
+.report-intention { font-size: 12px; opacity: 0.75; font-style: italic;
+  /* Same bug as .intention-trigger.has-content: an unbroken string ran to
+     1157px inside a 518px report column. Block box here rather than an
+     inline-block, so it overflowed its own box instead of widening the
+     page — same cause, quieter symptom. */
+  overflow-wrap: anywhere; }
 .report-net-row {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
   background: var(--mist-light); border-bottom: 1px solid var(--mist);
