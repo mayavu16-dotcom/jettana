@@ -7107,7 +7107,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
 </div>
 
 <!-- Suggest budgets -->
-<div class="trends-overlay" id="sgb-overlay" style="display:none;" onclick="if(event.target===this)hideSuggestBudgets()">
+<div class="trends-overlay" id="sgb-overlay" style="display:none;" onclick="if(event.target===this)sgbSetLoose()">
   <div class="trends-modal" id="sgb-modal" style="max-width:440px;">
     <div class="trends-header" id="sgb-header">
       <h3>🧭 Suggest budgets</h3>
@@ -25136,7 +25136,7 @@ function renderNWChart() {
 // behavior is taught the same way everywhere. Injected before the header's
 // close button (or appended for headers without one).
 document.addEventListener('DOMContentLoaded', function() {
-  ['trends-header', 'nw-header', 'gp-header', 'compare-header', 'features-header', 'cal-header', 'askme-header', 'psav-header', 'lel-header'].forEach(function(id) {
+  ['trends-header', 'nw-header', 'gp-header', 'compare-header', 'features-header', 'cal-header', 'askme-header', 'psav-header', 'lel-header', 'sgb-header'].forEach(function(id) {
     var hdr = document.getElementById(id);
     if (!hdr || hdr.querySelector('.modal-drag-hint')) return;
     var hint = document.createElement('span');
@@ -25851,7 +25851,47 @@ function showSuggestBudgets() {
   put('sgb-buf', s.buf); put('sgb-sv1', s.sv1); put('sgb-sv2', s.sv2); put('sgb-floor', s.floor);
   ov.style.display = 'flex';
   renderSuggestBudgets();
+  /* A panel dragged aside keeps where it was put — that is the point of
+     dragging it. But the position was clamped to the window it was dragged in,
+     so a smaller window (rotated phone, resized browser) could reopen it
+     off-screen with no header left to grab. Pull it back inside on open. */
+  var modal = document.getElementById('sgb-modal');
+  if (modal && modal.style.left) {
+    var w = modal.offsetWidth, h = modal.offsetHeight;
+    var maxL = Math.max(0, window.innerWidth - w), maxT = Math.max(0, window.innerHeight - 60);
+    modal.style.left = Math.max(0, Math.min(parseFloat(modal.style.left) || 0, maxL)) + 'px';
+    modal.style.top  = Math.max(0, Math.min(parseFloat(modal.style.top)  || 0, maxT)) + 'px';
+    if (h > window.innerHeight) modal.style.top = '0px';
+  }
 }
+/* Pin the panel where it currently sits and let the page behind it work.
+   Two things reach this: dragging the header, and clicking outside — which
+   would otherwise close a panel whose whole job is to be read against the rows
+   underneath it. Closing on an outside click is right for a modal you answer
+   and dismiss; this one you consult while you work, so an outside click means
+   "I want that, not this", not "throw this away".
+
+   Pinning has to happen BEFORE the overlay's centring is removed, or the panel
+   jumps to the top-left corner the moment it is set loose. Idempotent: called
+   again once already loose, it changes nothing. */
+function sgbSetLoose() {
+  var modal = document.getElementById('sgb-modal');
+  var overlay = document.getElementById('sgb-overlay');
+  if (!modal || !overlay) return;
+  if (!modal.style.left) {
+    var rect = modal.getBoundingClientRect();
+    modal.style.position = 'fixed';
+    modal.style.left = rect.left + 'px';
+    modal.style.top  = rect.top  + 'px';
+    modal.style.margin = '0';
+  }
+  overlay.style.background = 'transparent';
+  overlay.style.pointerEvents = 'none';
+  overlay.style.alignItems = 'flex-start';
+  overlay.style.justifyContent = 'flex-start';
+  modal.style.pointerEvents = 'auto';
+}
+
 function hideSuggestBudgets() {
   var ov = document.getElementById('sgb-overlay');
   if (ov) ov.style.display = 'none';
@@ -26348,6 +26388,46 @@ function renderGPChart() {
     var hdr = document.getElementById('psav-header');
     if (!hdr) return;
     hdr.addEventListener('mousedown', function(e) { if (e.target.closest('button') || e.target.closest('input') || e.target.closest('.nw-chip')) return; startDrag(e.clientX, e.clientY); e.preventDefault(); });
+    document.addEventListener('mousemove', function(e) { onMove(e.clientX, e.clientY); });
+    document.addEventListener('mouseup', stopDrag);
+    hdr.addEventListener('touchstart', function(e) { if (e.target.closest('button') || e.target.closest('input')) return; var t = e.touches[0]; startDrag(t.clientX, t.clientY); }, { passive: true });
+    hdr.addEventListener('touchmove', function(e) { if (!dragging) return; var t = e.touches[0]; onMove(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
+    document.addEventListener('touchend', stopDrag);
+  });
+})();
+
+// Drag support for the Suggest budgets modal (mirrors Plan my savings).
+// Dragged aside, the overlay goes click-through so the suggestion can be read
+// against the rows it is talking about — which is the whole point of a panel
+// that proposes numbers for sections you are looking at.
+(function() {
+  var dragging = false, offX = 0, offY = 0;
+  function startDrag(clientX, clientY) {
+    var modal = document.getElementById('sgb-modal');
+    if (!modal) return;
+    sgbSetLoose();                       // one copy of the pin-and-unblock step
+    var rect = modal.getBoundingClientRect();
+    offX = clientX - rect.left; offY = clientY - rect.top;
+    dragging = true;
+    var hdr = document.getElementById('sgb-header');
+    if (hdr) hdr.classList.add('dragging');
+  }
+  function onMove(clientX, clientY) {
+    if (!dragging) return;
+    var modal = document.getElementById('sgb-modal');
+    if (!modal) return;
+    modal.style.left = Math.max(0, Math.min(clientX - offX, window.innerWidth  - modal.offsetWidth))  + 'px';
+    modal.style.top  = Math.max(0, Math.min(clientY - offY, window.innerHeight - 60)) + 'px';
+  }
+  function stopDrag() {
+    dragging = false;
+    var hdr = document.getElementById('sgb-header');
+    if (hdr) hdr.classList.remove('dragging');
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    var hdr = document.getElementById('sgb-header');
+    if (!hdr) return;
+    hdr.addEventListener('mousedown', function(e) { if (e.target.closest('button') || e.target.closest('input')) return; startDrag(e.clientX, e.clientY); e.preventDefault(); });
     document.addEventListener('mousemove', function(e) { onMove(e.clientX, e.clientY); });
     document.addEventListener('mouseup', stopDrag);
     hdr.addEventListener('touchstart', function(e) { if (e.target.closest('button') || e.target.closest('input')) return; var t = e.touches[0]; startDrag(t.clientX, t.clientY); }, { passive: true });
