@@ -17341,20 +17341,32 @@ function toggleBulletMode(section, id) {
   row._noteBullet = turningOn ? 1 : 0;
 
   if (turningOn) {
-    // Prefix each non-empty line with bullet
+    /* Indentation comes BEFORE the marker — "  • dd" — so a test anchored at
+       the start of the line ('• ') cannot see a bullet on an indented row and
+       happily adds a second one in front of it. Split the indent off first,
+       then judge what follows. Checkbox rows are already marked and are left
+       exactly as they are. */
     var lines = ta.value.split('\n');
     ta.value = lines.map(function(l) {
-      if (l.trim() === '') return l;
-      return l.startsWith('• ') ? l : '• ' + l;
+      var m = l.match(/^(\s*)(.*)$/);
+      var ind = m[1], rest = m[2];
+      if (rest === '') return l;
+      if (/^(• |☐ |☑ )/.test(rest)) return l;
+      return ind + '• ' + rest;
     }).join('\n');
     // If empty, seed with a bullet ready to type
     if (ta.value.trim() === '') ta.value = '• ';
     if (btn) { btn.classList.add('note-bullet-on'); btn.title = 'Turn off bullet list'; }
   } else {
-    // Strip bullet prefixes
+    /* Same blind spot in reverse: the old strip left every indented bullet in
+       place, which is what made the next "on" double them up. Indentation is
+       the person's own structure, so it survives; only the marker goes. */
     var lines = ta.value.split('\n');
     ta.value = lines.map(function(l) {
-      return l.startsWith('• ') ? l.slice(2) : l;
+      var m = l.match(/^(\s*)• ?(.*)$/);
+      if (!m) return l;
+      var out = m[1] + m[2];
+      return out.trim() === '' ? '' : out;
     }).join('\n');
     if (btn) { btn.classList.remove('note-bullet-on'); btn.title = 'Toggle bullet list'; }
   }
@@ -17404,13 +17416,36 @@ function noteBulletKeydown(e, section, id) {
   var lm = currentLine.match(/^(\s*)• /);
   var indent = lm ? lm[1] : '';
 
-  // If current line is just an (indented) bullet with nothing after, exit bullet mode line
+  /* Enter on an empty bullet. One level at a time, the way every editor does
+     it: an INDENTED empty bullet steps back out one level and keeps its
+     bullet; only an empty bullet already at the left margin leaves the list.
+
+     It used to delete the bullet outright at any depth, so pressing Enter
+     twice to get back to the margin — indent, empty bullet, Enter — landed on
+     a bare line with no bullet at all. Worse, the line was then invisible to
+     toggleBulletMode's `startsWith('• ')` test, so switching bullets off and
+     on again stacked a second bullet in front of the first. */
   if (lm && currentLine === indent + '• ') {
-    ta.value = val.substring(0, lineStart) + val.substring(start);
-    ta.selectionStart = ta.selectionEnd = lineStart;
+    if (indent.length >= 2) {
+      var outdent = indent.slice(2);
+      ta.value = val.substring(0, lineStart) + outdent + '• ' + val.substring(start);
+      ta.selectionStart = ta.selectionEnd = lineStart + outdent.length + 2;
+    } else {
+      ta.value = val.substring(0, lineStart) + val.substring(start);
+      ta.selectionStart = ta.selectionEnd = lineStart;
+    }
   } else {
+    /* Splitting a line mid-sentence. The remainder still carries the space
+       that separated the two words, so putting "• " in front of it gave
+       "•  world" — two spaces after the bullet. Drop exactly one leading
+       space: one, so that deliberate spacing further along still survives.
+       Sliced at lineEnd rather than to the end of the text, so the split
+       never reaches into the lines below. */
+    var rest = val.substring(start, lineEnd);
+    var tail = val.substring(lineEnd);
+    if (rest.charAt(0) === ' ') rest = rest.slice(1);
     var insert = '\n' + indent + '• ';
-    ta.value = val.substring(0, start) + insert + val.substring(start);
+    ta.value = val.substring(0, start) + insert + rest + tail;
     ta.selectionStart = ta.selectionEnd = start + insert.length;
   }
   saveNote(section, id, ta.value);
