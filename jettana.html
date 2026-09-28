@@ -11117,7 +11117,7 @@ function renderRowEl(section, row, animate = false) {
   noteDiv.innerHTML = '<div class="note-inner">' + allocHtml + '<div style="position:relative;"><textarea class="note-textarea" id="note-ta-' + row.id + '" placeholder="Add a note… (e.g. split with roommate, one-time purchase)" oninput="saveNote(\'' + section + '\',\'' + row.id + '\',this.value)" onblur="noteBlur(\'' + section + '\',\'' + row.id + '\')" onclick="event.stopPropagation()" onkeydown="noteBulletKeydown(event,\'' + section + '\',\'' + row.id + '\')">' + escHtml(row.note || '') + '</textarea>' +
     '<div class="note-actions">' +
     '<button class="note-bullet-btn ' + bulletActive + '" id="bullet-btn-' + row.id + '" onclick="toggleBulletMode(\'' + section + '\',\'' + row.id + '\')" title="' + bulletTitle + '">• List</button>' +
-    '<button class="note-expand-btn" id="expand-btn-' + row.id + '" onclick="toggleNoteExpand(\'' + row.id + '\')" title="Expand / collapse note">↕</button>' +
+    '<button class="note-expand-btn" id="expand-btn-' + row.id + '" onclick="toggleNoteExpand(\'' + section + '\',\'' + row.id + '\')" title="Expand / collapse note">↕</button>' +
     '<button class="note-close" onclick="closeNote(\'' + row.id + '\')" title="Close">×</button>' +
     '</div></div></div>';
   container.appendChild(noteDiv);
@@ -16030,6 +16030,17 @@ function toggleNote(section, id) {
      _refreshEntryClipButtons()'s braces, and the reason a stale holder can no
      longer outlive a copy made somewhere else. */
   if (opening) { try { _refreshEntryClipButtons(); } catch (e) {} }
+  /* Restore a note that was left expanded. On a timeout because the panel has
+     only just been given `open` — measured immediately, the textarea is still
+     the height it had while hidden. */
+  if (opening) {
+    try {
+      var _all = loadAll();
+      var _rows = (_all[currentMonthKey] && _all[currentMonthKey][section]) || [];
+      var _row = _rows.find(function(r) { return r.id === id; });
+      if (_row && _row._noteBig) setTimeout(function() { applyNoteExpand(id, true); }, 0);
+    } catch (e) {}
+  }
   if (opening && monthIsLocked(currentMonthKey)) {
     // View-only: build the panel as normal so templates and entries still
     // render, then neuter every control in it. Runs on a timeout as well as
@@ -17267,22 +17278,54 @@ function saveNote(section, id, val) {
   }
 }
 
-function toggleNoteExpand(id) {
+/* Put a note into its expanded or compact state. Split out of
+   toggleNoteExpand so that REOPENING a note can restore the state without
+   going through the button.
+
+   The `offsetParent` check is the part that matters: a textarea inside a
+   closed note panel measures scrollHeight 0, and an explicit height of 0px
+   is a note you cannot see at all. When it is not on screen yet the class is
+   set and the sizing is left to the next open, which measures for real. */
+function applyNoteExpand(id, big) {
   var ta = document.getElementById('note-ta-' + id);
   var btn = document.getElementById('expand-btn-' + id);
-  if (!ta || !btn) return;
-  var isExpanded = ta.classList.toggle('expanded');
-  btn.classList.toggle('expanded', isExpanded);
-  btn.title = isExpanded ? 'Collapse note' : 'Expand / collapse note';
-  btn.textContent = isExpanded ? '↑' : '↕';
-  if (isExpanded) {
-    // Set height explicitly to full content height so nothing is hidden
-    ta.style.height = 'auto';
-    ta.style.height = ta.scrollHeight + 'px';
-  } else {
-    // Reset back to compact
-    ta.style.height = '';
+  if (!ta) return;
+  ta.classList.toggle('expanded', big);
+  if (btn) {
+    btn.classList.toggle('expanded', big);
+    btn.title = big ? 'Collapse note' : 'Expand / collapse note';
+    btn.textContent = big ? '↑' : '↕';
   }
+  if (!big) { ta.style.height = ''; return; }
+  if (ta.offsetParent === null) return;          // not visible yet — size on open
+  ta.style.height = 'auto';
+  ta.style.height = ta.scrollHeight + 'px';
+}
+
+/* The expanded state rides on the ROW, next to _noteBullet and _template, so
+   it survives a month switch, a reload and a cloud sync — a note you opened
+   up to read stays open the next time you look at it.
+   The flag is deleted rather than set false when collapsing, so a month's
+   data does not accumulate a key for every note anyone ever expanded. */
+function toggleNoteExpand(section, id) {
+  // Tolerates the old one-argument form in case anything still calls it.
+  if (id === undefined) { id = section; section = null; }
+  var ta = document.getElementById('note-ta-' + id);
+  if (!ta) return;
+  var big = !ta.classList.contains('expanded');
+  applyNoteExpand(id, big);
+  if (!section) return;
+  // A locked month is view-only: expand to READ it, but write nothing.
+  if (monthIsLocked(currentMonthKey)) return;
+  try {
+    var all = loadAll();
+    var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
+    var row = rows.find(function(r) { return r.id === id; });
+    if (!row) return;
+    if (big) row._noteBig = true; else delete row._noteBig;
+    saveAll(all);
+    scheduleSave();
+  } catch (e) {}
 }
 
 function toggleBulletMode(section, id) {
