@@ -4878,6 +4878,42 @@ body.font-large.text-bold .erow-label-input {
 .dguide-skip  { font-size: 12px; color: rgba(255,255,255,0.55); background: none; border: none; cursor: pointer; font-family: 'Outfit',sans-serif; padding: 0; }
 .dguide-next  { font-size: 12px; font-weight: 700; color: #1A2332; background: #F0C060; border: none; border-radius: 6px; padding: 5px 14px; cursor: pointer; font-family: 'Outfit',sans-serif; }
 
+/* ── Month arrows ────────────────────────────────────────────
+   Deliberately the same ‹ › as the date picker's month arrows rather than a
+   second set of glyphs for the same idea: step one month. Sized from the
+   title beside them (em) so they keep their proportion when the topbar type
+   changes.
+   They sit OUTSIDE #topbar-title, not inside it — the title already carries
+   an onclick that opens the colour picker, and an arrow nested in it would
+   open that picker on every press. */
+.mnav {
+  font-family: 'Outfit', sans-serif;
+  /* An absolute size, NOT em. These buttons are siblings of #topbar-title,
+     not children of it, so `em` resolves against the topbar's 14px and the
+     arrows came out at 11px beside a 34px serif title — present, but reading
+     as dust. 26px sits just under the title and looks like part of it. */
+  font-size: 26px;
+  line-height: 1;
+  font-weight: 600;
+  color: var(--steel);
+  background: none;
+  border: none;
+  padding: 4px 10px;
+  cursor: pointer;
+  border-radius: 8px;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s, opacity 0.15s;
+}
+.mnav:hover:not(:disabled) { color: var(--sage); background: var(--mist-light); }
+.mnav:focus-visible { outline: 2px solid var(--sage); outline-offset: 1px; }
+/* Kept in the layout rather than hidden at the ends of the list: a control
+   that vanishes moves the month title sideways, and the title is what you
+   are reading. Greyed says "nothing that way"; gone says "where did it go". */
+.mnav:disabled { opacity: 0.25; cursor: default; }
+/* Finger-sized on touch: the glyph is narrow, so the tap target has to come
+   from padding. 44px tall is the smallest target that does not get missed. */
+@media (pointer: coarse) { .mnav { padding: 9px 14px; font-size: 28px; } }
+
 /* ── Suggest budgets ─────────────────────────────────────── */
 .sgb-sum { display: flex; flex-direction: column; gap: 5px; font-variant-numeric: tabular-nums; }
 .sgb-sum .r { display: flex; justify-content: space-between; gap: 14px; font-size: 13px; color: var(--slate); }
@@ -6018,7 +6054,9 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
     <div class="topbar">
       <div class="topbar-left">
         <div style="display:flex;align-items:center;gap:10px;">
+          <button class="mnav" id="mnav-prev" onclick="navMonth(-1)" aria-label="Previous month" title="Previous month">‹</button>
           <h2 id="topbar-title" onclick="toggleMonthColorPicker(event)" title="Click to color this month's title" style="cursor:pointer;">Loading…</h2>
+          <button class="mnav" id="mnav-next" onclick="navMonth(1)" aria-label="Next month" title="Next month">›</button>
           <span id="month-emoji-display" onclick="toggleMonthEmojiPicker(event)" title="Add emoji" style="font-size:28px;cursor:pointer;opacity:0;transition:opacity 0.15s,transform 0.15s;flex-shrink:0;line-height:1;display:inline-flex;align-items:center;vertical-align:middle;position:relative;top:2px;"></span>
           <button id="month-lock-btn" onclick="toggleMonthLock()" aria-pressed="false" title="Lock this month (view only)">🔓</button>
         </div>
@@ -9426,6 +9464,42 @@ function setMonthData(key, data) {
   saveAll(all);
 }
 
+/* ── Month arrows ────────────────────────────────────────────
+   Steps through the months that EXIST, oldest to newest, in the same order
+   the sidebar lists them. It never creates a month: an arrow is a navigation
+   control, and a navigation control that quietly writes a new month into
+   storage is a different kind of thing wearing the same coat.
+
+   The demo month is not in the sequence — its key is `demo-month`, not a
+   YYYY-MM, so it has no neighbours and both arrows are simply off there. */
+function monthNavKeys() {
+  return allMonthKeys().slice().sort();   // allMonthKeys() is newest-first
+}
+function monthNavAt(step) {
+  var keys = monthNavKeys();
+  var i = keys.indexOf(currentMonthKey);
+  if (i < 0) return null;                  // demo month, or nothing loaded yet
+  var j = i + step;
+  return (j < 0 || j >= keys.length) ? null : keys[j];
+}
+function navMonth(step) {
+  var key = monthNavAt(step);
+  if (!key) return;
+  switchMonth(key);
+}
+/* Recomputed from storage every time rather than cached, so adding, copying
+   or deleting a month cannot leave an arrow pointing at something that is no
+   longer there. */
+function updateMonthNav() {
+  [[-1, 'mnav-prev'], [1, 'mnav-next']].forEach(function(pair) {
+    var btn = document.getElementById(pair[1]);
+    if (!btn) return;
+    var key = monthNavAt(pair[0]);
+    btn.disabled = !key;
+    btn.title = key ? monthLabel(key) : (pair[0] < 0 ? 'No earlier month' : 'No later month');
+  });
+}
+
 function allMonthKeys() {
   const all = loadAll();
   return Object.keys(all).filter(k => /^\d{4}-\d{2}$/.test(k)).sort().reverse();
@@ -10402,6 +10476,7 @@ function switchMonth(key) {
   clearSearch();
   loadIntention();
   loadNotes();
+  updateMonthNav();
 }
 
 /* Open/close a year group.
@@ -10790,7 +10865,7 @@ function deleteMonth(e, key) {
     const remaining = allMonthKeys();
     if (remaining.length === 0) { createFreshMonth(); }
     else if (key === currentMonthKey) { switchMonth(remaining[0]); }
-    else { renderSidebar(); }
+    else { renderSidebar(); updateMonthNav(); }   // deleting a NEIGHBOUR changes what the arrows point at, without a switch to refresh them
     // Show undo toast
     var t = document.getElementById('toast');
     var btn = document.getElementById('toast-undo');
