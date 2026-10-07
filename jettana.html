@@ -2841,6 +2841,8 @@ mark.hl-rose  { --hl: rgba(224, 132, 132, 0.30); }
 }
 .link-ed-hint { font-size: 11px; color: var(--steel); }
 .link-ed-hint.is-bad { color: var(--blush); }
+.link-ed-apply { display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; color: var(--slate); line-height: 1.4; cursor: pointer; }
+.link-ed-apply input { margin-top: 2px; flex: none; width: 16px; height: 16px; accent-color: var(--sage); cursor: pointer; }
 .link-ed-actions { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
 .link-ed-spacer { flex: 1 1 auto; }
 .link-ed-btn {
@@ -7517,7 +7519,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>✎ <strong>Row notes</strong> — click ≡ on any row → Add note; a gold dot appears on hover to indicate a note exists</span></div>
       <div class="shortcut-row"><span>👁 <strong>Full name peek</strong> — long row names fade at the edge; hover (desktop) or tap once (mobile) to see the full text, tap again to edit. Works on locked months too, where it only ever shows the name.</span></div>
       <div class="shortcut-row"><span>⧉ <strong>Copy / paste template entries</strong> — <strong>⧉</strong> on an entry copies that one, <strong>⧉ Copy all</strong> in the pill row takes every entry in the row. <strong>⎘ Paste</strong> drops them into another month or another row with every value intact — amounts, percentages, employer match, fund, status — and only the <strong>dates blanked</strong>. Pasting into a row that already has entries asks <strong>Add</strong> or <strong>Replace</strong> first; an empty row just pastes. Locked months refuse it. Same shape as Copy colour / Paste colour on the row menu.</span></div>
-      <div class="shortcut-row"><span>🔗 <strong>Account links</strong> — keep a link to the institution behind a Debt, Checking or Savings &amp; Investments row: ≡ → Add link, paste the page you sign in on, name it whatever you like. The row's name is then underlined, and ≡ → Open takes you there in a new tab. The menu names the <strong>real web address</strong> rather than your label, so you always see where you're going first. Only secure (https) sites are accepted, the address is all that's stored — never a username or password — and the link carries into every new month. Paid rows aren't underlined, since the strikethrough already occupies that line.</span></div>
+      <div class="shortcut-row"><span>🔗 <strong>Account links</strong> — keep a link to the institution behind a Debt, Checking or Savings &amp; Investments row: ≡ → Add link, paste the page you sign in on, name it whatever you like. The row's name is then underlined, and ≡ → Open takes you there in a new tab. The menu names the <strong>real web address</strong> rather than your label, so you always see where you're going first. Only secure (https) sites are accepted, the address is all that's stored — never a username or password — and the link carries into every new month. On a <strong>recurring</strong> row, a tick box in the editor also applies a new or removed link to the later months that row already repeats in. Paid rows aren't underlined, since the strikethrough already occupies that line.</span></div>
       <div class="shortcut-row"><span>→ <strong>Income destination</strong> — open the note on any income row to set a "→ goes to" label (e.g. Marcus Savings, HYSA)</span></div>
       <div class="shortcut-row"><span>🔄 <strong>Subscriptions</strong> — dedicated section for recurring services; included in expense totals and month-over-month comparison</span></div>
       <div class="shortcut-row"><span>📝 <strong>Notes</strong> — free-form notes per month with bullet points and checkable to-dos; syncs across devices</span></div>
@@ -7589,7 +7591,8 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>✎ <strong>Rename month</strong> — hover a month in the sidebar → ✎ to change its month or year; all data moves with it</span></div>
       <div class="shortcut-row"><span>🔖 <strong>Last month restore</strong> — when you return to the app, it reopens the last month you were viewing</span></div>
       <div class="shortcut-row"><span>📊 <strong>Month-over-month</strong> — scroll to the bottom to compare spending vs any month you choose from the dropdown</span></div>
-      <div class="shortcut-row"><span>🔍 <strong>Search</strong> — search across all rows in the current month by label, amount or date; the page scrolls automatically to the first match</span></div>
+      <div class="shortcut-row"><span>🔍 <strong>Search</strong> — search across all rows in the current month by label, amount or date; the page scrolls automatically to the first match. On a phone it's the magnifier in the top bar — tap it and a full-width search field opens (the ✕ closes it).</span></div>
+      <div class="shortcut-row"><span>❓ <strong>Ask me</strong> — the help button in the top bar: search for an answer to anything about Jettana. On a phone it's the ❓ beside the magnifier; on a computer it says "Ask me".</span></div>
       <div class="shortcut-row"><span>🔒 <strong>Lock a month</strong> — tap the 🔓 beside the month name to make that month view-only. You can still read it, open notes and peek at long names, but nothing can be edited, added, deleted or undone until you tap 🔒 to unlock. Set per month, so locking one leaves the rest alone. Cloud sync can still update a locked month — it guards against stray taps, not against an edit made on another device.</span></div>
       <div class="shortcut-row"><span>✕ <strong>Clear month</strong> — ⋯ → Clear month to wipe all rows for the current month</span></div>
       <div class="shortcut-row"><span>▶ <strong>Try demo</strong> — ⋯ → Learn → Try demo to load a pre-filled sample month showing card tracking, templates and color coding in action</span></div>
@@ -15405,6 +15408,9 @@ function openLinkEditor(section, id) {
         'autocapitalize="off" autocorrect="off" spellcheck="false">' +
       '<span class="link-ed-hint" id="link-ed-hint">Paste the page you normally sign in on.</span>' +
     '</div>' +
+    '<label class="link-ed-apply" id="link-ed-apply-wrap" style="display:none;">' +
+      '<input type="checkbox" id="link-ed-apply" checked><span id="link-ed-apply-txt"></span>' +
+    '</label>' +
     '<div class="link-ed-actions">' +
       '<button type="button" class="link-ed-btn link-ed-remove" id="link-ed-remove">Remove</button>' +
       '<span class="link-ed-spacer"></span>' +
@@ -15421,6 +15427,31 @@ function openLinkEditor(section, id) {
   nameEl.value = row._linkName || '';
   urlEl.value  = row._linkUrl || '';
   box.querySelector('#link-ed-remove').style.display = row._linkUrl ? '' : 'none';
+
+  // Recurring rows live on in later months as separate copies, so a link saved
+  // here would otherwise only ever reach months created afterwards. Offer to
+  // apply it to the months that already exist: same section, same row name.
+  // Locked months are left out (they refuse writes) and so are not counted.
+  function laterTargets(all) {
+    var out = [];
+    if (!row.recurring) return out;
+    var want = (row.label || '').trim().toLowerCase();
+    if (!want) return out;
+    allMonthKeys().forEach(function(k) {
+      if (k <= currentMonthKey || !all[k] || all[k]._locked) return;
+      (all[k][section] || []).forEach(function(x) {
+        if ((x.label || '').trim().toLowerCase() === want) out.push(x);
+      });
+    });
+    return out;
+  }
+  var applyEl = box.querySelector('#link-ed-apply');
+  var _nLater = laterTargets(loadAll()).length;
+  if (_nLater) {
+    box.querySelector('#link-ed-apply-wrap').style.display = '';
+    box.querySelector('#link-ed-apply-txt').textContent =
+      'Also apply to the ' + _nLater + ' later month' + (_nLater !== 1 ? 's' : '') + ' this row repeats in';
+  }
 
   function close() {
     document.removeEventListener('keydown', onKey);
@@ -15440,9 +15471,22 @@ function openLinkEditor(section, id) {
     if (!r) return false;
     r._linkUrl  = safeUrl;              // only ever the checked value, never the raw one
     r._linkName = safeUrl ? name : '';  // a name with no link is just litter
+    var carried = 0;
+    if (applyEl && applyEl.checked) {
+      laterTargets(all).forEach(function(x) {
+        x._linkUrl  = safeUrl;            // the same checked value, never the raw one
+        x._linkName = safeUrl ? name : '';
+        carried++;
+      });
+    }
     saveAll(all);
     _paintLinkState(section, id);
+    _linkCarried = carried;
     return true;
+  }
+  var _linkCarried = 0;
+  function carriedNote() {
+    return _linkCarried ? ' · ' + _linkCarried + ' later month' + (_linkCarried !== 1 ? 's' : '') + ' updated' : '';
   }
 
   function doSave() {
@@ -15457,13 +15501,13 @@ function openLinkEditor(section, id) {
     }
     var ok = write(safe, nameEl.value.trim().slice(0, 60));
     close();
-    if (ok) showToast(safe ? 'Link saved' : 'Link removed');
+    if (ok) showToast((safe ? 'Link saved' : 'Link removed') + carriedNote());
   }
 
   function doRemove() {
     var ok = write('', '');
     close();
-    if (ok) showToast('Link removed');
+    if (ok) showToast('Link removed' + carriedNote());
   }
 
   box.querySelector('#link-ed-save').addEventListener('click', doSave);
@@ -18782,6 +18826,13 @@ function toggleRecurring(section, id) {
         existingRow.paidColor = existingRow.paidColor || row.paidColor || '';
         existingRow.numColor = existingRow.numColor || row.numColor || '';
         existingRow.strikeColor = existingRow.strikeColor || row.strikeColor || '';
+        // Fill the account link only where that month has none: a link you set
+        // there yourself is never overwritten. Re-checked through the validator
+        // rather than copied raw, same as everywhere else a link is written.
+        if (!existingRow._linkUrl && row._linkUrl && sectionTakesLink(section)) {
+          var _lu = safeAccountUrl(row._linkUrl);
+          if (_lu) { existingRow._linkUrl = _lu; existingRow._linkName = row._linkName || ''; }
+        }
         injected++;
       } else {
         const newRow = {
@@ -18797,6 +18848,10 @@ function toggleRecurring(section, id) {
           strikeColor: row.strikeColor || '',
           alloc: row.alloc || '',
           _cardLink: row._cardLink || '',
+          // Your bank does not move house in January (same reasoning as the
+          // other seeding paths). Validated again on the way in.
+          _linkName: (sectionTakesLink(section) && safeAccountUrl(row._linkUrl)) ? (row._linkName || '') : '',
+          _linkUrl:  sectionTakesLink(section) ? (safeAccountUrl(row._linkUrl) || '') : '',
         };
         futureMonth[section] = futureRows.concat([newRow]);
         injected++;
