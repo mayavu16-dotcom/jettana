@@ -4898,12 +4898,19 @@ body.font-large.text-bold .erow-label-input {
   color: var(--steel);
   background: none;
   border: none;
-  padding: 4px 10px;
+  /* Fixed width, so the status line below can be indented by exactly one
+     arrow + the 10px gap and land under the month name. */
+  width: 34px;
+  padding: 4px 0;
+  text-align: center;
   cursor: pointer;
   border-radius: 8px;
   flex-shrink: 0;
   transition: color 0.15s, background 0.15s, opacity 0.15s;
 }
+/* Status line ("Over budget by $2k") sits directly under the month name:
+   arrow width + the 10px flex gap of the title row. */
+#topbar-sub { margin-left: 44px; } /* by id: updateSubtitle() replaces the class, so .sub does not survive */
 .mnav:hover:not(:disabled) { color: var(--sage); background: var(--mist-light); }
 .mnav:focus-visible { outline: 2px solid var(--sage); outline-offset: 1px; }
 /* Kept in the layout rather than hidden at the ends of the list: a control
@@ -4912,7 +4919,7 @@ body.font-large.text-bold .erow-label-input {
 .mnav:disabled { opacity: 0.25; cursor: default; }
 /* Finger-sized on touch: the glyph is narrow, so the tap target has to come
    from padding. 44px tall is the smallest target that does not get missed. */
-@media (pointer: coarse) { .mnav { padding: 9px 14px; font-size: 28px; } }
+@media (pointer: coarse) { .mnav { width: 44px; padding: 9px 0; font-size: 28px; } #topbar-sub { margin-left: 54px; } }
 
 /* ── Suggest budgets ─────────────────────────────────────── */
 .sgb-sum { display: flex; flex-direction: column; gap: 5px; font-variant-numeric: tabular-nums; }
