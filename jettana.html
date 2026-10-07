@@ -5807,6 +5807,45 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
   max-width: 100%;
 }
 
+/* ── Phone top bar: icons instead of words ─────────────────────
+   The month arrows made the bar too tight for a search field AND an "Ask me"
+   pill, so on a phone: search collapses to a magnifier that opens a full-width
+   field (the month and the other buttons step aside while it is open), and
+   "Ask me" becomes a ? that keeps its sage tint. Moon and menu are unchanged.
+   Gated on max-width AND a coarse pointer so desktop keeps the real field and
+   the word. The new buttons and the .ask-q glyph are hidden by default so
+   nothing leaks onto desktop. */
+.phone-search-btn, .ask-q { display: none; }
+@media (max-width: 900px) and (pointer: coarse) {
+  .search-wrap .search-input,
+  .search-wrap .search-icon,
+  .search-wrap .search-clear { display: none !important; }
+  .search-wrap { flex: 0 0 auto; }
+  #s-toggle, #s-close {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 44px; height: 44px; padding: 0; font-size: 19px;
+    -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  }
+  #s-close { display: none; }
+
+  .topbar-right .btn-sage { width: 44px; padding: 0 !important; justify-content: center; }
+  .topbar-right .btn-sage .ask-full { display: none; }
+  .topbar-right .btn-sage .ask-q { display: inline; font-size: 24px; font-weight: 700; line-height: 1; }
+
+  .topbar.search-open .topbar-left,
+  .topbar.search-open .topbar-right > :not(.search-wrap):not(.search-result-count) { display: none !important; }
+  /* #dark-toggle and #more-btn carry id-level display rules, so the class-level hide above loses to them */
+  .topbar.search-open #dark-toggle,
+  .topbar.search-open #more-wrap,
+  .topbar.search-open #export-wrap { display: none !important; }
+  .topbar.search-open .search-wrap { flex: 1 1 auto !important; }
+  .topbar.search-open .search-wrap .search-input { display: block !important; width: 100%; height: 44px; }
+  .topbar.search-open .search-wrap .search-icon { display: block !important; }
+  .topbar.search-open #s-toggle { display: none; }
+  .topbar.search-open #s-close { display: inline-flex; margin-left: 8px; }
+  .topbar.search-open .search-wrap { display: flex; }
+}
+
 /* ── "Left" column ────────────────────────────────────────────
    A fourth cell on the seven expense sections showing budget minus actual.
    Off by default; the section ⋯ menu's "Show what's left" turns it on for all of them at once.
@@ -6078,9 +6117,11 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
           <span class="search-icon">⌕</span>
           <input type="text" class="search-input" id="s-input" placeholder="Search by item, amount or date…">
           <button class="search-clear" id="s-clear" title="Clear" onclick="clearSearch()">&#x2715;</button>
+          <button class="dark-toggle phone-search-btn" id="s-toggle" type="button" onclick="openSearchBar()" aria-label="Search" title="Search"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg></button>
+          <button class="dark-toggle phone-search-btn" id="s-close" type="button" onclick="closeSearchBar(true)" aria-label="Close search" title="Close search">&#x2715;</button>
         </div>
         <div class="export-wrap" id="export-wrap">
-          <button class="btn btn-sage" onclick="showAskMe()">💬 Ask me</button>
+          <button class="btn btn-sage" onclick="showAskMe()" aria-label="Ask me" title="Ask me"><span class="ask-full">💬 Ask me</span><span class="ask-q" aria-hidden="true">?</span></button>
         </div>
         <button class="dark-toggle" id="dark-toggle" onclick="toggleDark()" title="Toggle dark mode">🌙</button>
         <div class="more-wrap" id="more-wrap">
@@ -15925,7 +15966,32 @@ function clearSearch() {
   var el = document.getElementById('s-input');
   if (el) { el.value = ''; }
   doSearch('');
+  var tb = document.querySelector('.topbar');
+  if (tb) tb.classList.remove('search-open');   // phone: the field folds back into the magnifier
 }
+
+// Phone only in effect (the CSS for .search-open is gated to a coarse pointer
+// under 900px); on desktop these classes change nothing.
+function openSearchBar() {
+  var tb = document.querySelector('.topbar');
+  if (tb) tb.classList.add('search-open');
+  var el = document.getElementById('s-input');
+  if (el) el.focus();               // inside the tap, so iOS raises the keyboard
+}
+function closeSearchBar(clear) {
+  if (clear) { clearSearch(); return; }
+  var tb = document.querySelector('.topbar');
+  if (tb) tb.classList.remove('search-open');
+}
+window.addEventListener('load', function() {
+  var el = document.getElementById('s-input');
+  if (!el) return;
+  // Tapping away from an EMPTY field folds it back; a field with a query stays
+  // open so the results you are looking at do not lose their search box.
+  el.addEventListener('blur', function() {
+    setTimeout(function() { if (!el.value) closeSearchBar(false); }, 150);
+  });
+});
 
 // Wire up after DOM ready
 
@@ -24487,7 +24553,11 @@ var DEMO_GUIDE_STEPS = [
     tipSide: 'right',
   },
   {
-    target: function() { return document.querySelector('#search-input, .search-input, input[placeholder*="Search"]'); },
+    target: function() {
+      var t = document.getElementById('s-toggle');
+      if (t && t.offsetParent !== null) return t;   // phone: the field is folded into the magnifier
+      return document.querySelector('#search-input, .search-input, input[placeholder*="Search"]');
+    },
     fallback: function() { return document.querySelector('.topbar-right'); },
     label: 'Search',
     desc: 'Search any row by label or amount. The page scrolls straight to the first match.',
