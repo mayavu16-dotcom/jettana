@@ -7575,7 +7575,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>↔ <strong>Move to another section</strong> — drag a row and drop it onto a different section to move it. To move multiple rows: ⋯ on the section header → Select rows to move, select your rows, then drag any selected row or use the section dropdown in the bulk bar.</span></div>
       <div class="shortcut-row"><span>↕ <strong>Expand notes</strong> — the ↕ button in the note actions bar expands a row note to full height; the global Notes section has the same button</span></div>
       <div class="shortcut-row"><span>⇥ <strong>Indent bullets</strong> — on a bullet or checkbox line in any note, Tab indents and Shift+Tab outdents; Enter continues the list at the same level</span></div>
-      <div class="shortcut-row"><span>✨ <strong>Autocomplete</strong> — start typing a label to see suggestions from your history; selecting one prefills all 3 colors</span></div>
+      <div class="shortcut-row"><span>✨ <strong>Autocomplete</strong> — start typing a label to see suggestions from your history; selecting one prefills its text and strike colors, while the number color keeps following the one you last chose</span></div>
       <div class="shortcut-row"><span>⌨ <strong>Enter key</strong> — pressing Enter in any cell moves down to the same column in the next row; on the last row it creates a new row automatically</span></div>
       <div class="shortcut-row"><span>🧮 <strong>Expression calculator</strong> — type a math expression in any number cell (e.g. <em>50+25+30</em> or <em>1500-200-50</em>) and it auto-calculates when you tab or click away</span></div>
       <div class="shortcut-row"><span>☑ <strong>Bulk edit modes</strong> — ⋯ on any section header offers five: select rows to delete, mark paid, set a date, color, or move to another section. Pick a mode, tap the rows, apply.</span></div>
@@ -23554,13 +23554,17 @@ function selectAutocomplete(input, section, idx) {
   if (!item) return;
   input.value = item.label;
   input.dispatchEvent(new Event('input'));
-  // Auto-apply all 3 colors if available
+  // Auto-apply the text and strike colours from the matched row.
+  // The NUMBER colour is deliberately NOT taken from history. It follows the
+  // colour you last chose (the sticky default) until you change it yourself;
+  // applying the old row's number colour here replaced it on the row AND, via
+  // setNumColor(), overwrote the sticky default itself, so one pick from the
+  // suggestions silently reset your choice for every row after it.
   var row2 = input.closest('.erow');
   if (row2) {
     var id = row2.dataset.id;
     if (id) {
       if (item.paidColor)   setPaidColor(section, id, item.paidColor, null);
-      if (item.numColor)    setNumColor(section, id, item.numColor, null);
       if (item.strikeColor) setStrikeColor(section, id, item.strikeColor, null);
     }
   }
