@@ -18822,6 +18822,11 @@ function toggleRecurring(section, id) {
         existingRow.paidColor = existingRow.paidColor || row.paidColor || '';
         existingRow.numColor = existingRow.numColor || row.numColor || '';
         existingRow.strikeColor = existingRow.strikeColor || row.strikeColor || '';
+        // Same fill-only-if-empty rule for the text colour and the user's own
+        // Bills Due corrections: a month that already holds a choice keeps it.
+        existingRow.textColor = existingRow.textColor || row.textColor || '';
+        existingRow._billClass = existingRow._billClass || row._billClass || '';
+        existingRow._invClass = existingRow._invClass || row._invClass || '';
         // Fill the account link only where that month has none: a link you set
         // there yourself is never overwritten. Re-checked through the validator
         // rather than copied raw, same as everywhere else a link is written.
@@ -18839,11 +18844,31 @@ function toggleRecurring(section, id) {
           paid: false, date: '', date2: '', note: '',
           goal: row.goal || '',
           recurring: true,
+          // Everything below mirrors what createFreshMonth carries into a new
+          // month, so a row behaves the same whichever way it reached the
+          // month. This copy used to stop at the three colours and the link,
+          // which dropped the text colour, a template entry's whole template
+          // (paycheck, savings growth, etc.), and the user's own ✕ / ⟳
+          // corrections to the Bills Due guess.
+          textColor: row.textColor || '',
           paidColor: row.paidColor || '',
           numColor: row.numColor || '',
           strikeColor: row.strikeColor || '',
+          _template: row._template || '',
+          _myContrib: row._myContrib || '',
+          _empMatch: row._empMatch || '',
+          _apy: row._apy || '',
+          _fund: row._fund || '',
+          _shares: row._shares || '',
+          _price: row._price || '',
+          _tDir: row._tDir || '',
           alloc: row.alloc || '',
           _cardLink: row._cardLink || '',
+          _billClass: row._billClass || '',
+          _invClass: row._invClass || '',
+          // Rebuilt for ITS month, never copied literally: a cutoff dated in
+          // the wrong month silently drops that month's expenses.
+          _beginDate: beginDateForMonth(futureKey, row._beginDate),
           // Your bank does not move house in January (same reasoning as the
           // other seeding paths). Validated again on the way in.
           _linkName: (sectionTakesLink(section) && safeAccountUrl(row._linkUrl)) ? (row._linkName || '') : '',
