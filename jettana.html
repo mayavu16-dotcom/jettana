@@ -7052,8 +7052,8 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
         </div>
 
         <div class="askme-item">
-          <button class="askme-q" onclick="toggleAskMe(this)">Why does one section say "$40 left" and another "$1,540 due"?<span class="askme-q-arrow">▾</span></button>
-          <div class="askme-a">Because they mean opposite things. In Food, <strong>left</strong> is money you may still spend. In Housing, that same remainder was mostly unpaid rent — money you <strong>owe</strong>. A section now says <strong>due</strong> when unpaid bills make up more than half of what's remaining, and <strong>left</strong> otherwise, so one small bill inside a big spending allowance doesn't flip the whole section. Hover the badge on a mixed section and it tells you how much of it is bills. The number itself is unchanged — it's still budget minus actual.</div>
+          <button class="askme-q" onclick="toggleAskMe(this)">Why does Housing say "left" when my rent isn't paid yet?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">The badge is always <strong>budget minus actual</strong> — what is left of the budget, nothing more. It doesn't know whether the rest is money you can spend or a bill you still have to pay. For what you still owe, look at the <strong>Bills Due</strong> card at the top. And on a section that has unpaid bills, hover the badge — it says how much they come to.</div>
         </div>
 
         <div class="askme-item">
@@ -7527,7 +7527,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>👻 <strong>Savings goal column</strong> — ⋯ on the Savings header → 👻 Show goal column; adds an optional Goal cell next to each account for what you're aiming to have in it, shown in dark green so it reads as intent rather than balance. Hidden by default, set per month, and the footer totals your goals. Goals carry into new months on recurring rows even though balances start fresh.</span></div>
       <div class="shortcut-row"><span>🔢 <strong>Charge badges</strong> — a small count next to a card or account name showing how many expense rows feed its balance; tap it for the full list with sections, amounts and dates, sorted earliest to latest, with a "Latest" line for the most recent activity. Undated charges still appear, sorted to the end. Click the badge to pin the panel and each charge becomes a link straight to that row; deposits and withdrawals stay plain, since they live inside the account row itself. Names cut off by the panel edge show in full on hover.</span></div>
       <div class="shortcut-row"><span>💳 <strong>Bills Due</strong> — a fifth summary card: what you've committed but not yet paid, with what's left after it underneath. Counts rows you've marked recurring that aren't ticked paid — the Actual if you've entered one, the Budget if you haven't. Hover or tap for the list; click to pin it, then <strong>✕</strong> anything that isn't really a bill (a grocery budget recurs but it's an allowance). Excluded items sit in a greyed list with a <strong>+</strong> to restore them, and the choice carries into new months. Pinned, tap any bill to jump to its row. A long list scrolls inside the panel, and the bottom edge fades while there is still more below it.</span></div>
-      <div class="shortcut-row"><span>🏷 <strong>"due" vs "left"</strong> — a section badge says <strong>due</strong> when unpaid bills are more than half of what's remaining, and <strong>left</strong> when it's mostly money you can still spend. Same number either way — it's still budget minus actual. Hover a mixed section to see how much of it is bills.</span></div>
+      <div class="shortcut-row"><span>🏷 <strong>Section badge</strong> — each section header shows how much of its budget is <strong>left</strong> (or <strong>over</strong>): budget minus actual, the same number as the footer and the Left column. It does not say what you owe — the Bills Due card does. Hover a section that has unpaid bills to see how much they come to.</span></div>
       <div class="shortcut-row"><span>🏦 <strong>Starting balance</strong> — open the note on a card-linked Debt row to set what was already owed before this month; it's added on top of this month's charges and shows as its own line in the charge breakdown</span></div>
       <div class="shortcut-row"><span>🎯 <strong>Net worth goal</strong> — click the Goal cell in the Net Worth Overview to set a target</span></div>
       <div class="shortcut-row"><span>💳 <strong>Credit score</strong> — type your score (300–850) in the pill on the Debt section header; each month keeps its own, with a ▲/▼ change vs the last month you logged one</span></div>
@@ -13690,24 +13690,20 @@ function recalc() {
       // dust decides between "left" and "over" on a month that is exactly on
       // budget, and it can land on "over".
       if (Math.abs(remaining) < 0.005) remaining = 0;
-      /* "left" and "due" are the same arithmetic and opposite meanings.
-         Food's "$180 left" is money you MAY SPEND. Housing's "$1,540 left"
-         was money you OWE — the section's remainder was almost entirely rent
-         that had not been paid yet. One word now says which kind it is.
-         The NUMBER is untouched: it is still budget − actual, so the badge
-         still agrees with the footer and the Left column directly below it.
-         Only the word changes, and only when unpaid bills are the majority of
-         the remainder — a section that is mostly spending allowance keeps
-         "left" even if one small bill sits in it. */
+      /* The badge always says "left" (or "over"): the number is budget minus
+         actual, so that is the only word that is true of it. It used to say
+         "due" when unpaid bills were most of the remainder, but the number was
+         still the leftover budget, not what is owed. With a $1,640 budget and
+         $1,500 of rent entered as an unpaid actual it read "$140 due" while
+         the $1,500 owed appeared nowhere on it. What is actually owed lives on
+         the Bills Due card; the hover below says how much of this section's
+         remainder is unpaid bills. */
       var secDue = _bills.bySection[sec] || 0;
-      var mostlyBills = remaining > 0 && secDue > remaining / 2;
-      pctEl.textContent = remaining >= 0
-        ? fmtLeftOver(remaining) + (mostlyBills ? ' due' : ' left')
-        : fmtLeftOver(remaining) + ' over';
+      pctEl.textContent = fmtLeftOver(remaining) + (remaining >= 0 ? ' left' : ' over');
       pctEl.className   = 'hdr-pct-label visible';
       // Mixed sections get the split on hover rather than a longer badge.
       if (secDue > 0 && remaining > 0 && Math.abs(secDue - remaining) > 0.005) {
-        pctEl.title = fmtLeftOver(secDue) + ' of this is unpaid bills';
+        pctEl.title = fmtLeftOver(secDue) + ' in unpaid bills in this section';
       } else {
         pctEl.removeAttribute('title');
       }
