@@ -2046,6 +2046,20 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
   transition: border-color 0.15s, width 0.2s;
 }
 .search-input:focus { border-color: var(--sage); width: 260px; }
+/* "Pending" filter chip. Dashed = pending, same language as the card tag;
+   filled sage when on. */
+.search-chip {
+  flex: none; margin-left: 8px; padding: 5px 10px; border-radius: 999px;
+  font-family: 'Outfit', sans-serif; font-size: 12px; line-height: 1.2; white-space: nowrap;
+  color: var(--steel); background: transparent; border: 1px dashed var(--steel); cursor: pointer;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+}
+.search-chip:hover { border-color: var(--sage); color: var(--sage-dark); }
+.search-chip:focus-visible { outline: 2px solid var(--sage); outline-offset: 2px; }
+.search-chip.on { background: rgba(124,154,126,0.2); border: 1px solid var(--sage); color: var(--sage-dark); }
+.dark .search-chip.on, .dark .search-chip:hover { color: var(--sage); }
+/* Mid-width desktop: the word would squeeze the field's placeholder, so keep just the clock. */
+@media (pointer: fine) and (max-width: 1500px) { .search-chip .sc-word { display: none; } .search-chip { padding: 5px 9px; } }
 .search-input::placeholder { color: var(--mist); }
 
 /* ── Mobile width containment ──────────────────────────────────
@@ -5915,6 +5929,8 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
     -webkit-tap-highlight-color: transparent; touch-action: manipulation;
   }
   #s-close { display: none; }
+  .search-chip { display: none; }
+  .topbar.search-open .search-chip { display: inline-flex; align-items: center; height: 44px; padding: 0 14px; font-size: 14px; }
 
   .topbar-right .btn-sage { width: 44px; padding: 0 !important; justify-content: center; }
   .topbar-right .btn-sage .ask-full { display: none; }
@@ -6205,6 +6221,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
           <span class="search-icon">⌕</span>
           <input type="text" class="search-input" id="s-input" placeholder="Search by item, amount or date…">
           <button class="search-clear" id="s-clear" title="Clear" onclick="clearSearch()">&#x2715;</button>
+          <button class="search-chip" id="s-pend" type="button" aria-pressed="false" title="Show only pending charges" onmousedown="event.preventDefault()" onclick="togglePendingSearch()">&#x25f7;<span class="sc-word"> Pending</span></button>
           <button class="dark-toggle phone-search-btn" id="s-toggle" type="button" onclick="openSearchBar()" aria-label="Search" title="Search"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg></button>
           <button class="dark-toggle phone-search-btn" id="s-close" type="button" onclick="closeSearchBar(true)" aria-label="Close search" title="Close search">&#x2715;</button>
         </div>
@@ -7683,7 +7700,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>✎ <strong>Rename month</strong> — hover a month in the sidebar → ✎ to change its month or year; all data moves with it</span></div>
       <div class="shortcut-row"><span>🔖 <strong>Last month restore</strong> — when you return to the app, it reopens the last month you were viewing</span></div>
       <div class="shortcut-row"><span>📊 <strong>Month-over-month</strong> — scroll to the bottom to compare spending vs any month you choose from the dropdown</span></div>
-      <div class="shortcut-row"><span>🔍 <strong>Search</strong> — search across all rows in the current month by label, amount or date; the page scrolls automatically to the first match. On a phone it's the magnifier in the top bar — tap it and a full-width search field opens (the ✕ closes it).</span></div>
+      <div class="shortcut-row"><span>🔍 <strong>Search</strong> — search across all rows in the current month by label, amount or date (type "pending" or tap the ◷ Pending chip to find charges marked pending); the page scrolls automatically to the first match. On a phone it's the magnifier in the top bar — tap it and a full-width search field opens (the ✕ closes it).</span></div>
       <div class="shortcut-row"><span>❓ <strong>Ask me</strong> — the help button in the top bar: search for an answer to anything about Jettana. On a phone it's the ❓ beside the magnifier; on a computer it says "Ask me".</span></div>
       <div class="shortcut-row"><span>🔒 <strong>Lock a month</strong> — tap the 🔓 beside the month name to make that month view-only. You can still read it, open notes and peek at long names, but nothing can be edited, added, deleted or undone until you tap 🔒 to unlock. Set per month, so locking one leaves the rest alone. Cloud sync can still update a locked month — it guards against stray taps, not against an edit made on another device.</span></div>
       <div class="shortcut-row"><span>✕ <strong>Clear month</strong> — ⋯ → Clear month to wipe all rows for the current month</span></div>
@@ -16070,6 +16087,19 @@ initTapReveal();
 
 
 // ── Search ───────────────────────────────────────────────────
+var _pendOnly = false;   // the Pending chip; runs on top of whatever is typed
+function togglePendingSearch() {
+  _pendOnly = !_pendOnly;
+  syncPendChip();
+  var el = document.getElementById('s-input');
+  doSearch(el ? el.value : '');
+}
+function syncPendChip() {
+  var b = document.getElementById('s-pend');
+  if (!b) return;
+  b.classList.toggle('on', _pendOnly);
+  b.setAttribute('aria-pressed', _pendOnly ? 'true' : 'false');
+}
 function doSearch(q) {
   q = (q || '').trim().toLowerCase();
   var clearBtn = document.getElementById('s-clear');
@@ -16077,7 +16107,7 @@ function doSearch(q) {
   if (clearBtn) clearBtn.className = q ? 'search-clear visible' : 'search-clear';
 
   var allRows = document.querySelectorAll('.erow');
-  if (!q) {
+  if (!q && !_pendOnly) {
     for (var i = 0; i < allRows.length; i++) {
       allRows[i].classList.remove('s-dim', 's-match');
     }
@@ -16169,7 +16199,13 @@ function doSearch(q) {
         if (rc && qColors.indexOf(rc) !== -1) colorMatch = true;
       }
 
-      var isMatch = labelTxt.indexOf(q) !== -1 || amountMatch || dateMatch || colorMatch;
+      // 5. Typing "pending" (or the start of it, 3+ letters) finds charges
+      // marked pending. The mark is a row class, set by refreshPendingMarks().
+      var pendMatch = q.length >= 3 && 'pending'.indexOf(q) === 0 && row.classList.contains('pending-row');
+
+      var isMatch = !q || labelTxt.indexOf(q) !== -1 || amountMatch || dateMatch || colorMatch || pendMatch;
+      // Chip on: only pending charges can match, and typing narrows them further.
+      if (_pendOnly && !row.classList.contains('pending-row')) isMatch = false;
 
       row.classList.remove('s-dim', 's-match');
       if (isMatch) {
@@ -16204,6 +16240,7 @@ function doSearch(q) {
 function clearSearch() {
   var el = document.getElementById('s-input');
   if (el) { el.value = ''; }
+  _pendOnly = false; syncPendChip();
   doSearch('');
   var tb = document.querySelector('.topbar');
   if (tb) tb.classList.remove('search-open');   // phone: the field folds back into the magnifier
@@ -16228,7 +16265,7 @@ window.addEventListener('load', function() {
   // Tapping away from an EMPTY field folds it back; a field with a query stays
   // open so the results you are looking at do not lose their search box.
   el.addEventListener('blur', function() {
-    setTimeout(function() { if (!el.value) closeSearchBar(false); }, 150);
+    setTimeout(function() { if (!el.value && !_pendOnly) closeSearchBar(false); }, 150);
   });
 });
 
