@@ -1219,6 +1219,31 @@ body.show-sav-goal.font-large .sec-footer-savings {
 .ctp-row.is-paid .ctp-label,
 .ctp-row.is-paid .ctp-amt { color: var(--steel); }
 .ctp-row.is-pending .ctp-check { color: var(--steel); }
+/* Tap-to-clear circle. Sits over the check slot (no added width); the ::after
+   makes the hit area bigger than the drawn circle without making the row taller. */
+.ctp-pwrap { position: relative; }
+.ctp-pwrap > .ctp-jump { width: 100%; }
+.ctp-clear {
+  position: absolute; left: 8px; top: 50%; transform: translateY(-50%);
+  width: 14px; height: 14px; padding: 0; border-radius: 50%;
+  border: 1.5px dashed var(--steel); background: transparent; cursor: pointer; z-index: 1;
+}
+.ctp-clear::after { content: ''; position: absolute; inset: -5px -6px; }
+.ctp-clearall {
+  display: block; width: 100%; margin-top: 6px; padding: 5px 8px; font: inherit; font-size: 11px;
+  color: var(--sage-dark); background: transparent; border: 1px solid var(--sage);
+  border-radius: 6px; cursor: pointer;
+}
+.ctp-clearall:hover { background: rgba(124,154,126,0.14); }
+.ctp-clearall:focus-visible { outline: 2px solid var(--sage); outline-offset: 2px; }
+.dark .ctp-clearall { color: var(--sage); }
+@media (pointer: coarse) { .ctp-clearall { padding: 12px 8px; font-size: 13px; } }
+.ctp-clear:hover { border-style: solid; border-color: var(--sage); background: rgba(124,154,126,0.18); }
+.ctp-clear:focus-visible { outline: 2px solid var(--sage); outline-offset: 2px; }
+@media (pointer: coarse) {
+  .ctp-clear { width: 18px; height: 18px; left: 7px; }
+  .ctp-clear::after { inset: -9px -8px; }
+}
 .ctp-row.is-pending .ctp-amt { font-style: italic; color: var(--steel); }
 .ctp-foot { border-top: 1px solid var(--mist); padding: 7px 11px 8px; }
 .ctp-fline { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--steel); padding: 1px 0; }
@@ -7046,7 +7071,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
 
         <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">How do I keep a charge out of my card's balance until the bank posts it?<span class="askme-q-arrow">▾</span></button>
-          <div class="askme-a">Mark it <strong>pending</strong>. First make sure the charge is linked to the card — its number is the same colour as the card. Then open the row's <strong>≡</strong> menu and choose <strong>Mark as pending</strong>. The charge still counts as money you've <strong>spent</strong>, so Total Expenses and what's left don't change, but your card's balance leaves it out, so the balance matches your bank app. A small dashed tag such as <strong>◷ $86.40 pending</strong> appears beside the card's name (on a computer it shows just the clock and the amount, and on a narrow window it's hidden — the charge's amount is shown in italics instead). Tap the tag to see the charges. When the bank posts it, choose <strong>≡ → Mark as cleared</strong> and it joins the balance. Charges you've marked recurring on a card start each month as pending. And if a charge is still pending when you start a new month, it carries over, so it never goes missing.</div>
+          <div class="askme-a">Mark it <strong>pending</strong>. First make sure the charge is linked to the card — its number is the same colour as the card. Then open the row's <strong>≡</strong> menu and choose <strong>Mark as pending</strong>. The charge still counts as money you've <strong>spent</strong>, so Total Expenses and what's left don't change, but your card's balance leaves it out, so the balance matches your bank app. A small dashed tag such as <strong>◷ $86.40 pending</strong> appears beside the card's name (on a computer it shows just the clock and the amount, and on a narrow window it's hidden — the charge's amount is shown in italics instead). Tap the tag to see the charges. When the bank posts it, tap the <strong>circle</strong> beside it in the tag's list (or <strong>Mark all as cleared</strong> if several have posted), or choose <strong>≡ → Mark as cleared</strong>, and it joins the balance. Charges you've marked recurring on a card start each month as pending. And if a charge is still pending when you start a new month, it carries over, so it never goes missing.</div>
         </div>
 
         <div class="askme-item">
@@ -7586,7 +7611,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>👁 <strong>Full name peek</strong> — long row names fade at the edge; hover (desktop) or tap once (mobile) to see the full text, tap again to edit. Works on locked months too, where it only ever shows the name.</span></div>
       <div class="shortcut-row"><span>⧉ <strong>Copy / paste template entries</strong> — <strong>⧉</strong> on an entry copies that one, <strong>⧉ Copy all</strong> in the pill row takes every entry in the row. <strong>⎘ Paste</strong> drops them into another month or another row with every value intact — amounts, percentages, employer match, fund, status — and only the <strong>dates blanked</strong>. Pasting into a row that already has entries asks <strong>Add</strong> or <strong>Replace</strong> first; an empty row just pastes. Locked months refuse it. Same shape as Copy colour / Paste colour on the row menu.</span></div>
       <div class="shortcut-row"><span>🔗 <strong>Account links</strong> — keep a link to the institution behind a Debt, Checking or Savings &amp; Investments row: ≡ → Add link, paste the page you sign in on, name it whatever you like. The row's name is then underlined, and ≡ → Open takes you there in a new tab. The menu names the <strong>real web address</strong> rather than your label, so you always see where you're going first. Only secure (https) sites are accepted, the address is all that's stored — never a username or password — and the link carries into every new month. On a <strong>recurring</strong> row, a tick box in the editor also applies a new or removed link to the later months that row already repeats in. Paid rows aren't underlined, since the strikethrough already occupies that line.</span></div>
-      <div class="shortcut-row"><span>◷ <strong>Pending charges</strong> — on a charge linked to a card (its number is the card's colour), ≡ → Mark as pending keeps it out of the card's balance until the bank posts it; ≡ → Mark as cleared adds it. It still counts as spent in your totals. The card shows a dashed "$ pending" tag and its panel lists the pending charges and the total with them. Recurring card charges start each month pending, and one still pending at month end carries into next month's balance.</span></div>
+      <div class="shortcut-row"><span>◷ <strong>Pending charges</strong> — on a charge linked to a card (its number is the card's colour), ≡ → Mark as pending keeps it out of the card's balance until the bank posts it; ≡ → Mark as cleared (or the circle beside it in the card's list, or "Mark all as cleared" at the bottom of it) adds it. It still counts as spent in your totals. The card shows a dashed "$ pending" tag and its panel lists the pending charges and the total with them. Recurring card charges start each month pending, and one still pending at month end carries into next month's balance.</span></div>
       <div class="shortcut-row"><span>→ <strong>Income destination</strong> — open the note on any income row to set a "→ goes to" label (e.g. Marcus Savings, HYSA)</span></div>
       <div class="shortcut-row"><span>🔄 <strong>Subscriptions</strong> — dedicated section for recurring services; included in expense totals and month-over-month comparison</span></div>
       <div class="shortcut-row"><span>📝 <strong>Notes</strong> — free-form notes per month with bullet points and checkable to-dos; syncs across devices</span></div>
@@ -14248,7 +14273,8 @@ function buildCardTxHtml(rowId, d, section) {
       escHtml(row._cardLink || 'transparent') + ';"></span>' + escHtml(cardName) + '</div>' +
     '<div class="ctp-sub">' + info.rows.length +
       (info.rows.length === 1 ? ' charge' : ' charges') + ' this month' +
-      (info.rows.length ? ' · ' + ctpTapWord() + ' one to jump to it' : '') + '</div>' +
+      (info.rows.length ? ' · ' + ctpTapWord() + ' one to jump to it' : '') +
+      (info.pendingTotal > 0 && !monthIsLocked(currentMonthKey) ? ' · ' + ctpTapWord() + ' a circle to mark it cleared' : '') + '</div>' +
     (info.latest ? '<div class="ctp-latest">Latest: ' + escHtml(info.latest.label) +
       ' · ' + escHtml(formatDateLabel(info.latest.date)) + '</div>' : '') +
     '</div>';
@@ -14258,8 +14284,8 @@ function buildCardTxHtml(rowId, d, section) {
       'Set a number color on an expense row to have it counted here.</div>';
   } else {
     info.rows.forEach(function(r) {
-      html += ctpJumpLine(r,
-        '<span class="ctp-check">' + (r.pending ? '◷' : (r.paid ? '✓' : '')) + '</span>' +
+      var lineHtml = ctpJumpLine(r,
+        '<span class="ctp-check">' + (r.pending ? '' : (r.paid ? '✓' : '')) + '</span>' +
         '<span class="ctp-label">' + escHtml(r.label) + '</span>' +
         '<span class="ctp-sec">' + escHtml(secName(r.section)) + '</span>' +
         // Undated charges show nothing at all. A repeated "no date" label
@@ -14267,6 +14293,14 @@ function buildCardTxHtml(rowId, d, section) {
         (r.date ? '<span class="ctp-date">' + escHtml(formatDateLabel(r.date)) + '</span>' : '') +
         '<span class="ctp-amt">' + money(r.amount) + '</span>',
         (r.paid ? ' is-paid' : '') + (r.pending ? ' is-pending' : ''));
+      // The circle is a SIBLING of the jump button, not a child: a button
+      // inside a button is invalid and browsers disagree on which one fires.
+      if (r.pending && r.id && r.section && !monthIsLocked(currentMonthKey)) {
+        lineHtml = '<div class="ctp-pwrap"><button type="button" class="ctp-clear"' +
+          ' data-clear-sec="' + escHtml(r.section) + '" data-clear-id="' + escHtml(r.id) + '"' +
+          ' title="Mark cleared" aria-label="Mark ' + escHtml(r.label) + ' cleared"></button>' + lineHtml + '</div>';
+      }
+      html += lineHtml;
     });
     html += '<div class="ctp-foot">' +
       '<div class="ctp-fline"><span>' + (info.pendingTotal > 0 ? 'Cleared charges' : 'Charges this month') + '</span><span>' + money(info.chargeTotal) + '</span></div>';
@@ -14280,6 +14314,12 @@ function buildCardTxHtml(rowId, d, section) {
     if (info.pendingTotal > 0) {
       html += '<div class="ctp-fline"><span>Pending, not counted yet</span><span>+' + money(info.pendingTotal) + '</span></div>' +
         '<div class="ctp-fline"><span>With pending</span><span>' + money(info.current + info.pendingTotal) + '</span></div>';
+      // Only worth a button when there is more than one to clear; a single
+      // pending charge already has its circle. Hidden in a locked month.
+      var nPend = info.rows.filter(function(r) { return r.pending && r.id && r.section; }).length;
+      if (nPend > 1 && !monthIsLocked(currentMonthKey)) {
+        html += '<button type="button" class="ctp-clearall">Mark all ' + nPend + ' as cleared</button>';
+      }
     }
     html += '</div>';
   }
@@ -14406,6 +14446,9 @@ function toggleCardTxPop(ev, rowId, section) {
   // while the panel stays open.
   pop.addEventListener('click', function(e) {
     e.stopPropagation();
+    var clr = e.target && e.target.closest ? e.target.closest('.ctp-clear') : null;
+    if (e.target && e.target.closest && e.target.closest('.ctp-clearall')) { clearAllPendingInPanel(pop); return; }
+    if (clr) { togglePending(clr.dataset.clearSec, clr.dataset.clearId); return; }
     var line = e.target && e.target.closest ? e.target.closest('.ctp-jump') : null;
     if (line && line.dataset.jumpId) jumpToLinkedRow(line.dataset.jumpSec, line.dataset.jumpId);
   });
@@ -18928,6 +18971,25 @@ function toggleExempt(section, id) {
   if (badge) badge.style.display = row.exempt ? 'inline-block' : 'none';
   recalc();
   showToast(row.exempt ? 'Marked as exempt — excluded from totals' : 'Exemption removed', false);
+}
+// Clears every pending charge listed in the open card panel in one go:
+// one save, one recalc, one toast (not N of each).
+function clearAllPendingInPanel(pop) {
+  if (monthIsLocked(currentMonthKey)) return;
+  var btns = pop.querySelectorAll('.ctp-clear');
+  var all = loadAll();
+  var d = all[currentMonthKey];
+  if (!d || !btns.length) return;
+  var n = 0;
+  btns.forEach(function(b) {
+    var row = (d[b.dataset.clearSec] || []).find(function(r) { return r.id === b.dataset.clearId; });
+    if (row && row._pending && rowIsCardCharge(b.dataset.clearSec, row, d)) { delete row._pending; n++; }
+  });
+  if (!n) return;
+  saveAll(all);
+  scheduleSave();
+  recalc();
+  showToast('Cleared ' + n + ' charges \u2014 now in the card\u2019s balance', false);
 }
 function togglePending(section, id) {
   var all = loadAll();
