@@ -1093,6 +1093,46 @@ body.show-sav-goal.font-large .sec-footer-savings {
   .card-tx-badge { padding: 3px 8px; font-size: 10.5px; }
   .card-tx-badge .ctb-dot { width: 7px; height: 7px; }
 }
+/* Pending charges on a card: "$86.40 pending", sat between the account name and
+   the count badge. Dashed outline on purpose — a dashed edge reads as "not
+   final yet" without needing a colour of its own, so it needs no dark-mode
+   twin and cannot be mistaken for the filled count badge beside it. The name
+   input is the flexible item in this row, so anything placed after it lands
+   against the badge and the note automatically. Hidden until JS finds a
+   pending charge (refreshCardTxBadges), like the badge. */
+.card-pend-badge {
+  flex: none;
+  margin-left: 6px;
+  display: flex;
+  align-items: center;
+  padding: 2px 7px;
+  border: 1px dashed var(--steel);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--steel);
+  font-family: Outfit, sans-serif;
+  font-size: 10px;
+  line-height: 1.5;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.card-pend-badge { gap: 4px; }
+.card-pend-badge:hover { background: var(--mist-light); color: var(--ink); }
+/* A desktop account column is far narrower than the phone layout's (about 285px
+   against 490px), and the full tag squeezed the account NAME down to a couple of
+   letters. With a mouse the tag drops the word and keeps the clock mark and the
+   amount; the word is still in the hover text and the accessible name. */
+@media (pointer: fine) { .card-pend-badge .cpb-word { display: none; } }
+/* Below about 1250px wide the account column is already too narrow to show a
+   name beside the count badge and the note, so the tag would only take the last
+   of it. Hidden there: the charge row's dashed amount and the card's panel still
+   say what is pending. Measured: with the tag the name keeps 58px at 1250 and
+   falls to 33px by 1200. */
+@media (pointer: fine) and (max-width: 1249px) { .card-pend-badge { display: none !important; } }
+@media (pointer: coarse) {
+  .card-pend-badge { padding: 2px 7px; font-size: 10.5px; }
+}
 
 .card-tx-pop {
   position: fixed;
@@ -1178,6 +1218,8 @@ body.show-sav-goal.font-large .sec-footer-savings {
 .ctp-amt { font-size: 11.5px; flex-shrink: 0; min-width: 60px; text-align: right; }
 .ctp-row.is-paid .ctp-label,
 .ctp-row.is-paid .ctp-amt { color: var(--steel); }
+.ctp-row.is-pending .ctp-check { color: var(--steel); }
+.ctp-row.is-pending .ctp-amt { font-style: italic; color: var(--steel); }
 .ctp-foot { border-top: 1px solid var(--mist); padding: 7px 11px 8px; }
 .ctp-fline { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--steel); padding: 1px 0; }
 .ctp-ftotal {
@@ -3065,6 +3107,16 @@ body.sidebar-open #calc-panel { display: none !important; }
 
 /* Exempt row */
 .erow.exempt-row .erow-num-input[data-col="2"] { opacity: 0.45; }
+/* Pending card charge. Marked on the AMOUNT, not with a text tag: this row's
+   right edge is already shared by the note dot and the ×, each positioned by
+   hand, and a tag there would have to be negotiated with both. An italic,
+   dashed-underlined amount adds no width at all. */
+.erow.pending-row .erow-num-input[data-col="2"] {
+  font-style: italic;
+  text-decoration: underline dashed;
+  text-decoration-color: var(--steel);
+  text-underline-offset: 3px;
+}
 .exempt-badge {
   display: none;
   font-size: 8px;
@@ -3466,6 +3518,15 @@ body.sidebar-open #calc-panel { display: none !important; }
   .erow:has(.note-indicator.has-note) .erow-label-wrap .erow-label-input { padding-right: 44px; }
   .erow:has(.erow-label-wrap.has-cardbadge):has(.note-indicator.has-note) .erow-label-wrap .erow-label-input { padding-right: 58px; }
 }
+/* A card row that is SHOWING a pending tag. The 50/58px above exists to keep the
+   name clear of the note dot, but with the tag and the count badge in the flow
+   between the name and the dot, the name can never reach it, so that padding is
+   pure waste here — on a desktop-width account column it left "Chase Visa" 31px.
+   Scoped to rows with a visible tag so no existing row changes. Written with
+   three :has() terms because that is what it takes to out-rank the two rules
+   above on specificity (0,9,0 against 0,7,0), which also covers the touch
+   variant. Visible = the inline display:none has been cleared by JS. */
+.erow:has(.erow-label-wrap.has-cardbadge):has(.note-indicator.has-note):has(.card-pend-badge:not([style*="none"])) .erow-label-wrap .erow-label-input { padding-right: 8px; }
 
 /* ── Account link: the whole thing the row shows ───────────────────────
    A row with a link underlines its own name. Nothing is added to the row —
@@ -6984,6 +7045,11 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
         </div>
 
         <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">How do I keep a charge out of my card's balance until the bank posts it?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Mark it <strong>pending</strong>. First make sure the charge is linked to the card — its number is the same colour as the card. Then open the row's <strong>≡</strong> menu and choose <strong>Mark as pending</strong>. The charge still counts as money you've <strong>spent</strong>, so Total Expenses and what's left don't change, but your card's balance leaves it out, so the balance matches your bank app. A small dashed tag such as <strong>◷ $86.40 pending</strong> appears beside the card's name (on a computer it shows just the clock and the amount, and on a narrow window it's hidden — the charge's amount is shown in italics instead). Tap the tag to see the charges. When the bank posts it, choose <strong>≡ → Mark as cleared</strong> and it joins the balance. Charges you've marked recurring on a card start each month as pending. And if a charge is still pending when you start a new month, it carries over, so it never goes missing.</div>
+        </div>
+
+        <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">Why is one of my account names underlined?<span class="askme-q-arrow">▾</span></button>
           <div class="askme-a">That row has a link saved to it. Open <strong>≡</strong> on the row and the first item shows the website it goes to — <em>Open chase.com</em>, for instance. The menu always shows you the <strong>real web address</strong> rather than the name you typed, so you can see where you're going before you tap. Use <strong>≡ → Edit link</strong> to change it or remove it. A row you've marked <strong>paid</strong> isn't underlined, since the strikethrough already has that line — the link still works from the menu.</div>
         </div>
@@ -7520,6 +7586,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>👁 <strong>Full name peek</strong> — long row names fade at the edge; hover (desktop) or tap once (mobile) to see the full text, tap again to edit. Works on locked months too, where it only ever shows the name.</span></div>
       <div class="shortcut-row"><span>⧉ <strong>Copy / paste template entries</strong> — <strong>⧉</strong> on an entry copies that one, <strong>⧉ Copy all</strong> in the pill row takes every entry in the row. <strong>⎘ Paste</strong> drops them into another month or another row with every value intact — amounts, percentages, employer match, fund, status — and only the <strong>dates blanked</strong>. Pasting into a row that already has entries asks <strong>Add</strong> or <strong>Replace</strong> first; an empty row just pastes. Locked months refuse it. Same shape as Copy colour / Paste colour on the row menu.</span></div>
       <div class="shortcut-row"><span>🔗 <strong>Account links</strong> — keep a link to the institution behind a Debt, Checking or Savings &amp; Investments row: ≡ → Add link, paste the page you sign in on, name it whatever you like. The row's name is then underlined, and ≡ → Open takes you there in a new tab. The menu names the <strong>real web address</strong> rather than your label, so you always see where you're going first. Only secure (https) sites are accepted, the address is all that's stored — never a username or password — and the link carries into every new month. On a <strong>recurring</strong> row, a tick box in the editor also applies a new or removed link to the later months that row already repeats in. Paid rows aren't underlined, since the strikethrough already occupies that line.</span></div>
+      <div class="shortcut-row"><span>◷ <strong>Pending charges</strong> — on a charge linked to a card (its number is the card's colour), ≡ → Mark as pending keeps it out of the card's balance until the bank posts it; ≡ → Mark as cleared adds it. It still counts as spent in your totals. The card shows a dashed "$ pending" tag and its panel lists the pending charges and the total with them. Recurring card charges start each month pending, and one still pending at month end carries into next month's balance.</span></div>
       <div class="shortcut-row"><span>→ <strong>Income destination</strong> — open the note on any income row to set a "→ goes to" label (e.g. Marcus Savings, HYSA)</span></div>
       <div class="shortcut-row"><span>🔄 <strong>Subscriptions</strong> — dedicated section for recurring services; included in expense totals and month-over-month comparison</span></div>
       <div class="shortcut-row"><span>📝 <strong>Notes</strong> — free-form notes per month with bullet points and checkable to-dos; syncs across devices</span></div>
@@ -7861,6 +7928,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
   <button class="ctx-item" id="ctx-clear-color" style="display:none;"><span class="ctx-icon" style="color:var(--steel);">✕</span>Clear all colors</button>
   <button class="ctx-item" id="ctx-recurring"><span class="ctx-icon">⟳</span><span id="ctx-recurring-label">Mark as recurring</span></button>
   <button class="ctx-item" id="ctx-exempt"><span class="ctx-icon">◎</span><span id="ctx-exempt-label">Mark as exempt</span></button>
+  <button class="ctx-item" id="ctx-pending" style="display:none;"><span class="ctx-icon">◷</span><span id="ctx-pending-label">Mark as pending</span></button>
   <button class="ctx-item" id="ctx-duplicate"><span class="ctx-icon">⧉</span>Duplicate row</button>
   <div class="ctx-divider"></div>
   <button class="ctx-item ctx-danger" id="ctx-delete"><span class="ctx-icon">×</span>Delete row</button>
@@ -9448,6 +9516,7 @@ function debtDoubleCount() {
         var cfg = CONFIGS[sec];
         (d[sec] || []).forEach(function(r) {
           if (r.exempt) return;
+          if (r._pending) return;   // not in the card's balance yet, so not part of what is "linked" to it
           var nc = (r.numColor || '').toLowerCase();
           if (!nc || nc !== lc) return;
           var a = parseAmt(r[cfg.k2]);
@@ -10167,6 +10236,8 @@ function createFreshMonth(newKey) {
           // Your bank does not move house in January. A link that had to be
           // re-pasted every month would read as the app forgetting.
           _linkName: r._linkName || '', _linkUrl: r._linkUrl || '',
+          // A recurring charge on a card arrives pending (see startsPending).
+          ...(startsPending(section, r, prev) ? { _pending: true } : {}),
           _beginDate: beginDateForMonth(newKey, r._beginDate),
         };
         if (!all[newKey][section]) all[newKey][section] = [];
@@ -10347,6 +10418,7 @@ function showCopySectionModal(section) {
         _price: row._price || '', _tDir: row._tDir || '',
         _billClass: row._billClass || '', _invClass: row._invClass || '',
         _linkName: row._linkName || '', _linkUrl: row._linkUrl || '',
+        ...(startsPending(section, row, all[currentMonthKey]) ? { _pending: true } : {}),
         _beginDate: beginDateForMonth(currentMonthKey, row._beginDate),
       };
     });
@@ -10373,7 +10445,7 @@ function showCopySectionModal(section) {
           return r.label && newRow.label && r.label.trim().toLowerCase() === newRow.label.trim().toLowerCase();
         });
         if (srcRow) {
-          var remaining = parseFloat(srcRow.remaining);
+          var remaining = carryAmountFor(srcRow, all[sourceKey]);
           if (remaining && remaining > 0) newRow._carriedBalance = String(remaining);
         }
       });
@@ -10433,6 +10505,7 @@ function copyMonthData(sourceKey, newKey) {
       _linkName: row._linkName || '', _linkUrl: row._linkUrl || '',
       // Was omitted entirely here while the other two copy paths carried it
       // verbatim — three seeding paths, two behaviours. Now all three agree.
+      ...(startsPending(section, row, source) ? { _pending: true } : {}),
       _beginDate: beginDateForMonth(newKey, row._beginDate),
     }));
   });
@@ -10457,7 +10530,7 @@ function copyMonthData(sourceKey, newKey) {
   var newDebt = all[newKey]['debt'] || [];
   sourceDebt.forEach(function(srcRow) {
     if (!srcRow.label) return;
-    var remaining = parseFloat(srcRow.remaining);
+    var remaining = carryAmountFor(srcRow, source);
     if (!remaining || remaining <= 0) return;
     var newRow = newDebt.find(function(r) {
       return r.label && r.label.trim().toLowerCase() === srcRow.label.trim().toLowerCase();
@@ -11088,6 +11161,9 @@ function renderRowEl(section, row, animate = false) {
       
       <span class="note-indicator ${rowHasNote(row) ? 'has-note' : ''}" id="note-dot-${row.id}" title="Has note" onclick="event.stopPropagation();event.preventDefault();toggleNote('${section}','${row.id}')" ontouchstart="event.stopPropagation();event.preventDefault();toggleNote('${section}','${row.id}')" ontouchend="event.stopPropagation();event.preventDefault()"></span>
       <span class="exempt-badge" id="exempt-badge-${row.id}" title="Exempt — not included in totals">exempt</span>
+      ${section === 'debt' && row._cardLink ? `<button class="card-pend-badge" id="cpb-${row.id}" style="display:none;"
+        onclick="toggleCardTxPop(event,'${row.id}','debt')"
+        aria-label="Pending charges on this card"><span class="cpb-ico" aria-hidden="true">◷</span><span id="cpb-n-${row.id}"></span><span class="cpb-word">pending</span></button>` : ''}
 
       ${(section === 'debt' && row._cardLink) || (section === 'checking' && (row.paidColor || row.numColor || (row._entries || []).some(function(e){ return e._type === 'transaction'; }))) ? `
       <button class="card-tx-badge" id="ctb-${row.id}" data-rowid="${row.id}" data-section="${section}" style="display:none;"
@@ -13225,7 +13301,7 @@ function recalc() {
   autoCalcDebtFromCards();
   recalcCheckingBalances();
   // Badge counts describe the same pass that produced the numbers above.
-  try { refreshCardTxBadges(); refreshCardTxPop(); } catch (e) {}
+  try { refreshCardTxBadges(); refreshCardTxPop(); refreshPendingMarks(); } catch (e) {}
 
   const all = loadAll();
   const d = all[currentMonthKey] || {};
@@ -13816,6 +13892,41 @@ function accountLinkedCharges(acctRow, monthData) {
   return out;
 }
 
+/* ── Pending card charges ─────────────────────────────────────
+   A charge you have made that the bank has not posted yet. The row still counts
+   as money SPENT (Total Expenses, what's left) — it just stays out of the
+   card's balance until you mark it cleared, so the balance matches the bank's.
+   Stored as row._pending = true, absent otherwise.
+   "Card charge" means the same thing it means everywhere else: an expense row
+   whose number colour matches a card on the Debt section. A pending flag on
+   any other row does nothing. */
+var CARD_CHARGE_SECTIONS = ['housing', 'transport', 'food', 'health', 'subscriptions', 'gifts', 'misc'];
+function rowIsCardCharge(section, row, monthData) {
+  if (!row || !monthData || CARD_CHARGE_SECTIONS.indexOf(section) < 0) return false;
+  var nc = String(row.numColor || '').toLowerCase();
+  if (!nc) return false;
+  return (monthData.debt || []).some(function(r) {
+    return r && r._cardLink && String(r._cardLink).toLowerCase() === nc;
+  });
+}
+/* A recurring card charge arrives pending each month: it is a charge the bank
+   has not posted yet. One helper for every path that seeds a row into a month
+   (new month, copy month, copy section, marking recurring), so they cannot
+   drift apart. */
+function startsPending(section, row, monthData) {
+  return !!(row && row.recurring && rowIsCardCharge(section, row, monthData));
+}
+/* What a card carries into next month: its Remaining PLUS any unpaid pending
+   charges. Remaining leaves pending charges out (they are not in the balance
+   yet), so carrying Remaining alone would make a charge that is still pending
+   on the last day of the month vanish from the card. Rounded to cents because
+   it is stored as text and 100.1 + 86.4 is not 186.5 in floating point. */
+function carryAmountFor(srcRow, monthData) {
+  var remaining = parseFloat(srcRow.remaining) || 0;
+  var pend = srcRow._cardLink ? (cardLinkedCharges(srcRow, monthData).pendingUnpaid || 0) : 0;
+  return Math.round((remaining + pend) * 100) / 100;
+}
+
 /* ── What feeds a card-linked debt row's Current ──────────────
    A READ-ONLY companion to autoCalcDebtFromCards below. It walks the same
    sections with the same match rules (numColor === _cardLink, not exempt,
@@ -13824,7 +13935,7 @@ function accountLinkedCharges(acctRow, monthData) {
    If the match rules in autoCalcDebtFromCards ever change, change them here
    too — that is the whole point of keeping the shapes identical. */
 function cardLinkedCharges(debtRow, monthData) {
-  var out = { rows: [], chargeTotal: 0, carried: 0, current: 0 };
+  var out = { rows: [], chargeTotal: 0, pendingTotal: 0, pendingUnpaid: 0, carried: 0, current: 0 };
   if (!debtRow || !debtRow._cardLink) return out;
   var d = monthData;
   if (!d) {
@@ -13852,12 +13963,20 @@ function cardLinkedCharges(debtRow, monthData) {
         section: sec,
         amount: actual,
         paid: !!row.paid,
+        pending: !!row._pending,
         // Expense sections only render the column-2 picker, so date2 is what
         // people actually set. date is read first anyway to match the
         // expression accountLinkedCharges already uses for its cutoff.
         date: row.date || row.date2 || ''
       });
-      out.chargeTotal += actual;
+      // Pending charges are listed but kept OUT of chargeTotal, so that
+      // chargeTotal + carried stays equal to what autoCalcDebtFromCards writes.
+      if (row._pending) {
+        out.pendingTotal += actual;
+        if (!row.paid) out.pendingUnpaid += actual;
+      } else {
+        out.chargeTotal += actual;
+      }
     });
   });
 
@@ -13886,6 +14005,10 @@ function refreshCardTxBadges() {
   if (!d) return;
   badges.forEach(function(b) {
     var sec = b.dataset.section || 'debt';
+    // The pending tag shares this loop so it is computed from the same pass as
+    // the count beside it. Reset first: it must vanish when nothing is pending.
+    var pill = sec === 'debt' ? document.getElementById('cpb-' + b.dataset.rowid) : null;
+    if (pill) pill.style.display = 'none';
     var row = (d[sec] || []).find(function(r) { return r.id === b.dataset.rowid; });
     if (!row) { b.style.display = 'none'; return; }
     var count, label;
@@ -13898,12 +14021,38 @@ function refreshCardTxBadges() {
       var info = cardLinkedCharges(row, d);
       count = info.rows.length;
       label = count + (count === 1 ? ' charge' : ' charges') + ' on this card — click to see them';
+      if (pill && info.pendingTotal > 0) {
+        var pn = document.getElementById('cpb-n-' + b.dataset.rowid);
+        var pendTxt = '$' + info.pendingTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (pn) pn.textContent = pendTxt;
+        pill.title = pendTxt + ' pending — charged but not posted yet, so not in this balance. Click to see them';
+        pill.style.display = '';
+      }
     }
     if (!count) { b.style.display = 'none'; return; }
     b.style.display = '';
     var n = document.getElementById('ctb-n-' + b.dataset.rowid);
     if (n) n.textContent = count;
     b.title = label;
+  });
+}
+
+/* Mark pending charge rows (italic, dashed amount). Driven from the data on
+   every pass rather than set once at render, so recolouring a row's number away
+   from a card — which makes the flag meaningless — clears the mark too. */
+function refreshPendingMarks() {
+  var all = loadAll();
+  var d = all[currentMonthKey];
+  if (!d) return;
+  CARD_CHARGE_SECTIONS.forEach(function(sec) {
+    (d[sec] || []).forEach(function(row) {
+      var erow = document.querySelector('#rows-' + sec + ' .erow[data-id="' + row.id + '"]');
+      if (!erow) return;
+      var on = !!row._pending && rowIsCardCharge(sec, row, d);
+      erow.classList.toggle('pending-row', on);
+      var amt = erow.querySelector('.erow-num-input[data-col="2"]');
+      if (amt) { if (on) amt.title = 'Pending — not in your card\u2019s balance yet'; else if (amt.title && amt.title.indexOf('Pending') === 0) amt.removeAttribute('title'); }
+    });
   });
 }
 
@@ -14110,25 +14259,29 @@ function buildCardTxHtml(rowId, d, section) {
   } else {
     info.rows.forEach(function(r) {
       html += ctpJumpLine(r,
-        '<span class="ctp-check">' + (r.paid ? '✓' : '') + '</span>' +
+        '<span class="ctp-check">' + (r.pending ? '◷' : (r.paid ? '✓' : '')) + '</span>' +
         '<span class="ctp-label">' + escHtml(r.label) + '</span>' +
         '<span class="ctp-sec">' + escHtml(secName(r.section)) + '</span>' +
         // Undated charges show nothing at all. A repeated "no date" label
         // would draw the eye straight to what is missing.
         (r.date ? '<span class="ctp-date">' + escHtml(formatDateLabel(r.date)) + '</span>' : '') +
         '<span class="ctp-amt">' + money(r.amount) + '</span>',
-        r.paid ? ' is-paid' : '');
+        (r.paid ? ' is-paid' : '') + (r.pending ? ' is-pending' : ''));
     });
     html += '<div class="ctp-foot">' +
-      '<div class="ctp-fline"><span>Charges this month</span><span>' + money(info.chargeTotal) + '</span></div>';
+      '<div class="ctp-fline"><span>' + (info.pendingTotal > 0 ? 'Cleared charges' : 'Charges this month') + '</span><span>' + money(info.chargeTotal) + '</span></div>';
     if (info.carriedPrev > 0) {
       html += '<div class="ctp-fline"><span>Carried from last month</span><span>' + money(info.carriedPrev) + '</span></div>';
     }
     if (info.opening > 0) {
       html += '<div class="ctp-fline"><span>Starting balance</span><span>' + money(info.opening) + '</span></div>';
     }
-    html += '<div class="ctp-ftotal"><span>Current</span><span>' + money(info.current) + '</span></div>' +
-      '</div>';
+    html += '<div class="ctp-ftotal"><span>Current</span><span>' + money(info.current) + '</span></div>';
+    if (info.pendingTotal > 0) {
+      html += '<div class="ctp-fline"><span>Pending, not counted yet</span><span>+' + money(info.pendingTotal) + '</span></div>' +
+        '<div class="ctp-fline"><span>With pending</span><span>' + money(info.current + info.pendingTotal) + '</span></div>';
+    }
+    html += '</div>';
   }
   return html;
 }
@@ -14317,6 +14470,9 @@ function autoCalcDebtFromCards() {
         // Actual column only — never use budget
         var actual = parseAmt(row[cfg.k2]);
         if (actual <= 0) return;
+        // Pending: spent but not posted. Out of the balance until cleared.
+        // (cardLinkedCharges mirrors this rule — keep them identical.)
+        if (row._pending) return;
         totalAll += actual;
         if (row.paid) totalPaid += actual;
       });
@@ -18773,6 +18929,20 @@ function toggleExempt(section, id) {
   recalc();
   showToast(row.exempt ? 'Marked as exempt — excluded from totals' : 'Exemption removed', false);
 }
+function togglePending(section, id) {
+  var all = loadAll();
+  var d = all[currentMonthKey];
+  if (!d) return;
+  var row = (d[section] || []).find(function(r) { return r.id === id; });
+  if (!row || !rowIsCardCharge(section, row, d)) return;
+  var nowPending = !row._pending;
+  if (nowPending) row._pending = true; else delete row._pending;
+  saveAll(all);
+  scheduleSave();
+  recalc();   // re-adds the card's balance, the tag, the count and the row mark in one pass
+  showToast(nowPending ? 'Marked pending — kept out of the card\u2019s balance for now'
+                       : 'Cleared — now in the card\u2019s balance', false);
+}
 /* The per-row ⟳ marker and its hover peek were removed — a badge on every
    recurring row read as clutter, and the question is answered better in one
    place: Spending Trends → 🔁 Items. The averaging lives there, in
@@ -18871,6 +19041,7 @@ function toggleRecurring(section, id) {
           _beginDate: beginDateForMonth(futureKey, row._beginDate),
           // Your bank does not move house in January (same reasoning as the
           // other seeding paths). Validated again on the way in.
+          ...(startsPending(section, row, futureMonth) ? { _pending: true } : {}),
           _linkName: (sectionTakesLink(section) && safeAccountUrl(row._linkUrl)) ? (row._linkName || '') : '',
           _linkUrl:  sectionTakesLink(section) ? (safeAccountUrl(row._linkUrl) || '') : '',
         };
@@ -18988,6 +19159,16 @@ function showCtxMenu(e, section, id) {
     exemptLabel.textContent = row.exempt ? 'Remove exemption' : 'Mark as exempt';
     document.getElementById('ctx-exempt').className = row.exempt
       ? 'ctx-item ctx-exempt-on' : 'ctx-item';
+  }
+  // Pending only means something on a charge that is counted against a card
+  // (its number colour matches one), so the item is not offered anywhere else.
+  var pendBtn = document.getElementById('ctx-pending');
+  if (pendBtn) {
+    var isCharge = !!(row && rowIsCardCharge(section, row, all[currentMonthKey]));
+    pendBtn.style.display = isCharge ? 'flex' : 'none';
+    var pendLbl = document.getElementById('ctx-pending-label');
+    if (pendLbl) pendLbl.textContent = (row && row._pending) ? 'Mark as cleared' : 'Mark as pending';
+    pendBtn.className = (row && row._pending) ? 'ctx-item ctx-exempt-on' : 'ctx-item';
   }
   var noteLabel = document.getElementById('ctx-note-label');
   if (noteLabel && row) {
@@ -19306,6 +19487,11 @@ window.addEventListener('load', function() {
   var ctxRec = document.getElementById('ctx-recurring');
   if (ctxRec) ctxRec.addEventListener('click', function() {
     if (ctxSection && ctxId) toggleRecurring(ctxSection, ctxId);
+    hideCtxMenu();
+  });
+  var ctxPending = document.getElementById('ctx-pending');
+  if (ctxPending) ctxPending.addEventListener('click', function() {
+    if (ctxSection && ctxId) togglePending(ctxSection, ctxId);
     hideCtxMenu();
   });
   var ctxExempt = document.getElementById('ctx-exempt');
@@ -23651,6 +23837,7 @@ function setNumColor(section, id, color, e) {
   row.numColor = color;
   saveAll(all);
   applyNumColor(id, color);
+  try { refreshPendingMarks(); } catch (e) {}   // a pending row recoloured away from its card is no longer a card charge
   // Save as sticky default for future rows, in every section -- a card
   // colour is not a category thing.
   if (color) setDefaultNumColor(color);
