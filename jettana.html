@@ -5027,6 +5027,47 @@ body.font-large.text-bold .erow-label-input {
 @media (pointer: coarse) { .mnav { width: 34px; padding: 12px 0; font-size: 24px; } #topbar-sub { margin-left: 44px; } }
 
 /* ── Suggest budgets ─────────────────────────────────────── */
+.ya-bar { display:flex; align-items:center; gap:8px; margin:6px 0 10px; flex-wrap:wrap; }
+.ya-yr { display:flex; align-items:center; gap:4px; }
+.ya-yr button, .ya-btn { font-family:'Outfit',sans-serif; font-size:13px; border:1px solid var(--mist); background:var(--white);
+  color:var(--slate); border-radius:8px; padding:5px 10px; cursor:pointer; }
+.ya-yr button:hover, .ya-btn:hover { border-color:var(--sage); color:var(--sage-dark); }
+.ya-yr b { font-family:'Playfair Display',serif; font-size:20px; color:var(--teal); min-width:52px; text-align:center; font-weight:600; }
+.ya-scroll { overflow-x:auto; border:1px solid var(--mist); border-radius:10px; }
+.ya-grid { width:100%; min-width:700px; border-collapse:collapse; font-size:12px; font-variant-numeric:tabular-nums; }
+.ya-grid th, .ya-grid td { padding:7px 6px; text-align:right; border-bottom:1px solid var(--mist-light); white-space:nowrap; }
+.ya-grid th { font-weight:500; color:var(--steel); font-size:11px; background:var(--cream); }
+.ya-grid th:first-child, .ya-grid td:first-child { text-align:left; position:sticky; left:0; background:var(--white); z-index:1; padding-left:10px; min-width:96px; }
+.ya-grid th:first-child { background:var(--cream); }
+.ya-grid td { color:var(--ink); }
+.ya-grid td.big { background:rgba(224,168,66,0.22); font-weight:600; }
+.ya-grid td.xtra { background:var(--teal-light); font-weight:600; }
+.ya-grid td.tot, .ya-grid th.tot { font-weight:700; border-left:1px solid var(--mist); }
+.ya-grid tr.sum td { font-weight:700; border-top:1px solid var(--mist); }
+.ya-conf { display:block; font-size:10px; color:var(--steel); font-weight:400; }
+.ya-conf.thin { color:#B07A1E; }
+.ya-legend { font-size:11.5px; color:var(--steel); margin:8px 2px 0; display:flex; gap:14px; flex-wrap:wrap; }
+.ya-legend i { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:5px; vertical-align:-1px; }
+.ya-h { font-size:13px; font-weight:600; color:var(--ink); margin:18px 0 4px; }
+.ya-sm { font-size:12px; color:var(--steel); }
+.ya-chart { display:flex; align-items:flex-end; gap:5px; height:92px; margin-top:8px; border-bottom:1px solid var(--mist); }
+.ya-col { flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; height:100%; min-width:0; }
+.ya-col .b { width:100%; border-radius:3px 3px 0 0; background:var(--sage-light); border:1px solid var(--sage); border-bottom:none; }
+.ya-col.neg .b { background:rgba(196,120,110,0.25); border-color:var(--blush); }
+.ya-col .v { font-size:10px; color:var(--steel); margin-bottom:2px; }
+.ya-mons { display:flex; gap:5px; }
+.ya-mons span { flex:1; text-align:center; font-size:10px; color:var(--steel); margin-top:3px; }
+.ya-note { margin-top:14px; font-size:12.5px; color:var(--slate); background:var(--mist-light); border-radius:8px; padding:10px 12px; line-height:1.5; }
+.ya-ex { margin-top:6px; border:1px solid var(--mist); border-radius:8px; overflow:hidden; }
+.ya-ex .l { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:7px 11px; font-size:12.5px; border-bottom:1px solid var(--mist-light); color:var(--slate); }
+.ya-ex .l:last-child { border-bottom:none; }
+.ya-ex .l button { background:none; border:none; color:var(--steel); cursor:pointer; font-size:15px; padding:2px 6px; }
+.ya-add { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+.ya-add input, .ya-add select { font-family:'Outfit',sans-serif; font-size:13px; padding:7px 9px; border:1px solid var(--mist); border-radius:8px; background:var(--white); color:var(--ink); min-width:0; }
+.ya-add input.nm { flex:1 1 140px; } .ya-add input.am { width:96px; }
+.ya-inc { display:inline-flex; align-items:center; gap:4px; }
+.ya-inc input { width:92px; font-family:'Outfit',sans-serif; font-size:13px; padding:4px 8px; border:1px solid var(--mist); border-radius:6px; background:var(--white); color:var(--ink); }
+@media (pointer: coarse) { .ya-yr button, .ya-btn { padding:11px 14px; } .ya-add input, .ya-add select { padding:11px 10px; font-size:15px; } .ya-ex .l button { padding:10px 14px; } }
 .sgb-sum { display: flex; flex-direction: column; gap: 5px; font-variant-numeric: tabular-nums; }
 .sgb-sum .r { display: flex; justify-content: space-between; gap: 14px; font-size: 13px; color: var(--slate); }
 .sgb-sum .r b { color: var(--ink); font-weight: 600; }
@@ -6288,6 +6329,9 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
                 <span>⇄</span> Compare months
               </button>
               <div class="more-menu-title">Plan ahead</div>
+              <button class="more-menu-item" onclick="showYearAhead(); hideMoreMenu()">
+                <span>🗓️</span> Year ahead
+              </button>
               <button class="more-menu-item" onclick="showSuggestBudgets(); hideMoreMenu()">
                 <span>🧭</span> Suggest budgets
               </button>
@@ -7148,6 +7192,11 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
         </div>
 
         <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">How do I plan for the year ahead so there are no surprises?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Open <strong>⋯ → Insights → 🗓️ Year ahead</strong>. It looks at the months you've already logged and shows what each section is likely to cost, month by month, for the next year. Months that were bigger before (car costs in March, say) are shaded so they don't catch you out. Enter your monthly income to see what's left after each month. Add anything that only comes once a year, like car registration or a trip, and it's added to that month. It's a read-only plan: it never changes your budgets. A section with only a few months behind it is marked "rough".</div>
+        </div>
+
+        <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">How much can I actually afford to save each month?<span class="askme-q-arrow">▾</span></button>
           <div class="askme-a">Open <strong>⋯ → Insights → 🧮 Plan my savings</strong>. Enter your average take-home pay and average monthly expenses and it works out what's genuinely left over. There's a second half for retirement: put in your gross pay, your contribution %, and your employer's match, and it shows what a pre-tax contribution actually costs your take-home — usually less than you'd expect, since the contribution comes out before tax. If your employer matches, it also shows what you'd be leaving behind by contributing under the match.</div>
         </div>
@@ -7306,6 +7355,17 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
 </div>
 
 <!-- Suggest budgets -->
+<div class="trends-overlay" id="ya-overlay" style="display:none;" onclick="if(event.target===this)hideYearAhead()">
+  <div class="trends-modal" id="ya-modal" style="max-width:980px;">
+    <div class="trends-header" style="cursor:default;">
+      <h3>🗓️ Year ahead</h3>
+      <button class="trends-close" onclick="hideYearAhead()" aria-label="Close">×</button>
+    </div>
+    <div class="trends-subtitle" id="ya-sub"></div>
+    <div style="padding:6px 20px 20px;" id="ya-body"></div>
+  </div>
+</div>
+
 <div class="trends-overlay" id="sgb-overlay" style="display:none;" onclick="if(event.target===this)sgbSetLoose()">
   <div class="trends-modal" id="sgb-modal" style="max-width:440px;">
     <div class="trends-header" id="sgb-header">
@@ -7747,6 +7807,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>🧾 <strong>Monthly Summary breakdowns</strong> — hover or tap the Income, Spent or Balance row at the bottom of your dashboard to see how it was worked out. Spent lists each section with Planned against Actual, Income lists each source, and Balance spells out the subtraction. A section whose budget you typed yourself is marked "your budget", and the Planned column uses your figure rather than the sum of the rows.</span></div>
       <div class="shortcut-row"><span>📈 <strong>Net Worth Trend</strong> — ⋯ → Insights → Net worth trend; a line chart of your net worth (checking + savings − debt) by month. Pick 6M, YTD, 1Y, All, or a custom start month. Tap any point on the line to jump straight to that month — drag the chart aside first and it stays open, so you can step through months one dot at a time. The summary shows your growth, how far apart the months are, and — optionally — your age across the range. Drag to reposition.</span></div>
       <div class="shortcut-row"><span>🎂 <strong>Age on your trend</strong> — enter your birth month + year in the Net Worth Trend (optional) to see "age 23 → 25" alongside your growth. Month and year only — Jettana never asks for your full birthdate. Clear the field anytime to remove it.</span></div>
+      <div class="shortcut-row"><span>🗓️ <strong>Year ahead</strong> — ⋯ → Insights → Year ahead; a read-only plan for next year built from the months you've logged: each section month by month, bigger months shaded, and what's left after each month. Add yearly expenses (car registration, a trip) and type your own income if you like. Never changes your budgets.</span></div>
       <div class="shortcut-row"><span>🧮 <strong>Plan My Savings</strong> — ⋯ → Insights → Plan my savings; works out what's genuinely left over each month from your average take-home and expenses. The retirement half shows what a pre-tax contribution actually costs your take-home (less than the headline number, since it comes out before tax) and what you'd leave behind by contributing under your employer's match.</span></div>
       <div class="shortcut-row"><span>🌍 <strong>Life Elsewhere</strong> — ⋯ → Insights → Life elsewhere; re-prices your current lifestyle in another country with your income held fixed. Optionally type an exchange rate to see the figures in local currency too — rates are never fetched, so it's whatever you enter, and leaving it blank hides that line. A daydream tool, not relocation advice.</span></div>
       <div class="shortcut-row"><span>↩ <strong>Jump back to your rows</strong> — eight places link straight back into the tracker. To a <strong>month</strong>: a point on the Net Worth Trend, or an underlined month in Spending Trends → ⭐ Peaks or → 🔁 Items. To a <strong>section</strong>: a category tile on the Month-over-Month card, or a category line in the Total Expenses breakdown (pin it first). To a <strong>row</strong>: a transaction in the Spending Calendar, a charge in a card or account badge panel, or a bill in the Bills Due panel. Collapsed sections open themselves and whatever you land on flashes gold. Drag a panel aside first and it stays open while you jump — handy for reconciling.</span></div>
@@ -26442,6 +26503,210 @@ function sgbCompute() {
   return base;
 }
 
+/* ═══ Year ahead ═══════════════════════════════════════════════
+   A read-only plan for a whole year, built from the months already logged.
+   It never writes to a month, a row or a footer budget. The only thing it
+   stores is its own small settings (yearly expenses you add, an income
+   figure you type), under nsKey so the demo cannot touch the real ones. */
+var _yaYear = null;
+var _yaMsg = '';
+function yaStore() {
+  try {
+    var o = JSON.parse(appStore.getItem(nsKey('intentra_yearahead')) || '{}') || {};
+    var inc = (o.income === null || o.income === undefined || o.income === '' || isNaN(+o.income)) ? null : +o.income;
+    return { extras: Array.isArray(o.extras) ? o.extras : [], income: inc };
+  } catch (e) { return { extras: [], income: null }; }
+}
+function yaSave(o) { try { appStore.setItem(nsKey('intentra_yearahead'), JSON.stringify(o)); } catch (e) {} }
+function yaMedian(a) {
+  var s = a.slice().sort(function(x, y) { return x - y; }), m = s.length >> 1;
+  return s.length ? (s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2) : 0;
+}
+/* Finished months that have any spending. The month in progress is left out
+   (a half-spent month would drag every average down) unless it is all there is. */
+function yaHistory() {
+  var all = loadAll(), now = new Date();
+  var cur = now.getFullYear() + '-' + ('0' + (now.getMonth() + 1)).slice(-2);
+  var rows = [];
+  Object.keys(all).filter(function(k) { return /^\d{4}-\d{2}$/.test(k); }).sort().forEach(function(mk) {
+    var d = all[mk] || {}, by = {}, tot = 0;
+    TREND_EXPENSE_SECTIONS.forEach(function(sec) { by[sec] = trendsSectionTotal(d, sec); tot += by[sec]; });
+    if (tot > 0) rows.push({ mk: mk, by: by, inc: trendsIncomeTotal(d) });
+  });
+  var done = rows.filter(function(r) { return r.mk < cur; });
+  return done.length ? done : rows;
+}
+/* One section's 12 planned months from its history.
+   Regular section (median month > 0): an ordinary month is the average of its
+   non-spike months; a spike (>40% over the median AND at least $50 over) is
+   carried into the same calendar month next year.
+   Occasional section (median 0, e.g. travel): flat average, no spikes, because
+   guessing which month it lands in would be invented precision. */
+function yaSection(rows, sec) {
+  var vals = rows.map(function(r) { return r.by[sec] || 0; });
+  var n = vals.length, used = vals.filter(function(v) { return v > 0; }).length;
+  if (!used) return null;
+  var med = yaMedian(vals), mean = vals.reduce(function(t, v) { return t + v; }, 0) / n;
+  var plan = [], big = [], i;
+  for (i = 0; i < 12; i++) { plan.push(mean); big.push(false); }
+  if (med > 0) {
+    var spikeAt = [], calm = [];
+    vals.forEach(function(v, k) { (v > med * 1.4 && v - med >= 50 ? spikeAt : calm).push(k); });
+    var base = calm.length ? calm.reduce(function(t, k) { return t + vals[k]; }, 0) / calm.length : med;
+    for (i = 0; i < 12; i++) plan[i] = base;
+    var byMonth = {};
+    spikeAt.forEach(function(k) { var m = +rows[k].mk.slice(5) - 1; (byMonth[m] = byMonth[m] || []).push(vals[k]); });
+    Object.keys(byMonth).forEach(function(m) {
+      plan[m] = byMonth[m].reduce(function(t, v) { return t + v; }, 0) / byMonth[m].length;
+      big[m] = true;
+    });
+  }
+  return { sec: sec, plan: plan.map(Math.round), big: big, used: used, n: n, occasional: !(med > 0) };
+}
+function yaFmt(v) { return Math.round(v).toLocaleString('en-US'); }
+function yaFmtMk(mk) { var p = mk.split('-'); return TREND_MONTHS[+p[1] - 1] + ' ' + p[0]; }
+function yaCompute() {
+  var rows = yaHistory(), st = yaStore(), secs = [];
+  TREND_EXPENSE_SECTIONS.forEach(function(sec) { var r = yaSection(rows, sec); if (r) secs.push(r); });
+  // Yearly expenses typed in by hand, added on top (and to sections with no history)
+  st.extras.forEach(function(x) {
+    var m = (+x.month || 0) - 1, amt = +x.amount || 0;
+    if (m < 0 || m > 11 || amt <= 0 || TREND_EXPENSE_SECTIONS.indexOf(x.section) < 0) return;
+    var s = secs.filter(function(q) { return q.sec === x.section; })[0];
+    if (!s) {
+      s = { sec: x.section, plan: [0,0,0,0,0,0,0,0,0,0,0,0], big: [], used: 0, n: rows.length, occasional: true, extrasOnly: true };
+      secs.push(s);
+    }
+    s.plan[m] += amt;
+    (s.xtra = s.xtra || {})[m] = (s.xtra[m] || []).concat(x.name || 'Yearly expense');
+  });
+  var order = TREND_EXPENSE_SECTIONS;
+  secs.sort(function(a, b) { return order.indexOf(a.sec) - order.indexOf(b.sec); });
+  var incomes = rows.map(function(r) { return r.inc; }).filter(function(v) { return v > 0; });
+  var typical = incomes.length ? Math.round(yaMedian(incomes)) : null;
+  var tot = [0,0,0,0,0,0,0,0,0,0,0,0];
+  secs.forEach(function(s) { s.plan.forEach(function(v, i) { tot[i] += v; }); });
+  return { rows: rows, secs: secs, st: st, typical: typical, income: st.income !== null ? st.income : typical, tot: tot };
+}
+function showYearAhead() {
+  var ov = document.getElementById('ya-overlay');
+  if (!ov) return;
+  if (_yaYear === null) { var n = new Date(); _yaYear = n.getMonth() >= 9 ? n.getFullYear() + 1 : n.getFullYear(); }
+  _yaMsg = '';
+  ov.style.display = 'flex';
+  renderYearAhead();
+}
+function hideYearAhead() { var ov = document.getElementById('ya-overlay'); if (ov) ov.style.display = 'none'; }
+function yaStep(d) { _yaYear += d; renderYearAhead(); }
+function yaSetIncome(el) {
+  var st = yaStore(), t = String(el.value).replace(/[^0-9.]/g, '');
+  st.income = t === '' ? null : parseFloat(t);
+  yaSave(st); renderYearAhead();
+}
+function yaAddExtra() {
+  var g = function(id) { return document.getElementById(id); };
+  var name = (g('ya-xn').value || '').trim(), amt = parseFloat(String(g('ya-xa').value).replace(/[^0-9.]/g, ''));
+  if (!name || !(amt > 0)) { _yaMsg = 'Add a name and an amount first.'; renderYearAhead(); return; }
+  var st = yaStore();
+  st.extras.push({ id: 'x' + Date.now().toString(36), name: name.slice(0, 40), section: g('ya-xs').value, month: +g('ya-xm').value, amount: amt });
+  yaSave(st); _yaMsg = ''; renderYearAhead();
+}
+function yaRemoveExtra(id) {
+  var st = yaStore();
+  st.extras = st.extras.filter(function(x) { return x.id !== id; });
+  yaSave(st); renderYearAhead();
+}
+function renderYearAhead() {
+  var body = document.getElementById('ya-body'), sub = document.getElementById('ya-sub');
+  if (!body) return;
+  var c = yaCompute(), h = '', i;
+  var secLabel = function(s) { return escHtml(getSectionName(s)); };
+  if (c.rows.length < 2 && !c.st.extras.length) {
+    if (sub) sub.textContent = 'Needs a few months of history';
+    body.innerHTML = '<div class="ya-note">Year ahead plans from the months you have already logged, and there ' +
+      (c.rows.length ? 'is only one so far' : 'are none yet') + '. After two or three months of spending it can start to show a pattern. ' +
+      'Until then, you can still add yearly expenses below.</div>' + yaExtrasHtml(c);
+    return;
+  }
+  if (sub) sub.textContent = c.rows.length ? 'Based on ' + yaFmtMk(c.rows[0].mk) + ' – ' + yaFmtMk(c.rows[c.rows.length - 1].mk) +
+    ' (' + c.rows.length + ' month' + (c.rows.length === 1 ? '' : 's') + ')' : 'Based on yearly expenses you added';
+  h += '<div class="ya-bar"><div class="ya-yr"><button type="button" onclick="yaStep(-1)" aria-label="Previous year">‹</button><b>' + _yaYear +
+    '</b><button type="button" onclick="yaStep(1)" aria-label="Next year">›</button></div>' +
+    '<span class="ya-sm">Planned month by month. Nothing here changes your budgets.</span></div>';
+  h += '<div class="ya-scroll"><table class="ya-grid"><tr><th>Section</th>';
+  TREND_MONTHS.forEach(function(m) { h += '<th>' + m + '</th>'; });
+  h += '<th class="tot">Year</th></tr>';
+  c.secs.forEach(function(s) {
+    var conf = s.extrasOnly ? 'yearly expenses only'
+      : s.occasional ? s.used + ' of ' + s.n + ' months had spending'
+      : s.used + ' month' + (s.used === 1 ? '' : 's');
+    var thin = !s.extrasOnly && s.used < 4;
+    h += '<tr><td>' + secLabel(s.sec) + '<span class="ya-conf' + (thin ? ' thin' : '') + '">' + conf + (thin ? ' · rough' : '') + '</span></td>';
+    s.plan.forEach(function(v, m) {
+      var x = s.xtra && s.xtra[m];
+      var cls = x ? ' class="xtra" title="' + escHtml(x.join(', ')) + '"' : (s.big[m] ? ' class="big" title="A bigger month in your history"' : '');
+      h += '<td' + cls + '>' + (v ? yaFmt(v) : '–') + '</td>';
+    });
+    h += '<td class="tot">' + yaFmt(s.plan.reduce(function(t, v) { return t + v; }, 0)) + '</td></tr>';
+  });
+  h += '<tr class="sum"><td>Planned spending</td>';
+  c.tot.forEach(function(v) { h += '<td>' + yaFmt(v) + '</td>'; });
+  h += '<td class="tot">' + yaFmt(c.tot.reduce(function(t, v) { return t + v; }, 0)) + '</td></tr></table></div>';
+  h += '<div class="ya-legend"><span><i style="background:rgba(224,168,66,0.4)"></i>a bigger month you have had before</span>' +
+       '<span><i style="background:var(--teal-light);border:1px solid var(--teal)"></i>includes a yearly expense you added</span></div>';
+
+  // How the year ends up
+  h += '<div class="ya-h">Left after planned spending</div>';
+  h += '<div class="ya-sm">Planned income <span class="ya-inc">$<input type="text" inputmode="decimal" value="' + (c.income !== null ? Math.round(c.income) : '') +
+       '" placeholder="a typical month" onchange="yaSetIncome(this)" aria-label="Planned income per month"></span> a month' +
+       (c.st.income === null && c.typical !== null ? ' (your typical month so far; type your own to change it)' : '') + '</div>';
+  if (c.income !== null && c.income > 0) {
+    var left = c.tot.map(function(v) { return c.income - v; }), mx = Math.max.apply(null, left.map(Math.abs)) || 1;
+    h += '<div class="ya-chart" aria-hidden="true">';
+    left.forEach(function(v) {
+      h += '<div class="ya-col' + (v < 0 ? ' neg' : '') + '"><span class="v">' + (v < 0 ? '-' : '') + yaFmt(Math.abs(v)) + '</span><div class="b" style="height:' + Math.max(3, Math.round(Math.abs(v) / mx * 62)) + 'px"></div></div>';
+    });
+    h += '</div><div class="ya-mons">' + TREND_MONTHS.map(function(m) { return '<span>' + m + '</span>'; }).join('') + '</div>';
+    var tightI = 0; left.forEach(function(v, k) { if (v < left[tightI]) tightI = k; });
+    var yr = left.reduce(function(t, v) { return t + v; }, 0);
+    h += '<div class="ya-sm" style="margin-top:8px;">Tightest month: <b>' + TREND_MONTHS[tightI] + '</b>, about $' + yaFmt(Math.abs(left[tightI])) + (left[tightI] < 0 ? ' short' : ' left') +
+         '. Over the year: ' + (yr < 0 ? '$' + yaFmt(-yr) + ' short' : '$' + yaFmt(yr) + ' left') + '.</div>';
+  } else {
+    h += '<div class="ya-note">Type a monthly income above to see how each month ends up.</div>';
+  }
+
+  var thinSecs = c.secs.filter(function(s) { return !s.extrasOnly && s.used < 4; });
+  if (thinSecs.length) {
+    h += '<div class="ya-note"><b>' + thinSecs.map(function(s) { return secLabel(s.sec); }).join(', ') +
+      '</b> ' + (thinSecs.length === 1 ? 'is' : 'are') + ' based on only a few months, so treat ' + (thinSecs.length === 1 ? 'that number' : 'those numbers') + ' as a rough guess.</div>';
+  }
+  h += yaExtrasHtml(c);
+  body.innerHTML = h;
+}
+function yaExtrasHtml(c) {
+  var h = '<div class="ya-h">Yearly expenses</div><div class="ya-sm">Things that come once a year and may not be in your history yet, like car registration or a trip.</div>';
+  if (c.st.extras.length) {
+    h += '<div class="ya-ex">';
+    c.st.extras.forEach(function(x) {
+      h += '<div class="l"><span>' + escHtml(x.name) + ' <span class="ya-sm">· ' + escHtml(getSectionName(x.section)) + ' · ' + (TREND_MONTHS[(+x.month || 1) - 1] || '') + '</span></span>' +
+           '<span>$' + yaFmt(+x.amount || 0) + ' <button type="button" onclick="yaRemoveExtra(\'' + escHtml(x.id) + '\')" aria-label="Remove ' + escHtml(x.name) + '">✕</button></span></div>';
+    });
+    h += '</div>';
+  }
+  h += '<div class="ya-add"><input class="nm" id="ya-xn" type="text" maxlength="40" placeholder="Name, e.g. Car registration" aria-label="Name"><select id="ya-xs" aria-label="Section">';
+  TREND_EXPENSE_SECTIONS.forEach(function(s) { h += '<option value="' + s + '">' + escHtml(getSectionName(s)) + '</option>'; });
+  h += '</select><select id="ya-xm" aria-label="Month">';
+  TREND_MONTHS.forEach(function(m, k) { h += '<option value="' + (k + 1) + '">' + m + '</option>'; });
+  h += '</select><input class="am" id="ya-xa" type="text" inputmode="decimal" placeholder="Amount" aria-label="Amount">' +
+       '<button type="button" class="ya-btn" onclick="yaAddExtra()">Add</button></div>';
+  if (_yaMsg) h += '<div class="ya-sm" style="color:var(--blush);margin-top:6px;">' + escHtml(_yaMsg) + '</div>';
+  h += '<div class="ya-sm" style="margin-top:6px;">These are saved on this device only.</div>';
+  return h;
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') { var ov = document.getElementById('ya-overlay'); if (ov && ov.style.display !== 'none') hideYearAhead(); }
+});
+
 function showSuggestBudgets() {
   var ov = document.getElementById('sgb-overlay');
   if (!ov) return;
@@ -27263,7 +27528,7 @@ function getIncomeTrendsData() {
   var months = _trendsMonthKeys();
   return months.map(function(mk) {
     var d = all[mk] || {};
-    var total = 0;
+    var total = trendsIncomeTotal(d);
     var bySource = [];
     (d.income || []).forEach(function(row) {
       if (row.exempt) return;
@@ -27271,12 +27536,38 @@ function getIncomeTrendsData() {
       if (v === '' || v === null || v === undefined) return;
       var n = parseFloat(String(v).replace(/[$,+]/g, ''));
       if (isNaN(n) || n <= 0) return;
-      total += n;
       bySource.push({ label: row.label || 'Untitled', amt: n });
     });
     bySource.sort(function(a, b) { return b.amt - a.amt; });
     return { mk: mk, total: total, bySource: bySource };
   });
+}
+
+/* What one expense section actually cost in one month's data. The single
+   implementation: Trends and Year ahead both call it, so they cannot disagree. */
+function trendsSectionTotal(d, sec) {
+  var cfg = CONFIGS[sec];
+  if (!cfg) return 0;
+  return ((d && d[sec]) || []).reduce(function(t, row) {
+    if (row.exempt) return t;
+    var v = row[cfg.mainKey];
+    if (v === '' || v === null || v === undefined) return t;
+    var n = parseFloat(String(v).replace(/[$,+]/g,''));
+    if (isNaN(n)) return t;
+    return t + Math.abs(n);
+  }, 0);
+}
+/* Income actually received in one month's data (same rules as the income trend). */
+function trendsIncomeTotal(d) {
+  var total = 0;
+  ((d && d.income) || []).forEach(function(row) {
+    if (row.exempt) return;
+    var v = row.received;
+    if (v === '' || v === null || v === undefined) return;
+    var n = parseFloat(String(v).replace(/[$,+]/g, ''));
+    if (!isNaN(n) && n > 0) total += n;
+  });
+  return total;
 }
 
 function getTrendsData() {
@@ -27287,16 +27578,8 @@ function getTrendsData() {
     var total = 0;
     var bySection = {};
     TREND_EXPENSE_SECTIONS.forEach(function(sec) {
-      var cfg = CONFIGS[sec];
-      if (!cfg) return;
-      var secTotal = (d[sec] || []).reduce(function(t, row) {
-        if (row.exempt) return t;
-        var v = row[cfg.mainKey];
-        if (v === '' || v === null || v === undefined) return t;
-        var n = parseFloat(String(v).replace(/[$,+]/g,''));
-        if (isNaN(n)) return t;
-        return t + Math.abs(n);
-      }, 0);
+      if (!CONFIGS[sec]) return;
+      var secTotal = trendsSectionTotal(d, sec);
       bySection[sec] = secTotal;
       total += secTotal;
     });
