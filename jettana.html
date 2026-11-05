@@ -5027,6 +5027,39 @@ body.font-large.text-bold .erow-label-input {
 @media (pointer: coarse) { .mnav { width: 34px; padding: 12px 0; font-size: 24px; } #topbar-sub { margin-left: 44px; } }
 
 /* ── Suggest budgets ─────────────────────────────────────── */
+.as-panel { position:fixed; right:20px; top:70px; width:min(560px, calc(100vw - 24px)); max-height:calc(100vh - 90px);
+  overflow-y:auto; z-index:150; background:var(--white); border:1px solid var(--mist); border-radius:12px;
+  box-shadow:0 12px 40px rgba(26,35,50,0.16); font-family:'Outfit',sans-serif; }
+.as-head { display:flex; align-items:center; gap:6px; flex-wrap:wrap; padding:10px 12px; border-bottom:1px solid var(--mist-light);
+  position:sticky; top:0; background:var(--white); z-index:1; }
+.as-chips { display:flex; gap:5px; flex-wrap:wrap; flex:1 1 auto; }
+.as-chip { font-family:'Outfit',sans-serif; font-size:12px; border:1px solid var(--mist); background:transparent; color:var(--steel);
+  border-radius:999px; padding:4px 10px; cursor:pointer; }
+.as-chip.on { background:rgba(124,154,126,0.2); border-color:var(--sage); color:var(--sage-dark); }
+.as-chip:hover { border-color:var(--sage); }
+.as-head select { font-family:'Outfit',sans-serif; font-size:12px; padding:4px 6px; border:1px solid var(--mist); border-radius:8px; background:var(--white); color:var(--ink); max-width:150px; }
+.as-x { background:none; border:none; color:var(--steel); font-size:15px; cursor:pointer; padding:4px 8px; }
+#as-body { padding:12px 14px 14px; }
+.as-total { font-size:24px; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums; }
+.as-sub { font-size:12.5px; color:var(--steel); margin-top:2px; }
+.as-mh { display:flex; justify-content:space-between; font-size:11.5px; color:var(--steel); padding:12px 0 4px; border-bottom:1px solid var(--mist); }
+.as-ln { display:flex; align-items:center; gap:10px; width:100%; text-align:left; background:none; border:none; border-bottom:1px solid var(--mist-light);
+  padding:8px 0; font-family:'Outfit',sans-serif; font-size:13.5px; color:var(--ink); cursor:pointer; }
+.as-ln:hover { background:var(--mist-light); }
+.as-ln:focus-visible { outline:2px solid var(--sage); outline-offset:-2px; }
+.as-ln .d { width:46px; flex:none; font-size:11.5px; color:var(--steel); }
+.as-ln .n { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.as-ln .n small { display:block; font-size:11px; color:var(--steel); }
+.as-ln .a { font-variant-numeric:tabular-nums; flex:none; }
+.as-ln .g { color:var(--steel); flex:none; }
+.as-empty { font-size:13px; color:var(--steel); padding:6px 0; line-height:1.5; }
+@media (max-width: 900px) and (pointer: coarse) {
+  .as-panel { left:8px; right:8px; width:auto; }
+  .as-ln { padding:14px 0; font-size:15px; }
+  .as-chip { padding:9px 12px; font-size:13px; }
+  .as-head select { font-size:14px; padding:9px 8px; }
+  .as-x { padding:10px 14px; }
+}
 .ya-bar { display:flex; align-items:center; gap:8px; margin:6px 0 10px; flex-wrap:wrap; }
 .ya-yr { display:flex; align-items:center; gap:4px; }
 .ya-yr button, .ya-btn { font-family:'Outfit',sans-serif; font-size:13px; border:1px solid var(--mist); background:var(--white);
@@ -5974,7 +6007,7 @@ body.text-bold .footer-budget-input { font-weight: 600 !important; }
   }
   #s-close { display: none; }
   .search-chip { display: none; }
-  .topbar.search-open .search-chip { display: inline-flex; align-items: center; height: 44px; padding: 0 14px; font-size: 14px; }
+  .topbar.search-open .search-chip { display: inline-flex; align-items: center; gap: 4px; height: 44px; padding: 0 14px; font-size: 14px; }
 
   .topbar-right .btn-sage { width: 44px; padding: 0 !important; justify-content: center; }
   .topbar-right .btn-sage .ask-full { display: none; }
@@ -6266,6 +6299,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
           <input type="text" class="search-input" id="s-input" placeholder="Search by item, amount or date…">
           <button class="search-clear" id="s-clear" title="Clear" onclick="clearSearch()">&#x2715;</button>
           <button class="search-chip" id="s-pend" type="button" aria-pressed="false" title="Show only pending charges" onmousedown="event.preventDefault()" onclick="togglePendingSearch()">&#x25f7;<span class="sc-word"> Pending</span></button>
+          <button class="search-chip" id="s-scope" type="button" aria-pressed="false" title="Search every month, not just this one" onmousedown="event.preventDefault()" onclick="toggleSearchScope()">&#x1F4C5;<span class="sc-word"> All months</span></button>
           <button class="dark-toggle phone-search-btn" id="s-toggle" type="button" onclick="openSearchBar()" aria-label="Search" title="Search"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg></button>
           <button class="dark-toggle phone-search-btn" id="s-close" type="button" onclick="closeSearchBar(true)" aria-label="Close search" title="Close search">&#x2715;</button>
         </div>
@@ -7355,6 +7389,15 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
 </div>
 
 <!-- Suggest budgets -->
+<div class="as-panel" id="as-panel" style="display:none;" role="dialog" aria-label="Search all months">
+  <div class="as-head">
+    <div class="as-chips" id="as-chips"></div>
+    <select id="as-sec" onchange="asSetSection(this.value)" aria-label="Section"></select>
+    <button type="button" class="as-x" onclick="hideAllSearchPanel(true)" aria-label="Close all-months search">✕</button>
+  </div>
+  <div id="as-body"></div>
+</div>
+
 <div class="trends-overlay" id="ya-overlay" style="display:none;" onclick="if(event.target===this)hideYearAhead()">
   <div class="trends-modal" id="ya-modal" style="max-width:980px;">
     <div class="trends-header" style="cursor:default;">
@@ -7763,7 +7806,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>✎ <strong>Rename month</strong> — hover a month in the sidebar → ✎ to change its month or year; all data moves with it</span></div>
       <div class="shortcut-row"><span>🔖 <strong>Last month restore</strong> — when you return to the app, it reopens the last month you were viewing</span></div>
       <div class="shortcut-row"><span>📊 <strong>Month-over-month</strong> — scroll to the bottom to compare spending vs any month you choose from the dropdown</span></div>
-      <div class="shortcut-row"><span>🔍 <strong>Search</strong> — search across all rows in the current month by label, amount or date (type "pending" or tap the ◷ Pending chip to find charges marked pending); the page scrolls automatically to the first match. On a phone it's the magnifier in the top bar — tap it and a full-width search field opens (the ✕ closes it).</span></div>
+      <div class="shortcut-row"><span>🔍 <strong>Search</strong> — search across all rows in the current month by label, amount or date (type "pending" or tap the ◷ Pending chip to find charges marked pending). Tap the 📅 All months chip to search every month instead: a total, count and monthly average, then each charge grouped by month, for This year, Last 12 months, Last year or All time, optionally limited to one section; the page scrolls automatically to the first match. On a phone it's the magnifier in the top bar — tap it and a full-width search field opens (the ✕ closes it).</span></div>
       <div class="shortcut-row"><span>❓ <strong>Ask me</strong> — the help button in the top bar: search for an answer to anything about Jettana. On a phone it's the ❓ beside the magnifier; on a computer it says "Ask me".</span></div>
       <div class="shortcut-row"><span>🔒 <strong>Lock a month</strong> — tap the 🔓 beside the month name to make that month view-only. You can still read it, open notes and peek at long names, but nothing can be edited, added, deleted or undone until you tap 🔒 to unlock. Set per month, so locking one leaves the rest alone. Cloud sync can still update a locked month — it guards against stray taps, not against an edit made on another device.</span></div>
       <div class="shortcut-row"><span>✕ <strong>Clear month</strong> — ⋯ → Clear month to wipe all rows for the current month</span></div>
@@ -10702,8 +10745,9 @@ function switchMonth(key) {
   if (_bulkSection) cancelBulk(_bulkSection);
   // Close section popover if open
   if (_secPopover) { _secPopover.remove(); _secPopover = null; }
-  // Reset search when switching months
-  clearSearch();
+  // Reset search when switching months. The all-months list does not depend on
+  // which month is open, and jumping from it switches months, so it is left alone.
+  if (!_scopeAll) clearSearch();
   loadIntention();
   loadNotes();
   updateMonthNav();
@@ -16169,6 +16213,14 @@ function doSearch(q) {
   var clearBtn = document.getElementById('s-clear');
   var countEl  = document.getElementById('s-count');
   if (clearBtn) clearBtn.className = q ? 'search-clear visible' : 'search-clear';
+  if (_scopeAll) {
+    // All-months mode: the rows on screen are not being searched, so leave them undimmed.
+    document.querySelectorAll('.erow.s-dim, .erow.s-match').forEach(function(r) { r.classList.remove('s-dim', 's-match'); });
+    document.querySelectorAll('.sec-card.s-empty').forEach(function(c) { c.classList.remove('s-empty'); });
+    if (countEl) { countEl.textContent = ''; countEl.className = 'search-result-count'; }
+    renderAllSearch(q);
+    return;
+  }
 
   var allRows = document.querySelectorAll('.erow');
   if (!q && !_pendOnly) {
@@ -16305,6 +16357,7 @@ function clearSearch() {
   var el = document.getElementById('s-input');
   if (el) { el.value = ''; }
   _pendOnly = false; syncPendChip();
+  _scopeAll = false; syncScopeChip(); hideAllSearchPanel(false);
   doSearch('');
   var tb = document.querySelector('.topbar');
   if (tb) tb.classList.remove('search-open');   // phone: the field folds back into the magnifier
@@ -16329,7 +16382,7 @@ window.addEventListener('load', function() {
   // Tapping away from an EMPTY field folds it back; a field with a query stays
   // open so the results you are looking at do not lose their search box.
   el.addEventListener('blur', function() {
-    setTimeout(function() { if (!el.value && !_pendOnly) closeSearchBar(false); }, 150);
+    setTimeout(function() { if (!el.value && !_pendOnly && !_scopeAll) closeSearchBar(false); }, 150);
   });
 });
 
@@ -26503,6 +26556,121 @@ function sgbCompute() {
   return base;
 }
 
+
+/* ═══ Search all months ════════════════════════════════════════
+   The search bar normally dims rows in the month on screen. With the
+   "All months" chip on it instead lists matching expenses from every logged
+   month: total, count, monthly average, grouped by month, each line a jump to
+   its row. Read-only. Amounts are the Actual, via the same helper Trends uses. */
+var _scopeAll = false, _asPeriod = 'year', _asSec = '';
+var AS_PERIODS = [['year', 'This year'], ['12m', 'Last 12 months'], ['last', 'Last year'], ['all', 'All time']];
+function syncScopeChip() {
+  var b = document.getElementById('s-scope');
+  if (!b) return;
+  b.classList.toggle('on', _scopeAll);
+  b.setAttribute('aria-pressed', _scopeAll ? 'true' : 'false');
+}
+function toggleSearchScope() {
+  _scopeAll = !_scopeAll;
+  syncScopeChip();
+  var el = document.getElementById('s-input');
+  if (!_scopeAll) hideAllSearchPanel(false);
+  doSearch(el ? el.value : '');
+}
+function hideAllSearchPanel(turnOff) {
+  var pnl = document.getElementById('as-panel');
+  if (pnl) pnl.style.display = 'none';
+  if (turnOff && _scopeAll) {
+    _scopeAll = false; syncScopeChip();
+    var el = document.getElementById('s-input');
+    doSearch(el ? el.value : '');
+  }
+}
+function asSetPeriod(p) { _asPeriod = p; var el = document.getElementById('s-input'); renderAllSearch((el ? el.value : '').trim().toLowerCase()); }
+function asSetSection(v) { _asSec = v; var el = document.getElementById('s-input'); renderAllSearch((el ? el.value : '').trim().toLowerCase()); }
+function asMkKey(y, m) { var d = new Date(y, m, 1); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2); }
+function asPeriod() {
+  var now = new Date(), y = now.getFullYear(), m = now.getMonth();
+  if (_asPeriod === '12m') { var lo = asMkKey(y, m - 11), hi = asMkKey(y, m); return { test: function(k) { return k >= lo && k <= hi; }, label: 'the last 12 months' }; }
+  if (_asPeriod === 'last') return { test: function(k) { return k.slice(0, 4) === String(y - 1); }, label: String(y - 1) };
+  if (_asPeriod === 'all') return { test: function() { return true; }, label: 'all time' };
+  return { test: function(k) { return k.slice(0, 4) === String(y); }, label: String(y) };
+}
+function asMoney(v) { return '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function renderAllSearch(q) {
+  var pnl = document.getElementById('as-panel'), body = document.getElementById('as-body');
+  if (!pnl || !body) return;
+  var tb = document.querySelector('.topbar');
+  pnl.style.top = ((tb ? tb.getBoundingClientRect().bottom : 60) + 8) + 'px';
+  pnl.style.maxHeight = 'calc(100vh - ' + ((tb ? tb.getBoundingClientRect().bottom : 60) + 24) + 'px)';
+  pnl.style.display = 'block';
+  document.getElementById('as-chips').innerHTML = AS_PERIODS.map(function(p) {
+    return '<button type="button" class="as-chip' + (p[0] === _asPeriod ? ' on' : '') + '" aria-pressed="' + (p[0] === _asPeriod) + '" onclick="asSetPeriod(\'' + p[0] + '\')">' + p[1] + '</button>';
+  }).join('');
+  var sel = document.getElementById('as-sec');
+  if (sel) {
+    sel.innerHTML = '<option value="">All sections</option>' + TREND_EXPENSE_SECTIONS.map(function(sc) {
+      return '<option value="' + sc + '"' + (sc === _asSec ? ' selected' : '') + '>' + escHtml(getSectionName(sc)) + '</option>';
+    }).join('');
+  }
+  if (!q && !_asSec) {
+    body.innerHTML = '<div class="as-empty">Type a name in the search bar (like "gas" or "vet"), or pick a section above to see everything in it.</div>';
+    return;
+  }
+  var per = asPeriod(), all = loadAll(), secs = _asSec ? [_asSec] : TREND_EXPENSE_SECTIONS;
+  var groups = [], total = 0, count = 0, monthsWithData = 0;
+  Object.keys(all).filter(function(k) { return /^\d{4}-\d{2}$/.test(k) && per.test(k); }).sort().reverse().forEach(function(mk) {
+    var d = all[mk] || {}, spent = 0, lines = [];
+    TREND_EXPENSE_SECTIONS.forEach(function(sc) { spent += trendsSectionTotal(d, sc); });
+    if (spent > 0) monthsWithData++;
+    secs.forEach(function(sc) {
+      (d[sc] || []).forEach(function(r) {
+        var amt = trendsRowAmount(r, CONFIGS[sc]);
+        if (!(amt > 0)) return;
+        if (q && String(r.label || '').toLowerCase().indexOf(q) === -1) return;
+        if (_pendOnly && !r._pending) return;
+        lines.push({ mk: mk, sec: sc, id: r.id, label: r.label || 'Untitled', date: r.date || '', amt: amt, pending: !!r._pending });
+      });
+    });
+    if (!lines.length) return;
+    lines.sort(function(a, b) { return (b.date || '').localeCompare(a.date || '') || b.amt - a.amt; });
+    var sub = lines.reduce(function(t, l) { return t + l.amt; }, 0);
+    total += sub; count += lines.length;
+    groups.push({ mk: mk, lines: lines, sub: sub });
+  });
+  var what = (q ? '“' + escHtml(q) + '”' : escHtml(getSectionName(_asSec))) + (q && _asSec ? ' in ' + escHtml(getSectionName(_asSec)) : '') + (_pendOnly ? ' (pending)' : '');
+  if (!count) {
+    body.innerHTML = '<div class="as-empty">No charges found for ' + what + ' in ' + per.label + '. Try a wider period or a shorter word.</div>';
+    return;
+  }
+  var h = '<div class="as-total">' + asMoney(total) + '</div><div class="as-sub">' + what + ' in ' + per.label + ': ' + count + ' charge' + (count === 1 ? '' : 's') +
+    (monthsWithData >= 2 ? ', about ' + asMoney(total / monthsWithData).replace(/\.\d\d$/, '') + ' a month' : '') + '</div>';
+  var shown = 0, CAP = 300;
+  groups.forEach(function(g) {
+    if (shown >= CAP) return;
+    h += '<div class="as-mh"><span>' + escHtml(yaFmtMk(g.mk)) + '</span><span>' + asMoney(g.sub) + ' · ' + g.lines.length + ' charge' + (g.lines.length === 1 ? '' : 's') + '</span></div>';
+    g.lines.forEach(function(l) {
+      if (shown >= CAP) return;
+      shown++;
+      h += '<button type="button" class="as-ln" data-mk="' + escHtml(l.mk) + '" data-sec="' + escHtml(l.sec) + '" data-id="' + escHtml(String(l.id)) + '">' +
+        '<span class="d">' + (l.date ? escHtml(formatDateLabel(l.date)) : '') + '</span>' +
+        '<span class="n">' + (l.pending ? '◷ ' : '') + escHtml(l.label) + '<small>' + escHtml(getSectionName(l.sec)) + '</small></span>' +
+        '<span class="a">' + asMoney(l.amt) + '</span><span class="g">›</span></button>';
+    });
+  });
+  if (count > shown) h += '<div class="as-empty">…and ' + (count - shown) + ' more. Narrow the period or the word to see them.</div>';
+  body.innerHTML = h;
+}
+document.addEventListener('click', function(e) {
+  var ln = e.target && e.target.closest ? e.target.closest('.as-ln') : null;
+  if (!ln) return;
+  jumpToMonthRow(ln.dataset.mk, ln.dataset.sec, ln.dataset.id);
+  if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) hideAllSearchPanel(false);
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && _scopeAll) { var pnl = document.getElementById('as-panel'); if (pnl && pnl.style.display !== 'none') hideAllSearchPanel(true); }
+});
+
 /* ═══ Year ahead ═══════════════════════════════════════════════
    A read-only plan for a whole year, built from the months already logged.
    It never writes to a month, a row or a footer budget. The only thing it
@@ -27545,17 +27713,17 @@ function getIncomeTrendsData() {
 
 /* What one expense section actually cost in one month's data. The single
    implementation: Trends and Year ahead both call it, so they cannot disagree. */
+function trendsRowAmount(row, cfg) {
+  if (!row || row.exempt || !cfg) return 0;
+  var v = row[cfg.mainKey];
+  if (v === '' || v === null || v === undefined) return 0;
+  var n = parseFloat(String(v).replace(/[$,+]/g,''));
+  return isNaN(n) ? 0 : Math.abs(n);
+}
 function trendsSectionTotal(d, sec) {
   var cfg = CONFIGS[sec];
   if (!cfg) return 0;
-  return ((d && d[sec]) || []).reduce(function(t, row) {
-    if (row.exempt) return t;
-    var v = row[cfg.mainKey];
-    if (v === '' || v === null || v === undefined) return t;
-    var n = parseFloat(String(v).replace(/[$,+]/g,''));
-    if (isNaN(n)) return t;
-    return t + Math.abs(n);
-  }, 0);
+  return ((d && d[sec]) || []).reduce(function(t, row) { return t + trendsRowAmount(row, cfg); }, 0);
 }
 /* Income actually received in one month's data (same rules as the income trend). */
 function trendsIncomeTotal(d) {
