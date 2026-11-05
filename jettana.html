@@ -2140,7 +2140,9 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
   color: var(--steel); font-size: 13px; pointer-events: none;
 }
 .search-clear {
-  position: absolute; right: 8px;
+  /* In flow, pulled back over the input's right edge (not absolute to the wrap,
+     which now also holds the Pending chip and would put the X on top of it). */
+  position: relative; flex: none; margin-left: -28px; margin-right: 6px; z-index: 1;
   background: none; border: none; cursor: pointer;
   color: var(--steel); font-size: 16px; line-height: 1;
   padding: 1px 3px; border-radius: 3px; display: none;
