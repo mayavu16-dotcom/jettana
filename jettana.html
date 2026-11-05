@@ -4996,15 +4996,16 @@ body.font-large.text-bold .erow-label-input {
      not children of it, so `em` resolves against the topbar's 14px and the
      arrows came out at 11px beside a 34px serif title — present, but reading
      as dust. 26px sits just under the title and looks like part of it. */
-  font-size: 26px;
+  font-size: 20px;
   line-height: 1;
-  font-weight: 600;
+  font-weight: 400;
   color: var(--steel);
+  opacity: 0.65;   /* quiet until hovered; disabled (.25) is set below and wins */
   background: none;
   border: none;
   /* Fixed width, so the status line below can be indented by exactly one
      arrow + the 10px gap and land under the month name. */
-  width: 34px;
+  width: 22px;
   padding: 4px 0;
   text-align: center;
   cursor: pointer;
@@ -5014,8 +5015,8 @@ body.font-large.text-bold .erow-label-input {
 }
 /* Status line ("Over budget by $2k") sits directly under the month name:
    arrow width + the 10px flex gap of the title row. */
-#topbar-sub { margin-left: 44px; } /* by id: updateSubtitle() replaces the class, so .sub does not survive */
-.mnav:hover:not(:disabled) { color: var(--sage); background: var(--mist-light); }
+#topbar-sub { margin-left: 32px; } /* by id: updateSubtitle() replaces the class, so .sub does not survive */
+.mnav:hover:not(:disabled) { color: var(--sage); background: var(--mist-light); opacity: 1; }
 .mnav:focus-visible { outline: 2px solid var(--sage); outline-offset: 1px; }
 /* Kept in the layout rather than hidden at the ends of the list: a control
    that vanishes moves the month title sideways, and the title is what you
@@ -5023,7 +5024,7 @@ body.font-large.text-bold .erow-label-input {
 .mnav:disabled { opacity: 0.25; cursor: default; }
 /* Finger-sized on touch: the glyph is narrow, so the tap target has to come
    from padding. 44px tall is the smallest target that does not get missed. */
-@media (pointer: coarse) { .mnav { width: 44px; padding: 9px 0; font-size: 28px; } #topbar-sub { margin-left: 54px; } }
+@media (pointer: coarse) { .mnav { width: 34px; padding: 12px 0; font-size: 24px; } #topbar-sub { margin-left: 44px; } }
 
 /* ── Suggest budgets ─────────────────────────────────────── */
 .sgb-sum { display: flex; flex-direction: column; gap: 5px; font-variant-numeric: tabular-nums; }
@@ -6208,9 +6209,9 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
         <div style="display:flex;align-items:center;gap:10px;">
           <button class="mnav" id="mnav-prev" onclick="navMonth(-1)" aria-label="Previous month" title="Previous month">‹</button>
           <h2 id="topbar-title" onclick="toggleMonthColorPicker(event)" title="Click to color this month's title" style="cursor:pointer;">Loading…</h2>
-          <button class="mnav" id="mnav-next" onclick="navMonth(1)" aria-label="Next month" title="Next month">›</button>
           <span id="month-emoji-display" onclick="toggleMonthEmojiPicker(event)" title="Add emoji" style="font-size:28px;cursor:pointer;opacity:0;transition:opacity 0.15s,transform 0.15s;flex-shrink:0;line-height:1;display:inline-flex;align-items:center;vertical-align:middle;position:relative;top:2px;"></span>
           <button id="month-lock-btn" onclick="toggleMonthLock()" aria-pressed="false" title="Lock this month (view only)">🔓</button>
+          <button class="mnav" id="mnav-next" onclick="navMonth(1)" aria-label="Next month" title="Next month">›</button>
         </div>
         <div class="sub" id="topbar-sub"></div>
       </div>
