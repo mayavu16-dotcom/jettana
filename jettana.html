@@ -3414,6 +3414,11 @@ body.sidebar-open #calc-panel { display: none !important; }
 .cmp-row { border-bottom: 0.5px solid var(--mist); font-size: 12.5px; }
 .cmp-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cmp-amt { font-variant-numeric: tabular-nums; }
+.cmp-amt.cmp-exv { opacity: 0.45; }
+.cmp-ex { display:inline-block; font-size:8px; font-weight:700; color:var(--steel); background:var(--mist); border-radius:3px; padding:1px 4px; letter-spacing:0.3px; line-height:1.6; margin-left:6px; vertical-align:middle; }
+.cmp-exrow .cmp-d { opacity: 0.45; }
+.cmp-exnote { font-size:11.5px; color:var(--steel); margin-top:10px; }
+.cmp-exnote .cmp-ex { margin:0 2px; }
 .cmp-none { color: var(--mist); font-style: normal; }
 .cmp-d { font-variant-numeric: tabular-nums; font-weight: 600; }
 .cmp-good { color: var(--sage-dark, #4d7a52); }
@@ -7888,7 +7893,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>🌍 <strong>Life Elsewhere</strong> — ⋯ → Insights → Life elsewhere; re-prices your current lifestyle in another country with your income held fixed. Optionally type an exchange rate to see the figures in local currency too — rates are never fetched, so it's whatever you enter, and leaving it blank hides that line. A daydream tool, not relocation advice.</span></div>
       <div class="shortcut-row"><span>↩ <strong>Jump back to your rows</strong> — eight places link straight back into the tracker. To a <strong>month</strong>: a point on the Net Worth Trend, or an underlined month in Spending Trends → ⭐ Peaks or → 🔁 Items. To a <strong>section</strong>: a category tile on the Month-over-Month card, or a category line in the Total Expenses breakdown (pin it first). To a <strong>row</strong>: a transaction in the Spending Calendar, a charge in a card or account badge panel, or a bill in the Bills Due panel. Collapsed sections open themselves and whatever you land on flashes gold. Drag a panel aside first and it stays open while you jump — handy for reconciling.</span></div>
       <div class="shortcut-row"><span>🌱 <strong>Growth Projection</strong> — ⋯ → Insights → Growth projection; a hypothetical compound-growth view seeded from your current savings and average monthly contribution. Adjust the amount, contribution, or return rate; pick 5Y / 10Y / 20Y / 30Y, or type any number of years (1–60) in the custom chip. Drag to reposition.</span></div>
-      <div class="shortcut-row"><span>⇄ <strong>Compare months</strong> — ⋯ → Insights → Compare months; any section line-by-line against a baseline month, with color-coded changes and how far apart the two months are (e.g. "2 years, 6 months apart"). The left column follows the month you're viewing. Drag to reposition.</span></div>
+      <div class="shortcut-row"><span>⇄ <strong>Compare months</strong> — ⋯ → Insights → Compare months; any section line-by-line against a baseline month, with color-coded changes and how far apart the two months are (e.g. "2 years, 6 months apart"). Exempt lines are shown but not counted in the Total. The left column follows the month you're viewing. Drag to reposition.</span></div>
       <div class="shortcut-row"><span>📈 <strong>Month-over-Month card</strong> — on your dashboard below the sections; compares this month's totals per category against any previous month (pick one from the dropdown). Green means moving the right way for that category — income up is good, spending up isn't. A category you cut to zero shows as a 100% win, and renamed sections show your names. Tap any tile to jump to that section — it expands if collapsed and flashes gold so you can see where you landed.</span></div>
     </div>
 
@@ -26155,8 +26160,11 @@ function compareRowsFor(monthKeyStr, section) {
     if (!label) return;
     var key = compareKey(label);
     if (!key) return;
-    if (!out[key]) out[key] = { label: label, amt: 0 };
-    out[key].amt += parseAmt(row[cfg.mainKey]);
+    if (!out[key]) out[key] = { label: label, amt: 0, counted: 0, exempt: false };
+    var v = parseAmt(row[cfg.mainKey]);
+    out[key].amt += v;
+    // Exempt lines are shown but left out of the Total, as everywhere else
+    if (row.exempt) out[key].exempt = true; else out[key].counted += v;
   });
   return out;
 }
@@ -26278,7 +26286,9 @@ function renderCompare() {
   var rows = Object.keys(keys).map(function(k) {
     var a = A[k] ? A[k].amt : null;
     var b = B[k] ? B[k].amt : null;
-    return { label: keys[k], a: a, b: b, delta: (a || 0) - (b || 0) };
+    return { label: keys[k], a: a, b: b, delta: (a || 0) - (b || 0),
+             ca: A[k] ? A[k].counted : 0, cb: B[k] ? B[k].counted : 0,
+             exA: !!(A[k] && A[k].exempt), exB: !!(B[k] && B[k].exempt) };
   });
 
   if (!rows.length) {
@@ -26298,18 +26308,19 @@ function renderCompare() {
            (v > 0 ? '+' : '−') + fmt(Math.abs(v)) + '</span>';
   }
 
-  var totA = 0, totB = 0;
-  rows.forEach(function(r) { totA += (r.a || 0); totB += (r.b || 0); });
+  var totA = 0, totB = 0, anyEx = false;
+  rows.forEach(function(r) { totA += r.ca; totB += r.cb; if (r.exA || r.exB) anyEx = true; });
 
   var html = '<div class="cmp-head">' +
     '<span>Item</span><span>' + compareShortMonth(currentMonthKey) + '</span>' +
     '<span>' + compareShortMonth(keyB) + '</span><span>Change</span></div>';
 
   rows.forEach(function(r) {
-    html += '<div class="cmp-row">' +
-      '<span class="cmp-label" title="' + escHtml(r.label) + '">' + escHtml(r.label) + '</span>' +
-      '<span class="cmp-amt">' + (r.a === null ? '<em class="cmp-none">—</em>' : fmt(r.a)) + '</span>' +
-      '<span class="cmp-amt">' + (r.b === null ? '<em class="cmp-none">—</em>' : fmt(r.b)) + '</span>' +
+    html += '<div class="cmp-row' + ((r.exA && r.exB) || (r.exA && r.b === null) || (r.exB && r.a === null) ? ' cmp-exrow' : '') + '">' +
+      '<span class="cmp-label" title="' + escHtml(r.label) + '">' + escHtml(r.label) +
+        ((r.exA || r.exB) ? '<span class="cmp-ex" title="Exempt: not counted in the Total">exempt</span>' : '') + '</span>' +
+      '<span class="cmp-amt' + (r.exA ? ' cmp-exv' : '') + '">' + (r.a === null ? '<em class="cmp-none">—</em>' : fmt(r.a)) + '</span>' +
+      '<span class="cmp-amt' + (r.exB ? ' cmp-exv' : '') + '">' + (r.b === null ? '<em class="cmp-none">—</em>' : fmt(r.b)) + '</span>' +
       deltaCell(r.delta) +
     '</div>';
   });
@@ -26321,6 +26332,7 @@ function renderCompare() {
     deltaCell(totA - totB) +
   '</div>';
 
+  if (anyEx) html += '<div class="cmp-exnote">Lines marked <span class="cmp-ex">exempt</span> are shown but not counted in the Total.</div>';
   body.innerHTML = html;
 }
 
