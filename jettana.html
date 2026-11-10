@@ -8127,6 +8127,11 @@ var _realLS = (function () {
 })();
 
 var _memStore = {};
+/* Notes that are open, per month, for THIS visit only. Memory, never storage:
+   a reload starts with every note closed. Lets an open note survive anything
+   that rebuilds the rows (coming back to the tab re-syncs and redraws). */
+var _openNotes = {};
+var _quietNoteOpen = false;
 
 // Every persistent read/write in the app goes through this.
 var appStore = {
@@ -11404,6 +11409,7 @@ function renderRowEl(section, row, animate = false) {
     '<button class="note-close" onclick="closeNote(\'' + row.id + '\')" title="Close">×</button>' +
     '</div></div></div>';
   container.appendChild(noteDiv);
+  try { if (_openNoteSet()[row.id]) _noteReopenSoon(); } catch (e) {}
 
   const hasLabel = !!row.label;
   const hasVal1  = row[cfg.k1] !== '' && row[cfg.k1] !== null && row[cfg.k1] !== undefined && row[cfg.k1] !== 0 && row[cfg.k1] !== '0';
@@ -16482,18 +16488,47 @@ function _unlockOpenNotes() {
   document.querySelectorAll('.note-row').forEach(_unlockNotePanel);
 }
 
+function _openNoteSet() {
+  var k = nsKey(currentMonthKey || '');
+  return _openNotes[k] || (_openNotes[k] = {});
+}
+function _rememberNote(id, open) {
+  try { var set = _openNoteSet(); if (open) set[id] = 1; else delete set[id]; } catch (e) {}
+}
+/* After rows are rebuilt, reopen whichever notes were open in this month.
+   Quiet: no focus, no undo snapshot, no closing of toolbars. Debounced so a
+   full redraw (every section) runs it once, after the last row is in. */
+var _noteReopenTimer = null;
+function _noteReopenSoon() {
+  if (_noteReopenTimer) return;
+  _noteReopenTimer = setTimeout(function() {
+    _noteReopenTimer = null;
+    var set; try { set = _openNoteSet(); } catch (e) { return; }
+    Object.keys(set).forEach(function(id) {
+      var wrap = document.getElementById('note-wrap-' + id);
+      if (!wrap || wrap.classList.contains('open')) return;
+      var section = null;
+      var er = document.querySelector('.erow[data-id="' + id + '"]');
+      if (er) section = er.dataset.section;
+      if (!section) return;
+      _quietNoteOpen = true;
+      try { toggleNote(section, id); } catch (e) {} finally { _quietNoteOpen = false; }
+    });
+  }, 0);
+}
+
 function toggleNote(section, id) {
   var wrap = document.getElementById('note-wrap-' + id);
   if (!wrap) return;
   var opening = !wrap.classList.contains('open');
+  var quiet = _quietNoteOpen;
+  _rememberNote(id, opening);
 
-  // Close other UI elements when opening a note
-  if (opening) {
+  // Close other UI elements when opening a note. Other open notes stay open:
+  // only the person closes a note.
+  if (opening && !quiet) {
     hideColorToolbar();
     hideCtxMenu();
-    document.querySelectorAll('.note-row.open').forEach(function(n) {
-      if (n !== wrap) n.classList.remove('open');
-    });
   }
 
   wrap.classList.toggle('open', opening);
@@ -16522,8 +16557,9 @@ function toggleNote(section, id) {
     setTimeout(function() { _lockNotePanel(wrap); }, 250);
   }
   if (opening) {
-    // Snapshot before the user edits anything in this note
-    pushUndo('Edit note/template');
+    // Snapshot before the user edits anything in this note (not on a quiet
+    // reopen after a redraw: nothing was done, so there is nothing to undo)
+    if (!quiet) pushUndo('Edit note/template');
     if (section === 'savings' || section === 'income' || section === 'debt' || section === 'transport' || section === 'subscriptions' || section === 'checking' || section === 'housing' || section === 'food' || section === 'health' || section === 'gifts' || section === 'misc') {
       var noteInner = wrap.querySelector('.note-inner');
       if (noteInner && !noteInner.querySelector('.savings-template')) {
@@ -16609,7 +16645,7 @@ function toggleNote(section, id) {
       }
     }
     var ta = document.getElementById('note-ta-' + id);
-    if (ta) setTimeout(function() { ta.focus(); }, 50);
+    if (ta && !quiet) setTimeout(function() { ta.focus(); }, 50);
   }
 }
 
@@ -21759,9 +21795,11 @@ function _closePriorDemo() {
   try { hideColorToolbar(); } catch (e) {}
   var bk = document.getElementById('backups-overlay');
   if (bk && bk.style.display !== 'none') { try { hideBackups(); } catch (e) {} }
-  // Notes already close each other inside toggleNote(), but only when another
-  // note OPENS — a step that opens no note would leave the last one hanging.
-  document.querySelectorAll('.note-row.open').forEach(function(n) { n.classList.remove('open'); });
+  // Notes stay open until closed (several can be open), so a step starts
+  // with all of them closed — and forgotten, so a redraw doesn't reopen them.
+  document.querySelectorAll('.note-row.open').forEach(function(n) {
+    n.classList.remove('open'); _rememberNote(n.id.replace('note-wrap-', ''), false);
+  });
 }
 
 function checklistGo(stepId) {
@@ -22190,11 +22228,13 @@ if ('ontouchstart' in window) {
 function closeNote(id) {
   var wrap = document.getElementById('note-wrap-' + id);
   if (wrap) wrap.classList.remove('open');
+  _rememberNote(id, false);
 }
 
 function noteBlur(section, id) {
-  // On mobile, never close on blur — only the × button closes
-  if ('ontouchstart' in window) return;
+  // Notes never close on blur, empty or not: only the × (or the row's note
+  // button) closes one. Kept as a function so existing onblur handlers are safe.
+  return;
   var ta = document.getElementById('note-ta-' + id);
   if (!ta || ta.value.trim()) return; // has text — never close
   var wrap = document.getElementById('note-wrap-' + id);
