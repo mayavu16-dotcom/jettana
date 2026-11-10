@@ -11409,7 +11409,17 @@ function renderRowEl(section, row, animate = false) {
     '<button class="note-close" onclick="closeNote(\'' + row.id + '\')" title="Close">×</button>' +
     '</div></div></div>';
   container.appendChild(noteDiv);
-  try { if (_openNoteSet()[row.id]) _noteReopenSoon(); } catch (e) {}
+  /* Reopen right now, in the same step that builds the row: waiting even one
+     tick let the browser paint the rows with the note shut, so the page got
+     shorter for a frame and jumped (seen on coming back to the tab). The
+     debounced pass stays as a backstop. */
+  try {
+    if (_openNoteSet()[row.id]) {
+      _quietNoteOpen = true;
+      try { toggleNote(section, row.id); } finally { _quietNoteOpen = false; }
+      _noteReopenSoon();
+    }
+  } catch (e) {}
 
   const hasLabel = !!row.label;
   const hasVal1  = row[cfg.k1] !== '' && row[cfg.k1] !== null && row[cfg.k1] !== undefined && row[cfg.k1] !== 0 && row[cfg.k1] !== '0';
@@ -16545,7 +16555,12 @@ function toggleNote(section, id) {
       var _all = loadAll();
       var _rows = (_all[currentMonthKey] && _all[currentMonthKey][section]) || [];
       var _row = _rows.find(function(r) { return r.id === id; });
-      if (_row && _row._noteBig) setTimeout(function() { applyNoteExpand(id, true); }, 0);
+      if (_row && _row._noteBig) {
+        // A quiet reopen sizes it now too, so the box doesn't change height a
+        // frame after the redraw. The timeout stays as the final measure.
+        if (quiet) applyNoteExpand(id, true);
+        setTimeout(function() { applyNoteExpand(id, true); }, 0);
+      }
     } catch (e) {}
   }
   if (opening && monthIsLocked(currentMonthKey)) {
