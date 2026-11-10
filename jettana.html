@@ -11409,6 +11409,15 @@ function renderRowEl(section, row, animate = false) {
     '<button class="note-close" onclick="closeNote(\'' + row.id + '\')" title="Close">×</button>' +
     '</div></div></div>';
   container.appendChild(noteDiv);
+  /* Colour the row NOW, not only on the timers above. Chrome slows timers in
+     a window that is hidden or covered (switching browsers), so after the
+     redraw that runs on coming back, names showed black for up to a second
+     before their colour came back. Same calls, so running twice is harmless. */
+  try {
+    if (row.paidColor)   applyTextColor(row.id, row.paidColor);
+    if (row.strikeColor) applyStrikeColor(row.id, row.strikeColor);
+    if (row.numColor)    applyNumColor(row.id, row.numColor);
+  } catch (e) {}
   /* Reopen right now, in the same step that builds the row: waiting even one
      tick let the browser paint the rows with the note shut, so the page got
      shorter for a frame and jumped (seen on coming back to the tab). The
