@@ -5078,6 +5078,29 @@ body.font-large.text-bold .erow-label-input {
 .ya-chip:hover { border-color:var(--sage); color:var(--sage-dark); }
 .ya-chip.on { background:var(--sage-light); border:1px solid var(--sage); color:var(--sage-dark); font-weight:600; }
 #ya-modal { position:relative; }
+.ya-modebar { gap:10px; }
+.ya-mode { display:inline-flex; border:1px solid var(--mist); border-radius:999px; padding:2px; background:var(--cream); flex-shrink:0; }
+.ya-mode button { font-family:'Outfit',sans-serif; font-size:12.5px; border:none; background:none; color:var(--steel); padding:5px 13px; border-radius:999px; cursor:pointer; }
+.ya-mode button.on { background:var(--white); color:var(--ink); font-weight:600; box-shadow:0 1px 3px rgba(20,30,45,0.12); }
+.ya-link { border:none; background:none; color:var(--blush); font-family:'Outfit',sans-serif; font-size:inherit; text-decoration:underline; cursor:pointer; padding:0 2px; }
+.ya-grid tr.r-inc td { background:rgba(122,158,126,0.07); }
+.ya-grid tr.r-inc td:first-child { font-weight:600; color:var(--sage-dark); background:var(--white); box-shadow:inset 3px 0 0 var(--sage); }
+.ya-grid tr.r-inc td { border-bottom:1px solid var(--mist); }
+.ya-grid tr.r-sav td:first-child { color:var(--slate); }
+.ya-grid tr.r-left td { border-top:2px solid var(--mist); color:var(--sage-dark); }
+.ya-grid tr.r-left td.neg, .ya-grid td.tot.neg { color:var(--blush); }
+.ya-grid td.ed { padding:3px 3px; }
+.ya-in { width:62px; box-sizing:border-box; text-align:right; font-family:'Outfit',sans-serif; font-size:12px; font-variant-numeric:tabular-nums; padding:4px 5px; border:1px solid transparent; border-radius:5px; background:transparent; color:var(--ink); }
+.ya-in::placeholder { color:var(--steel); opacity:0.75; }
+.ya-in:hover { border-color:var(--mist); }
+.ya-in:focus { outline:none; border-color:var(--sage); background:var(--white); }
+.ya-grid td.ed.mine .ya-in { font-weight:700; background:var(--sage-light); border-color:rgba(122,158,126,0.45); }
+.ya-sw-mine, .ya-sw-avg { display:inline-block; width:12px; height:10px; border-radius:2px; margin-right:5px; vertical-align:-1px; }
+.ya-sw-mine { background:var(--sage-light); border:1px solid var(--sage); }
+.ya-sw-avg { background:none; border:1px dashed var(--steel); }
+.ya-pl.ya-ptot { border-top:1px solid var(--mist); font-weight:600; color:var(--ink); }
+.dark .ya-mode button.on { background:#2A3A4A; }
+.dark .ya-grid tr.r-inc td:first-child { background:#1E2838; }
 .ya-grid td.tap { cursor:pointer; }
 .ya-grid td.tap:hover { box-shadow:inset 0 0 0 1px var(--sage); }
 .ya-grid td.tap.sel { box-shadow:inset 0 0 0 2px var(--sage); }
@@ -5132,7 +5155,7 @@ body.font-large.text-bold .erow-label-input {
 .ya-add input.nm { flex:1 1 140px; } .ya-add input.am { width:96px; }
 .ya-inc { display:inline-flex; align-items:center; gap:4px; }
 .ya-inc input { width:92px; font-family:'Outfit',sans-serif; font-size:13px; padding:4px 8px; border:1px solid var(--mist); border-radius:6px; background:var(--white); color:var(--ink); }
-@media (pointer: coarse) { .ya-pl { padding:11px 10px; font-size:14px; } .ya-px { padding:8px 12px; font-size:22px; } .ya-yr select, .ya-range select { padding:10px 9px; font-size:15px; } .ya-chip { padding:9px 13px; font-size:13px; } .ya-yr button, .ya-btn { padding:11px 14px; } .ya-add input, .ya-add select { padding:11px 10px; font-size:15px; } .ya-ex .l button { padding:10px 14px; } }
+@media (pointer: coarse) { .ya-in { width:74px; font-size:16px; padding:8px 5px; } .ya-mode button { padding:9px 15px; font-size:14px; } .ya-pl { padding:11px 10px; font-size:14px; } .ya-px { padding:8px 12px; font-size:22px; } .ya-yr select, .ya-range select { padding:10px 9px; font-size:15px; } .ya-chip { padding:9px 13px; font-size:13px; } .ya-yr button, .ya-btn { padding:11px 14px; } .ya-add input, .ya-add select { padding:11px 10px; font-size:15px; } .ya-ex .l button { padding:10px 14px; } }
 .sgb-sum { display: flex; flex-direction: column; gap: 5px; font-variant-numeric: tabular-nums; }
 .sgb-sum .r { display: flex; justify-content: space-between; gap: 14px; font-size: 13px; color: var(--slate); }
 .sgb-sum .r b { color: var(--ink); font-weight: 600; }
@@ -7264,7 +7287,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
 
         <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">How do I plan for the year ahead so there are no surprises?<span class="askme-q-arrow">▾</span></button>
-          <div class="askme-a">Open <strong>⋯ → Insights → 🗓️ Year ahead</strong>. It looks at the months you've already logged and shows what each section is likely to cost, month by month, for the next year. Months that were bigger before (car costs in March, say) are shaded so they don't catch you out. Enter your monthly income to see what's left after each month. Add anything that only comes once a year, like car registration or a trip, and it's added to that month. Use <strong>Learn from</strong> to pick which months it learns from (or tap Last 3, Last 6, Last 12 or All), handy when your spending changed and older months no longer fit. Use <strong>Plan starts</strong> to begin the 12 months in any month, like March through February. Tap any number to see how it was worked out: which months it averaged, which bigger months it left out, and any yearly expense added. Tap a month there to go to it. It's a read-only plan: it never changes your budgets. A section with only a few months behind it is marked "rough".</div>
+          <div class="askme-a">Open <strong>⋯ → Insights → 🗓️ Year ahead</strong>. It looks at the months you've already logged and shows what each section is likely to cost, month by month, for the next year. Months that were bigger before (car costs in March, say) are shaded so they don't catch you out. Enter your monthly income to see what's left after each month. Add anything that only comes once a year, like car registration or a trip, and it's added to that month. Use <strong>Learn from</strong> to pick which months it learns from (or tap Last 3, Last 6, Last 12 or All), handy when your spending changed and older months no longer fit. Use <strong>Plan starts</strong> to begin the 12 months in any month, like March through February. Tap any number to see how it was worked out: which months it averaged, which bigger months it left out, and any yearly expense added. Tap a month there to go to it. It also plans your <strong>Income</strong> the same way (a bonus month shows as a bigger month), your <strong>Savings</strong> (how much your savings grew in an average month), and <strong>Left over</strong>: income minus spending and savings, what's free for everything else. Switch from <strong>Averages</strong> to <strong>My budget</strong> to type your own amount in any month; your averages stay as grey hints and are used until you type over them. Your numbers are kept per month and year, saved on this device only, and never change your real monthly budgets. It's a read-only plan: it never changes your budgets. A section with only a few months behind it is marked "rough".</div>
         </div>
 
         <div class="askme-item">
@@ -7888,7 +7911,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>🧾 <strong>Monthly Summary breakdowns</strong> — hover or tap the Income, Spent or Balance row at the bottom of your dashboard to see how it was worked out. Spent lists each section with Planned against Actual, Income lists each source, and Balance spells out the subtraction. A section whose budget you typed yourself is marked "your budget", and the Planned column uses your figure rather than the sum of the rows.</span></div>
       <div class="shortcut-row"><span>📈 <strong>Net Worth Trend</strong> — ⋯ → Insights → Net worth trend; a line chart of your net worth (checking + savings − debt) by month. Pick 6M, YTD, 1Y, All, or a custom start month. Tap any point on the line to jump straight to that month — drag the chart aside first and it stays open, so you can step through months one dot at a time. The summary shows your growth, how far apart the months are, and — optionally — your age across the range. Drag to reposition.</span></div>
       <div class="shortcut-row"><span>🎂 <strong>Age on your trend</strong> — enter your birth month + year in the Net Worth Trend (optional) to see "age 23 → 25" alongside your growth. Month and year only — Jettana never asks for your full birthdate. Clear the field anytime to remove it.</span></div>
-      <div class="shortcut-row"><span>🗓️ <strong>Year ahead</strong> — ⋯ → Insights → Year ahead; a read-only plan for next year built from the months you've logged: each section month by month, bigger months shaded, and what's left after each month. Pick which months it learns from (Last 3/6/12 or All) and the month the 12-month plan starts. Tap any number to see how it was worked out. Add yearly expenses (car registration, a trip) and type your own income if you like. Never changes your budgets.</span></div>
+      <div class="shortcut-row"><span>🗓️ <strong>Year ahead</strong> — ⋯ → Insights → Year ahead; a read-only plan for next year built from the months you've logged: each section month by month, bigger months shaded, and what's left after each month. Pick which months it learns from (Last 3/6/12 or All) and the month the 12-month plan starts. Tap any number to see how it was worked out. Shows planned Income, Savings and Left over (free to spend). Switch to My budget to type your own amount for any section or month. Add yearly expenses (car registration, a trip) and type your own income if you like. Never changes your budgets.</span></div>
       <div class="shortcut-row"><span>🧮 <strong>Plan My Savings</strong> — ⋯ → Insights → Plan my savings; works out what's genuinely left over each month from your average take-home and expenses. The retirement half shows what a pre-tax contribution actually costs your take-home (less than the headline number, since it comes out before tax) and what you'd leave behind by contributing under your employer's match.</span></div>
       <div class="shortcut-row"><span>🌍 <strong>Life Elsewhere</strong> — ⋯ → Insights → Life elsewhere; re-prices your current lifestyle in another country with your income held fixed. Optionally type an exchange rate to see the figures in local currency too — rates are never fetched, so it's whatever you enter, and leaving it blank hides that line. A daydream tool, not relocation advice.</span></div>
       <div class="shortcut-row"><span>↩ <strong>Jump back to your rows</strong> — eight places link straight back into the tracker. To a <strong>month</strong>: a point on the Net Worth Trend, or an underlined month in Spending Trends → ⭐ Peaks or → 🔁 Items. To a <strong>section</strong>: a category tile on the Month-over-Month card, or a category line in the Total Expenses breakdown (pin it first). To a <strong>row</strong>: a transaction in the Spending Calendar, a charge in a card or account badge panel, or a bill in the Bills Due panel. Collapsed sections open themselves and whatever you land on flashes gold. Drag a panel aside first and it stays open while you jump — handy for reconciling.</span></div>
@@ -26821,8 +26844,17 @@ function yaStore() {
     var o = JSON.parse(appStore.getItem(nsKey('intentra_yearahead')) || '{}') || {};
     var inc = (o.income === null || o.income === undefined || o.income === '' || isNaN(+o.income)) ? null : +o.income;
     var mk = function(v) { return (typeof v === 'string' && YA_MK.test(v)) ? v : null; };
-    return { extras: Array.isArray(o.extras) ? o.extras : [], income: inc, from: mk(o.from), to: mk(o.to), start: mk(o.start) };
-  } catch (e) { return { extras: [], income: null, from: null, to: null, start: null }; }
+    // budget: your own amounts, { 'food|2027-03': 450 }. Row ids are a section,
+    // '_inc' (income) or '_sav' (savings); the month is the real plan month, so
+    // a 2027 budget never leaks into 2028.
+    var bud = {};
+    if (o.budget && typeof o.budget === 'object') Object.keys(o.budget).forEach(function(k) {
+      var v = +o.budget[k];
+      if (/^[a-z_]+\|\d{4}-\d{2}$/.test(k) && isFinite(v) && v >= 0) bud[k] = v;
+    });
+    return { extras: Array.isArray(o.extras) ? o.extras : [], income: inc, from: mk(o.from), to: mk(o.to), start: mk(o.start),
+             mode: o.mode === 'mine' ? 'mine' : 'avg', budget: bud };
+  } catch (e) { return { extras: [], income: null, from: null, to: null, start: null, mode: 'avg', budget: {} }; }
 }
 /* Default start: January of this year, or of next year once it is October. */
 function yaDefaultStart() {
@@ -26849,7 +26881,12 @@ function yaAllHistory() {
   Object.keys(all).filter(function(k) { return /^\d{4}-\d{2}$/.test(k); }).sort().forEach(function(mk) {
     var d = all[mk] || {}, by = {}, tot = 0;
     TREND_EXPENSE_SECTIONS.forEach(function(sec) { by[sec] = trendsSectionTotal(d, sec); tot += by[sec]; });
-    if (tot > 0) rows.push({ mk: mk, by: by, inc: trendsIncomeTotal(d) });
+    if (tot > 0) {
+      // Savings put away this month = change in the savings total since last
+      // month: the same measure Growth projection uses (deposits plus gains).
+      var prev = all[yaAddMonths(mk, -1)];
+      rows.push({ mk: mk, by: by, inc: trendsIncomeTotal(d), sav: prev ? gpSavingsTotal(d) - gpSavingsTotal(prev) : null });
+    }
   });
   var done = rows.filter(function(r) { return r.mk < cur; });
   return done.length ? done : rows;
@@ -26868,7 +26905,9 @@ function yaHistory(st) {
    Occasional section (median 0, e.g. travel): flat average, no spikes, because
    guessing which month it lands in would be invented precision. */
 function yaSection(rows, sec) {
-  var vals = rows.map(function(r) { return r.by[sec] || 0; });
+  return yaSeries(rows, rows.map(function(r) { return r.by[sec] || 0; }), sec);
+}
+function yaSeries(rows, vals, sec) {
   var n = vals.length, used = vals.filter(function(v) { return v > 0; }).length;
   if (!used) return null;
   var med = yaMedian(vals), mean = vals.reduce(function(t, v) { return t + v; }, 0) / n;
@@ -26909,11 +26948,27 @@ function yaCompute() {
   });
   var order = TREND_EXPENSE_SECTIONS;
   secs.sort(function(a, b) { return order.indexOf(a.sec) - order.indexOf(b.sec); });
-  var incomes = rows.map(function(r) { return r.inc; }).filter(function(v) { return v > 0; });
-  var typical = incomes.length ? Math.round(yaMedian(incomes)) : null;
-  var tot = [0,0,0,0,0,0,0,0,0,0,0,0];
-  secs.forEach(function(s) { s.plan.forEach(function(v, i) { tot[i] += v; }); });
-  return { rows: rows, avail: avail, secs: secs, st: st, typical: typical, income: st.income !== null ? st.income : typical, tot: tot };
+  var blank = function(id) { return { sec: id, plan: [0,0,0,0,0,0,0,0,0,0,0,0], big: [], used: 0, n: rows.length, occasional: true, empty: true }; };
+  // My budget: every spending section gets a row, so you can plan one you
+  // haven't logged yet
+  if (st.mode === 'mine') TREND_EXPENSE_SECTIONS.forEach(function(sec) {
+    if (!secs.some(function(q) { return q.sec === sec; })) secs.push(blank(sec));
+  });
+  secs.sort(function(a, b) { return order.indexOf(a.sec) - order.indexOf(b.sec); });
+  // Income: same rules as spending (a bonus month is a "bigger month")
+  var inc = yaSeries(rows, rows.map(function(r) { return r.inc || 0; }), '_inc');
+  // Savings: a flat average of the monthly change, never below 0 (like Growth projection)
+  var sv = rows.filter(function(r) { return r.sav !== null; });
+  var sav = null;
+  if (sv.length) {
+    var savAvg = Math.max(0, sv.reduce(function(t, r) { return t + r.sav; }, 0) / sv.length);
+    sav = { sec: '_sav', plan: [], big: [], used: sv.length, n: sv.length, occasional: true, savings: true,
+            why: { mks: sv.map(function(r) { return r.mk; }), vals: sv.map(function(r) { return r.sav; }), avg: savAvg } };
+    for (var i = 0; i < 12; i++) sav.plan.push(Math.round(savAvg));
+    if (!savAvg) sav.zero = true;
+  }
+  if (st.mode === 'mine') { if (!inc) inc = blank('_inc'); if (!sav) sav = blank('_sav'); }
+  return { rows: rows, avail: avail, secs: secs, st: st, inc: inc, sav: sav };
 }
 function showYearAhead() {
   var ov = document.getElementById('ya-overlay');
@@ -26999,65 +27054,135 @@ function yaRemoveExtra(id) {
   st.extras = st.extras.filter(function(x) { return x.id !== id; });
   yaSave(st); renderYearAhead();
 }
+function yaRowName(id) {
+  return id === '_inc' ? 'Income' : id === '_sav' ? 'Savings' : id === '_left' ? 'Left over' : getSectionName(id);
+}
+/* Averages ↔ My budget. My budget keeps the averages as grey hints and lets
+   you type your own number in any month; a blank cell uses the average. */
+function yaSetMode(m) {
+  var st = yaStore(); st.mode = m === 'mine' ? 'mine' : 'avg';
+  yaSave(st); renderYearAhead();
+}
+function yaClearBudget() {
+  var st = yaStore(), n = Object.keys(st.budget).length;
+  if (!n) return;
+  if (!confirm('Clear all ' + n + ' amount' + (n === 1 ? '' : 's') + ' you typed in My budget? Every month goes back to your averages.')) return;
+  st.budget = {}; yaSave(st); renderYearAhead();
+}
+function yaBudgetInput(el) {
+  var st = yaStore(), key = el.dataset.key, t = String(el.value).replace(/[^0-9.]/g, '');
+  if (!key) return;
+  if (t === '' || isNaN(parseFloat(t))) delete st.budget[key]; else st.budget[key] = Math.round(parseFloat(t) * 100) / 100;
+  yaSave(st);
+  // Redraw after the browser has moved focus (Tab / tapping the next cell),
+  // then put focus back where it went, so typing month after month flows.
+  setTimeout(function() {
+    var a = document.activeElement, next = a && a.dataset ? a.dataset.key : null;
+    renderYearAhead();
+    if (next) { var n = document.querySelector('.ya-in[data-key="' + next + '"]'); if (n) { n.focus(); try { n.select(); } catch (e) {} } }
+  }, 0);
+}
+function yaModeHtml(c) {
+  var mine = c.st.mode === 'mine', n = Object.keys(c.st.budget).length;
+  return '<div class="ya-mode" role="group" aria-label="What the plan shows">' +
+    '<button type="button" class="' + (mine ? '' : 'on') + '" onclick="yaSetMode(\'avg\')" aria-pressed="' + !mine + '">Averages</button>' +
+    '<button type="button" class="' + (mine ? 'on' : '') + '" onclick="yaSetMode(\'mine\')" aria-pressed="' + mine + '">My budget</button></div>' +
+    (mine ? '<span class="ya-sm">Type your own amount in any month. Grey numbers are your averages and are used until you type over them.' +
+      (n ? ' <button type="button" class="ya-link" onclick="yaClearBudget()">Clear my budget</button>' : '') + '</span>'
+      : '<span class="ya-sm">Planned from your history. Nothing here changes your budgets.</span>');
+}
 function renderYearAhead() {
   var body = document.getElementById('ya-body'), sub = document.getElementById('ya-sub');
   if (!body) return;
-  var c = yaCompute(), h = '', i;
-  var secLabel = function(s) { return escHtml(getSectionName(s)); };
-  if (c.rows.length < 2 && !c.st.extras.length) {
+  var c = yaCompute(), h = '', i, mine = c.st.mode === 'mine';
+  var secLabel = function(s) { return escHtml(yaRowName(s)); };
+  if (!mine && c.rows.length < 2 && !c.st.extras.length) {
     if (sub) sub.textContent = 'Needs a few months of history';
     var picked = c.avail.length >= 2;   // there is enough history, the range is just too narrow
-    body.innerHTML = (picked ? yaRangeHtml(c) : '') + '<div class="ya-note">' + (picked
+    body.innerHTML = (picked ? yaRangeHtml(c) : '') + '<div class="ya-bar">' + yaModeHtml(c) + '</div><div class="ya-note">' + (picked
       ? 'Only ' + c.rows.length + ' month' + (c.rows.length === 1 ? '' : 's') + ' in that range. Pick at least two months to learn from, or tap <b>All</b>.'
       : 'Year ahead plans from the months you have already logged, and there ' +
         (c.rows.length ? 'is only one so far' : 'are none yet') + '. After two or three months of spending it can start to show a pattern. ' +
-        'Until then, you can still add yearly expenses below.') + '</div>' + yaExtrasHtml(c);
+        'Until then, you can add yearly expenses below, or switch to <b>My budget</b> and plan the year yourself.') + '</div>' + yaExtrasHtml(c);
     return;
   }
   // The 12 plan months in the order shown, starting at "Plan starts".
-  // Plans are kept by calendar month (a March spike stays in March), so this
-  // only changes the order and the year printed on each column.
+  // Averages are kept by calendar month (a March spike stays in March); your
+  // own amounts are kept by the real month (2027-03).
   var start = yaStart(c.st), s0 = +start.slice(5) - 1, sy = +start.slice(0, 4);
-  var ord = [], oyr = [];
-  for (i = 0; i < 12; i++) { ord.push((s0 + i) % 12); oyr.push(sy + Math.floor((s0 + i) / 12)); }
-  _yaView = { c: c, ord: ord, oyr: oyr };
-  var mLbl = function(k) { return TREND_MONTHS[ord[k]] + ((k === 0 || ord[k] === 0) ? ' <span class="ya-y">\u2019' + String(oyr[k]).slice(2) + '</span>' : ''); };
-  if (sub) sub.textContent = c.rows.length ? 'Based on ' + yaFmtMk(c.rows[0].mk) + ' – ' + yaFmtMk(c.rows[c.rows.length - 1].mk) +
-    ' (' + c.rows.length + ' month' + (c.rows.length === 1 ? '' : 's') + ')' : 'Based on yearly expenses you added';
+  var ord = [], oyr = [], omk = [];
+  for (i = 0; i < 12; i++) { ord.push((s0 + i) % 12); oyr.push(sy + Math.floor((s0 + i) / 12)); omk.push(yaAddMonths(start, i)); }
+  // What each cell actually is: your number if you typed one (My budget), else the average
+  var typed = function(id, k) { var v = c.st.budget[id + '|' + omk[k]]; return mine && v !== undefined ? v : null; };
+  var eff = function(row, k) { if (!row) return 0; var t = typed(row.sec, k); return t !== null ? t : row.plan[ord[k]]; };
+  var E = {}, spend = [], incA = [], savA = [], left = [];
+  c.secs.forEach(function(s) { E[s.sec] = ord.map(function(_, k) { return eff(s, k); }); });
+  for (i = 0; i < 12; i++) {
+    spend.push(c.secs.reduce(function(t, s) { return t + E[s.sec][i]; }, 0));
+    incA.push(eff(c.inc, i)); savA.push(c.sav && !c.sav.zero || mine ? eff(c.sav, i) : 0);
+    left.push(incA[i] - spend[i] - savA[i]);
+  }
+  var hasInc = !!c.inc && incA.some(function(v) { return v > 0; });
+  _yaView = { c: c, ord: ord, oyr: oyr, omk: omk, E: E, spend: spend, inc: incA, sav: savA, left: left, mine: mine };
+  var mLbl = function(k) { return TREND_MONTHS[ord[k]] + ((k === 0 || ord[k] === 0) ? ' <span class="ya-y">’' + String(oyr[k]).slice(2) + '</span>' : ''); };
+  if (sub) sub.textContent = (mine ? 'My budget · ' : '') + (c.rows.length ? 'Based on ' + yaFmtMk(c.rows[0].mk) + ' – ' + yaFmtMk(c.rows[c.rows.length - 1].mk) +
+    ' (' + c.rows.length + ' month' + (c.rows.length === 1 ? '' : 's') + ')' : 'Based on yearly expenses you added');
   h += yaRangeHtml(c);
-  h += '<div class="ya-bar">' + yaStartHtml(c) +
-    '<span class="ya-sm">Planned month by month. Nothing here changes your budgets.</span></div>';
-  h += '<div class="ya-scroll"><table class="ya-grid"><tr><th>Section</th>';
+  h += '<div class="ya-bar">' + yaStartHtml(c) + '</div>';
+  h += '<div class="ya-bar ya-modebar">' + yaModeHtml(c) + '</div>';
+  // One table row. kind: 'inc' | 'sec' | 'sav'
+  var cellRow = function(row, vals, kind, conf, thin) {
+    var r = '<tr class="r-' + kind + '"><td>' + secLabel(row.sec) + (conf ? '<span class="ya-conf' + (thin ? ' thin' : '') + '">' + conf + '</span>' : '') + '</td>';
+    ord.forEach(function(m, k) {
+      var v = vals[k], x = row.xtra && row.xtra[m];
+      if (mine) {
+        var t = typed(row.sec, k), key = row.sec + '|' + omk[k];
+        r += '<td class="ed' + (t !== null ? ' mine' : '') + '"><input class="ya-in" type="text" inputmode="decimal" data-key="' + key + '" value="' + (t !== null ? yaFmt(t) : '') +
+             '" placeholder="' + (row.plan[m] ? yaFmt(row.plan[m]) : '0') + '" onchange="yaBudgetInput(this)" aria-label="' + escHtml(yaRowName(row.sec)) + ', ' + TREND_MONTHS[m] + ' ' + oyr[k] + '"></td>';
+      } else {
+        var cls = 'tap' + (x ? ' xtra' : (row.big[m] ? ' big' : ''));
+        r += '<td class="' + cls + '" tabindex="0" role="button" data-s="' + row.sec + '" data-m="' + m + '" data-k="' + k + '" aria-label="' +
+             escHtml(yaRowName(row.sec)) + ', ' + TREND_MONTHS[m] + ': $' + yaFmt(v) + '. Show how this was worked out">' + (v ? yaFmt(v) : '–') + '</td>';
+      }
+    });
+    return r + '<td class="tot">' + yaFmt(vals.reduce(function(t, v) { return t + v; }, 0)) + '</td></tr>';
+  };
+  var confOf = function(s) {
+    if (s.empty) return mine ? 'no history yet' : '';
+    if (s.extrasOnly) return 'yearly expenses only';
+    if (s.savings) return 'average monthly change';
+    return s.occasional ? s.used + ' of ' + s.n + ' months had ' + (s.sec === '_inc' ? 'income' : 'spending') : s.used + ' month' + (s.used === 1 ? '' : 's');
+  };
+  var isThin = function(s) { return !s.extrasOnly && !s.empty && !s.savings && s.used < 4; };
+  h += '<div class="ya-scroll"><table class="ya-grid"><tr><th>' + (mine ? 'My budget' : 'Section') + '</th>';
   ord.forEach(function(m, k) { h += '<th>' + mLbl(k) + '</th>'; });
   h += '<th class="tot">Year</th></tr>';
-  c.secs.forEach(function(s) {
-    var conf = s.extrasOnly ? 'yearly expenses only'
-      : s.occasional ? s.used + ' of ' + s.n + ' months had spending'
-      : s.used + ' month' + (s.used === 1 ? '' : 's');
-    var thin = !s.extrasOnly && s.used < 4;
-    h += '<tr><td>' + secLabel(s.sec) + '<span class="ya-conf' + (thin ? ' thin' : '') + '">' + conf + (thin ? ' · rough' : '') + '</span></td>';
+  if (c.inc) h += cellRow(c.inc, incA, 'inc', confOf(c.inc) + (isThin(c.inc) ? ' · rough' : ''), isThin(c.inc));
+  c.secs.forEach(function(s) { h += cellRow(s, E[s.sec], 'sec', confOf(s) + (isThin(s) ? ' · rough' : ''), isThin(s)); });
+  var sumCell = function(id, vals, label) {
+    var r = '';
     ord.forEach(function(m, k) {
-      var v = s.plan[m];
-      var x = s.xtra && s.xtra[m];
-      var cls = 'tap' + (x ? ' xtra' : (s.big[m] ? ' big' : ''));
-      h += '<td class="' + cls + '" tabindex="0" role="button" data-s="' + s.sec + '" data-m="' + m + '" data-k="' + k + '" aria-label="' +
-           escHtml(getSectionName(s.sec)) + ', ' + TREND_MONTHS[m] + ': $' + yaFmt(v) + '. Show how this was worked out">' + (v ? yaFmt(v) : '–') + '</td>';
+      r += '<td class="tap' + (id === '_left' && vals[k] < 0 ? ' neg' : '') + '" tabindex="0" role="button" data-s="' + id + '" data-m="' + m + '" data-k="' + k + '" aria-label="' + label + ', ' + TREND_MONTHS[m] + ': $' + yaFmt(vals[k]) + '. Show how this adds up">' +
+           (vals[k] < 0 ? '−' : '') + yaFmt(Math.abs(vals[k])) + '</td>';
     });
-    h += '<td class="tot">' + yaFmt(s.plan.reduce(function(t, v) { return t + v; }, 0)) + '</td></tr>';
-  });
-  h += '<tr class="sum"><td>Planned spending</td>';
-  ord.forEach(function(m, k) { h += '<td class="tap" tabindex="0" role="button" data-s="" data-m="' + m + '" data-k="' + k + '" aria-label="Planned spending, ' + TREND_MONTHS[m] + ': $' + yaFmt(c.tot[m]) + '. Show by section">' + yaFmt(c.tot[m]) + '</td>'; });
-  h += '<td class="tot">' + yaFmt(c.tot.reduce(function(t, v) { return t + v; }, 0)) + '</td></tr></table></div>';
-  h += '<div class="ya-legend"><span class="ya-tiphint">Tap a number to see how it was worked out</span><span><i style="background:rgba(224,168,66,0.4)"></i>a bigger month you have had before</span>' +
-       '<span><i style="background:var(--teal-light);border:1px solid var(--teal)"></i>includes a yearly expense you added</span></div>';
-
+    var y = vals.reduce(function(t, v) { return t + v; }, 0);
+    return r + '<td class="tot' + (id === '_left' && y < 0 ? ' neg' : '') + '">' + (y < 0 ? '−' : '') + yaFmt(Math.abs(y)) + '</td>';
+  };
+  h += '<tr class="sum"><td>Planned spending</td>' + sumCell('', spend, 'Planned spending') + '</tr>';
+  if (c.sav && (!c.sav.zero || mine)) h += cellRow(c.sav, savA, 'sav', confOf(c.sav), false);
+  if (hasInc) h += '<tr class="sum r-left"><td>Left over<span class="ya-conf">to spend freely</span></td>' + sumCell('_left', left, 'Left over') + '</tr>';
+  h += '</table></div>';
+  if (mine) {
+    h += '<div class="ya-legend"><span><i class="ya-sw-mine"></i>your number</span><span><i class="ya-sw-avg"></i>grey = your average, used until you type over it</span><span>Clear a cell to go back to the average.</span></div>';
+  } else {
+    h += '<div class="ya-legend"><span class="ya-tiphint">Tap a number to see how it was worked out</span><span><i style="background:rgba(224,168,66,0.4)"></i>a bigger month you have had before</span>' +
+         '<span><i style="background:var(--teal-light);border:1px solid var(--teal)"></i>includes a yearly expense you added</span></div>';
+  }
   // How the year ends up
-  h += '<div class="ya-h">Left after planned spending</div>';
-  h += '<div class="ya-sm">Planned income <span class="ya-inc">$<input type="text" inputmode="decimal" value="' + (c.income !== null ? Math.round(c.income) : '') +
-       '" placeholder="a typical month" onchange="yaSetIncome(this)" aria-label="Planned income per month"></span> a month' +
-       (c.st.income === null && c.typical !== null ? ' (your typical month so far; type your own to change it)' : '') + '</div>';
-  if (c.income !== null && c.income > 0) {
-    var left = ord.map(function(m) { return c.income - c.tot[m]; }), mx = Math.max.apply(null, left.map(Math.abs)) || 1;
+  h += '<div class="ya-h">Left over each month</div>';
+  if (hasInc) {
+    h += '<div class="ya-sm">Income minus planned spending' + (c.sav && (!c.sav.zero || mine) ? ' and savings' : '') + ': what is free for everything else.</div>';
+    var mx = Math.max.apply(null, left.map(Math.abs)) || 1;
     h += '<div class="ya-chart" aria-hidden="true">';
     left.forEach(function(v) {
       h += '<div class="ya-col' + (v < 0 ? ' neg' : '') + '"><span class="v">' + (v < 0 ? '-' : '') + yaFmt(Math.abs(v)) + '</span><div class="b" style="height:' + Math.max(3, Math.round(Math.abs(v) / mx * 62)) + 'px"></div></div>';
@@ -27068,11 +27193,11 @@ function renderYearAhead() {
     h += '<div class="ya-sm" style="margin-top:8px;">Tightest month: <b>' + TREND_MONTHS[ord[tightI]] + ' ' + oyr[tightI] + '</b>, about $' + yaFmt(Math.abs(left[tightI])) + (left[tightI] < 0 ? ' short' : ' left') +
          '. Over the year: ' + (yr < 0 ? '$' + yaFmt(-yr) + ' short' : '$' + yaFmt(yr) + ' left') + '.</div>';
   } else {
-    h += '<div class="ya-note">Type a monthly income above to see how each month ends up.</div>';
+    h += '<div class="ya-note">' + (mine ? 'Type your income in the Income row to see how each month ends up.'
+      : 'No income logged in these months yet. Log your income (Received), or switch to <b>My budget</b> and type it in.') + '</div>';
   }
-
-  var thinSecs = c.secs.filter(function(s) { return !s.extrasOnly && s.used < 4; });
-  if (thinSecs.length) {
+  var thinSecs = c.secs.filter(isThin).concat(c.inc && isThin(c.inc) ? [c.inc] : []);
+  if (thinSecs.length && !mine) {
     h += '<div class="ya-note"><b>' + thinSecs.map(function(s) { return secLabel(s.sec); }).join(', ') +
       '</b> ' + (thinSecs.length === 1 ? 'is' : 'are') + ' based on only a few months, so treat ' + (thinSecs.length === 1 ? 'that number' : 'those numbers') + ' as a rough guess.</div>';
   }
@@ -27080,7 +27205,6 @@ function renderYearAhead() {
   yaHidePop();
   body.innerHTML = h;
 }
-
 /* ── Tap a cell: how was this number worked out? ───────────────
    Read-only. Explains the cell from the same numbers the grid used
    (yaSection's "why"), and lets each month jump to that month. */
@@ -27088,21 +27212,44 @@ var _yaView = null;
 function yaHidePop() { var p = document.getElementById('ya-pop'); if (p) p.remove(); }
 function yaPopHtml(sec, m, k) {
   var v = _yaView, c = v.c, mon = TREND_MONTHS[m] + ' ' + v.oyr[k], h = '';
+  var secName = function(id) { return escHtml(yaRowName(id)); };
+  var jumpSec = sec === '_inc' ? 'income' : sec === '_sav' ? 'savings' : sec;
+  var money = function(x) { return (x < 0 ? '−$' : '$') + yaFmt(Math.abs(x)); };
   var line = function(mk, amt, note) {
-    return '<button type="button" class="ya-pl" data-mk="' + mk + '" data-sec="' + (sec || '') + '"><span>' + yaFmtMk(mk) + (note ? ' <i>' + note + '</i>' : '') +
-           '</span><span>$' + yaFmt(amt) + ' ›</span></button>';
+    return '<button type="button" class="ya-pl" data-mk="' + mk + '" data-sec="' + (jumpSec || '') + '"><span>' + yaFmtMk(mk) + (note ? ' <i>' + note + '</i>' : '') +
+           '</span><span>' + money(amt) + ' ›</span></button>';
   };
+  var fixed = function(label, amt, cls) { return '<div class="ya-pl static' + (cls ? ' ' + cls : '') + '"><span>' + label + '</span><span>' + money(amt) + '</span></div>'; };
   if (!sec) {   // Planned spending row: the month by section
-    h += '<div class="ya-pt">Planned spending · ' + mon + '</div><div class="ya-ps">$' + yaFmt(c.tot[m]) + ', made up of:</div><div class="ya-plist">';
-    c.secs.forEach(function(s) { if (s.plan[m]) h += '<div class="ya-pl static"><span>' + escHtml(getSectionName(s.sec)) + '</span><span>$' + yaFmt(s.plan[m]) + '</span></div>'; });
+    h += '<div class="ya-pt">Planned spending · ' + mon + '</div><div class="ya-ps">' + money(v.spend[k]) + ', made up of:</div><div class="ya-plist">';
+    c.secs.forEach(function(s) { if (v.E[s.sec][k]) h += fixed(escHtml(getSectionName(s.sec)), v.E[s.sec][k]); });
     return h + '</div>';
   }
-  var s = c.secs.filter(function(q) { return q.sec === sec; })[0];
+  if (sec === '_left') {   // Left over: income − spending − savings
+    h += '<div class="ya-pt">Left over · ' + mon + '</div><div class="ya-ps">What is free to spend on anything else.</div><div class="ya-plist">';
+    h += fixed('Income', v.inc[k]) + fixed('− Planned spending', v.spend[k]);
+    if (v.sav[k]) h += fixed('− Savings', v.sav[k]);
+    h += fixed('<b>Left over</b>', v.left[k], 'ya-ptot') + '</div>';
+    if (v.left[k] < 0) h += '<div class="ya-pw">This month is planned to cost more than comes in.</div>';
+    return h;
+  }
+  if (sec === '_sav') {
+    var sw = c.sav && c.sav.why;
+    h += '<div class="ya-pt">Savings · ' + mon + '</div><div class="ya-ps">Planned: <b>' + money(v.sav[k]) + '</b></div>';
+    if (sw) {
+      h += '<div class="ya-pw">How much your savings total grew in an average month: deposits plus any gains, the same measure Growth projection uses' +
+           (sw.avg <= 0 ? '. It went down on average, so it is planned at $0' : '') + '.</div><div class="ya-plist">';
+      sw.mks.forEach(function(mk, i) { h += line(mk, sw.vals[i]); });
+      h += '</div><div class="ya-pf">Tap a month to go to it.</div>';
+    }
+    return h;
+  }
+  var s = sec === '_inc' ? c.inc : c.secs.filter(function(q) { return q.sec === sec; })[0];
   if (!s) return '';
   var w = s.why, xs = (s.xamt && s.xamt[m]) || [];
   var xsum = xs.reduce(function(t, x) { return t + x.amount; }, 0);
   var fromHist = s.plan[m] - xsum;
-  h += '<div class="ya-pt">' + escHtml(getSectionName(sec)) + ' · ' + mon + '</div>';
+  h += '<div class="ya-pt">' + secName(sec) + ' · ' + mon + '</div>';
   h += '<div class="ya-ps">Planned: <b>$' + yaFmt(s.plan[m]) + '</b></div>';
   if (w && !s.extrasOnly) {
     var idx, why;
@@ -27112,7 +27259,7 @@ function yaPopHtml(sec, m, k) {
             ', so ' + TREND_MONTHS[m] + ' is planned at ' + (idx.length === 1 ? 'that amount' : 'their average') + ' instead of your usual month.';
     } else if (s.occasional) {
       idx = w.mks.map(function(_, i) { return i; });
-      why = 'Spending here comes and goes, so it is spread evenly: the average of all ' + w.mks.length + ' months, counting the ones with nothing.';
+      why = (sec === '_inc' ? 'Income' : 'Spending') + ' here comes and goes, so it is spread evenly: the average of all ' + w.mks.length + ' months, counting the ones with nothing.';
     } else {
       idx = w.calm;
       why = 'Your usual month: the average of ' + idx.length + ' month' + (idx.length === 1 ? '' : 's') + '.';
@@ -27158,6 +27305,7 @@ function yaShowPop(td) {
   pop.style.left = left + 'px'; pop.style.top = top + 'px';
   document.querySelectorAll('.ya-grid td.sel').forEach(function(t) { t.classList.remove('sel'); });
   td.classList.add('sel');
+  _yaPopAt = Date.now();
 }
 document.addEventListener('click', function(e) {
   var pop = document.getElementById('ya-pop');
@@ -27176,7 +27324,12 @@ document.addEventListener('keydown', function(e) {
   var td = e.target.closest && e.target.closest('#ya-body .ya-grid td.tap');
   if (td && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); yaShowPop(td); }
 });
+// Scrolling the table sideways closes the popup, except right after it
+// opened: tapping a half-hidden cell makes the browser scroll it into view,
+// which would otherwise close the popup the tap just opened.
+var _yaPopAt = 0;
 document.addEventListener('scroll', function(e) {
+  if (Date.now() - _yaPopAt < 500) return;
   if (e.target && e.target.classList && e.target.classList.contains('ya-scroll')) yaHidePop();
 }, true);
 function yaExtrasHtml(c) {
