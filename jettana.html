@@ -1882,7 +1882,7 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
   }
   .main-content { transition: margin-left 0.25s ease; }
   body.sidebar-collapsed #calc-fab  { left: 16px; }
-  body.sidebar-collapsed #calc-panel { left: 16px !important; }
+  body.sidebar-collapsed #calc-panel { left: 16px; }   /* not !important: the panel is placed next to the icon when it opens */
 }
 
 @media (max-width: 900px) {
@@ -21282,11 +21282,44 @@ document.addEventListener('keydown', function(e) {
      size to clamp against. Its position is applied on OPEN instead, where
      offsetWidth/offsetHeight are real. toggleCalc() lives outside this
      closure, hence the window handle. */
-  window._restoreCalcPanelPos = function() {
-    var st = readCalcPos();
-    if (!st || !panel) return;
-    place(panel, st.l, st.t, panel.offsetWidth, panel.offsetHeight);
-  };
+  /* The panel always opens next to the icon: just above it, lined up with
+     its left edge, or below it if there's no room above, kept on screen.
+     It used to restore its own saved spot, which went wrong two ways: moving
+     the ICON while the panel was closed saved the hidden panel as 0,0 (so it
+     opened in the top-left corner), and the two were clamped separately on a
+     smaller window, drifting apart. One rule, worked out from the icon, can't
+     drift. */
+  var GAP = 12;
+  function placePanelByFab() {
+    if (!panel || !fab || panel.style.display === 'none') return;
+    var vw = window.innerWidth, vh = window.innerHeight;
+    // offsetLeft/Top, not getBoundingClientRect: the icon grows on hover, and
+    // its enlarged box shifted the panel by a couple of pixels.
+    var fl = fab.offsetLeft, ft = fab.offsetTop, fh = fab.offsetHeight || 44;
+    var pw = panel.offsetWidth, ph = panel.offsetHeight;
+    var left = Math.max(0, Math.min(vw - pw, fl));
+    var top = ft - ph - GAP;
+    if (top < 0) top = ft + fh + GAP;                    // no room above: open below
+    top = Math.max(0, Math.min(vh - ph, top));
+    panel.style.left = left + 'px';
+    panel.style.top = top + 'px';
+    panel.style.bottom = 'auto';
+  }
+  window._restoreCalcPanelPos = placePanelByFab;
+
+  // Keep them together when the window changes size, or the sidebar opens or
+  // closes (the icon slides with it when it hasn't been moved).
+  function keepFabOnScreen() {
+    if (!fab || fab.dataset.dragged !== '1') return;
+    var r = fab.getBoundingClientRect();
+    place(fab, r.left, r.top, fab.offsetWidth || 44, fab.offsetHeight || 44);
+  }
+  window.addEventListener('resize', function() { keepFabOnScreen(); placePanelByFab(); });
+  document.addEventListener('transitionend', function(e) { if (e.target === fab) placePanelByFab(); });
+  try {
+    new MutationObserver(function() { requestAnimationFrame(placePanelByFab); })
+      .observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  } catch (e) {}
 
   function initCalcDrag() {
     panel = document.getElementById('calc-panel');
@@ -21377,16 +21410,8 @@ document.addEventListener('keydown', function(e) {
     fab.style.left = left + 'px';
     fab.style.top  = top + 'px';
     fab.style.bottom = 'auto';
-    // Keep panel near FAB if open
-    if (panel.style.display !== 'none') {
-      var pw = panel.offsetWidth, ph = panel.offsetHeight;
-      var pLeft = Math.max(0, Math.min(vw - pw, left));
-      var pTop  = top - ph - 8;
-      if (pTop < 0) pTop = top + size + 8;
-      panel.style.left = pLeft + 'px';
-      panel.style.top  = pTop + 'px';
-      panel.style.bottom = 'auto';
-    }
+    // Keep panel next to the icon if open
+    placePanelByFab();
   }
 
   function startDrag(e) {
@@ -21415,20 +21440,28 @@ document.addEventListener('keydown', function(e) {
     document.addEventListener('touchend', stopDragTouch);
   }
 
+  /* Dragging the panel carries the icon with it, sitting just under the panel
+     on the same left edge: exactly where placePanelByFab() expects it, so the
+     next open lands in the same spot. When there's no room under the panel,
+     the icon goes above it instead. */
+  function movePanelAndFab(x, y) {
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var pw = panel.offsetWidth, ph = panel.offsetHeight, fs = fab.offsetWidth || 44;
+    var left = Math.max(0, Math.min(vw - pw, x));
+    var top  = Math.max(0, Math.min(vh - ph, y));
+    panel.style.left = left + 'px'; panel.style.top = top + 'px'; panel.style.bottom = 'auto';
+    var fTop = top + ph + GAP;
+    if (fTop + fs > vh) fTop = Math.max(0, top - fs - GAP);
+    fab.style.left = Math.min(vw - fs, left) + 'px'; fab.style.top = fTop + 'px'; fab.style.bottom = 'auto';
+    fab.dataset.dragged = '1';
+  }
+
   function onDrag(e) {
     if (!dragging) return;
     panelMoved = true;
     var vw = window.innerWidth, vh = window.innerHeight;
     var pw = panel.offsetWidth, ph = panel.offsetHeight;
-    var left = Math.max(0, Math.min(vw - pw, e.clientX - startX));
-    var top  = Math.max(0, Math.min(vh - ph, e.clientY - startY));
-    panel.style.left = left + 'px';
-    panel.style.top  = top + 'px';
-    panel.style.bottom = 'auto';
-    // Move FAB too — keep it near panel bottom
-    fab.style.left = (left + pw / 2 - 22) + 'px';
-    fab.style.top  = (top + ph + 8) + 'px';
-    fab.style.bottom = 'auto';
+    movePanelAndFab(e.clientX - startX, e.clientY - startY);
   }
 
   function onDragTouch(e) {
@@ -21438,14 +21471,7 @@ document.addEventListener('keydown', function(e) {
     var touch = e.touches[0];
     var vw = window.innerWidth, vh = window.innerHeight;
     var pw = panel.offsetWidth, ph = panel.offsetHeight;
-    var left = Math.max(0, Math.min(vw - pw, touch.clientX - startX));
-    var top  = Math.max(0, Math.min(vh - ph, touch.clientY - startY));
-    panel.style.left = left + 'px';
-    panel.style.top  = top + 'px';
-    panel.style.bottom = 'auto';
-    fab.style.left = (left + pw / 2 - 22) + 'px';
-    fab.style.top  = (top + ph + 8) + 'px';
-    fab.style.bottom = 'auto';
+    movePanelAndFab(touch.clientX - startX, touch.clientY - startY);
   }
 
   function stopDrag() {
