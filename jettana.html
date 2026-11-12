@@ -3001,6 +3001,48 @@ mark.hl-rose  { --hl: rgba(224, 132, 132, 0.30); }
    desktop. Hiding does not reset the calculator: it keeps its value. */
 body.sidebar-open #calc-fab,
 body.sidebar-open #calc-panel { display: none !important; }
+/* Year ahead moved aside: the calculator comes in front of it (the modal
+   layer is z-index 99999) so the two can be used together. */
+/* !important: #calc-panel carries an inline z-index:1500 in its markup */
+body.ya-aside #calc-fab, body.ya-aside #calc-panel { z-index: 100001 !important; }
+
+/* ── Scratch pad (the Pad tab of the calculator) ── */
+.calc-tabs { display:flex; align-items:center; gap:3px; margin:-2px 30px 6px 0; }
+.calc-tabs button { font-family:'Outfit',sans-serif; font-size:11px; font-weight:600; border:none; border-radius:999px; padding:3px 9px; background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.55); cursor:pointer; }
+.calc-tabs button.on { background:rgba(255,255,255,0.92); color:#1A2332; }
+.calc-tabs .calc-topad { margin-left:auto; background:none; color:rgba(255,255,255,0.5); font-weight:500; padding:3px 4px; }
+.calc-tabs .calc-topad:hover { color:#fff; }
+#calc-panel.pad-mode .calc-topad { display:none; }
+#calc-panel.pad-mode { width:290px !important; }
+#calc-panel.pad-mode .calc-grid, #calc-panel.pad-mode #calc-expr, #calc-panel.pad-mode #calc-display { display:none !important; }
+#calc-panel.pad-mode #pad-head, #calc-panel.pad-mode #pad-wrap { display:block !important; }
+#pad-head { color:rgba(255,255,255,0.55); font-size:11px; text-align:right; padding:2px 0 2px; }
+#pad-head span { margin-right:8px; letter-spacing:0.3px; }
+#pad-head b { color:#fff; font-size:24px; font-weight:700; font-variant-numeric:tabular-nums; }
+.pad-body { max-height:300px; min-height:120px; overflow-y:auto; padding:6px 0 2px; overscroll-behavior:contain; }
+.pad-line { display:flex; align-items:center; gap:4px; padding:0 6px 0 10px; border-bottom:1px solid var(--mist-light); }
+.pad-in { flex:1; min-width:0; border:none; background:none; font-family:'Outfit',sans-serif; font-size:13px; color:var(--ink); padding:8px 0; outline:none; }
+.pad-in::placeholder { color:var(--steel); opacity:0.6; }
+.pad-res { flex-shrink:0; font-size:13px; font-weight:600; color:var(--sage-dark); font-variant-numeric:tabular-nums; cursor:pointer; padding:3px 5px; border-radius:5px; max-width:45%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pad-res:hover { background:var(--sage-light); }
+.pad-res.neg { color:var(--blush); }
+.pad-x { flex-shrink:0; border:none; background:none; color:var(--steel); font-size:15px; line-height:1; padding:4px 5px; cursor:pointer; opacity:0; }
+.pad-line:hover .pad-x, .pad-line:focus-within .pad-x { opacity:0.7; }
+.pad-x:hover { opacity:1 !important; color:var(--blush); }
+.pad-foot { display:flex; justify-content:space-between; padding:6px 10px 9px; border-top:1px solid var(--mist); }
+.pad-foot button { font-family:'Outfit',sans-serif; font-size:12px; border:none; background:none; color:var(--sage-dark); cursor:pointer; padding:4px 2px; }
+.pad-foot .pad-clear { color:var(--steel); }
+.pad-foot .pad-clear:hover { color:var(--blush); }
+.pad-empty { font-size:12px; color:var(--steel); padding:10px 12px; line-height:1.5; }
+.dark .pad-in { color:#E2E8F0; }
+@media (pointer: coarse) {
+  #calc-panel.pad-mode { width:300px !important; }
+  .pad-in { font-size:16px; padding:11px 0; }
+  .pad-res { font-size:15px; }
+  .pad-x { opacity:0.55; font-size:20px; padding:8px 8px; }
+  .calc-tabs button { font-size:13px; padding:6px 12px; }
+  .pad-foot button { font-size:14px; padding:8px 4px; }
+}
 @media (max-width: 767px) {
   #calc-fab  { left: 16px; }
   #calc-panel { left: 16px; }
@@ -7324,6 +7366,10 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
           <button class="askme-q" onclick="toggleAskMe(this)">Can I jump from a chart to the rows behind it?<span class="askme-q-arrow">▾</span></button>
           <div class="askme-a">Yes, from eight places. <strong>To a month:</strong> tap a point on the <strong>Net Worth Trend</strong>, or an underlined month in <strong>Spending Trends → ⭐ Peaks</strong> or <strong>→ 🔁 Items</strong>. <strong>To a section:</strong> tap a category tile on the <strong>Month-over-Month card</strong>, or a category line in the <strong>Total Expenses</strong> breakdown once you've clicked the card to pin it. <strong>To a row:</strong> tap a transaction in the <strong>Spending Calendar</strong>, a charge in a <strong>card or account badge panel</strong>, or a bill in the <strong>Bills Due</strong> panel — the last two need the panel pinned first. Wherever you land, a collapsed section opens itself and the row or card flashes gold so you can see where you arrived. Dragging a panel aside first keeps it open while you jump, so you can work through several without reopening it.</div>
         </div>
+        <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">Is there somewhere to jot notes and do quick math?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Yes: the <strong>scratch pad</strong>. Tap the calculator button, then <strong>Pad</strong>. Type anything, one note per line. Any line with a sum works out its own answer, words and all: <em>rent 1200 + utilities 180</em> shows <strong>1,380</strong>, and <em>200 + 10%</em> is 220. The total of every answer sits at the top. Start a line with <strong>#</strong> to keep it as a plain note that never counts. <strong>Enter</strong> starts a new line, <strong>Backspace</strong> on an empty line removes it, and × deletes any line. Tap an answer to carry it into the calculator, or tap <strong>+ to pad</strong> on the calculator to add its number to the pad. There's one pad, it's saved with your budget, and it syncs to your account like everything else.</div>
+        </div>
       </div>
 
       <div class="askme-empty" id="askme-empty" style="display:none;">No results found. Try a different word.</div>
@@ -7460,7 +7506,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
 
 <div class="trends-overlay" id="ya-overlay" style="display:none;" onclick="if(event.target===this)hideYearAhead()">
   <div class="trends-modal" id="ya-modal" style="max-width:980px;">
-    <div class="trends-header" style="cursor:default;">
+    <div class="trends-header" id="ya-header">
       <h3>🗓️ Year ahead</h3>
       <button class="trends-close" onclick="hideYearAhead()" aria-label="Close">×</button>
     </div>
@@ -7639,6 +7685,12 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       ontouchend="event.preventDefault();event.stopPropagation();closeCalc();"
       onclick="event.stopPropagation();closeCalc();"
       style="position:absolute;top:5px;right:7px;background:none;border:none;color:rgba(255,255,255,0.45);font-size:19px;line-height:1;padding:5px 7px;cursor:pointer;font-family:inherit;">×</button>
+    <div class="calc-tabs" role="tablist" aria-label="Calculator or scratch pad">
+      <button type="button" id="calc-tab-calc" class="on" role="tab" onclick="calcSetTab('calc')">Calc</button>
+      <button type="button" id="calc-tab-pad" role="tab" onclick="calcSetTab('pad')">Pad</button>
+      <button type="button" id="calc-topad" class="calc-topad" onclick="calcToPad()" title="Add this number to your scratch pad">+ to pad</button>
+    </div>
+    <div id="pad-head" style="display:none;"><span>Total</span><b id="pad-total">0</b></div>
     <div id="calc-expr" style="font-size:11px;color:rgba(255,255,255,0.4);min-height:18px;text-align:right;letter-spacing:0.3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px;padding-right:28px;"></div>
     <div id="calc-display" style="font-size:36px;font-weight:700;color:white;text-align:right;letter-spacing:-0.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.1;">0</div>
   </div>
@@ -7663,6 +7715,13 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
     <button ontouchstart="event.preventDefault();calcInput('.')" onclick="calcInput('.')"   class="calc-btn">.</button>
     <button ontouchstart="event.preventDefault();calcInput('+')" onclick="calcInput('+')"   class="calc-btn calc-op">+</button>
     <button ontouchstart="event.preventDefault();calcInput('=')" onclick="calcInput('=')"   class="calc-btn calc-eq" style="grid-column:span 4;">=</button>
+  </div>
+  <div id="pad-wrap" style="display:none;">
+    <div class="pad-body" id="pad-body"></div>
+    <div class="pad-foot">
+      <button type="button" onclick="padAddLine()">+ New line</button>
+      <button type="button" class="pad-clear" onclick="padClear()">Clear pad</button>
+    </div>
   </div>
 </div>
 
@@ -7852,6 +7911,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>⇥ <strong>Indent bullets</strong> — on a bullet or checkbox line in any note, Tab indents and Shift+Tab outdents; Enter continues the list at the same level</span></div>
       <div class="shortcut-row"><span>✨ <strong>Autocomplete</strong> — start typing a label to see suggestions from your history; selecting one prefills its text and strike colors, while the number color keeps following the one you last chose</span></div>
       <div class="shortcut-row"><span>⌨ <strong>Enter key</strong> — pressing Enter in any cell moves down to the same column in the next row; on the last row it creates a new row automatically</span></div>
+      <div class="shortcut-row"><span>📝 <strong>Scratch pad</strong> — calculator button → Pad; one note per line, and any line with a sum shows its answer (<em>rent 1200 + utilities 180</em> → 1,380), with a running total. Start a line with # to keep it as a plain note. Tap an answer to use it in the calculator; <strong>+ to pad</strong> sends the calculator's number to the pad. Saved with your budget and synced to your account.</span></div>
       <div class="shortcut-row"><span>🧮 <strong>Expression calculator</strong> — type a math expression in any number cell (e.g. <em>50+25+30</em> or <em>1500-200-50</em>) and it auto-calculates when you tab or click away</span></div>
       <div class="shortcut-row"><span>☑ <strong>Bulk edit modes</strong> — ⋯ on any section header offers five: select rows to delete, mark paid, set a date, color, or move to another section. Pick a mode, tap the rows, apply.</span></div>
       <div class="shortcut-row"><span>📅 <strong>Bulk date</strong> — ⋯ on the section header → 📅 Select rows to set a date; stamp one date across every selected row instead of opening each picker. Jettana picks the right date field for the section automatically (Received for Income, Actual for expenses), and rows re-sort once applied.</span></div>
@@ -15929,6 +15989,8 @@ function openLinkEditor(section, id) {
 }
 
 function init() {
+  // Scratch pad: pick up the account's copy after a sync (skipped while typing in it)
+  try { padRefreshFromData(); } catch (e) {}
   const now = new Date();
   const todayKey = monthKey(now.getFullYear(), now.getMonth());
   getMonthData(todayKey);
@@ -21121,6 +21183,7 @@ var _calcNewNum = true;
 function closeCalc() {
   var panel = document.getElementById('calc-panel');
   if (panel) panel.style.display = 'none';
+  if (_padSaveTimer) padSaveNow();
 }
 
 function toggleCalc() {
@@ -21130,6 +21193,8 @@ function toggleCalc() {
   panel.style.display = isOpen ? 'none' : 'block';
   // Put it back where it was parked. Done on open, not at load, because a
   // hidden panel has no size to clamp against.
+  if (!isOpen && panel.classList.contains('pad-mode')) { padLoad(); padRender(); }
+  if (isOpen && _padSaveTimer) padSaveNow();
   if (!isOpen && window._restoreCalcPanelPos) window._restoreCalcPanelPos();
   // Deliberately NOT resetting on open. Clicking a month (or anywhere outside)
   // closes the panel, so resetting here wiped whatever had been typed. Only C
@@ -21249,6 +21314,254 @@ document.addEventListener('keydown', function(e) {
     else { _calcDisplay = '0'; _calcNewNum = true; }
     document.getElementById('calc-display').textContent = _calcDisplay;
     e.preventDefault();
+  }
+});
+
+// ── Scratch pad (the Pad tab of the calculator) ──────────────
+/* One pad of notes and quick math. Each line shows its own answer when it
+   holds a sum ("rent 1200 + utilities 180" → 1,380); the header adds up every
+   line that has one.
+
+   Stored as a top-level _pad key in the normal data object, like _birthMonth:
+   it is saved by saveAll() and so goes to the account through the same guarded
+   path as everything else, and the demo sandbox keeps its own copy. Nothing
+   about how or when sync runs is changed. Saves are debounced so typing a line
+   is one save, not one per letter. */
+var PAD_MAX_LINES = 300, PAD_MAX_LEN = 300;
+var _pad = null, _padSaveTimer = null;
+
+function padLoad() {
+  var p = null;
+  try { p = loadAll()._pad; } catch (e) {}
+  var lines = (p && Array.isArray(p.lines)) ? p.lines : [];
+  _pad = { lines: lines.filter(function(l) { return l && typeof l.t === 'string'; }).slice(0, PAD_MAX_LINES)
+    .map(function(l) { return { id: String(l.id || padId()), t: l.t.slice(0, PAD_MAX_LEN) }; }) };
+  return _pad;
+}
+function padId() { return 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function padSaveSoon() {
+  clearTimeout(_padSaveTimer);
+  _padSaveTimer = setTimeout(padSaveNow, 700);
+}
+function padSaveNow() {
+  clearTimeout(_padSaveTimer); _padSaveTimer = null;
+  if (!_pad) return;
+  var all = loadAll();
+  var lines = _pad.lines.filter(function(l) { return l.t.trim() !== ''; })
+    .map(function(l) { return { id: l.id, t: l.t }; });
+  var oldLines = (all._pad && Array.isArray(all._pad.lines)) ? all._pad.lines : [];
+  // Only write when the text really changed: no save (and no sync) for nothing
+  if (JSON.stringify(oldLines) === JSON.stringify(lines)) return;
+  if (lines.length) all._pad = { lines: lines, updated: new Date().toISOString() };
+  else delete all._pad;
+  saveAll(all);
+}
+// Don't lose the last few keystrokes if the page is closed mid-pause
+window.addEventListener('pagehide', function() { if (_padSaveTimer) padSaveNow(); });
+document.addEventListener('visibilitychange', function() { if (document.hidden && _padSaveTimer) padSaveNow(); });
+
+/* After a sync or any full redraw (init), pick up the account's copy, unless
+   you're typing in the pad right now: then your version wins and is saved. */
+function padRefreshFromData() {
+  var a = document.activeElement;
+  if (_padSaveTimer || (a && a.classList && a.classList.contains('pad-in'))) return;
+  padLoad();
+  var panel = document.getElementById('calc-panel');
+  if (panel && panel.classList.contains('pad-mode')) padRender();
+}
+
+/* The math. Words are ignored, so labels can sit next to numbers. Supports
+   + − × ÷ (also x, *, /), brackets, $ and thousands commas, and % the way
+   people say it: "200 + 10%" is 220, "15% of 80" / "80 * 15%" is 12.
+   Returns null when the line isn't a complete sum (plain notes, or a sum
+   still being typed), so nothing is shown rather than a wrong number. */
+function padEval(text) {
+  var s = String(text || '').toLowerCase();
+  if (!/\d/.test(s)) return null;
+  if (/^\s*#/.test(s)) return null;   // "# call mom at 5": a plain note, never counted
+  s = s.replace(/[−–—]/g, '-').replace(/×/g, '*').replace(/÷/g, '/')
+       .replace(/(\d),(?=\d{3}(?!\d))/g, '$1')               // 1,200 → 1200
+       .replace(/(\d|\))\s*x\s*(?=[\d(.$])/g, '$1*')          // 3 x 45
+       .replace(/(\d)\s*%\s*of\s*/g, '$1%*')                   // 15% of 80
+       .replace(/([a-z])-(?=[a-z])/g, '$1 ');                  // co-pay is a word, not a minus
+  s = s.replace(/[^0-9.+\-*/()% ]/g, ' ');
+  var toks = s.match(/\d*\.?\d+|[+\-*/()%]/g);
+  if (!toks) return null;
+  var i = 0;
+  function peek() { return toks[i]; }
+  function isNum(t) { return t !== undefined && /^\d*\.?\d+$/.test(t); }
+  function primary() {
+    var t = toks[i];
+    if (isNum(t)) { i++; return { v: parseFloat(t) }; }
+    if (t === '(') { i++; var e = expr(); if (toks[i] !== ')') throw 0; i++; return { v: e }; }
+    throw 0;
+  }
+  function factor() {
+    var t = peek();
+    if (t === '-') { i++; var f = factor(); return { v: -f.v, pct: f.pct }; }
+    if (t === '+') { i++; return factor(); }
+    var p = primary();
+    if (peek() === '%') { i++; return { v: p.v, pct: true }; }
+    return p;
+  }
+  function term() {
+    var f = factor(), v = f.pct ? f.v / 100 : f.v, only = f, n = 1;
+    while (peek() === '*' || peek() === '/') {
+      var op = toks[i++], g = factor(), gv = g.pct ? g.v / 100 : g.v;
+      if (op === '*') v *= gv; else { if (gv === 0) throw 0; v /= gv; }
+      n++;
+    }
+    return { v: v, pctOnly: n === 1 && only.pct, raw: only.v };
+  }
+  function expr() {
+    var a = term(), v = a.v;
+    while (peek() === '+' || peek() === '-') {
+      var op = toks[i++], b = term();
+      // "+ 10%" means ten percent OF what came before
+      var add = b.pctOnly ? v * b.raw / 100 : b.v;
+      v = op === '+' ? v + add : v - add;
+    }
+    return v;
+  }
+  try {
+    var r = expr();
+    if (i !== toks.length || !isFinite(r)) return null;    // e.g. "12 15" or "1200 +"
+    return Math.round(r * 100) / 100;
+  } catch (e) { return null; }
+}
+function padFmt(v) {
+  var neg = v < 0, a = Math.abs(v);
+  var str = a.toLocaleString('en-US', { minimumFractionDigits: a % 1 ? 2 : 0, maximumFractionDigits: 2 });
+  return (neg ? '−' : '') + str;
+}
+
+function padRender(focusId, caretEnd) {
+  if (!_pad) padLoad();
+  var body = document.getElementById('pad-body');
+  if (!body) return;
+  if (!_pad.lines.length) _pad.lines.push({ id: padId(), t: '' });
+  var h = '';
+  _pad.lines.forEach(function(l, k) {
+    h += '<div class="pad-line" data-id="' + l.id + '"><input class="pad-in" type="text" maxlength="' + PAD_MAX_LEN + '" value="' + escHtml(l.t) + '"' +
+         (k === 0 && _pad.lines.length === 1 && !l.t ? ' placeholder="e.g. rent 1200 + utilities 180"' : '') +
+         ' aria-label="Pad line ' + (k + 1) + '"><span class="pad-res" title="Use in calculator"></span>' +
+         '<button type="button" class="pad-x" aria-label="Delete line" title="Delete line">×</button></div>';
+  });
+  body.innerHTML = h;
+  padUpdateResults();
+  if (focusId) {
+    var inp = body.querySelector('.pad-line[data-id="' + focusId + '"] .pad-in');
+    if (inp) { inp.focus(); if (caretEnd) { var n = inp.value.length; try { inp.setSelectionRange(n, n); } catch (e) {} } }
+  }
+}
+function padUpdateResults() {
+  var total = 0, any = false;
+  document.querySelectorAll('#pad-body .pad-line').forEach(function(row) {
+    var inp = row.querySelector('.pad-in'), res = row.querySelector('.pad-res');
+    var v = padEval(inp.value);
+    res.textContent = v === null ? '' : padFmt(v);
+    res.dataset.v = v === null ? '' : String(v);
+    res.classList.toggle('neg', v !== null && v < 0);
+    if (v !== null) { total += v; any = true; }
+  });
+  var t = document.getElementById('pad-total');
+  if (t) t.textContent = any ? padFmt(Math.round(total * 100) / 100) : '0';
+}
+function padLineIndex(id) {
+  for (var k = 0; k < _pad.lines.length; k++) if (_pad.lines[k].id === id) return k;
+  return -1;
+}
+function padAddLine(afterId, text) {
+  if (!_pad) padLoad();
+  if (_pad.lines.length >= PAD_MAX_LINES) { showToast('The pad is full (' + PAD_MAX_LINES + ' lines). Delete a few to add more.', false); return; }
+  var line = { id: padId(), t: text || '' };
+  var k = afterId ? padLineIndex(afterId) : -1;
+  if (k >= 0) _pad.lines.splice(k + 1, 0, line);
+  else {
+    // "+ New line" reuses a trailing empty line instead of stacking blanks
+    var last = _pad.lines[_pad.lines.length - 1];
+    if (!text && last && !last.t) line = last; else _pad.lines.push(line);
+  }
+  padRender(line.id, true);
+  padSaveSoon();
+  return line;
+}
+function padDeleteLine(id, focusPrev) {
+  var k = padLineIndex(id);
+  if (k < 0) return;
+  _pad.lines.splice(k, 1);
+  var prev = _pad.lines[Math.max(0, k - 1)];
+  padRender(focusPrev && prev ? prev.id : null, true);
+  padSaveSoon();
+}
+function padClear() {
+  if (!_pad) padLoad();
+  var n = _pad.lines.filter(function(l) { return l.t.trim(); }).length;
+  if (!n) return;
+  if (!confirm('Clear all ' + n + ' line' + (n === 1 ? '' : 's') + ' on your scratch pad? This can’t be undone.')) return;
+  _pad.lines = [];
+  padRender();
+  padSaveNow();
+}
+function calcSetTab(tab) {
+  var panel = document.getElementById('calc-panel');
+  if (!panel) return;
+  var pad = tab === 'pad';
+  if (!pad && _padSaveTimer) padSaveNow();
+  panel.classList.toggle('pad-mode', pad);
+  var a = document.getElementById('calc-tab-calc'), b = document.getElementById('calc-tab-pad');
+  if (a) a.classList.toggle('on', !pad);
+  if (b) b.classList.toggle('on', pad);
+  if (pad) { padLoad(); padRender(); }
+  try { appStore.setItem(nsKey('jettana_calc_tab'), pad ? 'pad' : 'calc'); } catch (e) {}   // just which tab you last used
+  if (window._restoreCalcPanelPos) window._restoreCalcPanelPos();   // the pad is wider: keep it by the icon
+}
+// "+ to pad": the calculator's current number becomes a new pad line
+function calcToPad() {
+  var v = (typeof _calcDisplay === 'string' ? _calcDisplay : '0');
+  if (!_pad) padLoad();
+  calcSetTab('pad');
+  padAddLine(null, v);
+}
+// Tap an answer on the pad to carry it into the calculator
+function padUseInCalc(v) {
+  calcSetTab('calc');
+  _calcExpr = ''; _calcDisplay = String(v); _calcNewNum = false;
+  var d = document.getElementById('calc-display'), e = document.getElementById('calc-expr');
+  if (d) d.textContent = _calcDisplay;
+  if (e) e.textContent = 'from pad';
+}
+document.addEventListener('input', function(e) {
+  if (!e.target.classList || !e.target.classList.contains('pad-in')) return;
+  var id = e.target.closest('.pad-line').dataset.id, k = padLineIndex(id);
+  if (k >= 0) _pad.lines[k].t = e.target.value.slice(0, PAD_MAX_LEN);
+  padUpdateResults();
+  padSaveSoon();
+});
+document.addEventListener('keydown', function(e) {
+  if (!e.target.classList || !e.target.classList.contains('pad-in')) return;
+  var id = e.target.closest('.pad-line').dataset.id, k = padLineIndex(id);
+  if (e.key === 'Enter') { e.preventDefault(); padAddLine(id); }
+  else if (e.key === 'Backspace' && e.target.value === '' && _pad.lines.length > 1) { e.preventDefault(); padDeleteLine(id, true); }
+  else if (e.key === 'ArrowUp' && k > 0) { e.preventDefault(); padRender(_pad.lines[k - 1].id, true); }
+  else if (e.key === 'ArrowDown' && k < _pad.lines.length - 1) { e.preventDefault(); padRender(_pad.lines[k + 1].id, true); }
+  e.stopPropagation();   // keep the calculator's key shortcuts out of the pad
+});
+document.addEventListener('click', function(e) {
+  var x = e.target.closest && e.target.closest('#pad-body .pad-x');
+  if (x) { padDeleteLine(x.closest('.pad-line').dataset.id, false); return; }
+  var r = e.target.closest && e.target.closest('#pad-body .pad-res');
+  if (r && r.dataset.v !== '') padUseInCalc(r.dataset.v);
+});
+// Open on whichever tab you used last
+document.addEventListener('DOMContentLoaded', function() {
+  var t = 'calc';
+  try { t = appStore.getItem(nsKey('jettana_calc_tab')) || 'calc'; } catch (e) {}
+  if (t === 'pad') {
+    var panel = document.getElementById('calc-panel');
+    if (panel) panel.classList.add('pad-mode');
+    var a = document.getElementById('calc-tab-calc'), b = document.getElementById('calc-tab-pad');
+    if (a) a.classList.remove('on'); if (b) b.classList.add('on');
   }
 });
 
@@ -21439,6 +21752,7 @@ document.addEventListener('keydown', function(e) {
 
   function startDrag(e) {
     if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+    if (e.target.closest && e.target.closest('#pad-wrap')) return;
     e.preventDefault();
     dragging = true;
     var rect = panel.getBoundingClientRect();
@@ -21452,6 +21766,7 @@ document.addEventListener('keydown', function(e) {
 
   function startDragTouch(e) {
     if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+    if (e.target.closest && e.target.closest('#pad-wrap')) return;
     e.preventDefault();
     dragging = true;
     var touch = e.touches[0];
@@ -26000,7 +26315,7 @@ function renderNWChart() {
 // behavior is taught the same way everywhere. Injected before the header's
 // close button (or appended for headers without one).
 document.addEventListener('DOMContentLoaded', function() {
-  ['trends-header', 'nw-header', 'gp-header', 'compare-header', 'features-header', 'cal-header', 'askme-header', 'psav-header', 'lel-header', 'sgb-header'].forEach(function(id) {
+  ['trends-header', 'nw-header', 'gp-header', 'compare-header', 'features-header', 'cal-header', 'askme-header', 'psav-header', 'lel-header', 'sgb-header', 'ya-header'].forEach(function(id) {
     var hdr = document.getElementById(id);
     if (!hdr || hdr.querySelector('.modal-drag-hint')) return;
     var hint = document.createElement('span');
@@ -26977,7 +27292,62 @@ function showYearAhead() {
   ov.style.display = 'flex';
   renderYearAhead();
 }
-function hideYearAhead() { yaHidePop(); var ov = document.getElementById('ya-overlay'); if (ov) ov.style.display = 'none'; }
+function hideYearAhead() {
+  yaHidePop();
+  var ov = document.getElementById('ya-overlay'); if (ov) ov.style.display = 'none';
+  // Next open starts centred again, like Compare months
+  var modal = document.getElementById('ya-modal');
+  if (modal) { modal.style.position = ''; modal.style.left = ''; modal.style.top = ''; modal.style.margin = ''; }
+  if (ov) { ov.style.background = ''; ov.style.pointerEvents = ''; ov.style.alignItems = ''; ov.style.justifyContent = ''; }
+  document.body.classList.remove('ya-aside');
+}
+
+/* Drag Year ahead by its header (same as Compare months). Once moved, the dark
+   backdrop goes away and the page behind is usable, and the calculator comes
+   in front (body.ya-aside) so you can work numbers out next to the plan. */
+(function() {
+  var dragging = false, offX = 0, offY = 0;
+  function startDrag(x, y) {
+    var modal = document.getElementById('ya-modal'), overlay = document.getElementById('ya-overlay');
+    if (!modal) return;
+    yaHidePop();
+    var rect = modal.getBoundingClientRect();
+    modal.style.position = 'fixed'; modal.style.left = rect.left + 'px'; modal.style.top = rect.top + 'px'; modal.style.margin = '0';
+    if (overlay) {
+      overlay.style.background = 'transparent'; overlay.style.pointerEvents = 'none';
+      overlay.style.alignItems = 'flex-start'; overlay.style.justifyContent = 'flex-start';
+      modal.style.pointerEvents = 'auto';
+    }
+    document.body.classList.add('ya-aside');
+    offX = x - rect.left; offY = y - rect.top; dragging = true;
+  }
+  function onMove(x, y) {
+    if (!dragging) return;
+    var modal = document.getElementById('ya-modal');
+    if (!modal) return;
+    modal.style.left = Math.max(0, Math.min(x - offX, window.innerWidth - modal.offsetWidth)) + 'px';
+    modal.style.top = Math.max(0, Math.min(y - offY, window.innerHeight - 60)) + 'px';
+  }
+  function stop() { dragging = false; }
+  document.addEventListener('DOMContentLoaded', function() {
+    var hdr = document.getElementById('ya-header');
+    if (!hdr) return;
+    hdr.addEventListener('mousedown', function(e) {
+      if (e.target.closest('button, select, input')) return;
+      startDrag(e.clientX, e.clientY); e.preventDefault();
+    });
+    document.addEventListener('mousemove', function(e) { onMove(e.clientX, e.clientY); });
+    document.addEventListener('mouseup', stop);
+    hdr.addEventListener('touchstart', function(e) {
+      if (e.target.closest('button, select, input')) return;
+      var t = e.touches[0]; startDrag(t.clientX, t.clientY);
+    }, { passive: true });
+    hdr.addEventListener('touchmove', function(e) {
+      if (!dragging) return; var t = e.touches[0]; onMove(t.clientX, t.clientY); e.preventDefault();
+    }, { passive: false });
+    document.addEventListener('touchend', stop);
+  });
+})();
 /* Learn-from range. n = 3/6/12 → the last n logged months; 0 → all of them. */
 function yaSetRangeLast(n) {
   var st = yaStore(), av = yaAllHistory();
