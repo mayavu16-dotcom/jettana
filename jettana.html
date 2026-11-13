@@ -2033,6 +2033,28 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
 
 /* ── Search ─────────────────────────────────────────────────── */
 .search-wrap { position: relative; display: flex; align-items: center; }
+/* Month picker + title colour popup (tap the month name) */
+.mp-pop { position:fixed; z-index:2000; background:var(--white); border:1px solid var(--mist); border-radius:12px; padding:12px 14px 14px; box-shadow:0 8px 30px rgba(0,0,0,0.2); font-family:'Outfit',sans-serif; width:232px; box-sizing:border-box; }
+.mp-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.mp-head b { font-size:15px; color:var(--ink); }
+.mp-yr { border:none; background:none; font-size:20px; line-height:1; color:var(--steel); cursor:pointer; padding:2px 10px; border-radius:6px; }
+.mp-yr:hover:not(:disabled) { background:var(--mist-light); color:var(--sage-dark); }
+.mp-yr:disabled { opacity:0.25; cursor:default; }
+.mp-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:5px; }
+.mp-m { font-family:'Outfit',sans-serif; font-size:13px; padding:8px 0; border:1px solid var(--mist); border-radius:8px; background:var(--white); color:var(--ink); cursor:pointer; }
+.mp-m:hover:not(:disabled) { border-color:var(--sage); color:var(--sage-dark); }
+.mp-m.cur { background:var(--sage); border-color:var(--sage); color:#fff; font-weight:600; }
+.mp-m.none { color:var(--steel); opacity:0.4; border-style:dashed; cursor:default; }
+.mp-sep { height:1px; background:var(--mist); margin:12px -14px 12px; }
+.dark .mp-m { background:#1E2838; }
+.dark .mp-m.cur { background:var(--sage); }
+@media (pointer: coarse) { .mp-pop { width:270px; } .mp-m { padding:12px 0; font-size:15px; } .mp-yr { font-size:24px; padding:6px 14px; } }
+/* "Go to March 2025" under the search box */
+.s-goto { position:absolute; top:calc(100% + 6px); left:0; z-index:1200; min-width:100%; box-sizing:border-box; background:var(--white); border:1px solid var(--mist); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.14); padding:4px; font-family:'Outfit',sans-serif; white-space:nowrap; }
+.s-goto button { display:flex; align-items:center; gap:8px; width:100%; border:none; background:var(--sage-light); color:var(--sage-dark); font-family:inherit; font-size:13px; font-weight:600; padding:8px 10px; border-radius:7px; cursor:pointer; text-align:left; }
+.s-goto button kbd { margin-left:auto; font-family:inherit; font-size:10px; font-weight:500; color:var(--steel); border:1px solid var(--mist); border-radius:4px; padding:1px 5px; background:var(--white); }
+.s-goto .s-goto-none { font-size:12px; color:var(--steel); padding:8px 10px; }
+@media (pointer: coarse) { .s-goto button { font-size:15px; padding:11px 12px; } .s-goto button kbd { display:none; } }
 .search-input {
   font-family: 'Outfit', sans-serif;
   font-size: 13px;
@@ -6390,7 +6412,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="topbar-left">
         <div style="display:flex;align-items:center;gap:10px;">
           <button class="mnav" id="mnav-prev" onclick="navMonth(-1)" aria-label="Previous month" title="Previous month">‹</button>
-          <h2 id="topbar-title" onclick="toggleMonthColorPicker(event)" title="Click to color this month's title" style="cursor:pointer;">Loading…</h2>
+          <h2 id="topbar-title" onclick="toggleMonthColorPicker(event)" title="Go to another month, or color this month's title" style="cursor:pointer;">Loading…</h2>
           <span id="month-emoji-display" onclick="toggleMonthEmojiPicker(event)" title="Add emoji" style="font-size:28px;cursor:pointer;opacity:0;transition:opacity 0.15s,transform 0.15s;flex-shrink:0;line-height:1;display:inline-flex;align-items:center;vertical-align:middle;position:relative;top:0;"></span>
           <button class="mnav" id="mnav-next" onclick="navMonth(1)" aria-label="Next month" title="Next month">›</button>
           <button id="month-lock-btn" onclick="toggleMonthLock()" aria-pressed="false" title="Lock this month (view only)">🔓</button>
@@ -7378,6 +7400,10 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
           <div class="askme-a">Yes, from eight places. <strong>To a month:</strong> tap a point on the <strong>Net Worth Trend</strong>, or an underlined month in <strong>Spending Trends → ⭐ Peaks</strong> or <strong>→ 🔁 Items</strong>. <strong>To a section:</strong> tap a category tile on the <strong>Month-over-Month card</strong>, or a category line in the <strong>Total Expenses</strong> breakdown once you've clicked the card to pin it. <strong>To a row:</strong> tap a transaction in the <strong>Spending Calendar</strong>, a charge in a <strong>card or account badge panel</strong>, or a bill in the <strong>Bills Due</strong> panel — the last two need the panel pinned first. Wherever you land, a collapsed section opens itself and the row or card flashes gold so you can see where you arrived. Dragging a panel aside first keeps it open while you jump, so you can work through several without reopening it.</div>
         </div>
         <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">How do I jump to a different month quickly?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Three ways. <strong>Tap the month name</strong> at the top (e.g. "November 2026") to open a month picker: change the year with ‹ ›, then tap a month. Months you haven't set up yet are greyed out, and the title color options sit underneath. Or <strong>type a month into search</strong>, like <em>march 2025</em>, <em>mar '25</em>, <em>3/2025</em> or just <em>march</em>, and press Enter (or tap "Go to March 2025"). Or use the <strong>‹ ›</strong> arrows next to the month name. New months are still added from the sidebar.</div>
+        </div>
+        <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">Is there somewhere to jot notes and do quick math?<span class="askme-q-arrow">▾</span></button>
           <div class="askme-a">Yes: the <strong>scratch pad</strong>. Tap the calculator button, then <strong>Pad</strong>. Type anything, one note per line. Any line with a sum works out its own answer, words and all: <em>rent 1200 + utilities 180</em> shows <strong>1,380</strong>, and <em>200 + 10%</em> is 220. The total of every answer sits at the top. Start a line with <strong>#</strong> to keep it as a plain note that never counts. <strong>Enter</strong> starts a new line, <strong>Backspace</strong> on an empty line removes it, and × deletes any line. Tap an answer to carry it into the calculator, or tap <strong>+ to pad</strong> on the calculator to add its number to the pad. There's one pad, it's saved with your budget, and it syncs to your account like everything else.</div>
         </div>
@@ -7940,6 +7966,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>📊 <strong>Month-over-month</strong> — scroll to the bottom to compare spending vs any month you choose from the dropdown</span></div>
       <div class="shortcut-row"><span>🔍 <strong>Search</strong> — search across all rows in the current month by label, amount or date (type "pending" or tap the ◷ Pending chip to find charges marked pending). Tap the 📅 All months chip to search every month instead: a total, count and monthly average, then each charge grouped by month, for This year, Last 12 months, Last year or All time, optionally limited to one section; the page scrolls automatically to the first match. On a phone it's the magnifier in the top bar — tap it and a full-width search field opens (the ✕ closes it).</span></div>
       <div class="shortcut-row"><span>❓ <strong>Ask me</strong> — the help button in the top bar: search for an answer to anything about Jettana. On a phone it's the ❓ beside the magnifier; on a computer it says "Ask me".</span></div>
+      <div class="shortcut-row"><span>📅 <strong>Jump to a month</strong> — tap the month name for a month picker (‹ › changes the year; months not set up yet are greyed out; title colors are underneath), or type a month into search (<em>march 2025</em>, <em>mar '25</em>, <em>3/2025</em>) and press Enter.</span></div>
       <div class="shortcut-row"><span>‹ › <strong>Month arrows</strong> — the small arrows either side of the month name step to the previous or next month you've logged. They grey out at the ends of the list. The leaf (or the emoji you picked) and the 🔓 lock sit right after the name.</span></div>
       <div class="shortcut-row"><span>🔒 <strong>Lock a month</strong> — tap the 🔓 next to the month name (after the arrows) to make that month view-only. You can still read it, open notes and peek at long names, but nothing can be edited, added, deleted or undone until you tap 🔒 to unlock. Set per month, so locking one leaves the rest alone. Cloud sync can still update a locked month — it guards against stray taps, not against an edit made on another device.</span></div>
       <div class="shortcut-row"><span>✕ <strong>Clear month</strong> — ⋯ → Clear month to wipe all rows for the current month</span></div>
@@ -16355,6 +16382,57 @@ initTapReveal();
 
 
 // ── Search ───────────────────────────────────────────────────
+/* Typing a month into search ("march 2025", "mar '25", "3/2025", "2025-03",
+   or just "march") offers "Go to March 2025" at the top; Enter goes there.
+   Only when the WHOLE search is a month, so "march rent" is a normal search.
+   Only to months that exist, like the arrows: never creates one. */
+var MQ_NAMES = { jan:1, january:1, feb:2, february:2, mar:3, march:3, apr:4, april:4, may:5, jun:6, june:6, jul:7, july:7,
+  aug:8, august:8, sep:9, sept:9, september:9, oct:10, october:10, nov:11, november:11, dec:12, december:12 };
+function parseMonthQuery(q) {
+  q = String(q || '').trim().toLowerCase().replace(/[,.]/g, ' ').replace(/\s+/g, ' ');
+  if (!q) return null;
+  var m = null, y = null, t;
+  var yr = function(v) { v = +v; return v < 100 ? 2000 + v : v; };
+  // A 2-digit number after a month could be a DAY ("mar 25", "3/25" are also
+  // date searches), so a 2-digit year needs the apostrophe: "mar '25".
+  if ((t = q.match(/^([a-z]+)(?: (\d{4}|'\d{2}))?$/)) && MQ_NAMES[t[1]]) { m = MQ_NAMES[t[1]]; y = t[2] ? yr(t[2].replace("'", '')) : null; }
+  else if ((t = q.match(/^(\d{4}) ([a-z]+)$/)) && MQ_NAMES[t[2]]) { m = MQ_NAMES[t[2]]; y = +t[1]; }
+  else if ((t = q.match(/^(\d{1,2})\s*[\/\-]\s*(\d{4})$/))) { m = +t[1]; y = +t[2]; }
+  else if ((t = q.match(/^(\d{4})\s*[\/\-]\s*(\d{1,2})$/))) { y = +t[1]; m = +t[2]; }
+  else return null;
+  if (!(m >= 1 && m <= 12) || (y !== null && (y < 1990 || y > 2100))) return null;
+  var keys = allMonthKeys();   // newest first
+  if (y === null) {
+    // Just a month name: the most recent one you have, else this year's
+    var mm = ('0' + m).slice(-2), hit = keys.filter(function(k) { return k.slice(5) === mm; })[0];
+    return { mk: hit || (new Date().getFullYear() + '-' + mm), exists: !!hit };
+  }
+  var mk = y + '-' + ('0' + m).slice(-2);
+  return { mk: mk, exists: keys.indexOf(mk) >= 0 };
+}
+function updateMonthGoto(q) {
+  var wrap = document.querySelector('.search-wrap');
+  var box = document.getElementById('s-goto');
+  var r = _scopeAll ? null : parseMonthQuery(q);
+  if (!r || r.mk === currentMonthKey) { if (box) box.remove(); return; }
+  if (!box) { box = document.createElement('div'); box.id = 's-goto'; box.className = 's-goto'; if (wrap) wrap.appendChild(box); }
+  box.innerHTML = r.exists
+    ? '<button type="button" onmousedown="event.preventDefault()" onclick="goMonthFromSearch()">📅 Go to ' + monthLabel(r.mk) + ' <kbd>Enter</kbd></button>'
+    : '<div class="s-goto-none">' + monthLabel(r.mk) + ' isn’t set up yet. Add it from the sidebar.</div>';
+  box.dataset.mk = r.exists ? r.mk : '';
+  // A month name rarely matches a row; a red "No results" beside the
+  // suggestion reads like an error, so it steps aside while this shows
+  var cnt = document.getElementById('s-count');
+  if (cnt && /no results/i.test(cnt.textContent)) { cnt.textContent = ''; cnt.className = 'search-result-count'; }
+}
+function goMonthFromSearch() {
+  var box = document.getElementById('s-goto'), mk = box ? box.dataset.mk : '';
+  if (!mk) return false;
+  box.remove();
+  clearSearch();
+  if (mk !== currentMonthKey && loadAll()[mk]) switchMonth(mk);
+  return true;
+}
 var _pendOnly = false;   // the Pending chip; runs on top of whatever is typed
 function togglePendingSearch() {
   _pendOnly = !_pendOnly;
@@ -16516,6 +16594,7 @@ function doSearch(q) {
 function clearSearch() {
   var el = document.getElementById('s-input');
   if (el) { el.value = ''; }
+  var gt = document.getElementById('s-goto'); if (gt) gt.remove();
   _pendOnly = false; syncPendChip();
   _scopeAll = false; syncScopeChip(); hideAllSearchPanel(false);
   doSearch('');
@@ -19197,8 +19276,12 @@ window.addEventListener('load', function() {
   // Search listeners (existing)
   var el = document.getElementById('s-input');
   if (el) {
-    el.addEventListener('input', function() { doSearch(this.value); });
-    el.addEventListener('keydown', function(e) { if (e.key === 'Escape') clearSearch(); });
+    el.addEventListener('input', function() { doSearch(this.value); updateMonthGoto(this.value); });
+    el.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') { clearSearch(); updateMonthGoto(''); }
+      else if (e.key === 'Enter' && document.getElementById('s-goto') && goMonthFromSearch()) e.preventDefault();
+    });
+    el.addEventListener('blur', function() { setTimeout(function() { var b = document.getElementById('s-goto'); if (b && document.activeElement !== el) b.remove(); }, 150); });
   }
   var clearBtn = document.getElementById('s-clear');
   if (clearBtn) {
@@ -22998,49 +23081,59 @@ function applyMonthEmoji() {
 }
 
 // ── Month Title Color ─────────────────────────────────────────
+/* Tapping the month name opens one popup: a month picker on top (jump to any
+   month you've set up, by year) and the title colour underneath.
+   The picker only goes to months that already exist, exactly like the ‹ ›
+   arrows: a month that isn't set up yet is greyed out, so this never creates a
+   month or touches how new months are seeded. Locked months can still be left
+   from here; only the colour row is hidden (the lock is view-only). */
+var _mpYear = null;
 function toggleMonthColorPicker(e) {
-  if (monthIsLocked(currentMonthKey)) return;   // month lock: view only
   e.stopPropagation();
   var existing = document.getElementById('month-color-popup');
   if (existing) { existing.remove(); return; }
+  _mpYear = +String(currentMonthKey).slice(0, 4) || new Date().getFullYear();
+  var locked = monthIsLocked(currentMonthKey);
 
   var all = loadAll();
   var currentColor = (all[currentMonthKey] && all[currentMonthKey]._titleColor) || '';
 
   var popup = document.createElement('div');
   popup.id = 'month-color-popup';
-  popup.style.cssText = 'position:fixed;z-index:2000;background:var(--white);border:1px solid var(--mist);border-radius:12px;padding:14px;box-shadow:0 8px 30px rgba(0,0,0,0.2);font-family:Outfit,sans-serif;min-width:200px;';
-
-  var btn = document.getElementById('topbar-title');
-  var rect = btn.getBoundingClientRect();
-  popup.style.top = (rect.bottom + 8) + 'px';
-  popup.style.left = rect.left + 'px';
-
+  popup.className = 'mp-pop';
   popup.innerHTML =
+    '<div class="mp-head"><button type="button" class="mp-yr" onclick="mpStep(-1)" aria-label="Previous year">‹</button>' +
+    '<b id="mp-year"></b><button type="button" class="mp-yr" onclick="mpStep(1)" aria-label="Next year">›</button></div>' +
+    '<div class="mp-grid" id="mp-grid"></div>' +
+    (locked ? '' :
+    '<div class="mp-sep"></div>' +
     '<div style="font-size:11px;font-weight:700;color:var(--steel);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Month title color</div>' +
     '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;" id="month-color-swatches"></div>' +
     '<div style="display:flex;align-items:center;gap:8px;">' +
     '<input type="color" id="month-color-input" value="' + (currentColor || '#6B9E70') + '" style="width:32px;height:32px;border-radius:6px;border:1px solid var(--mist);cursor:pointer;padding:2px;">' +
     '<span style="font-size:12px;color:var(--steel);">Custom</span>' +
     '<button onclick="setMonthTitleColor(\'\')" style="margin-left:auto;font-size:11px;color:var(--steel);background:none;border:1px solid var(--mist);border-radius:6px;padding:4px 8px;cursor:pointer;font-family:Outfit,sans-serif;">Clear</button>' +
-    '</div>';
+    '</div>');
 
   document.body.appendChild(popup);
+  mpRender();
 
-  // Preset swatches
-  var presets = ['#C0736A','#E8824A','#A8823E','#6B9E70','#4A85A0','#7B72AA','#1A2332','#6B7C8F'];
-  var swatchContainer = popup.querySelector('#month-color-swatches');
-  presets.forEach(function(c) {
-    var sw = document.createElement('div');
-    sw.style.cssText = 'width:24px;height:24px;border-radius:50%;background:' + c + ';cursor:pointer;border:2px solid ' + (c === currentColor ? 'var(--ink)' : 'transparent') + ';box-shadow:0 0 0 1px rgba(128,128,128,0.4);transition:border-color 0.15s;flex-shrink:0;';
-    sw.onclick = function() { setMonthTitleColor(c); popup.remove(); };
-    swatchContainer.appendChild(sw);
-  });
+  // Under the month name, kept on screen (a phone is narrow)
+  var rect = document.getElementById('topbar-title').getBoundingClientRect();
+  popup.style.top = (rect.bottom + 8) + 'px';
+  popup.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - popup.offsetWidth - 8)) + 'px';
 
-  // Custom color input
-  popup.querySelector('#month-color-input').oninput = function() {
-    setMonthTitleColor(this.value);
-  };
+  if (!locked) {
+    var presets = ['#C0736A','#E8824A','#A8823E','#6B9E70','#4A85A0','#7B72AA','#1A2332','#6B7C8F'];
+    var swatchContainer = popup.querySelector('#month-color-swatches');
+    presets.forEach(function(c) {
+      var sw = document.createElement('div');
+      sw.style.cssText = 'width:24px;height:24px;border-radius:50%;background:' + c + ';cursor:pointer;border:2px solid ' + (c === currentColor ? 'var(--ink)' : 'transparent') + ';box-shadow:0 0 0 1px rgba(128,128,128,0.4);transition:border-color 0.15s;flex-shrink:0;';
+      sw.onclick = function() { setMonthTitleColor(c); popup.remove(); };
+      swatchContainer.appendChild(sw);
+    });
+    popup.querySelector('#month-color-input').oninput = function() { setMonthTitleColor(this.value); };
+  }
 
   // Close on outside click
   setTimeout(function() {
@@ -23048,6 +23141,38 @@ function toggleMonthColorPicker(e) {
       if (!popup.contains(e.target)) { popup.remove(); document.removeEventListener('click', handler); }
     });
   }, 50);
+}
+function mpYears() {
+  var ys = allMonthKeys().map(function(k) { return +k.slice(0, 4); });
+  return { min: Math.min.apply(null, ys.concat([_mpYear])), max: Math.max.apply(null, ys.concat([_mpYear])) };
+}
+function mpStep(d) {
+  var r = mpYears();
+  _mpYear = Math.max(r.min, Math.min(r.max, _mpYear + d));
+  mpRender();
+}
+function mpRender() {
+  var grid = document.getElementById('mp-grid'), yr = document.getElementById('mp-year');
+  if (!grid) return;
+  var have = {}; allMonthKeys().forEach(function(k) { have[k] = true; });
+  var r = mpYears();
+  yr.textContent = _mpYear;
+  var btns = document.querySelectorAll('#month-color-popup .mp-yr');
+  if (btns[0]) btns[0].disabled = _mpYear <= r.min;
+  if (btns[1]) btns[1].disabled = _mpYear >= r.max;
+  var h = '';
+  ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].forEach(function(m, i) {
+    var k = _mpYear + '-' + ('0' + (i + 1)).slice(-2);
+    var cls = 'mp-m' + (k === currentMonthKey ? ' cur' : '') + (have[k] ? '' : ' none');
+    h += '<button type="button" class="' + cls + '"' + (have[k] ? ' onclick="mpGo(\'' + k + '\')"' : ' disabled title="Not set up yet: add it from the sidebar"') +
+         ' aria-label="' + monthLabel(k) + (have[k] ? '' : ' (not set up yet)') + '">' + m + '</button>';
+  });
+  grid.innerHTML = h;
+}
+function mpGo(k) {
+  var p = document.getElementById('month-color-popup');
+  if (p) p.remove();
+  if (k !== currentMonthKey && /^\d{4}-\d{2}$/.test(k) && loadAll()[k]) switchMonth(k);
 }
 
 function setMonthTitleColor(color) {
