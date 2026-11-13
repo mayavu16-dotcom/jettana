@@ -27246,7 +27246,19 @@ function yaSection(rows, sec) {
   // row does count the other months as $0: it's a one-time thing.
   if (String(sec).indexOf('~') < 0) rows = rows.filter(function(r) { return r.by[sec] !== undefined; });
   if (!rows.length) return null;
-  return yaSeries(rows, rows.map(function(r) { return r.by[sec] || 0; }), sec);
+  var s = yaSeries(rows, rows.map(function(r) { return r.by[sec] || 0; }), sec);
+  // A one-off name (taxes, a trip) is planned in the month it actually came
+  // up, not spread over the year: October's 2025 Taxes lands in October. If
+  // that calendar month shows up more than once in the history, it's their
+  // average (a year it didn't happen counts as $0).
+  if (s && String(sec).indexOf('~') > 0) {
+    var plan = [0,0,0,0,0,0,0,0,0,0,0,0], seen = [0,0,0,0,0,0,0,0,0,0,0,0];
+    rows.forEach(function(r) { var m = +r.mk.slice(5) - 1; plan[m] += r.by[sec] || 0; seen[m]++; });
+    s.plan = plan.map(function(v, m) { return seen[m] ? Math.round(v / seen[m]) : 0; });
+    s.big = s.plan.map(function(v) { return v > 0; });
+    s.oneoff = true; s.occasional = false;
+  }
+  return s;
 }
 function yaSeries(rows, vals, sec) {
   var n = vals.length, used = vals.filter(function(v) { return v > 0; }).length;
@@ -27557,9 +27569,10 @@ function renderYearAhead() {
     if (s.empty) return mine ? 'no history yet' : '';
     if (s.extrasOnly) return 'yearly expenses only';
     if (s.savings) return 'average monthly change';
+    if (s.oneoff) return 'only in ' + s.why.mks.filter(function(_, i) { return s.why.vals[i] > 0; }).map(yaFmtMk).join(', ');
     return s.occasional ? s.used + ' of ' + s.n + ' months had ' + (s.sec === '_inc' ? 'income' : 'spending') : s.used + ' month' + (s.used === 1 ? '' : 's');
   };
-  var isThin = function(s) { return !s.extrasOnly && !s.empty && !s.savings && s.used < 4; };
+  var isThin = function(s) { return !s.extrasOnly && !s.empty && !s.savings && !s.oneoff && s.used < 4; };
   h += '<div class="ya-scroll"><table class="ya-grid"><tr><th>' + (mine ? 'My budget' : 'Section') + '</th>';
   ord.forEach(function(m, k) { h += '<th>' + mLbl(k) + '</th>'; });
   h += '<th class="tot">Year</th></tr>';
@@ -27659,7 +27672,12 @@ function yaPopHtml(sec, m, k) {
   h += '<div class="ya-ps">Planned: <b>$' + yaFmt(s.plan[m]) + '</b></div>';
   if (w && !s.extrasOnly) {
     var idx, why;
-    if (s.big[m]) {
+    if (s.oneoff) {
+      idx = w.mks.map(function(_, i) { return i; }).filter(function(i) { return w.vals[i] > 0; });
+      var here = idx.filter(function(i) { return +w.mks[i].slice(5) - 1 === m; });
+      why = 'This name was only used in ' + idx.map(function(i) { return yaFmtMk(w.mks[i]); }).join(', ') +
+            ', so it is planned in that month, not spread over the year.' + (here.length ? '' : ' Nothing is planned for ' + TREND_MONTHS[m] + '.');
+    } else if (s.big[m]) {
       idx = w.spikeAt.filter(function(i) { return +w.mks[i].slice(5) - 1 === m; });
       why = (idx.length === 1 ? yaFmtMk(w.mks[idx[0]]) + ' was a bigger month' : 'These ' + TREND_MONTHS[m] + 's were bigger months') +
             ', so ' + TREND_MONTHS[m] + ' is planned at ' + (idx.length === 1 ? 'that amount' : 'their average') + ' instead of your usual month.';
@@ -27673,7 +27691,7 @@ function yaPopHtml(sec, m, k) {
     h += '<div class="ya-pw">' + (xs.length ? '$' + yaFmt(fromHist) + ' from your history. ' : '') + why + '</div><div class="ya-plist">';
     idx.forEach(function(i) { h += line(w.mks[i], w.vals[i]); });
     h += '</div>';
-    if (!s.big[m] && !s.occasional && w.spikeAt.length) {
+    if (!s.oneoff && !s.big[m] && !s.occasional && w.spikeAt.length) {
       h += '<div class="ya-pw">Left out because they were bigger months (each is planned in its own month instead):</div><div class="ya-plist">';
       w.spikeAt.forEach(function(i) { h += line(w.mks[i], w.vals[i]); });
       h += '</div>';
