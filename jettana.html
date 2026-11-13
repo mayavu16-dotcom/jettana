@@ -5119,7 +5119,13 @@ body.font-large.text-bold .erow-label-input {
 .ya-chip { font-family:'Outfit',sans-serif; font-size:12px; padding:4px 10px; border:1px dashed var(--mist); border-radius:999px; background:var(--white); color:var(--steel); cursor:pointer; }
 .ya-chip:hover { border-color:var(--sage); color:var(--sage-dark); }
 .ya-chip.on { background:var(--sage-light); border:1px solid var(--sage); color:var(--sage-dark); font-weight:600; }
-#ya-modal { position:relative; }
+#ya-modal { position:relative; overflow:hidden; }
+/* Only the body scrolls, so the header (drag) and the corner (resize) stay in view */
+#ya-body { flex:1 1 auto; min-height:0; overflow:auto; position:relative; }
+.ya-resize { position:absolute; right:0; bottom:0; width:18px; height:18px; cursor:nwse-resize; z-index:25; touch-action:none;
+  background:linear-gradient(135deg, transparent 0 55%, var(--steel) 55% 60%, transparent 60% 70%, var(--steel) 70% 75%, transparent 75% 85%, var(--steel) 85% 90%, transparent 90%); opacity:0.55; border-bottom-right-radius:var(--radius); }
+.ya-resize:hover { opacity:0.9; }
+@media (pointer: coarse) { .ya-resize { width:30px; height:30px; } }
 .ya-modebar { gap:10px; }
 .ya-mode { display:inline-flex; border:1px solid var(--mist); border-radius:999px; padding:2px; background:var(--cream); flex-shrink:0; }
 .ya-mode button { font-family:'Outfit',sans-serif; font-size:12.5px; border:none; background:none; color:var(--steel); padding:5px 13px; border-radius:999px; cursor:pointer; }
@@ -7517,6 +7523,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
     </div>
     <div class="trends-subtitle" id="ya-sub"></div>
     <div style="padding:6px 20px 20px;" id="ya-body"></div>
+    <div class="ya-resize" id="ya-resize" title="Drag to resize" aria-hidden="true"></div>
   </div>
 </div>
 
@@ -7976,7 +7983,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>🧾 <strong>Monthly Summary breakdowns</strong> — hover or tap the Income, Spent or Balance row at the bottom of your dashboard to see how it was worked out. Spent lists each section with Planned against Actual, Income lists each source, and Balance spells out the subtraction. A section whose budget you typed yourself is marked "your budget", and the Planned column uses your figure rather than the sum of the rows.</span></div>
       <div class="shortcut-row"><span>📈 <strong>Net Worth Trend</strong> — ⋯ → Insights → Net worth trend; a line chart of your net worth (checking + savings − debt) by month. Pick 6M, YTD, 1Y, All, or a custom start month. Tap any point on the line to jump straight to that month — drag the chart aside first and it stays open, so you can step through months one dot at a time. The summary shows your growth, how far apart the months are, and — optionally — your age across the range. Drag to reposition.</span></div>
       <div class="shortcut-row"><span>🎂 <strong>Age on your trend</strong> — enter your birth month + year in the Net Worth Trend (optional) to see "age 23 → 25" alongside your growth. Month and year only — Jettana never asks for your full birthdate. Clear the field anytime to remove it.</span></div>
-      <div class="shortcut-row"><span>🗓️ <strong>Year ahead</strong> — ⋯ → Insights → Year ahead; a read-only plan for next year built from the months you've logged: each section month by month, bigger months shaded, and what's left after each month. Pick which months it learns from (Last 3/6/12 or All) and the month the 12-month plan starts. Tap any number to see how it was worked out. Shows planned Income, Savings and Left over (free to spend). Switch to My budget to type your own amount for any section or month. Add yearly expenses (car registration, a trip) and type your own income if you like. Never changes your budgets.</span></div>
+      <div class="shortcut-row"><span>🗓️ <strong>Year ahead</strong> — ⋯ → Insights → Year ahead; a read-only plan for next year built from the months you've logged: each section month by month, bigger months shaded, and what's left after each month. Pick which months it learns from (Last 3/6/12 or All) and the month the 12-month plan starts. Tap any number to see how it was worked out. Shows planned Income, Savings and Left over (free to spend). Switch to My budget to type your own amount for any section or month. Drag the header to move it or the bottom-right corner to resize it, and your budget stays usable behind it. Add yearly expenses (car registration, a trip) and type your own income if you like. Never changes your budgets.</span></div>
       <div class="shortcut-row"><span>🧮 <strong>Plan My Savings</strong> — ⋯ → Insights → Plan my savings; works out what's genuinely left over each month from your average take-home and expenses. The retirement half shows what a pre-tax contribution actually costs your take-home (less than the headline number, since it comes out before tax) and what you'd leave behind by contributing under your employer's match.</span></div>
       <div class="shortcut-row"><span>🌍 <strong>Life Elsewhere</strong> — ⋯ → Insights → Life elsewhere; re-prices your current lifestyle in another country with your income held fixed. Optionally type an exchange rate to see the figures in local currency too — rates are never fetched, so it's whatever you enter, and leaving it blank hides that line. A daydream tool, not relocation advice.</span></div>
       <div class="shortcut-row"><span>↩ <strong>Jump back to your rows</strong> — eight places link straight back into the tracker. To a <strong>month</strong>: a point on the Net Worth Trend, or an underlined month in Spending Trends → ⭐ Peaks or → 🔁 Items. To a <strong>section</strong>: a category tile on the Month-over-Month card, or a category line in the Total Expenses breakdown (pin it first). To a <strong>row</strong>: a transaction in the Spending Calendar, a charge in a card or account badge panel, or a bill in the Bills Due panel. Collapsed sections open themselves and whatever you land on flashes gold. Drag a panel aside first and it stays open while you jump — handy for reconciling.</span></div>
@@ -27435,7 +27442,8 @@ function hideYearAhead() {
   var ov = document.getElementById('ya-overlay'); if (ov) ov.style.display = 'none';
   // Next open starts centred again, like Compare months
   var modal = document.getElementById('ya-modal');
-  if (modal) { modal.style.position = ''; modal.style.left = ''; modal.style.top = ''; modal.style.margin = ''; }
+  if (modal) { modal.style.position = ''; modal.style.left = ''; modal.style.top = ''; modal.style.margin = '';
+    modal.style.width = ''; modal.style.height = ''; modal.style.maxWidth = '980px'; modal.style.maxHeight = ''; }
   if (ov) { ov.style.background = ''; ov.style.pointerEvents = ''; ov.style.alignItems = ''; ov.style.justifyContent = ''; }
   document.body.classList.remove('ya-aside');
 }
@@ -27445,19 +27453,47 @@ function hideYearAhead() {
    in front (body.ya-aside) so you can work numbers out next to the plan. */
 (function() {
   var dragging = false, offX = 0, offY = 0;
-  function startDrag(x, y) {
+  // Lift the panel off the dimmed backdrop: it stays where it is, and the page
+  // behind it (and the calculator) can be used. Shared by drag and resize.
+  function detach() {
     var modal = document.getElementById('ya-modal'), overlay = document.getElementById('ya-overlay');
-    if (!modal) return;
-    yaHidePop();
+    if (!modal) return null;
     var rect = modal.getBoundingClientRect();
-    modal.style.position = 'fixed'; modal.style.left = rect.left + 'px'; modal.style.top = rect.top + 'px'; modal.style.margin = '0';
+    if (modal.style.position !== 'fixed') {
+      modal.style.position = 'fixed'; modal.style.left = rect.left + 'px'; modal.style.top = rect.top + 'px'; modal.style.margin = '0';
+      modal.style.width = rect.width + 'px'; modal.style.height = rect.height + 'px';
+      modal.style.maxWidth = 'none'; modal.style.maxHeight = 'none';
+    }
     if (overlay) {
       overlay.style.background = 'transparent'; overlay.style.pointerEvents = 'none';
       overlay.style.alignItems = 'flex-start'; overlay.style.justifyContent = 'flex-start';
       modal.style.pointerEvents = 'auto';
     }
     document.body.classList.add('ya-aside');
+    return rect;
+  }
+  function startDrag(x, y) {
+    yaHidePop();
+    var rect = detach();
+    if (!rect) return;
     offX = x - rect.left; offY = y - rect.top; dragging = true;
+  }
+  // Resize from the bottom-right corner
+  var sizing = false, sx = 0, sy = 0, sw = 0, sh = 0;
+  function startSize(x, y) {
+    yaHidePop();
+    var rect = detach();
+    if (!rect) return;
+    sx = x; sy = y; sw = rect.width; sh = rect.height; sizing = true;
+  }
+  function onSize(x, y) {
+    if (!sizing) return;
+    var modal = document.getElementById('ya-modal');
+    if (!modal) return;
+    var r = modal.getBoundingClientRect();
+    var w = Math.max(300, Math.min(sw + x - sx, window.innerWidth - r.left));
+    var h = Math.max(220, Math.min(sh + y - sy, window.innerHeight - r.top));
+    modal.style.width = w + 'px'; modal.style.height = h + 'px';
   }
   function onMove(x, y) {
     if (!dragging) return;
@@ -27466,8 +27502,15 @@ function hideYearAhead() {
     modal.style.left = Math.max(0, Math.min(x - offX, window.innerWidth - modal.offsetWidth)) + 'px';
     modal.style.top = Math.max(0, Math.min(y - offY, window.innerHeight - 60)) + 'px';
   }
-  function stop() { dragging = false; }
+  function stop() { dragging = false; sizing = false; }
   document.addEventListener('DOMContentLoaded', function() {
+    var corner = document.getElementById('ya-resize');
+    if (corner) {
+      corner.addEventListener('mousedown', function(e) { startSize(e.clientX, e.clientY); e.preventDefault(); e.stopPropagation(); });
+      document.addEventListener('mousemove', function(e) { onSize(e.clientX, e.clientY); });
+      corner.addEventListener('touchstart', function(e) { var t = e.touches[0]; startSize(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
+      corner.addEventListener('touchmove', function(e) { if (!sizing) return; var t = e.touches[0]; onSize(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
+    }
     var hdr = document.getElementById('ya-header');
     if (!hdr) return;
     hdr.addEventListener('mousedown', function(e) {
@@ -27816,7 +27859,9 @@ function yaPopHtml(sec, m, k) {
 function yaShowPop(td) {
   yaHidePop();
   if (!_yaView) return;
-  var modal = document.getElementById('ya-modal');
+  // The body is the part that scrolls (the header and resize corner stay put),
+  // so the popup goes in there and scrolls with the table.
+  var modal = document.getElementById('ya-body');
   var html = yaPopHtml(td.dataset.s, +td.dataset.m, +td.dataset.k);
   if (!modal || !html) return;
   var pop = document.createElement('div');
