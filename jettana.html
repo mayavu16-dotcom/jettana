@@ -27165,7 +27165,7 @@ function yaStore() {
     var bud = {};
     if (o.budget && typeof o.budget === 'object') Object.keys(o.budget).forEach(function(k) {
       var v = +o.budget[k];
-      if (/^[a-z_]+\|\d{4}-\d{2}$/.test(k) && isFinite(v) && v >= 0) bud[k] = v;
+      if (/^[a-z_]+(~[a-z0-9-]+)?\|\d{4}-\d{2}$/.test(k) && isFinite(v) && v >= 0) bud[k] = v;
     });
     return { extras: Array.isArray(o.extras) ? o.extras : [], income: inc, from: mk(o.from), to: mk(o.to), start: mk(o.start),
              mode: o.mode === 'mine' ? 'mine' : 'avg', budget: bud };
@@ -27189,13 +27189,34 @@ function yaMedian(a) {
 }
 /* Finished months that have any spending. The month in progress is left out
    (a half-spent month would drag every average down) unless it is all there is. */
+/* Section names can be set for one month only. Year ahead keeps a month-only
+   name as its OWN row (Health renamed "2025 Taxes" in November is a separate
+   row, and Health keeps its history), while a name set for all months is the
+   section's name everywhere and stays one row. Row ids: the section key for
+   the section under its usual name, "health~2025-taxes" for a month-only name. */
+var _yaRowNames = {};
+function yaBaseName(sec) { return (_sectionNames && _sectionNames[sec]) || DEFAULT_SECTION_NAMES[sec] || sec; }
+function yaRowId(d, sec) {
+  var own = d && d._sectionNames && d._sectionNames[sec];
+  if (!own || !String(own).trim()) return sec;
+  var a = String(own).trim(), base = yaBaseName(sec);
+  if (a.toLowerCase() === String(base).trim().toLowerCase()) return sec;
+  var id = sec + '~' + a.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  if (id === sec + '~') id = sec + '~x';
+  _yaRowNames[id] = a;
+  return id;
+}
+function yaBaseSec(id) { return String(id).split('~')[0]; }
 function yaAllHistory() {
   var all = loadAll(), now = new Date();
   var cur = now.getFullYear() + '-' + ('0' + (now.getMonth() + 1)).slice(-2);
   var rows = [];
   Object.keys(all).filter(function(k) { return /^\d{4}-\d{2}$/.test(k); }).sort().forEach(function(mk) {
     var d = all[mk] || {}, by = {}, tot = 0;
-    TREND_EXPENSE_SECTIONS.forEach(function(sec) { by[sec] = trendsSectionTotal(d, sec); tot += by[sec]; });
+    TREND_EXPENSE_SECTIONS.forEach(function(sec) {
+      var v = trendsSectionTotal(d, sec), id = yaRowId(d, sec);
+      by[id] = (by[id] || 0) + v; tot += v;
+    });
     if (tot > 0) {
       // Savings put away this month = change in the savings total since last
       // month: the same measure Growth projection uses (deposits plus gains).
@@ -27220,6 +27241,11 @@ function yaHistory(st) {
    Occasional section (median 0, e.g. travel): flat average, no spikes, because
    guessing which month it lands in would be invented precision. */
 function yaSection(rows, sec) {
+  // A month where this section went by a one-off name isn't a month of this
+  // section at all, so it's left out (not counted as $0). A one-off name's own
+  // row does count the other months as $0: it's a one-time thing.
+  if (String(sec).indexOf('~') < 0) rows = rows.filter(function(r) { return r.by[sec] !== undefined; });
+  if (!rows.length) return null;
   return yaSeries(rows, rows.map(function(r) { return r.by[sec] || 0; }), sec);
 }
 function yaSeries(rows, vals, sec) {
@@ -27247,7 +27273,13 @@ function yaFmt(v) { return Math.round(v).toLocaleString('en-US'); }
 function yaFmtMk(mk) { var p = mk.split('-'); return TREND_MONTHS[+p[1] - 1] + ' ' + p[0]; }
 function yaCompute() {
   var st = yaStore(), avail = yaAllHistory(), rows = yaHistory(st), secs = [];
-  TREND_EXPENSE_SECTIONS.forEach(function(sec) { var r = yaSection(rows, sec); if (r) secs.push(r); });
+  // Every row id seen in these months: the sections, plus any month-only names
+  var ids = [];
+  TREND_EXPENSE_SECTIONS.forEach(function(sec) {
+    ids.push(sec);
+    rows.forEach(function(r) { Object.keys(r.by).forEach(function(id) { if (yaBaseSec(id) === sec && id !== sec && ids.indexOf(id) < 0) ids.push(id); }); });
+  });
+  ids.forEach(function(id) { var r = yaSection(rows, id); if (r) secs.push(r); });
   // Yearly expenses typed in by hand, added on top (and to sections with no history)
   st.extras.forEach(function(x) {
     var m = (+x.month || 0) - 1, amt = +x.amount || 0;
@@ -27261,7 +27293,7 @@ function yaCompute() {
     (s.xtra = s.xtra || {})[m] = (s.xtra[m] || []).concat(x.name || 'Yearly expense');
     (s.xamt = s.xamt || {})[m] = (s.xamt[m] || []).concat({ name: x.name || 'Yearly expense', amount: amt });
   });
-  var order = TREND_EXPENSE_SECTIONS;
+  var order = ids;
   secs.sort(function(a, b) { return order.indexOf(a.sec) - order.indexOf(b.sec); });
   var blank = function(id) { return { sec: id, plan: [0,0,0,0,0,0,0,0,0,0,0,0], big: [], used: 0, n: rows.length, occasional: true, empty: true }; };
   // My budget: every spending section gets a row, so you can plan one you
@@ -27425,7 +27457,11 @@ function yaRemoveExtra(id) {
   yaSave(st); renderYearAhead();
 }
 function yaRowName(id) {
-  return id === '_inc' ? 'Income' : id === '_sav' ? 'Savings' : id === '_left' ? 'Left over' : getSectionName(id);
+  if (id === '_inc') return 'Income';
+  if (id === '_sav') return 'Savings';
+  if (id === '_left') return 'Left over';
+  if (String(id).indexOf('~') > 0) return _yaRowNames[id] || yaBaseName(yaBaseSec(id));
+  return yaBaseName(id);   // the section's usual name, not this month's one-off name
 }
 /* Averages ↔ My budget. My budget keeps the averages as grey hints and lets
    you type your own number in any month; a blank cell uses the average. */
@@ -27583,7 +27619,7 @@ function yaHidePop() { var p = document.getElementById('ya-pop'); if (p) p.remov
 function yaPopHtml(sec, m, k) {
   var v = _yaView, c = v.c, mon = TREND_MONTHS[m] + ' ' + v.oyr[k], h = '';
   var secName = function(id) { return escHtml(yaRowName(id)); };
-  var jumpSec = sec === '_inc' ? 'income' : sec === '_sav' ? 'savings' : sec;
+  var jumpSec = sec === '_inc' ? 'income' : sec === '_sav' ? 'savings' : yaBaseSec(sec);
   var money = function(x) { return (x < 0 ? '−$' : '$') + yaFmt(Math.abs(x)); };
   var line = function(mk, amt, note) {
     return '<button type="button" class="ya-pl" data-mk="' + mk + '" data-sec="' + (jumpSec || '') + '"><span>' + yaFmtMk(mk) + (note ? ' <i>' + note + '</i>' : '') +
@@ -27592,7 +27628,7 @@ function yaPopHtml(sec, m, k) {
   var fixed = function(label, amt, cls) { return '<div class="ya-pl static' + (cls ? ' ' + cls : '') + '"><span>' + label + '</span><span>' + money(amt) + '</span></div>'; };
   if (!sec) {   // Planned spending row: the month by section
     h += '<div class="ya-pt">Planned spending · ' + mon + '</div><div class="ya-ps">' + money(v.spend[k]) + ', made up of:</div><div class="ya-plist">';
-    c.secs.forEach(function(s) { if (v.E[s.sec][k]) h += fixed(escHtml(getSectionName(s.sec)), v.E[s.sec][k]); });
+    c.secs.forEach(function(s) { if (v.E[s.sec][k]) h += fixed(escHtml(yaRowName(s.sec)), v.E[s.sec][k]); });
     return h + '</div>';
   }
   if (sec === '_left') {   // Left over: income − spending − savings
