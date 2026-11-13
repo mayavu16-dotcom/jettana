@@ -5140,6 +5140,11 @@ body.font-large.text-bold .erow-label-input {
 .ya-sw-mine, .ya-sw-avg { display:inline-block; width:12px; height:10px; border-radius:2px; margin-right:5px; vertical-align:-1px; }
 .ya-sw-mine { background:var(--sage-light); border:1px solid var(--sage); }
 .ya-sw-avg { background:none; border:1px dashed var(--steel); }
+.ya-pl.ya-acct { cursor:pointer; }
+.ya-src { font-style:normal; font-size:10px; color:var(--steel); margin-left:3px; }
+.ya-pl.ya-acct input { accent-color:var(--sage); margin:0 6px 0 0; vertical-align:-2px; }
+.ya-pl.ya-acct.off span:first-child { color:var(--steel); text-decoration:line-through; text-decoration-color:rgba(122,135,155,0.5); }
+.ya-pl.ya-acct.off span:last-child { opacity:0.5; }
 .ya-pl.ya-ptot { border-top:1px solid var(--mist); font-weight:600; color:var(--ink); }
 .dark .ya-mode button.on { background:#2A3A4A; }
 .dark .ya-grid tr.r-inc td:first-child { background:#1E2838; }
@@ -7329,7 +7334,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
 
         <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">How do I plan for the year ahead so there are no surprises?<span class="askme-q-arrow">▾</span></button>
-          <div class="askme-a">Open <strong>⋯ → Insights → 🗓️ Year ahead</strong>. It looks at the months you've already logged and shows what each section is likely to cost, month by month, for the next year. Months that were bigger before (car costs in March, say) are shaded so they don't catch you out. Enter your monthly income to see what's left after each month. Add anything that only comes once a year, like car registration or a trip, and it's added to that month. Use <strong>Learn from</strong> to pick which months it learns from (or tap Last 3, Last 6, Last 12 or All), handy when your spending changed and older months no longer fit. Use <strong>Plan starts</strong> to begin the 12 months in any month, like March through February. Tap any number to see how it was worked out: which months it averaged, which bigger months it left out, and any yearly expense added. Tap a month there to go to it. It also plans your <strong>Income</strong> the same way (a bonus month shows as a bigger month), your <strong>Savings</strong> (how much your savings grew in an average month), and <strong>Left over</strong>: income minus spending and savings, what's free for everything else. Switch from <strong>Averages</strong> to <strong>My budget</strong> to type your own amount in any month; your averages stay as grey hints and are used until you type over them. Your numbers are kept per month and year, saved on this device only, and never change your real monthly budgets. It's a read-only plan: it never changes your budgets. A section with only a few months behind it is marked "rough".</div>
+          <div class="askme-a">Open <strong>⋯ → Insights → 🗓️ Year ahead</strong>. It looks at the months you've already logged and shows what each section is likely to cost, month by month, for the next year. Months that were bigger before (car costs in March, say) are shaded so they don't catch you out. Enter your monthly income to see what's left after each month. Add anything that only comes once a year, like car registration or a trip, and it's added to that month. Use <strong>Learn from</strong> to pick which months it learns from (or tap Last 3, Last 6, Last 12 or All), handy when your spending changed and older months no longer fit. Use <strong>Plan starts</strong> to begin the 12 months in any month, like March through February. Tap any number to see how it was worked out: which months it averaged, which bigger months it left out, and any yearly expense added. Tap a month there to go to it. It also plans your <strong>Income</strong> the same way (a bonus month shows as a bigger month), your <strong>Savings</strong> (what you put in from your take-home pay: the contributions and transfers you logged in each account's template, your part only, never the employer match or growth; tap Savings to untick accounts taken from your pay before it lands, like a 401(k)), and <strong>Left over</strong>: income minus spending and savings, what's free for everything else. Switch from <strong>Averages</strong> to <strong>My budget</strong> to type your own amount in any month; your averages stay as grey hints and are used until you type over them. Your numbers are kept per month and year, saved on this device only, and never change your real monthly budgets. It's a read-only plan: it never changes your budgets. A section with only a few months behind it is marked "rough".</div>
         </div>
 
         <div class="askme-item">
@@ -27168,9 +27173,82 @@ function yaStore() {
       if (/^[a-z_]+(~[a-z0-9-]+)?\|\d{4}-\d{2}$/.test(k) && isFinite(v) && v >= 0) bud[k] = v;
     });
     return { extras: Array.isArray(o.extras) ? o.extras : [], income: inc, from: mk(o.from), to: mk(o.to), start: mk(o.start),
-             mode: o.mode === 'mine' ? 'mine' : 'avg', budget: bud };
-  } catch (e) { return { extras: [], income: null, from: null, to: null, start: null, mode: 'avg', budget: {} }; }
+             mode: o.mode === 'mine' ? 'mine' : 'avg', budget: bud,
+             // savings accounts you ticked/unticked under "comes out of my take-home"
+             savOn: yaKeyList(o.savOn), savOff: yaKeyList(o.savOff) };
+  } catch (e) { return { extras: [], income: null, from: null, to: null, start: null, mode: 'avg', budget: {}, savOn: [], savOff: [] }; }
 }
+function yaKeyList(a) { return Array.isArray(a) ? a.filter(function(x) { return typeof x === 'string' && x.length < 120; }) : []; }
+/* Savings that come out of take-home pay.
+   Left over = take-home income − spending − savings, so Savings may only hold
+   money you move out of your take-home yourself. Two things never pass through
+   take-home: payroll deductions (a 401(k) and the employer match) and market
+   gains / interest. So for each account: balance change − the gains you logged
+   for it, and only for the accounts ticked as coming out of your take-home.
+   Accounts named like payroll plans start unticked. Exempt accounts stay out. */
+var YA_PAYROLL = /\b(401\s*\(?k\)?|403\s*\(?b\)?|457(\s*\(?b\)?)?|tsp|thrift savings|pension|espp|employer match)\b/i;
+function yaAcctKey(label) { return String(label || '').trim().toLowerCase(); }
+function yaSavCounts(key, name, st) {
+  if (st.savOn.indexOf(key) >= 0) return true;
+  if (st.savOff.indexOf(key) >= 0) return false;
+  return !YA_PAYROLL.test(name || key);
+}
+function yaNum(v) { return parseFloat(String(v === undefined || v === null ? '' : v).replace(/[$,]/g, '')) || 0; }
+/* Per account, what you put in this month.
+   1. If the account's template has entries this month, use what you logged:
+      your part of each contribution (myc, never the employer match) and
+      transfers (deposits +, withdrawals −). Interest, dividends, performance
+      and investment buys are growth or moving money inside the account, so
+      they never count.
+   2. Nothing logged: balance change − the gains you logged, and only if the
+      account was also listed last month (a newly listed account's whole
+      balance isn't a deposit you made this month). */
+function yaLoggedIn(row) {
+  var es = Array.isArray(row && row._entries) ? row._entries : [];
+  var got = false, v = 0;
+  es.forEach(function(e) {
+    if (!e) return;
+    var t = e._type || row._template || '';
+    if (t === 'contribution') {
+      if (e.myc !== undefined && String(e.myc).trim() !== '') { v += yaNum(e.myc); got = true; }
+      else if (e.emp !== undefined && String(e.emp).trim() !== '') got = true;   // match only: you put in $0
+    } else if (t === 'transfer') {
+      var a = yaNum(e.amt);
+      if (a) { v += e.dir === 'withdrawal' ? -a : a; got = true; }
+    }
+  });
+  return got ? v : null;
+}
+function yaSavByAccount(d, prev) {
+  var out = {}, before = {};
+  ((prev && prev.savings) || []).forEach(function(r) { if (!r.exempt && r.label) before[yaAcctKey(r.label)] = (before[yaAcctKey(r.label)] || 0) + yaNum(r.actual); });
+  ((d && d.savings) || []).forEach(function(r) {
+    if (r.exempt || !r.label || !String(r.label).trim()) return;
+    var k = yaAcctKey(r.label), logged = yaLoggedIn(r);
+    if (!out[k]) out[k] = { name: String(r.label).trim(), v: 0, bal: 0, gains: 0, logged: null };
+    out[k].bal += yaNum(r.actual); out[k].gains += yaNum(r.gains);
+    if (logged !== null) out[k].logged = (out[k].logged || 0) + logged;
+  });
+  Object.keys(out).forEach(function(k) {
+    var o = out[k];
+    if (o.logged !== null) { o.v = Math.round(o.logged * 100) / 100; o.how = 'logged'; }
+    else if (k in before) { o.v = Math.round((o.bal - before[k] - o.gains) * 100) / 100; o.how = 'balance'; }
+    else delete out[k];
+  });
+  return out;
+}
+function yaToggleSav(key, on) {
+  var st = yaStore();
+  st.savOn = st.savOn.filter(function(x) { return x !== key; });
+  st.savOff = st.savOff.filter(function(x) { return x !== key; });
+  (on ? st.savOn : st.savOff).push(key);
+  yaSave(st);
+  // Redraw, then reopen the Savings explanation on the same month
+  var pop = document.getElementById('ya-pop'), kk = pop ? pop.dataset.k : null;
+  renderYearAhead();
+  if (kk !== null) { var td = document.querySelector('.ya-grid td.tap[data-s="_sav"][data-k="' + kk + '"]'); if (td) yaShowPop(td); }
+}
+
 /* Default start: January of this year, or of next year once it is October. */
 function yaDefaultStart() {
   var n = new Date();
@@ -27221,7 +27299,8 @@ function yaAllHistory() {
       // Savings put away this month = change in the savings total since last
       // month: the same measure Growth projection uses (deposits plus gains).
       var prev = all[yaAddMonths(mk, -1)];
-      rows.push({ mk: mk, by: by, inc: trendsIncomeTotal(d), sav: prev ? gpSavingsTotal(d) - gpSavingsTotal(prev) : null });
+      var sb = yaSavByAccount(d, prev);
+      rows.push({ mk: mk, by: by, inc: trendsIncomeTotal(d), savBy: (prev || Object.keys(sb).length) ? sb : null });
     }
   });
   var done = rows.filter(function(r) { return r.mk < cur; });
@@ -27317,12 +27396,27 @@ function yaCompute() {
   // Income: same rules as spending (a bonus month is a "bigger month")
   var inc = yaSeries(rows, rows.map(function(r) { return r.inc || 0; }), '_inc');
   // Savings: a flat average of the monthly change, never below 0 (like Growth projection)
-  var sv = rows.filter(function(r) { return r.sav !== null; });
+  var sv = rows.filter(function(r) { return r.savBy !== null; });
   var sav = null;
   if (sv.length) {
-    var savAvg = Math.max(0, sv.reduce(function(t, r) { return t + r.sav; }, 0) / sv.length);
+    // Every savings account seen, with its average monthly deposit
+    var accts = {};
+    sv.forEach(function(r) { Object.keys(r.savBy).forEach(function(k) {
+      if (!accts[k]) accts[k] = { key: k, name: r.savBy[k].name, sum: 0, logged: 0, est: 0 };
+      accts[k].name = r.savBy[k].name; accts[k].sum += r.savBy[k].v;
+      if (r.savBy[k].how === 'logged') accts[k].logged++; else accts[k].est++;
+    }); });
+    var acctList = Object.keys(accts).map(function(k) {
+      // averaged over the months this account has a number for, so a month
+      // with nothing to compare against doesn't drag it down as a $0
+      var a = accts[k]; a.avg = a.sum / Math.max(1, a.logged + a.est); a.on = yaSavCounts(k, a.name, st); return a;
+    });
+    var monthVals = sv.map(function(r) {
+      return Object.keys(r.savBy).reduce(function(t, k) { return t + (yaSavCounts(k, r.savBy[k].name, st) ? r.savBy[k].v : 0); }, 0);
+    });
+    var savAvg = Math.max(0, acctList.reduce(function(t, a) { return t + (a.on ? a.avg : 0); }, 0));
     sav = { sec: '_sav', plan: [], big: [], used: sv.length, n: sv.length, occasional: true, savings: true,
-            why: { mks: sv.map(function(r) { return r.mk; }), vals: sv.map(function(r) { return r.sav; }), avg: savAvg } };
+            why: { mks: sv.map(function(r) { return r.mk; }), vals: monthVals, avg: savAvg, accts: acctList } };
     for (var i = 0; i < 12; i++) sav.plan.push(Math.round(savAvg));
     if (!savAvg) sav.zero = true;
   }
@@ -27568,7 +27662,7 @@ function renderYearAhead() {
   var confOf = function(s) {
     if (s.empty) return mine ? 'no history yet' : '';
     if (s.extrasOnly) return 'yearly expenses only';
-    if (s.savings) return 'average monthly change';
+    if (s.savings) return 'from take-home';
     if (s.oneoff) return 'only in ' + s.why.mks.filter(function(_, i) { return s.why.vals[i] > 0; }).map(yaFmtMk).join(', ');
     return s.occasional ? s.used + ' of ' + s.n + ' months had ' + (s.sec === '_inc' ? 'income' : 'spending') : s.used + ' month' + (s.used === 1 ? '' : 's');
   };
@@ -27656,10 +27750,24 @@ function yaPopHtml(sec, m, k) {
     var sw = c.sav && c.sav.why;
     h += '<div class="ya-pt">Savings · ' + mon + '</div><div class="ya-ps">Planned: <b>' + money(v.sav[k]) + '</b></div>';
     if (sw) {
-      h += '<div class="ya-pw">How much your savings total grew in an average month: deposits plus any gains, the same measure Growth projection uses' +
-           (sw.avg <= 0 ? '. It went down on average, so it is planned at $0' : '') + '.</div><div class="ya-plist">';
+      var expl = '<div class="ya-pw">Uses the contributions and transfers you logged (your part only, never the employer match or growth). A month with nothing logged uses the balance change minus the gains you logged.' +
+           (sw.avg <= 0 && sw.accts.some(function(a) { return a.on; }) ? ' It came out at or below $0, so it is planned at $0.' : '') + '</div>';
+      if (sw.accts.length) {
+        h += '<div class="ya-pw"><b>Comes out of my take-home pay</b> (untick anything taken from your pay before it lands, like a 401(k)):</div><div class="ya-plist">';
+        var onSum = 0;
+        sw.accts.forEach(function(a) {
+          if (a.on) onSum += a.avg;
+          var src = a.logged && !a.est ? 'logged' : !a.logged ? 'from balance' : a.logged + ' logged, ' + a.est + ' from balance';
+          h += '<label class="ya-pl ya-acct' + (a.on ? '' : ' off') + '"><span><input type="checkbox" ' + (a.on ? 'checked ' : '') +
+               'onchange="yaToggleSav(\'' + escHtml(a.key).replace(/'/g, '&#39;') + '\', this.checked)"> ' + escHtml(a.name) +
+               ' <i class="ya-src">' + src + '</i></span><span>' + money(Math.round(a.avg)) + '/mo</span></label>';
+        });
+        h += fixed('<b>Counted</b>', Math.max(0, Math.round(onSum)), 'ya-ptot') + '</div>';
+      }
+      h += expl;
+      h += '<div class="ya-pw">By month:</div><div class="ya-plist">';
       sw.mks.forEach(function(mk, i) { h += line(mk, sw.vals[i]); });
-      h += '</div><div class="ya-pf">Tap a month to go to it.</div>';
+      h += '</div><div class="ya-pf">Tap a month to go to it. Accounts marked exempt are left out.</div>';
     }
     return h;
   }
@@ -27713,6 +27821,7 @@ function yaShowPop(td) {
   if (!modal || !html) return;
   var pop = document.createElement('div');
   pop.id = 'ya-pop'; pop.className = 'ya-pop'; pop.setAttribute('role', 'dialog');
+  pop.dataset.s = td.dataset.s; pop.dataset.k = td.dataset.k;
   pop.innerHTML = '<button type="button" class="ya-px" aria-label="Close" onclick="yaHidePop()">×</button>' + html;
   modal.appendChild(pop);
   // Place it under the cell, kept inside the panel. Positioned in the panel's
