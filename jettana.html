@@ -8293,9 +8293,12 @@ var appStore = {
     if (_isDemoURL) return Object.prototype.hasOwnProperty.call(_memStore, k) ? _memStore[k] : null;
     try { return _realLS.getItem(k); } catch (e) { return null; }
   },
+  // Returns true when the value was stored, false when the browser refused
+  // (most often: the device's storage for this site is full). Callers that
+  // ignore the result behave exactly as before; the budget writes check it.
   setItem: function (k, v) {
-    if (_isDemoURL) { _memStore[k] = String(v); return; }
-    try { _realLS.setItem(k, String(v)); } catch (e) {}
+    if (_isDemoURL) { _memStore[k] = String(v); return true; }
+    try { _realLS.setItem(k, String(v)); return true; } catch (e) { return false; }
   },
   removeItem: function (k) {
     if (_isDemoURL) { delete _memStore[k]; return; }
@@ -8823,7 +8826,7 @@ function jlogAdd(evt, detail) {
     var arr = [];
     try { arr = JSON.parse(_realLS.getItem(JLOG_KEY)) || []; } catch (e) { arr = []; }
     arr.push({ t: new Date().toISOString().slice(11, 23), e: evt, d: detail });
-    if (arr.length > 400) arr = arr.slice(-400);
+    if (arr.length > 150) arr = arr.slice(-150);   // diagnostic only: kept small so it never crowds out the budget
     _realLS.setItem(JLOG_KEY, JSON.stringify(arr));
   } catch (e) {}
 }
@@ -8924,8 +8927,22 @@ async function syncFromSupabase() {
       _lastGood = snapWeight(localData);  // local is now the state we must not shrink
       console.warn('[jettana] this device holds changes the cloud never accepted — keeping local data, NOT overwriting from the cloud');
     } else {
-      appStore.setItem(activeStorageKey(), JSON.stringify(row.data));
       _lastGood = snapWeight(row.data);   // this is the state we must not shrink
+      if (storeBudget(JSON.stringify(row.data))) {
+        _pullNotStored = false;
+      } else {
+        // The account's copy is fine but this device can't hold it. Don't go on
+        // as if it were stored: that is what showed an empty month. Stop here,
+        // say so, and allow no cloud writes from this device this session.
+        _pullNotStored = true;
+        _syncing = false;
+        try { jlogAdd('PULL', { decision: 'NOT STORED: device full' }); } catch (e) {}
+        try {
+          showToast('This device is out of storage space, so your budget couldn\u2019t be loaded here. Your account still has everything. See \u22ef for details.', true, 12000);
+        } catch (e) {}
+        try { updateSyncStatusRow(); } catch (e) {}
+        return;
+      }
     }
   } else {
     // Empty result — but under RLS a request whose session isn't attached yet
@@ -9116,7 +9133,7 @@ async function runLocalTransfer(localData, w, statusEl, goBtn, skipBtn, modal) {
   statusEl.textContent = 'Copying your budget into this account…';
   try {
     takeSnapshot('before-local-transfer');
-    appStore.setItem(activeStorageKey(), JSON.stringify(localData));
+    storeBudget(JSON.stringify(localData));
     await syncToSupabase(localData);
 
     // Verify against the server. An upsert that returns without throwing is
@@ -9151,6 +9168,7 @@ async function syncToSupabase(data) {
   if (!_currentUser || !_sb) return;
   if (_demoIsolated) return;      // sandbox must never write to an account
   if (!_initialSyncDone) return;  // don't overwrite the cloud before we've read it
+  if (_pullNotStored) return;     // this device never got the account's copy: whatever it shows is not the budget
   if (_syncing) return;           // never write while a pull is in flight
 
   // ── The guard that matters ──────────────────────────────────────────
@@ -9468,6 +9486,10 @@ function updateSyncStatusRow() {
     msg = '📱 Saved in this browser. Syncing across devices and browsers comes with lifetime access.';
   } else if (!_currentUser) {
     msg = '';
+  } else if (_pullNotStored) {
+    msg = '\u26a0\ufe0f This device is out of storage space, so your budget couldn\u2019t be loaded here. Your account still has everything, and nothing from this device will be saved to it until this is fixed. Try reloading; if it stays, open Jettana in your browser instead of the home-screen app.';
+  } else if (_deviceFull) {
+    msg = '\u26a0\ufe0f This device is out of storage space. Your latest changes went to your account but are not saved on this device.';
   } else if (_pendingUnsynced && _paidStatus === 'unpaid') {
     msg = '📱 This device has changes the cloud has not accepted. They are safe here and were not overwritten. Cloud backup comes with lifetime access — the ✦ button just above, $19 once.';
   } else if (_pendingUnsynced && !paidKnown) {
@@ -9534,6 +9556,10 @@ function inDemoSandbox() { return _isDemoURL; }
 // Nothing reads this const; left in place only so an old reference cannot break.
 const SNAP_KEY = _demoIsolated ? 'jettana_demo_snapshots' : 'jettana_snapshots';
 const SNAP_MAX = 6;                    // keep the most recent few
+// ...and never more than this much text in total (about 1.2 MB), so the budget
+// itself always has room on a phone. A 350 KB budget keeps 3 copies; the
+// newest copy is always kept, however big.
+const SNAP_BUDGET_CHARS = 1200000;
 const SNAP_MIN_GAP_MS = 30 * 60 * 1000; // routine saves: at most one per 30 min
 
 // How much real content a dataset holds — used so an empty or broken
@@ -9569,20 +9595,65 @@ function loadSnapshots() {
 
 function saveSnapshots(list) {
   var k = activeSnapKey();
-  try {
-    if (inDemoSandbox()) return false;
-    if (!k) return false;           // never fall back to a shared key
-    appStore.setItem(k, JSON.stringify(list));
-    return true;
-  } catch (e) {
-    // Out of space — drop the oldest and retry a couple of times
-    if (!k) return false;
-    while (list.length > 1) {
-      list.shift();
-      try { appStore.setItem(k, JSON.stringify(list)); return true; } catch (e2) {}
-    }
-    return false;
+  if (inDemoSandbox()) return false;
+  if (!k) return false;           // never fall back to a shared key
+  // appStore swallows the browser's "out of space" error and reports it as
+  // false, so check the result (the old catch here could never run).
+  if (appStore.setItem(k, JSON.stringify(list)) !== false) return true;
+  // Out of space: drop the oldest and retry, keeping at least the newest
+  while (list.length > 1) {
+    list.shift();
+    if (appStore.setItem(k, JSON.stringify(list)) !== false) return true;
   }
+  return false;
+}
+
+/* ── Device storage running out ────────────────────────────────
+   Each browser gives this site a fixed amount of storage on the device, and a
+   phone's is small (about 2.5 MB of text on iPhone). The budget plus several
+   full backup copies of it can outgrow that. When it did, every save on that
+   device failed without a word: on Nov 16 an iPhone fetched the whole budget
+   from the account, couldn't store it, and showed an empty month instead.
+
+   Backups are a convenience copy; the budget is the thing. So when the budget
+   doesn't fit, make room, in this order:
+     1. the diagnostic event log (debugging only),
+     2. this account's OLDEST backup copies, always keeping the newest one.
+   Never the budget itself, and never anything belonging to another account. */
+function freeDeviceSpace() {
+  // Delete the log outright rather than trimming it: every save attempt adds
+  // a line to it, so a trimmed log grows straight back and the retries would
+  // be spent on it instead of reaching the backups.
+  try {
+    var log = _realLS.getItem(JLOG_KEY);
+    if (log && log.length > 4000) { _realLS.removeItem(JLOG_KEY); return true; }
+  } catch (e) {}
+  var list = loadSnapshots();
+  if (list.length > 1) {
+    list.shift();
+    var k = activeSnapKey();
+    if (k) { appStore.removeItem(k); appStore.setItem(k, JSON.stringify(list)); }
+    return true;
+  }
+  return false;
+}
+/* Store the budget and CHECK it landed. Makes room and retries if the device
+   is full. Returns false only when it truly can't be stored. */
+var _deviceFull = false;      // the last budget write on this device didn't fit
+var _pullNotStored = false;   // the account's copy was fetched but couldn't be kept here
+function storeBudget(str) {
+  var k = activeStorageKey();
+  for (var i = 0; i < 12; i++) {
+    if (appStore.setItem(k, str) !== false && appStore.getItem(k) === str) {
+      if (_deviceFull) { _deviceFull = false; try { updateSyncStatusRow(); } catch (e) {} }
+      return true;
+    }
+    if (!freeDeviceSpace()) break;
+  }
+  _deviceFull = true;
+  try { console.warn('[jettana] could not store the budget on this device: out of storage space'); } catch (e) {}
+  try { updateSyncStatusRow(); } catch (e) {}
+  return false;
 }
 
 // Take a snapshot of what's in local storage right now.
@@ -9609,6 +9680,8 @@ function takeSnapshot(reason, opts) {
 
   list.push({ t: Date.now(), reason: reason || 'save', months: w.months, rows: w.rows, raw: raw });
   while (list.length > SNAP_MAX) list.shift();
+  var size = function() { return list.reduce(function(t, x) { return t + (x.raw ? x.raw.length : 0); }, 0); };
+  while (list.length > 1 && size() > SNAP_BUDGET_CHARS) list.shift();
   return saveSnapshots(list);
 }
 
@@ -9680,7 +9753,10 @@ function saveAll(data) {
   data = _enforceMonthLocks(data);
   // snapshot the PREVIOUS state before overwriting it (throttled)
   takeSnapshot('save', { throttle: true });
-  appStore.setItem(activeStorageKey(), JSON.stringify(data));
+  // If the device is full this still sends the change to the account (the
+  // data in hand is correct and newest); the status line says it isn't on
+  // this device.
+  storeBudget(JSON.stringify(data));
   syncToSupabase(data);
 }
 
@@ -23793,9 +23869,7 @@ function restoreSnapshot(i) {
   if (!confirm(msg)) return;
 
   takeSnapshot('before-restore');       // always reversible
-  try {
-    appStore.setItem(activeStorageKey(), s.raw);
-  } catch (e) { alert('Restore failed — could not write to storage.'); return; }
+  if (!storeBudget(s.raw)) { alert('Restore failed: this device is out of storage space.'); return; }
 
   var restored = JSON.parse(s.raw);
   syncToSupabase(restored);             // push the good state back up
