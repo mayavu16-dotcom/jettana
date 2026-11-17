@@ -14817,6 +14817,7 @@ function toggleCardTxPop(ev, rowId, section) {
   if (ev) { ev.stopPropagation(); ev.preventDefault(); }
   if (_cardTxPopId === rowId) { hideCardTxPop(); return; }
   hideCardTxPop();
+  closeOtherMenus('card');
 
   var all = loadAll();
   var d = all[currentMonthKey];
@@ -19706,8 +19707,7 @@ function showCtxMenuBtn(e, section, id) {
 function showCtxMenu(e, section, id) {
   if (monthIsLocked(currentMonthKey)) return;   // month lock: view only
   e.preventDefault();
-  // Close color toolbar if open
-  hideColorToolbar();
+  closeOtherMenus('ctx');   // includes the color toolbar
   ctxSection = section;
   ctxId = id;
 
@@ -20397,6 +20397,7 @@ function exportCSV() {
 function toggleExportMenu(e) {
   e.stopPropagation();
   var menu = document.getElementById('export-menu');
+  if (menu && !menu.classList.contains('open')) closeOtherMenus('export');
   if (menu) menu.classList.toggle('open');
 }
 function hideExportMenu() {
@@ -20552,11 +20553,34 @@ document.addEventListener('keydown', function(e) {
 
 
 // ── More menu ─────────────────────────────────────────────────
+/* ── One menu at a time ────────────────────────────────────────
+   Most menus close on a tap outside them, but several menu buttons stop the
+   tap from reaching the page (stopPropagation), so tapping a SECOND menu's
+   button left the first one open. Every menu now calls this as it opens,
+   naming itself, and everything else closes. The calculator / scratch pad are
+   deliberately not here: they're tools kept open while you work. */
+function closeOtherMenus(keep) {
+  var closers = {
+    more:   function() { var m = document.getElementById('more-menu'); if (m && m.style.display !== 'none') hideMoreMenu(); },
+    export: function() { hideExportMenu(); },
+    ctx:    function() { var m = document.getElementById('ctx-menu'); if (m && m.style.display !== 'none') hideCtxMenu(); },
+    card:   function() { if (document.getElementById('card-tx-pop')) hideCardTxPop(); },
+    emoji:  function() { var p = document.getElementById('month-emoji-popup'); if (p) p.remove(); },
+    month:  function() { var p = document.getElementById('month-color-popup'); if (p) p.remove(); },
+    toolbar:function() { var t = document.getElementById('color-toolbar'); if (t && t.classList.contains('visible')) hideColorToolbar(); },
+    ft:     function() { var f = document.getElementById('ft-color-picker'); if (f && f.style.display !== 'none') hideFtColorPicker(); },
+    legend: function() { var l = document.getElementById('legend-color-picker'); if (l && l.style.display !== 'none') closeLegendPicker(); },
+    cal:    function() { if (document.getElementById('cal-popover')) hideCalPopover(); },
+    goto:   function() { var g = document.getElementById('s-goto'); if (g) g.remove(); }
+  };
+  Object.keys(closers).forEach(function(k) { if (k !== keep) { try { closers[k](); } catch (e) {} } });
+}
+
 function toggleMoreMenu(e) {
   e.stopPropagation();
   var menu = document.getElementById('more-menu');
+  if (menu && menu.style.display === 'none') closeOtherMenus('more');
   if (menu) menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
-  // Close other menus
   hideExportMenu();
 }
 // ── Guided Tour ───────────────────────────────────────────────
@@ -23058,6 +23082,7 @@ function toggleMonthEmojiPicker(e) {
   e.stopPropagation();
   var existing = document.getElementById('month-emoji-popup');
   if (existing) { existing.remove(); return; }
+  closeOtherMenus('emoji');
 
   var all = loadAll();
   var currentEmoji = (all[currentMonthKey] && all[currentMonthKey]._emoji) || '';
@@ -23168,6 +23193,7 @@ function toggleMonthColorPicker(e) {
   e.stopPropagation();
   var existing = document.getElementById('month-color-popup');
   if (existing) { existing.remove(); return; }
+  closeOtherMenus('month');
   _mpYear = +String(currentMonthKey).slice(0, 4) || new Date().getFullYear();
   var locked = monthIsLocked(currentMonthKey);
 
@@ -25039,8 +25065,7 @@ function updateLegendSwatches() {
 
 function showColorToolbar(section, id, anchorEl) {
   if (monthIsLocked(currentMonthKey)) return;   // month lock: view only
-  // Close ctx menu if open
-  hideCtxMenu();
+  closeOtherMenus('toolbar');   // includes the row menu
   _tbSection = section;
   _tbId = id;
   var toolbar = document.getElementById('color-toolbar');
@@ -25377,6 +25402,7 @@ function updateLegendName(idx, val) {
 }
 
 function openLegendPicker(idx, dotEl) {
+  closeOtherMenus('legend');
   _legendPickerTarget = idx;
   var picker = document.getElementById('legend-color-picker');
   if (!picker) return;
@@ -25539,6 +25565,7 @@ function showFtColorPicker(e, section) {
   if (monthIsLocked(currentMonthKey)) return;   // month lock: view only
   e.preventDefault();
   e.stopPropagation();
+  closeOtherMenus('ft');
   _ftPickerSection = section;
   var picker = document.getElementById('ft-color-picker');
   if (!picker) return;
@@ -29829,6 +29856,7 @@ function jumpToMonthRow(mk, sec, id) {
 
 function showCalPopover(e, dateStr, entries) {
   hideCalPopover();
+  closeOtherMenus('cal');
   var pop = document.createElement('div');
   pop.className = 'cal-popover'; pop.id = 'cal-popover';
   var parts = dateStr.split('-');
