@@ -2033,6 +2033,13 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
 
 /* ── Search ─────────────────────────────────────────────────── */
 .search-wrap { position: relative; display: flex; align-items: center; }
+/* Itemized receipt: drag handle */
+.it-drag { border:none; background:none; color:var(--steel); cursor:grab; font-size:13px; line-height:1; padding:0 6px 0 0; margin:-2px 0 0; vertical-align:middle; touch-action:none; opacity:0.6; }
+.it-drag:hover { opacity:1; color:var(--ink); }
+.it-drag:disabled { display:none; }
+.st-entry.it-dragging { box-shadow:0 6px 18px rgba(20,30,45,0.18); background:var(--white); opacity:0.95; z-index:2; }
+.st-entry.it-dragging .it-drag { cursor:grabbing; }
+@media (pointer: coarse) { .it-drag { font-size:18px; padding:4px 10px 4px 2px; margin:-6px 0 -4px; } }
 /* Month picker + title colour popup (tap the month name) */
 .mp-pop { position:fixed; z-index:2000; background:var(--white); border:1px solid var(--mist); border-radius:12px; padding:12px 14px 14px; box-shadow:0 8px 30px rgba(0,0,0,0.2); font-family:'Outfit',sans-serif; width:232px; box-sizing:border-box; }
 .mp-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
@@ -7907,7 +7914,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
 
     <div class="shortcuts-group">
       <div class="shortcuts-group-title">Templates</div>
-      <div class="shortcut-row"><span>🧾 <strong>Itemize (expenses)</strong> — open the note on any expense row → 🧾 Itemize; add an entry per item with its price (tax can be its own line). Perfect for orders that bundle several purchases into one charge — the row shows "Amazon $40", the note shows what the $40 was. The note totals your items so you can check it matches the Actual.</span></div>
+      <div class="shortcut-row"><span>🧾 <strong>Itemize (expenses)</strong> — open the note on any expense row → 🧾 Itemize; add an entry per item with its price (tax can be its own line). Perfect for orders that bundle several purchases into one charge — the row shows "Amazon $40", the note shows what the $40 was. The note totals your items so you can check it matches the Actual. Press <strong>Enter</strong> to go to the next item, or to start a new one from the last, so you can type a receipt top to bottom; drag <strong>⠿</strong> to put items in the same order as the receipt.</span></div>
       <div class="shortcut-row"><span>💵 <strong>Paycheck (Income)</strong> — open the note on any income row → Paycheck; enter pay date, hours, hourly rate, gross pay, taxes and deductions; net pay auto-fills the Received column. Gross pay is black, taxes red, deductions green for easy reading.</span></div>
       <div class="shortcut-row"><span>💳 <strong>Payment (Debt)</strong> — open the note on any debt row → Payment; log date paid, amount, type, interest charged and due date; remaining balance auto-fills the Remaining column</span></div>
       <div class="shortcut-row"><span>📈 <strong>Performance (Savings)</strong> — open the note on any savings row → Performance; enter account value and cost basis; market gain/loss and cumulative return % are auto-calculated and fill the Actual and Growth columns</span></div>
@@ -17157,10 +17164,16 @@ function renderAllEntries(section, id, template, entries, skipTotal) {
     var typeLabel = TYPE_LABELS[entryType] || entryType;
     var typeColor = TYPE_COLORS[entryType] || 'var(--steel)';
     var entryDiv = document.createElement('div');
-    entryDiv.className = 'st-entry';
+    var isItem = entryType === 'itemize';
+    entryDiv.className = 'st-entry' + (isItem ? ' it-entry' : '');
+    entryDiv.dataset.idx = idx;
     entryDiv.style.cssText = 'border:1px solid var(--mist);border-left:3px solid ' + typeColor + ';border-radius:8px;padding:10px;margin-bottom:8px;position:relative;';
-    // Type header label
-    entryDiv.innerHTML = '<div style="font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:' + typeColor + ';margin-bottom:6px;">' + typeLabel + '</div>';
+    // Type header label. Itemized items get a ⠿ handle to drag them into the
+    // order they're printed on the receipt (a <button>, so a locked month's
+    // panel lock disables it like every other control).
+    entryDiv.innerHTML = '<div style="font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:' + typeColor + ';margin-bottom:6px;">' +
+      (isItem ? '<button type="button" class="it-drag" title="Drag to reorder" aria-label="Drag to reorder this item" onclick="event.stopPropagation()">⠿</button>' : '') +
+      typeLabel + '</div>';
     entryDiv.innerHTML += '<button onclick="removeEntry(\'' + section + '\',\'' + id + '\',' + idx + ')" style="position:absolute;top:6px;right:6px;background:none;border:none;cursor:pointer;font-size:14px;color:var(--steel);line-height:1;padding:2px 4px;border-radius:4px;" title="Remove entry" onmousedown="event.stopPropagation()">×</button>';
     /* Copy just this one. Sits left of the × rather than in the panel header,
        because "copy THIS entry" only means anything next to the entry it
@@ -17378,9 +17391,9 @@ function renderEntryFields(section, id, template, entry, idx) {
       '<select data-key="itkind" style="' + inputStyle + 'cursor:pointer;" onchange="this.dataset.key=\'itkind\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()">' +
       _opt('item', 'Item') + _opt('tax', 'Tax') + _opt('shipping', 'Shipping') + _opt('coupon', 'Coupon') + '</select></div>' +
       '<div style="flex:2;min-width:110px;"><label style="' + labelStyle + '">' + (itKind === 'coupon' ? 'Coupon / discount' : itKind === 'tax' ? 'Tax' : itKind === 'shipping' ? 'Shipping & handling' : 'Item') + '</label>' +
-      '<input type="text" data-key="itname" value="' + String(entry.itname || '').replace(/"/g, '&quot;').replace(/</g, '&lt;') + '" placeholder="' + (itKind === 'coupon' ? 'e.g. promo code' : itKind === 'tax' ? 'e.g. sales tax' : itKind === 'shipping' ? 'e.g. standard shipping' : 'e.g. USB cable') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'itname\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<input type="text" data-key="itname" value="' + String(entry.itname || '').replace(/"/g, '&quot;').replace(/</g, '&lt;') + '" placeholder="' + (itKind === 'coupon' ? 'e.g. promo code' : itKind === 'tax' ? 'e.g. sales tax' : itKind === 'shipping' ? 'e.g. standard shipping' : 'e.g. USB cable') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'itname\';' + cb + '" onkeydown="itemizeKeyDown(event,this,\'' + section + '\',\'' + id + '\')" enterkeyhint="next" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">' + (itKind === 'coupon' ? 'Amount off' : 'Price') + '</label>' +
-      '<input type="text" data-key="itprice" value="' + (entry.itprice ? '$' + parseAmt(entry.itprice).toFixed(2) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + itBlurCb + '" oninput="this.dataset.key=\'itprice\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<input type="text" inputmode="decimal" data-key="itprice" value="' + (entry.itprice ? (parseAmt(entry.itprice) < 0 ? '-' : '') + '$' + Math.abs(parseAmt(entry.itprice)).toFixed(2) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + itBlurCb + '" oninput="this.dataset.key=\'itprice\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onkeydown="itemizeKeyDown(event,this,\'' + section + '\',\'' + id + '\')" enterkeyhint="next" onclick="event.stopPropagation()"></div>' +
       '</div>';
   }
 
@@ -17418,6 +17431,21 @@ function templateMoneyFocus(inp) {
 
 function templateMoneyBlur(inp, section, id, template) {
   var raw = parseAmt(inp.value);
+  // Itemized receipts: a coupon typed as "-5" is still $5 off (coupons are
+  // already subtracted), and a negative item (a discount line) stays
+  // negative. Both used to fall through to "else" below and get erased.
+  if (template === 'itemize' && raw < 0) {
+    var ent = inp.closest('.st-entry'), kindSel = ent && ent.querySelector('[data-key="itkind"]');
+    if (kindSel && kindSel.value === 'coupon') raw = -raw;
+    else {
+      inp.value = '-$' + (-raw).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      raw = 0;   // formatted; skip the positive branch, but don't erase
+      var ed = inp.closest('.st-entry'), ctn = document.getElementById('st-fields-' + id);
+      if (ed && ctn) { var ix = Array.from(ctn.querySelectorAll('.st-entry')).indexOf(ed); if (ix >= 0) saveEntry(section, id, ix); }
+      updateEntryTotal(section, id, template);
+      return;
+    }
+  }
   if (raw > 0) {
     // Fuel price uses 3 decimal places (e.g. $3.459), everything else uses 2
     var isFuelPrice = template === 'fuel' && inp.dataset.key === 'fuelprice';
@@ -17493,6 +17521,93 @@ function refreshNoteDot(section, id, row) {
   var dot = document.getElementById('note-dot-' + id);
   if (dot) dot.classList.toggle('has-note', rowHasNote(row));
 }
+
+/* ── Itemized receipts: Enter + reorder ───────────────────────────
+   Enter works the way it does on rows: from an item's name it goes to the
+   next item's name, from a price to the next item's price, and on the last
+   item it adds a new one and puts you in its name. So a receipt can be typed
+   top to bottom without reaching for the mouse.
+   Locked months: the inputs are read-only but still get key presses, so the
+   lock is checked here too. */
+function itemizeKeyDown(e, el, section, id) {
+  if (e.key !== 'Enter' || e.isComposing || e.keyCode === 229) return;
+  e.preventDefault();
+  if (monthIsLocked(currentMonthKey)) return;
+  var field = el.dataset.key;                         // itname | itprice
+  var container = document.getElementById('st-fields-' + id);
+  if (!container) return;
+  var cur = el.closest('.st-entry');
+  var items = Array.prototype.slice.call(container.querySelectorAll('.st-entry.it-entry'));
+  var next = items[items.indexOf(cur) + 1];
+  if (next) {
+    // Leaving the price formats and saves it (the blur does that)
+    var to = next.querySelector('[data-key="' + field + '"]');
+    if (to) { to.focus(); try { to.select(); } catch (err) {} }
+    return;
+  }
+  // Last item: make sure what was typed is saved and formatted before the
+  // list is redrawn (a field removed while focused never gets its blur)
+  if (field === 'itprice') templateMoneyBlur(el, section, id, 'itemize');
+  else { var ix = Array.prototype.indexOf.call(container.querySelectorAll('.st-entry'), cur); if (ix >= 0) saveEntry(section, id, ix); }
+  addTypedEntry(section, id, 'itemize');
+  var all2 = container.querySelectorAll('.st-entry.it-entry');
+  var last = all2[all2.length - 1];
+  var nameIn = last && last.querySelector('[data-key="itname"]');
+  if (nameIn) nameIn.focus();
+}
+
+/* Drag ⠿ to reorder items, so the note lists them exactly as the receipt
+   does. Mouse and touch both (pointer events; the handle has
+   touch-action:none so dragging it doesn't scroll the page). Items move among
+   items only. The new order is read straight from the page and saved in one
+   step, with an undo. */
+var _itDrag = null;
+document.addEventListener('pointerdown', function(e) {
+  var h = e.target.closest && e.target.closest('.it-drag');
+  if (!h || h.disabled || monthIsLocked(currentMonthKey)) return;
+  var entry = h.closest('.st-entry'), container = entry && entry.parentNode;
+  if (!container || !container.id || container.id.indexOf('st-fields-') !== 0) return;
+  e.preventDefault();
+  var wrap = container.closest('.note-row');
+  var row = wrap && wrap.previousElementSibling;
+  _itDrag = { entry: entry, container: container, id: container.id.slice(10), section: row && row.dataset ? row.dataset.section : null,
+              startY: e.clientY, before: Array.prototype.map.call(container.querySelectorAll('.st-entry'), function(d) { return d.dataset.idx; }).join(',') };
+  if (!_itDrag.section) { var er = document.querySelector('.erow[data-id="' + _itDrag.id + '"]'); _itDrag.section = er ? er.dataset.section : null; }
+  entry.classList.add('it-dragging');
+  try { h.setPointerCapture(e.pointerId); } catch (err) {}
+});
+document.addEventListener('pointermove', function(e) {
+  if (!_itDrag) return;
+  e.preventDefault();
+  var d = _itDrag, y = e.clientY;
+  // Swap with the neighbouring item once the pointer passes its middle
+  var items = Array.prototype.slice.call(d.container.querySelectorAll('.st-entry.it-entry'));
+  var i = items.indexOf(d.entry);
+  var prev = items[i - 1], next = items[i + 1];
+  if (prev) { var pr = prev.getBoundingClientRect(); if (y < pr.top + pr.height / 2) { d.container.insertBefore(d.entry, prev); return; } }
+  if (next) { var nr = next.getBoundingClientRect(); if (y > nr.top + nr.height / 2) { d.container.insertBefore(d.entry, next.nextSibling); return; } }
+  // Near the screen edge: scroll so a long receipt can be reordered
+  if (y < 60) window.scrollBy(0, -12); else if (y > window.innerHeight - 60) window.scrollBy(0, 12);
+}, { passive: false });
+function _itDragEnd() {
+  if (!_itDrag) return;
+  var d = _itDrag; _itDrag = null;
+  d.entry.classList.remove('it-dragging');
+  var order = Array.prototype.map.call(d.container.querySelectorAll('.st-entry'), function(el) { return el.dataset.idx; });
+  if (order.join(',') === d.before || !d.section) return;
+  var all = loadAll();
+  var rows = (all[currentMonthKey] && all[currentMonthKey][d.section]) || [];
+  var row = rows.find(function(r) { return r.id === d.id; });
+  if (!row || !row._entries || row._entries.length !== order.length) { renderAllEntries(d.section, d.id, (row && row._template) || 'itemize', (row && row._entries) || []); return; }
+  pushUndo('Reorder items');
+  var old = row._entries;
+  row._entries = order.map(function(i) { return old[+i]; });
+  saveAll(all);
+  // Redraw so every field's position matches its saved place again
+  renderAllEntries(d.section, d.id, row._template || 'itemize', row._entries);
+}
+document.addEventListener('pointerup', _itDragEnd);
+document.addEventListener('pointercancel', _itDragEnd);
 
 function addTypedEntry(section, id, type) {
   var all = loadAll();
