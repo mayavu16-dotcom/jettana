@@ -2217,6 +2217,16 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
   max-height: none;
   overflow-y: hidden;
 }
+/* Bold in notes: the layer shows the text (with bold); the box underneath
+   keeps the caret, the selection and the typing, its own letters hidden. */
+.note-mirror { display:none; position:absolute; left:0; top:0; z-index:1; pointer-events:none; overflow:hidden; box-sizing:border-box;
+  white-space:pre-wrap; overflow-wrap:break-word; word-wrap:break-word; color:var(--slate); background:transparent; }
+.note-mirror .nb { font-weight:inherit; -webkit-text-stroke:0.45px currentColor; color:var(--ink); }
+.note-textarea.has-bold, .dark .note-textarea.has-bold { color:transparent !important; caret-color:var(--slate); }
+#notes-textarea.has-bold { color:transparent !important; caret-color:var(--ink); }
+#notes-textarea.has-bold::selection { color:transparent; }
+.notes-mirror { color:var(--ink); }
+.note-textarea.has-bold::selection { color:transparent; }
 .note-textarea:focus { border-color: var(--sage); background: white; }
 .note-textarea::placeholder { color: var(--mist); font-style: italic; }
 .note-indicator {
@@ -6937,13 +6947,14 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
             <div class="sec-hdr-left"><h3 id="sec-title-notes" ondblclick="renameSectionPrompt('notes')" ontouchstart="_secLongPress=setTimeout(function(){renameSectionPrompt('notes');},600)" ontouchend="clearTimeout(_secLongPress)" ontouchmove="clearTimeout(_secLongPress)" title="Double-click or long-press to rename">Notes</h3><span class="sec-drag-handle" title="Drag to reorder section">⠿</span></div>
             <div class="sec-hdr-right"><button id="mchk-open-btn" onclick="event.stopPropagation();toggleMonthChecklist()" title="Monthly checklist — reminders you can tick off, drag around, and hide" style="display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,0.16);border:none;border-radius:999px;padding:3px 10px;color:white;font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.4px;cursor:pointer;">☑ Checklist</button><button class="sec-clear-btn" onclick="clearNotes()" title="Clear notes">🗑</button><button class="sec-collapse-btn" onclick="toggleSection('notes')" title="Collapse section">▾</button></div>
           </div>
-          <div class="sec-body" id="notes-body" style="display:flex;flex-direction:column;flex:1;">
+          <div class="sec-body" id="notes-body" style="display:flex;flex-direction:column;flex:1;position:relative;">
             <div style="display:flex;gap:4px;padding:8px 12px 0;border-bottom:1px solid var(--mist);flex-shrink:0;">
               <button class="notes-edit-btn" onclick="insertNotesText('• ')" title="Bullet point" style="background:none;border:1px solid var(--mist);border-radius:4px;padding:3px 8px;font-size:12px;cursor:pointer;color:var(--ink);">• Bullet</button>
               <button class="notes-edit-btn" onclick="insertNotesText('☐ ')" title="Add checkbox" style="background:none;border:1px solid var(--mist);border-radius:4px;padding:3px 8px;font-size:12px;cursor:pointer;color:var(--ink);">☐ Todo</button>
               <button id="notes-expand-btn" onclick="toggleNotesExpand()" title="Expand / collapse notes" style="background:none;border:1px solid var(--mist);border-radius:4px;padding:3px 8px;font-size:12px;cursor:pointer;color:var(--ink);margin-left:auto;touch-action:manipulation;-webkit-tap-highlight-color:transparent;">↕</button>
             </div>
             <textarea id="notes-textarea" placeholder="Jot down financial reminders, goals, or anything on your mind this month…" oninput="saveNotes()" onclick="handleNoteClick(event)" onkeydown="notesKeydown(event)" style="width:100%;flex:1;min-height:140px;border:none;outline:none;resize:none;font-family:'Outfit',sans-serif;font-size:13.5px;line-height:1.6;color:var(--ink);background:transparent;padding:12px 16px;box-sizing:border-box;"></textarea>
+            <div class="note-mirror notes-mirror" id="notes-mirror" aria-hidden="true"></div>
           </div>
         </div>
 
@@ -7894,14 +7905,14 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>◎ <strong>Mark as exempt</strong> — row menu → Mark as exempt; shown faded with an exempt badge (badge hides if the row has a note). Expense rows: excluded from section totals — great for stipends or employer-paid expenses. Checking/Savings rows: still counted in the section's own totals, but excluded from Total Saved and Net Worth.</span></div>
       <div class="shortcut-row"><span>📅 <strong>Dates on a row</strong> — tap the date button on any row to open a calendar. It opens on the month you're budgeting; <strong>‹</strong> <strong>›</strong> step a month and <strong>«</strong> <strong>»</strong> jump a whole year. Click a day, or type one in the box — <strong>25</strong> for a day in the month shown, <strong>2/25</strong> or <strong>2/25/2025</strong> for any other — and it says the date back to you in words before you save. Same calendar on desktop and phone.</span></div>
       <div class="shortcut-row"><span>📅 <strong>Beginning balance date</strong> — open the note on any Checking row to set a beginning balance date; expenses dated before that date won't be deducted from the balance</span></div>
-      <div class="shortcut-row"><span>✎ <strong>Row notes</strong> — click ≡ on any row → Add note; a gold dot appears on hover to indicate a note exists</span></div>
+      <div class="shortcut-row"><span>✎ <strong>Row notes</strong> — click ≡ on any row → Add note; a gold dot appears on hover to indicate a note exists. Highlight words and press <strong>⌘B</strong> (Ctrl+B on Windows) to make them bold; press it again to undo the bold.</span></div>
       <div class="shortcut-row"><span>👁 <strong>Full name peek</strong> — long row names fade at the edge; hover (desktop) or tap once (mobile) to see the full text, tap again to edit. Works on locked months too, where it only ever shows the name.</span></div>
       <div class="shortcut-row"><span>⧉ <strong>Copy / paste template entries</strong> — <strong>⧉</strong> on an entry copies that one, <strong>⧉ Copy all</strong> in the pill row takes every entry in the row. <strong>⎘ Paste</strong> drops them into another month or another row with every value intact — amounts, percentages, employer match, fund, status — and only the <strong>dates blanked</strong>. Pasting into a row that already has entries asks <strong>Add</strong> or <strong>Replace</strong> first; an empty row just pastes. Locked months refuse it. Same shape as Copy colour / Paste colour on the row menu.</span></div>
       <div class="shortcut-row"><span>🔗 <strong>Account links</strong> — keep a link to the institution behind a Debt, Checking or Savings &amp; Investments row: ≡ → Add link, paste the page you sign in on, name it whatever you like. The row's name is then underlined, and ≡ → Open takes you there in a new tab. The menu names the <strong>real web address</strong> rather than your label, so you always see where you're going first. Only secure (https) sites are accepted, the address is all that's stored — never a username or password — and the link carries into every new month. On a <strong>recurring</strong> row, a tick box in the editor also applies a new or removed link to the later months that row already repeats in. Paid rows aren't underlined, since the strikethrough already occupies that line.</span></div>
       <div class="shortcut-row"><span>◷ <strong>Pending charges</strong> — on a charge linked to a card (its number is the card's colour), ≡ → Mark as pending keeps it out of the card's balance until the bank posts it; ≡ → Mark as cleared (or the circle beside it in the card's list, or "Mark all as cleared" at the bottom of it) adds it. It still counts as spent in your totals. The card shows a dashed "$ pending" tag and its panel lists the pending charges and the total with them. Recurring card charges start each month pending, and one still pending at month end carries into next month's balance. To find pending charges, type "pending" in Search or tap the ◷ Pending chip beside it (with 📅 All months on, it finds them in every month).</span></div>
       <div class="shortcut-row"><span>→ <strong>Income destination</strong> — open the note on any income row to set a "→ goes to" label (e.g. Marcus Savings, HYSA)</span></div>
       <div class="shortcut-row"><span>🔄 <strong>Subscriptions</strong> — dedicated section for recurring services; included in expense totals and month-over-month comparison</span></div>
-      <div class="shortcut-row"><span>📝 <strong>Notes</strong> — free-form notes per month with bullet points and checkable to-dos; syncs across devices</span></div>
+      <div class="shortcut-row"><span>📝 <strong>Notes</strong> — free-form notes per month with bullet points and checkable to-dos; syncs across devices. Highlight words and press <strong>⌘B</strong> (Ctrl+B on Windows) to make them bold.</span></div>
       <div class="shortcut-row"><span>🎨 <strong>Footer highlight</strong> — click the Actual/Received total in any section footer to set a background and number color; supports copy, paste and clear</span></div>
       <div class="shortcut-row"><span>👻 <strong>Savings goal column</strong> — ⋯ on the Savings header → 👻 Show goal column; adds an optional Goal cell next to each account for what you're aiming to have in it, shown in dark green so it reads as intent rather than balance. Hidden by default, set per month, and the footer totals your goals. Goals carry into new months on recurring rows even though balances start fresh.</span></div>
       <div class="shortcut-row"><span>🔢 <strong>Charge badges</strong> — a small count next to a card or account name showing how many expense rows feed its balance; tap it for the full list with sections, amounts and dates, sorted earliest to latest, with a "Latest" line for the most recent activity. Undated charges still appear, sorted to the end. Click the badge to pin the panel and each charge becomes a link straight to that row; deposits and withdrawals stay plain, since they live inside the account row itself. Names cut off by the panel edge show in full on hover.</span></div>
@@ -11639,7 +11650,7 @@ function renderRowEl(section, row, animate = false) {
   var isBullet = !!(row._noteBullet);
   var bulletActive = isBullet ? 'note-bullet-on' : '';
   var bulletTitle = isBullet ? 'Turn off bullet list' : 'Toggle bullet list';
-  noteDiv.innerHTML = '<div class="note-inner">' + allocHtml + '<div style="position:relative;"><textarea class="note-textarea" id="note-ta-' + row.id + '" placeholder="Add a note… (e.g. split with roommate, one-time purchase)" oninput="saveNote(\'' + section + '\',\'' + row.id + '\',this.value)" onblur="noteBlur(\'' + section + '\',\'' + row.id + '\')" onclick="event.stopPropagation()" onkeydown="noteBulletKeydown(event,\'' + section + '\',\'' + row.id + '\')">' + escHtml(row.note || '') + '</textarea>' +
+  noteDiv.innerHTML = '<div class="note-inner">' + allocHtml + '<div style="position:relative;"><div class="note-mirror" id="note-mirror-' + row.id + '" aria-hidden="true"></div><textarea class="note-textarea" id="note-ta-' + row.id + '" placeholder="Add a note… (e.g. split with roommate, one-time purchase)" oninput="saveNote(\'' + section + '\',\'' + row.id + '\',this.value)" onblur="noteBlur(\'' + section + '\',\'' + row.id + '\')" onclick="event.stopPropagation()" onkeydown="noteBulletKeydown(event,\'' + section + '\',\'' + row.id + '\')">' + escHtml(row.note || '') + '</textarea>' +
     '<div class="note-actions">' +
     '<button class="note-bullet-btn ' + bulletActive + '" id="bullet-btn-' + row.id + '" onclick="toggleBulletMode(\'' + section + '\',\'' + row.id + '\')" title="' + bulletTitle + '">• List</button>' +
     '<button class="note-expand-btn" id="expand-btn-' + row.id + '" onclick="toggleNoteExpand(\'' + section + '\',\'' + row.id + '\')" title="Expand / collapse note">↕</button>' +
@@ -16831,6 +16842,11 @@ function _noteReopenSoon() {
 function toggleNote(section, id) {
   var wrap = document.getElementById('note-wrap-' + id);
   if (!wrap) return;
+  // Bold layer: drawn once the box is visible (it copies the box's size)
+  setTimeout(function() {
+    var t = document.getElementById('note-ta-' + id);
+    if (t && wrap.classList.contains('open')) { renderNoteBold(id); if (_noteBoldRO && !t._nbObs) { _noteBoldRO.observe(t); t._nbObs = 1; } }
+  }, 0);
   var opening = !wrap.classList.contains('open');
   var quiet = _quietNoteOpen;
   _rememberNote(id, opening);
@@ -18191,14 +18207,227 @@ function applyToColumn(section, id, amount, label) {
   }
 }
 
+/* ── Bold in notes (⌘B / Ctrl+B) ───────────────────────────────
+   The note box is a plain <textarea>, which can't show bold, and List mode
+   (bullets, Tab, Enter) is built on it. So the TEXT is left exactly as it is
+   and bold is kept beside it: row.noteBold = [[start, end], ...] (character
+   positions). A see-through layer on top of the box draws the same text with
+   those ranges bold, while you type in the real box underneath.
+
+   The bold is drawn with a text stroke, not a bold font: the letters stay
+   exactly as wide, so the layer never drifts out of line with the text and
+   caret beneath it.
+
+   Everything that reads notes (search, exports, List mode, copy, sync) sees
+   the same plain text as before. */
+function noteBoldRanges(row, len) {
+  var r = (row && Array.isArray(row.noteBold)) ? row.noteBold : [];
+  var out = [];
+  r.forEach(function(x) {
+    if (!Array.isArray(x)) return;
+    var a = Math.max(0, Math.min(len, +x[0] || 0)), b = Math.max(0, Math.min(len, +x[1] || 0));
+    if (b > a) out.push([a, b]);
+  });
+  out.sort(function(p, q) { return p[0] - q[0]; });
+  var merged = [];
+  out.forEach(function(x) {
+    var last = merged[merged.length - 1];
+    if (last && x[0] <= last[1]) last[1] = Math.max(last[1], x[1]); else merged.push([x[0], x[1]]);
+  });
+  return merged;
+}
+function noteBoldSet(row, ranges) {
+  if (ranges.length) row.noteBold = ranges; else delete row.noteBold;
+}
+/* Which parts of the text changed between old and new. Typing, pasting and
+   deleting change one stretch; turning List mode on/off changes the start of
+   many lines at once, so when the line count is the same, each line is
+   compared on its own (otherwise bold in the middle lines would be lost). */
+function _noteEdits(a, b) {
+  function one(a, b, off) {
+    var p = 0, n = Math.min(a.length, b.length);
+    while (p < n && a.charCodeAt(p) === b.charCodeAt(p)) p++;
+    var sx = 0;
+    while (sx < n - p && a.charCodeAt(a.length - 1 - sx) === b.charCodeAt(b.length - 1 - sx)) sx++;
+    if (p === a.length && p === b.length) return [];
+    return [[off.a + p, off.a + a.length - sx, off.b + p, off.b + b.length - sx]];
+  }
+  var la = a.split('\n'), lb = b.split('\n');
+  if (la.length === lb.length && la.length > 1) {
+    var edits = [], oa = 0, ob = 0;
+    for (var i = 0; i < la.length; i++) {
+      edits = edits.concat(one(la[i], lb[i], { a: oa, b: ob }));
+      oa += la[i].length + 1; ob += lb[i].length + 1;
+    }
+    return edits;
+  }
+  return one(a, b, { a: 0, b: 0 });
+}
+/* Move the bold ranges along with an edit. Text typed INSIDE a bold word is
+   bold; text typed just before or just after it isn't. */
+function noteBoldFollow(row, oldText, newText) {
+  if (!row || !row.noteBold || oldText === newText) return;
+  var ranges = noteBoldRanges(row, oldText.length);
+  if (!ranges.length) { delete row.noteBold; return; }
+  var edits = _noteEdits(oldText, newText);
+  function map(pos, isEnd) {
+    var shift = 0;
+    for (var i = 0; i < edits.length; i++) {
+      var e = edits[i], os = e[0], oe = e[1], ns = e[2], ne = e[3];
+      // Typing right where a bold range ENDS doesn't extend it. Bold is only
+      // switched on by highlighting + ⌘B, so there'd be no way to stop it:
+      // bold "rent", carry on typing " by Friday", and all of it would be bold.
+      if (isEnd && os === oe && oe === pos) break;
+      // Any other edit ending at or before this point moves it along (typing
+      // just before a bold word moves the word; it doesn't become bold).
+      if (oe <= pos) { shift = (ne - oe); continue; }
+      if (os < pos && pos < oe) return isEnd ? ne : ns;                                     // inside a replaced stretch
+      break;
+    }
+    return pos + shift;
+  }
+  noteBoldSet(row, noteBoldRanges({ noteBold: ranges.map(function(r) { return [map(r[0], false), map(r[1], true)]; }) }, newText.length));
+}
+/* ⌘B on a selection: bold it, or un-bold it if it's all bold already. */
+function toggleNoteBold(section, id) {
+  var ta = document.getElementById('note-ta-' + id);
+  if (!ta || ta.readOnly || monthIsLocked(currentMonthKey)) return;
+  var s0 = ta.selectionStart, e0 = ta.selectionEnd;
+  if (e0 <= s0) return;                               // nothing highlighted
+  var all = loadAll();
+  var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
+  var row = rows.find(function(r) { return r.id === id; });
+  if (!row) return;
+  if ((row.note || '') !== ta.value) { noteBoldFollow(row, row.note || '', ta.value); row.note = ta.value; }
+  var len = ta.value.length, ranges = noteBoldRanges(row, len);
+  var covered = 0;
+  ranges.forEach(function(r) { covered += Math.max(0, Math.min(r[1], e0) - Math.max(r[0], s0)); });
+  var out = [];
+  if (covered >= e0 - s0) {
+    ranges.forEach(function(r) {                     // cut [s0,e0) out
+      if (r[1] <= s0 || r[0] >= e0) out.push(r);
+      else { if (r[0] < s0) out.push([r[0], s0]); if (r[1] > e0) out.push([e0, r[1]]); }
+    });
+  } else out = ranges.concat([[s0, e0]]);
+  pushUndo('Bold in note');
+  noteBoldSet(row, noteBoldRanges({ noteBold: out }, len));
+  saveAll(all);
+  scheduleSave();
+  renderNoteBold(id, row);
+  ta.focus(); ta.setSelectionRange(s0, e0);
+}
+/* Draw the layer. Only exists while the note has bold in it; a note without
+   bold is the plain box, exactly as before. */
+function renderNoteBold(id, row) {
+  var ta = document.getElementById('note-ta-' + id), mir = document.getElementById('note-mirror-' + id);
+  if (!ta || !mir) return;
+  if (!row) {
+    var er = document.querySelector('.erow[data-id="' + id + '"]'), sec = er && er.dataset.section;
+    var d = sec && loadAll()[currentMonthKey];
+    row = d && (d[sec] || []).find(function(r) { return r.id === id; });
+  }
+  drawBoldLayer(ta, mir, noteBoldRanges(row, ta.value.length));
+}
+/* The layer itself, shared by row notes and the page's Notes section. */
+function drawBoldLayer(ta, mir, ranges) {
+  var text = ta.value;
+  // The box fades its text colour (for theme switches). Switching between
+  // "letters shown" and "letters hidden under the layer" must be instant, or
+  // both show at once for a moment (a faint double image).
+  var flip = function(on) {
+    if (ta.classList.contains('has-bold') === on) return;
+    ta.style.transition = 'none';
+    ta.classList.toggle('has-bold', on);
+    void ta.offsetWidth;
+    requestAnimationFrame(function() { ta.style.transition = ''; });
+  };
+  if (!ranges.length || !ta.offsetWidth) { if (!ranges.length) { flip(false); mir.style.display = 'none'; mir.innerHTML = ''; } return; }
+  var h = '', at = 0;
+  ranges.forEach(function(r) {
+    h += escHtml(text.slice(at, r[0])) + '<b class="nb">' + escHtml(text.slice(r[0], r[1])) + '</b>';
+    at = r[1];
+  });
+  h += escHtml(text.slice(at)) + (text.slice(-1) === '\n' ? '\u200b' : '');
+  mir.innerHTML = h;
+  // Same box as the textarea, so the text lines up character for character
+  var cs = getComputedStyle(ta);
+  var sb = ta.offsetWidth - ta.clientWidth - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth);   // a scrollbar, if any, narrows the text
+  mir.style.cssText = 'display:block;left:' + ta.offsetLeft + 'px;top:' + ta.offsetTop + 'px;width:' + ta.offsetWidth + 'px;height:' + ta.offsetHeight + 'px;' +
+    'padding:' + cs.paddingTop + ' ' + (parseFloat(cs.paddingRight) + Math.max(0, sb)) + 'px ' + cs.paddingBottom + ' ' + cs.paddingLeft + ';' +
+    'border:' + cs.borderTopWidth + ' solid transparent;font-family:' + cs.fontFamily + ';font-size:' + cs.fontSize + ';' +
+    'line-height:' + cs.lineHeight + ';letter-spacing:' + cs.letterSpacing + ';';
+  flip(true);
+  mir.scrollTop = ta.scrollTop;
+}
+
+/* The page's Notes section (bottom of the page): same idea, kept per month in
+   all[month]._notesBold = { r: [[start, end], ...] }. An OBJECT on purpose:
+   anything stored in a month as a list is read as a section of rows (the
+   sync safety check counts them), and these are not rows. */
+function monthNotesBold(m) { return (m && m._notesBold && Array.isArray(m._notesBold.r)) ? m._notesBold.r : []; }
+function renderNotesBold() {
+  var ta = document.getElementById('notes-textarea'), mir = document.getElementById('notes-mirror');
+  if (!ta || !mir) return;
+  var m = loadAll()[currentMonthKey];
+  drawBoldLayer(ta, mir, noteBoldRanges({ noteBold: monthNotesBold(m) }, ta.value.length));
+}
+function toggleNotesBold() {
+  var ta = document.getElementById('notes-textarea');
+  if (!ta || ta.readOnly || monthIsLocked(currentMonthKey)) return;
+  var s0 = ta.selectionStart, e0 = ta.selectionEnd;
+  if (e0 <= s0) return;
+  saveNotes();                                        // text and bold in step first
+  var all = loadAll(), m = all[currentMonthKey] || (all[currentMonthKey] = {});
+  var len = ta.value.length, ranges = noteBoldRanges({ noteBold: monthNotesBold(m) }, len);
+  var covered = 0;
+  ranges.forEach(function(r) { covered += Math.max(0, Math.min(r[1], e0) - Math.max(r[0], s0)); });
+  var out = [];
+  if (covered >= e0 - s0) {
+    ranges.forEach(function(r) {
+      if (r[1] <= s0 || r[0] >= e0) out.push(r);
+      else { if (r[0] < s0) out.push([r[0], s0]); if (r[1] > e0) out.push([e0, r[1]]); }
+    });
+  } else out = ranges.concat([[s0, e0]]);
+  out = noteBoldRanges({ noteBold: out }, len);
+  pushUndo('Bold in notes');
+  if (out.length) m._notesBold = { r: out }; else delete m._notesBold;
+  saveAll(all);
+  renderNotesBold();
+  ta.focus(); ta.setSelectionRange(s0, e0);
+}
+function refreshBoldLayers() {
+  document.querySelectorAll('.note-textarea.has-bold').forEach(function(t) { renderNoteBold(t.id.slice(8)); });
+  renderNotesBold();
+}
+
+// Keep the layer in step: scrolling the note, and the box changing size
+document.addEventListener('scroll', function(e) {
+  var t = e.target;
+  if (t && t.classList && t.classList.contains('note-textarea') && t.classList.contains('has-bold')) {
+    var m = document.getElementById('note-mirror-' + t.id.slice(8)); if (m) m.scrollTop = t.scrollTop;
+  } else if (t && t.id === 'notes-textarea' && t.classList.contains('has-bold')) {
+    var nm = document.getElementById('notes-mirror'); if (nm) nm.scrollTop = t.scrollTop;
+  }
+}, true);
+var _noteBoldRO = (typeof ResizeObserver !== 'undefined') ? new ResizeObserver(function(list) {
+  list.forEach(function(en) { var t = en.target; if (!t.classList.contains('has-bold') && !(t.id === 'notes-textarea')) return; if (t.id === 'notes-textarea') renderNotesBold(); else renderNoteBold(t.id.slice(8)); });
+}) : null;
+window.addEventListener('resize', refreshBoldLayers);
+document.addEventListener('DOMContentLoaded', function() {
+  var t = document.getElementById('notes-textarea');
+  if (t && _noteBoldRO) _noteBoldRO.observe(t);
+});
+
 function saveNote(section, id, val) {
   var all = loadAll();
   var rows = all[currentMonthKey][section] || [];
   var row = rows.find(function(r) { return r.id === id; });
   if (!row) return;
+  noteBoldFollow(row, row.note || '', val);
   row.note = val;
   saveAll(all);
   scheduleSave();
+  renderNoteBold(id, row);
   // Update dot indicator
   var dot = document.getElementById('note-dot-' + id);
   if (dot) dot.classList.toggle('has-note', val.trim().length > 0 || rowHasNote(row));
@@ -18228,10 +18457,11 @@ function applyNoteExpand(id, big) {
     btn.title = big ? 'Collapse note' : 'Expand / collapse note';
     btn.textContent = big ? '↑' : '↕';
   }
-  if (!big) { ta.style.height = ''; return; }
+  if (!big) { ta.style.height = ''; renderNoteBold(id); return; }
   if (ta.offsetParent === null) return;          // not visible yet — size on open
   ta.style.height = 'auto';
   ta.style.height = ta.scrollHeight + 'px';
+  renderNoteBold(id);
 }
 
 /* The expanded state rides on the ROW, next to _noteBullet and _template, so
@@ -18303,15 +18533,22 @@ function toggleBulletMode(section, id) {
     if (btn) { btn.classList.remove('note-bullet-on'); btn.title = 'Toggle bullet list'; }
   }
 
+  noteBoldFollow(row, row.note || '', ta.value);
   row.note = ta.value;
   saveAll(all);
   scheduleSave();
+  renderNoteBold(id, row);
   var dot = document.getElementById('note-dot-' + id);
   if (dot) dot.classList.toggle('has-note', ta.value.trim().length > 0 || rowHasNote(row));
   ta.focus();
 }
 
 function noteBulletKeydown(e, section, id) {
+  if ((e.metaKey || e.ctrlKey) && !e.altKey && (e.key === 'b' || e.key === 'B')) {
+    e.preventDefault();
+    toggleNoteBold(section, id);
+    return;
+  }
   var ta = e.target;
   var start = ta.selectionStart;
   var val = ta.value;
@@ -18621,6 +18858,7 @@ function insertNotesText(prefix) {
 function notesKeydown(e) {
   var ta = document.getElementById('notes-textarea');
   if (!ta) return;
+  if ((e.metaKey || e.ctrlKey) && !e.altKey && (e.key === 'b' || e.key === 'B')) { e.preventDefault(); toggleNotesBold(); return; }
   var start = ta.selectionStart;
   var text = ta.value;
   var lineStart = text.lastIndexOf('\n', start - 1) + 1;
@@ -18697,15 +18935,19 @@ function toggleNotesExpand() {
   var isExpanded = ta.classList.toggle('expanded');
   btn.textContent = isExpanded ? '↑' : '↕';
   btn.title = isExpanded ? 'Collapse notes' : 'Expand / collapse notes';
-  btn.style.background = isExpanded ? 'var(--sage-light)' : '';
-  btn.style.borderColor = isExpanded ? 'var(--sage)' : '';
-  btn.style.color = isExpanded ? 'var(--sage-dark)' : '';
+  // Back to the button's own look when collapsed: its markup says
+  // background:none / border var(--mist) / color var(--ink). Clearing them
+  // ('') removed those too and left a blank white square.
+  btn.style.background = isExpanded ? 'var(--sage-light)' : 'none';
+  btn.style.borderColor = isExpanded ? 'var(--sage)' : 'var(--mist)';
+  btn.style.color = isExpanded ? 'var(--sage-dark)' : 'var(--ink)';
   if (isExpanded) {
     ta.style.height = 'auto';
     ta.style.height = ta.scrollHeight + 'px';
   } else {
     ta.style.height = '';
   }
+  renderNotesBold();
 }
 
 function saveNotes() {
@@ -18713,12 +18955,21 @@ function saveNotes() {
   if (!ta) return;
   var all = loadAll();
   if (!all[currentMonthKey]) all[currentMonthKey] = {};
-  all[currentMonthKey]._notes = ta.value;
+  var m = all[currentMonthKey];
+  // Bold follows the text through every edit (typing, bullets, ticking a to-do)
+  if (m._notesBold) {
+    var tmp = { noteBold: monthNotesBold(m) };
+    noteBoldFollow(tmp, m._notes || '', ta.value);
+    if (tmp.noteBold && tmp.noteBold.length) m._notesBold = { r: tmp.noteBold }; else delete m._notesBold;
+  }
+  m._notes = ta.value;
   saveAll(all);
   if (ta.classList.contains('expanded')) {
     ta.style.height = 'auto';
     ta.style.height = ta.scrollHeight + 'px';
   }
+  var nm = document.getElementById('notes-mirror');
+  if (nm) drawBoldLayer(ta, nm, noteBoldRanges({ noteBold: monthNotesBold(m) }, ta.value.length));
 }
 
 function loadNotes() {
@@ -18726,6 +18977,7 @@ function loadNotes() {
   if (!ta) return;
   var all = loadAll();
   ta.value = (all[currentMonthKey] && all[currentMonthKey]._notes) || '';
+  renderNotesBold();
 }
 
 function clearNotes() {
@@ -18733,7 +18985,8 @@ function clearNotes() {
   var ta = document.getElementById('notes-textarea');
   if (ta) ta.value = '';
   var all = loadAll();
-  if (all[currentMonthKey]) { all[currentMonthKey]._notes = ''; saveAll(all); }
+  if (all[currentMonthKey]) { all[currentMonthKey]._notes = ''; delete all[currentMonthKey]._notesBold; saveAll(all); }
+  renderNotesBold();
 }
 
 /* ── Intention rich text (bold only) ─────────────────────────
@@ -23550,6 +23803,7 @@ function loadBoldText() {
 
 // ── Font size preference ──────────────────────────────────────
 function setFontSize(size) {
+  setTimeout(refreshBoldLayers, 0);   // bold layers copy the text size
   document.body.classList.remove('font-small', 'font-large');
   if (size !== 'medium') document.body.classList.add('font-' + size);
   appStore.setItem('intentra_fontsize', size);
@@ -23569,6 +23823,7 @@ function setFontSize(size) {
 }
 
 function setFontSizeExact(size) {
+  setTimeout(refreshBoldLayers, 0);
   size = parseFloat(size);
   // Inject a style that scales all font sizes proportionally via a multiplier
   var style = document.getElementById('font-size-exact-style');
