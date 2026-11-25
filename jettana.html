@@ -2226,6 +2226,14 @@ body.sidebar-collapsed .topbar { padding-left: 62px; }
 #notes-textarea.has-bold { color:transparent !important; caret-color:var(--ink); }
 #notes-textarea.has-bold::selection { color:transparent; }
 .notes-mirror { color:var(--ink); }
+/* B (bold) button: phones and tablets only; the computer has ⌘B */
+.note-bold-btn, .notes-bold-btn { display:none !important; }
+.note-bold-btn { background:none; border:1px solid var(--mist); border-radius:4px; font-size:12px; font-family:'Outfit',sans-serif; font-weight:800; color:var(--ink);
+  padding:2px 7px; cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; line-height:1.3; }
+@media (pointer: coarse) {
+  .note-bold-btn, .notes-bold-btn { display:inline-block !important; }
+  .note-textarea { padding-right:122px; }      /* room for B · List · ↕ · × (107px on a phone) */
+}
 .note-textarea.has-bold::selection { color:transparent; }
 .note-textarea:focus { border-color: var(--sage); background: white; }
 .note-textarea::placeholder { color: var(--mist); font-style: italic; }
@@ -6951,6 +6959,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
             <div style="display:flex;gap:4px;padding:8px 12px 0;border-bottom:1px solid var(--mist);flex-shrink:0;">
               <button class="notes-edit-btn" onclick="insertNotesText('• ')" title="Bullet point" style="background:none;border:1px solid var(--mist);border-radius:4px;padding:3px 8px;font-size:12px;cursor:pointer;color:var(--ink);">• Bullet</button>
               <button class="notes-edit-btn" onclick="insertNotesText('☐ ')" title="Add checkbox" style="background:none;border:1px solid var(--mist);border-radius:4px;padding:3px 8px;font-size:12px;cursor:pointer;color:var(--ink);">☐ Todo</button>
+              <button class="notes-edit-btn notes-bold-btn" ontouchstart="event.preventDefault();toggleNotesBold(true)" onmousedown="event.preventDefault()" onclick="toggleNotesBold(true)" title="Bold: highlight words, then tap B" aria-label="Bold" style="background:none;border:1px solid var(--mist);border-radius:4px;padding:3px 9px;font-size:12px;font-weight:800;cursor:pointer;color:var(--ink);">B</button>
               <button id="notes-expand-btn" onclick="toggleNotesExpand()" title="Expand / collapse notes" style="background:none;border:1px solid var(--mist);border-radius:4px;padding:3px 8px;font-size:12px;cursor:pointer;color:var(--ink);margin-left:auto;touch-action:manipulation;-webkit-tap-highlight-color:transparent;">↕</button>
             </div>
             <textarea id="notes-textarea" placeholder="Jot down financial reminders, goals, or anything on your mind this month…" oninput="saveNotes()" onclick="handleNoteClick(event)" onkeydown="notesKeydown(event)" style="width:100%;flex:1;min-height:140px;border:none;outline:none;resize:none;font-family:'Outfit',sans-serif;font-size:13.5px;line-height:1.6;color:var(--ink);background:transparent;padding:12px 16px;box-sizing:border-box;"></textarea>
@@ -7905,14 +7914,14 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>◎ <strong>Mark as exempt</strong> — row menu → Mark as exempt; shown faded with an exempt badge (badge hides if the row has a note). Expense rows: excluded from section totals — great for stipends or employer-paid expenses. Checking/Savings rows: still counted in the section's own totals, but excluded from Total Saved and Net Worth.</span></div>
       <div class="shortcut-row"><span>📅 <strong>Dates on a row</strong> — tap the date button on any row to open a calendar. It opens on the month you're budgeting; <strong>‹</strong> <strong>›</strong> step a month and <strong>«</strong> <strong>»</strong> jump a whole year. Click a day, or type one in the box — <strong>25</strong> for a day in the month shown, <strong>2/25</strong> or <strong>2/25/2025</strong> for any other — and it says the date back to you in words before you save. Same calendar on desktop and phone.</span></div>
       <div class="shortcut-row"><span>📅 <strong>Beginning balance date</strong> — open the note on any Checking row to set a beginning balance date; expenses dated before that date won't be deducted from the balance</span></div>
-      <div class="shortcut-row"><span>✎ <strong>Row notes</strong> — click ≡ on any row → Add note; a gold dot appears on hover to indicate a note exists. Highlight words and press <strong>⌘B</strong> (Ctrl+B on Windows) to make them bold; press it again to undo the bold.</span></div>
+      <div class="shortcut-row"><span>✎ <strong>Row notes</strong> — click ≡ on any row → Add note; a gold dot appears on hover to indicate a note exists. Highlight words and press <strong>⌘B</strong> (Ctrl+B on Windows) to make them bold; press it again to undo the bold. On a phone, highlight the words and tap <strong>B</strong>.</span></div>
       <div class="shortcut-row"><span>👁 <strong>Full name peek</strong> — long row names fade at the edge; hover (desktop) or tap once (mobile) to see the full text, tap again to edit. Works on locked months too, where it only ever shows the name.</span></div>
       <div class="shortcut-row"><span>⧉ <strong>Copy / paste template entries</strong> — <strong>⧉</strong> on an entry copies that one, <strong>⧉ Copy all</strong> in the pill row takes every entry in the row. <strong>⎘ Paste</strong> drops them into another month or another row with every value intact — amounts, percentages, employer match, fund, status — and only the <strong>dates blanked</strong>. Pasting into a row that already has entries asks <strong>Add</strong> or <strong>Replace</strong> first; an empty row just pastes. Locked months refuse it. Same shape as Copy colour / Paste colour on the row menu.</span></div>
       <div class="shortcut-row"><span>🔗 <strong>Account links</strong> — keep a link to the institution behind a Debt, Checking or Savings &amp; Investments row: ≡ → Add link, paste the page you sign in on, name it whatever you like. The row's name is then underlined, and ≡ → Open takes you there in a new tab. The menu names the <strong>real web address</strong> rather than your label, so you always see where you're going first. Only secure (https) sites are accepted, the address is all that's stored — never a username or password — and the link carries into every new month. On a <strong>recurring</strong> row, a tick box in the editor also applies a new or removed link to the later months that row already repeats in. Paid rows aren't underlined, since the strikethrough already occupies that line.</span></div>
       <div class="shortcut-row"><span>◷ <strong>Pending charges</strong> — on a charge linked to a card (its number is the card's colour), ≡ → Mark as pending keeps it out of the card's balance until the bank posts it; ≡ → Mark as cleared (or the circle beside it in the card's list, or "Mark all as cleared" at the bottom of it) adds it. It still counts as spent in your totals. The card shows a dashed "$ pending" tag and its panel lists the pending charges and the total with them. Recurring card charges start each month pending, and one still pending at month end carries into next month's balance. To find pending charges, type "pending" in Search or tap the ◷ Pending chip beside it (with 📅 All months on, it finds them in every month).</span></div>
       <div class="shortcut-row"><span>→ <strong>Income destination</strong> — open the note on any income row to set a "→ goes to" label (e.g. Marcus Savings, HYSA)</span></div>
       <div class="shortcut-row"><span>🔄 <strong>Subscriptions</strong> — dedicated section for recurring services; included in expense totals and month-over-month comparison</span></div>
-      <div class="shortcut-row"><span>📝 <strong>Notes</strong> — free-form notes per month with bullet points and checkable to-dos; syncs across devices. Highlight words and press <strong>⌘B</strong> (Ctrl+B on Windows) to make them bold.</span></div>
+      <div class="shortcut-row"><span>📝 <strong>Notes</strong> — free-form notes per month with bullet points and checkable to-dos; syncs across devices. Highlight words and press <strong>⌘B</strong> (Ctrl+B on Windows), or tap <strong>B</strong> on a phone, to make them bold. If you expand it with ↕, it stays expanded.</span></div>
       <div class="shortcut-row"><span>🎨 <strong>Footer highlight</strong> — click the Actual/Received total in any section footer to set a background and number color; supports copy, paste and clear</span></div>
       <div class="shortcut-row"><span>👻 <strong>Savings goal column</strong> — ⋯ on the Savings header → 👻 Show goal column; adds an optional Goal cell next to each account for what you're aiming to have in it, shown in dark green so it reads as intent rather than balance. Hidden by default, set per month, and the footer totals your goals. Goals carry into new months on recurring rows even though balances start fresh.</span></div>
       <div class="shortcut-row"><span>🔢 <strong>Charge badges</strong> — a small count next to a card or account name showing how many expense rows feed its balance; tap it for the full list with sections, amounts and dates, sorted earliest to latest, with a "Latest" line for the most recent activity. Undated charges still appear, sorted to the end. Click the badge to pin the panel and each charge becomes a link straight to that row; deposits and withdrawals stay plain, since they live inside the account row itself. Names cut off by the panel edge show in full on hover.</span></div>
@@ -11652,6 +11661,10 @@ function renderRowEl(section, row, animate = false) {
   var bulletTitle = isBullet ? 'Turn off bullet list' : 'Toggle bullet list';
   noteDiv.innerHTML = '<div class="note-inner">' + allocHtml + '<div style="position:relative;"><div class="note-mirror" id="note-mirror-' + row.id + '" aria-hidden="true"></div><textarea class="note-textarea" id="note-ta-' + row.id + '" placeholder="Add a note… (e.g. split with roommate, one-time purchase)" oninput="saveNote(\'' + section + '\',\'' + row.id + '\',this.value)" onblur="noteBlur(\'' + section + '\',\'' + row.id + '\')" onclick="event.stopPropagation()" onkeydown="noteBulletKeydown(event,\'' + section + '\',\'' + row.id + '\')">' + escHtml(row.note || '') + '</textarea>' +
     '<div class="note-actions">' +
+    // B: bold for phones/tablets (no ⌘B there). The tap mustn't take focus
+    // from the note, or iOS drops the highlighted text before B can bold it:
+    // touchstart is cancelled and does the work itself (so no click follows).
+    '<button class="note-bold-btn" ontouchstart="event.preventDefault();toggleNoteBold(\'' + section + '\',\'' + row.id + '\',true)" onmousedown="event.preventDefault()" onclick="toggleNoteBold(\'' + section + '\',\'' + row.id + '\',true)" title="Bold: highlight words, then tap B" aria-label="Bold">B</button>' +
     '<button class="note-bullet-btn ' + bulletActive + '" id="bullet-btn-' + row.id + '" onclick="toggleBulletMode(\'' + section + '\',\'' + row.id + '\')" title="' + bulletTitle + '">• List</button>' +
     '<button class="note-expand-btn" id="expand-btn-' + row.id + '" onclick="toggleNoteExpand(\'' + section + '\',\'' + row.id + '\')" title="Expand / collapse note">↕</button>' +
     '<button class="note-close" onclick="closeNote(\'' + row.id + '\')" title="Close">×</button>' +
@@ -18289,11 +18302,14 @@ function noteBoldFollow(row, oldText, newText) {
   noteBoldSet(row, noteBoldRanges({ noteBold: ranges.map(function(r) { return [map(r[0], false), map(r[1], true)]; }) }, newText.length));
 }
 /* ⌘B on a selection: bold it, or un-bold it if it's all bold already. */
-function toggleNoteBold(section, id) {
+function toggleNoteBold(section, id, fromButton) {
   var ta = document.getElementById('note-ta-' + id);
   if (!ta || ta.readOnly || monthIsLocked(currentMonthKey)) return;
   var s0 = ta.selectionStart, e0 = ta.selectionEnd;
-  if (e0 <= s0) return;                               // nothing highlighted
+  if (e0 <= s0 || document.activeElement !== ta) {   // nothing highlighted
+    if (fromButton) showToast('Highlight the words you want bold, then tap B.', true, 2600);
+    return;
+  }
   var all = loadAll();
   var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
   var row = rows.find(function(r) { return r.id === id; });
@@ -18371,11 +18387,14 @@ function renderNotesBold() {
   var m = loadAll()[currentMonthKey];
   drawBoldLayer(ta, mir, noteBoldRanges({ noteBold: monthNotesBold(m) }, ta.value.length));
 }
-function toggleNotesBold() {
+function toggleNotesBold(fromButton) {
   var ta = document.getElementById('notes-textarea');
   if (!ta || ta.readOnly || monthIsLocked(currentMonthKey)) return;
   var s0 = ta.selectionStart, e0 = ta.selectionEnd;
-  if (e0 <= s0) return;
+  if (e0 <= s0 || document.activeElement !== ta) {
+    if (fromButton) showToast('Highlight the words you want bold, then tap B.', true, 2600);
+    return;
+  }
   saveNotes();                                        // text and bold in step first
   var all = loadAll(), m = all[currentMonthKey] || (all[currentMonthKey] = {});
   var len = ta.value.length, ranges = noteBoldRanges({ noteBold: monthNotesBold(m) }, len);
@@ -18928,11 +18947,22 @@ function handleNoteClick(event) {
   }, 10);
 }
 
+/* Expanded Notes stays expanded: remembered on this device (like the other
+   view settings) and put back after a reload; each month's text gets its own
+   height. Row notes already remember theirs on the row. */
+function _notesExpandKey() { return nsKey('jettana_notes_expanded'); }
 function toggleNotesExpand() {
+  var ta = document.getElementById('notes-textarea');
+  if (!ta) return;
+  applyNotesExpand(!ta.classList.contains('expanded'));
+  try { appStore.setItem(_notesExpandKey(), ta.classList.contains('expanded') ? '1' : ''); } catch (e) {}
+}
+function applyNotesExpand(big) {
   var ta = document.getElementById('notes-textarea');
   var btn = document.getElementById('notes-expand-btn');
   if (!ta || !btn) return;
-  var isExpanded = ta.classList.toggle('expanded');
+  var isExpanded = !!big;
+  ta.classList.toggle('expanded', isExpanded);
   btn.textContent = isExpanded ? '↑' : '↕';
   btn.title = isExpanded ? 'Collapse notes' : 'Expand / collapse notes';
   // Back to the button's own look when collapsed: its markup says
@@ -18977,6 +19007,9 @@ function loadNotes() {
   if (!ta) return;
   var all = loadAll();
   ta.value = (all[currentMonthKey] && all[currentMonthKey]._notes) || '';
+  var keepBig = false;
+  try { keepBig = appStore.getItem(_notesExpandKey()) === '1'; } catch (e) {}
+  if (keepBig || ta.classList.contains('expanded')) applyNotesExpand(true);   // also refits the height to this month's text
   renderNotesBold();
 }
 
