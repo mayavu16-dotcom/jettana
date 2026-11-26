@@ -8601,6 +8601,10 @@ async function signOut() {
   if (inDemoSandbox()) return;   // nothing to sign out of in the demo
   // Ask first when this browser holds the only copy of something. Runs while
   // _currentUser is still set — the snapshot inside it depends on that.
+  // Send any edit still waiting in the save queue first, so sign-out checks
+  // (and the account) see the newest copy. A failed send sets the unsynced
+  // flag, and the confirmation below then warns as it always has.
+  try { await flushCloudSave(); } catch (e) {}
   if (!(await confirmSignOutIfUnsynced())) return;
   if (_sb) await _sb.auth.signOut();
   _currentUser = null;
@@ -8908,6 +8912,14 @@ async function syncFromSupabase() {
   if (_demoIsolated) return;
   if (!_currentUser || !_sb) return;
   if (_syncing) return;                 // don't stack pulls on top of each other
+  // An edit still in the save queue must reach the account BEFORE we read it
+  // back, or the pull would bring down a copy without it. If that send fails,
+  // the unsynced flag is set and the pull below keeps this device's copy.
+  if (_cloudPending || _cloudInFlight) {
+    try { await flushCloudSave(); } catch (e) {}
+    if (_syncing) return;
+    if (!_currentUser) return;
+  }
   _syncing = true;
   takeSnapshot('before-sync');
 
@@ -9191,7 +9203,68 @@ var _lastGood = { months: 0, rows: 0 };
 var _syncing = false;        // a pull is in flight
 var _allowShrink = false;    // set only when the user deliberately deletes a month
 
-async function syncToSupabase(data) {
+// ── One cloud save at a time ─────────────────────────────────
+// Every save used to send the whole budget straight away, so quick edits put
+// several copies of the same row in flight at once. Each waited on the one
+// before it in the database and the later ones timed out ("statement
+// timeout"). Now saves queue: one in flight, only the newest copy waits behind
+// it, and a burst of edits is sent once after a short pause.
+// This changes WHEN a write happens, never WHETHER: every guard below still
+// runs, on the copy actually being sent.
+var CLOUD_SAVE_DELAY = 1500;
+var _cloudPending = null;    // { data, deliberate } — newest copy not yet sent
+var _cloudTimer = null;
+var _cloudInFlight = null;   // promise of the write being sent now
+function _queueCloud(data) {
+  // Capture the one-shot deliberate-delete flag NOW: callers reset it right
+  // after saveAll returns. Carried forward so a later edit can't drop it.
+  var deliberate = _allowShrink || !!(_cloudPending && _cloudPending.deliberate);
+  // The owner is fixed when the change is made: a queued save is only ever
+  // sent to the account that made it.
+  _cloudPending = { data: data, deliberate: deliberate, owner: _currentUser.id };
+}
+// A waiting save that can no longer be sent (signed out, account switched):
+// this device now holds work its account doesn't have — say so, for that
+// account only, so its next sign-in keeps the work instead of the older copy.
+function _dropCloudPending() {
+  clearTimeout(_cloudTimer); _cloudTimer = null;
+  var job = _cloudPending; _cloudPending = null;
+  if (!job || !job.owner) return;
+  try { if (snapWeight(job.data).rows > 0) appStore.setItem(unsyncedFlagKey(), job.owner); } catch (e) {}
+}
+function queueCloudSave(data) {
+  if (!_currentUser || !_sb || _demoIsolated) return;
+  _queueCloud(data);
+  clearTimeout(_cloudTimer);
+  _cloudTimer = setTimeout(flushCloudSave, CLOUD_SAVE_DELAY);
+}
+async function flushCloudSave() {
+  clearTimeout(_cloudTimer); _cloudTimer = null;
+  while (_cloudInFlight) { try { await _cloudInFlight; } catch (e) {} }
+  if (!_cloudPending) return;
+  if (!_currentUser || _currentUser.id !== _cloudPending.owner) { _dropCloudPending(); return; }
+  var job = _cloudPending; _cloudPending = null;
+  _cloudInFlight = _pushToCloud(job.data, job.deliberate);
+  try { await _cloudInFlight; } finally { _cloudInFlight = null; }
+}
+// Immediate save (sign-in copy, backup restore): still waits its turn.
+function syncToSupabase(data) {
+  if (!_currentUser || !_sb || _demoIsolated) return Promise.resolve();
+  _queueCloud(data);
+  return flushCloudSave();
+}
+// Leaving the page with a save still waiting: try to send it, and mark this
+// device as holding changes the account doesn't have yet, so the next load
+// keeps them and sends them rather than loading the older cloud copy.
+function _cloudLeaving() {
+  if (!_cloudPending) return;
+  try { if (snapWeight(_cloudPending.data).rows > 0) markUnsynced(true); } catch (e) {}
+  flushCloudSave();
+}
+window.addEventListener('pagehide', _cloudLeaving);
+document.addEventListener('visibilitychange', function() { if (document.hidden) _cloudLeaving(); });
+
+async function _pushToCloud(data, deliberate) {
   if (!_currentUser || !_sb) return;
   if (_demoIsolated) return;      // sandbox must never write to an account
   if (!_initialSyncDone) return;  // don't overwrite the cloud before we've read it
@@ -9202,7 +9275,7 @@ async function syncToSupabase(data) {
   // Refuse to replace a known-good account with an empty or drastically
   // smaller one. No sequence of events can get past this.
   var w = snapWeight(data);
-  var deliberate = _allowShrink;  // capture now — the flag is one-shot and reset by the caller
+  // `deliberate` was captured when the save was queued — the flag is one-shot and reset by the caller
 
   // Never push a dataset with no real rows unless the user deliberately
   // emptied it. A just-seeded account has nothing worth saving — and an
@@ -9225,7 +9298,7 @@ async function syncToSupabase(data) {
     try { updateSyncStatusRow(); } catch (e) {}
     return;
   }
-  if (!_allowShrink && _lastGood.months > 0 && w.months < _lastGood.months) {
+  if (!deliberate && _lastGood.months > 0 && w.months < _lastGood.months) {
     console.warn('[jettana] blocked cloud write: month count would drop from ' +
                  _lastGood.months + ' to ' + w.months);
     _syncState = 'unknown'; _syncErrMsg = '';
@@ -9266,6 +9339,7 @@ var _pendingUnsynced = false; // set by the pull when it kept local over the clo
    result to another. Deliberately does NOT touch the jettana_unsynced storage
    flag: that records stranded work and is already stamped with its owner. */
 function resetSyncStateForAccountChange() {
+  _dropCloudPending();
   _syncState = 'unknown';
   _syncErrMsg = '';
   _pendingUnsynced = false;
@@ -9784,7 +9858,7 @@ function saveAll(data) {
   // data in hand is correct and newest); the status line says it isn't on
   // this device.
   storeBudget(JSON.stringify(data));
-  syncToSupabase(data);
+  queueCloudSave(data);
 }
 
 const SECTIONS = ['income','savings','housing','checking','transport','debt','food','health','subscriptions','gifts','misc'];
