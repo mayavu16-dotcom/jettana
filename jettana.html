@@ -12397,14 +12397,37 @@ function updateBulkBarButtons(section) {
     dateLbl.style.cssText = 'font-size:11px;opacity:0.85;white-space:nowrap;';
     bar.appendChild(dateLbl);
 
+    /* Same day grid as a row's date button, not the native picker (which
+       opens on today). The chosen date is still held in a hidden input with
+       the old id, so Apply date below reads it exactly as before. */
     var dateInp = document.createElement('input');
-    dateInp.type = 'date';
+    dateInp.type = 'hidden';
     dateInp.id = 'bulk-date-' + section;
     dateInp.value = _bulkDateVal || '';
-    // color-scheme:dark so the native picker's own text is legible on the bar
-    dateInp.style.cssText = 'font-family:\'Outfit\',sans-serif;font-size:12px;border:1px solid rgba(255,255,255,0.3);border-radius:5px;padding:3px 6px;background:rgba(255,255,255,0.1);color:white;cursor:pointer;color-scheme:dark;';
-    dateInp.onchange = function() { _bulkDateVal = this.value; };
     bar.appendChild(dateInp);
+
+    var datePick = document.createElement('button');
+    datePick.type = 'button';
+    datePick.className = 'bulk-date-pick';
+    datePick.style.cssText = 'font-family:\'Outfit\',sans-serif;font-size:12px;border:1px solid rgba(255,255,255,0.3);border-radius:5px;padding:3px 8px;background:rgba(255,255,255,0.1);color:white;cursor:pointer;white-space:nowrap;';
+    var paintPick = function() {
+      var lbl = tplDateLabel(dateInp.value);
+      datePick.textContent = '📅 ' + (lbl || 'Pick a date');
+      datePick.style.opacity = lbl ? '1' : '0.8';
+    };
+    paintPick();
+    datePick.onclick = function(e) {
+      if (e) e.stopPropagation();
+      showDayGrid(null, null, false, {
+        existing: dateInp.value,
+        onCommit: function(val) {
+          _bulkDateVal = val || '';
+          dateInp.value = _bulkDateVal;
+          paintPick();
+        }
+      });
+    };
+    bar.appendChild(datePick);
 
     var applyDateBtn = document.createElement('button');
     applyDateBtn.className = 'bulk-bar-btn';
