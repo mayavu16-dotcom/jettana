@@ -15320,14 +15320,22 @@ function bindTap(el, fn) {
    grid cannot leave half of it set. */
 var _dgState = null;
 
-function showDayGrid(section, id, isDate2) {
+function showDayGrid(section, id, isDate2, custom) {
   if (monthIsLocked(currentMonthKey)) return;   // month lock: view only
   closeDayGrid();
-  var all = loadAll();
-  var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
-  var row = rows.find(function(r) { return r.id === id; });
-  if (!row) return;
-  var existing = isDate2 ? (row.date2 || '') : (row.date || '');
+  var existing;
+  if (custom) {
+    /* A date that is not the row's own (a template entry's Date field). The
+       caller says what is there now and what to do with the pick; opening,
+       typing, the year jump and the "Outside <month>" line are all shared. */
+    existing = /^\d{4}-\d{2}-\d{2}$/.test(custom.existing || '') ? custom.existing : '';
+  } else {
+    var all = loadAll();
+    var rows = (all[currentMonthKey] && all[currentMonthKey][section]) || [];
+    var row = rows.find(function(r) { return r.id === id; });
+    if (!row) return;
+    existing = isDate2 ? (row.date2 || '') : (row.date || '');
+  }
 
   // Open on the month the date is already in; otherwise on the month being
   // budgeted, which is nearly always the one they want.
@@ -15339,7 +15347,8 @@ function showDayGrid(section, id, isDate2) {
   } else {
     var now = new Date(); y = now.getFullYear(); m = now.getMonth();
   }
-  _dgState = { section: section, id: id, isDate2: !!isDate2, y: y, m: m, sel: existing };
+  _dgState = { section: section, id: id, isDate2: !!isDate2, y: y, m: m, sel: existing,
+               onCommit: custom && typeof custom.onCommit === 'function' ? custom.onCommit : null };
 
   var ov = document.createElement('div');
   ov.className = 'dg-overlay';
@@ -15548,7 +15557,9 @@ function dgSave() {
 function dgCommit(val) {
   if (!_dgState) return;
   var s = _dgState.section, id = _dgState.id, isDate2 = _dgState.isDate2;
+  var onCommit = _dgState.onCommit;
   closeDayGrid();
+  if (onCommit) { onCommit(val); return; }
   if (isDate2) commitDate2(s, id, val);
   else commitDate(s, id, val);
 }
@@ -16721,7 +16732,7 @@ function doSearch(q) {
         if (dateTxt.indexOf(q) !== -1) { dateMatch = true; break; }
       }
       // Also check raw date inputs (YYYY-MM-DD format)
-      var dateInputs = row.querySelectorAll('input[type="date"]');
+      var dateInputs = row.querySelectorAll('input[type="date"], input[data-tdate]');
       for (var di = 0; di < dateInputs.length; di++) {
         var rawDate = (dateInputs[di].value || '').toLowerCase();
         if (rawDate && rawDate.indexOf(q) !== -1) { dateMatch = true; break; }
@@ -17292,6 +17303,50 @@ function renderAllEntries(section, id, template, entries, skipTotal) {
   if (template === 'contribution') renderContributionSummary(section, id, entries);
 }
 
+/* ── Template Date fields use the same day grid as a row's date ──────
+   They used to be native <input type="date">, which opens on TODAY — so a
+   Contribution logged in Feb 2025 meant hunting back month by month. Now the
+   value lives in a hidden input (same data-key, same oninput, so saveEntry,
+   totals, copy/paste and search read it exactly as before) and the visible
+   part is a button that opens the grid on the entry's own date, or else on
+   the month this template belongs to (showDayGrid's fallback).
+   data-tdate marks these hidden inputs so code that used to look for
+   type="date" (entryDateKeys, search) still finds them. */
+function tplDateLabel(v) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(v || ''))) return '';
+  var d = new Date(+v.slice(0, 4), +v.slice(5, 7) - 1, +v.slice(8, 10));
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+function tplDateBtn(v, inputStyle) {
+  var lbl = tplDateLabel(v);
+  return '<button type="button" class="tpl-date-btn' + (lbl ? ' has-date' : '') + '" ' +
+    'style="' + inputStyle + 'display:block;text-align:left;cursor:pointer;min-height:22px;line-height:1.4;' + (lbl ? '' : 'color:var(--steel);') + '" ' +
+    'onclick="event.stopPropagation();openTplDate(this)">' + (lbl || 'Pick a date') + '</button>';
+}
+function openTplDate(btn) {
+  var hidden = btn && btn.previousElementSibling;
+  if (!hidden || !hidden.hasAttribute('data-tdate')) return;
+  showDayGrid(null, null, false, {
+    existing: hidden.value,
+    onCommit: function(val) {
+      // The note can be redrawn while the grid is open (a sync pull, say);
+      // a detached field would save nowhere, so say so rather than lose it.
+      if (!document.body.contains(hidden)) {
+        showToast('Date not saved — the note was refreshed. Please pick it again.', true);
+        return;
+      }
+      hidden.value = val || '';
+      var lbl = tplDateLabel(hidden.value);
+      btn.textContent = lbl || 'Pick a date';
+      btn.classList.toggle('has-date', !!lbl);
+      btn.style.color = lbl ? '' : 'var(--steel)';
+      // Runs the field's own oninput (saveEntry, and updateEntryTotal where
+      // the template has one) — the same path typing into the old field took.
+      hidden.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  });
+}
+
 function renderEntryFields(section, id, template, entry, idx) {
   var inputStyle = 'border:none;border-bottom:1px solid var(--mist);outline:none;font-size:12px;font-family:Outfit,sans-serif;background:transparent;color:var(--ink);padding:2px 4px;width:100%;box-sizing:border-box;';
   var labelStyle = 'font-size:10px;color:var(--steel);display:block;margin-bottom:2px;';
@@ -17311,7 +17366,7 @@ function renderEntryFields(section, id, template, entry, idx) {
     var blurCb = 'templateMoneyBlur(this,\'' + section + '\',\'' + id + '\',\'' + template + '\')';
     return '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Date paid</label>' +
-      '<input type="date" data-key="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<input type="hidden" data-tdate="1" data-key="date" value="' + (entry.date || '') + '" oninput="this.dataset.key=\'date\';' + cb + '">' + tplDateBtn(entry.date, inputStyle) + '</div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Amount paid</label>' +
       '<input type="text" data-key="amt" value="' + (entry.amt ? '$' + parseFloat(String(entry.amt).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'amt\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Type</label>' +
@@ -17323,7 +17378,7 @@ function renderEntryFields(section, id, template, entry, idx) {
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Interest charged</label>' +
       '<input type="text" data-key="interest" value="' + (entry.interest ? '$' + parseFloat(String(entry.interest).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'interest\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Due date</label>' +
-      '<input type="date" data-key="due" value="' + (entry.due || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'due\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<input type="hidden" data-tdate="1" data-key="due" value="' + (entry.due || '') + '" oninput="this.dataset.key=\'due\';' + cb + '">' + tplDateBtn(entry.due, inputStyle) + '</div>' +
       '<div style="width:100%;display:flex;align-items:center;gap:8px;padding:6px 2px 2px;" onclick="event.stopPropagation()">' +
       '<input type="checkbox" data-key="applyToRemaining" id="atr-' + id + '-' + idx + '"' + (entry.applyToRemaining === '1' ? ' checked' : '') + ' style="width:15px;height:15px;accent-color:var(--sage);cursor:pointer;flex-shrink:0;" oninput="this.dataset.key=\'applyToRemaining\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()">' +
       '<label for="atr-' + id + '-' + idx + '" style="font-size:11px;font-weight:600;color:var(--steel);cursor:pointer;user-select:none;">Apply to remaining balance <span style="font-weight:400;color:var(--steel);">(check for prior-month payments)</span></label>' +
@@ -17339,7 +17394,7 @@ function renderEntryFields(section, id, template, entry, idx) {
     }).join('');
     return '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Pay date</label>' +
-      '<input type="date" data-key="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<input type="hidden" data-tdate="1" data-key="date" value="' + (entry.date || '') + '" oninput="this.dataset.key=\'date\';' + cb + '">' + tplDateBtn(entry.date, inputStyle) + '</div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Pay type</label>' +
       '<select data-key="payType" style="' + inputStyle + 'appearance:none;-webkit-appearance:none;cursor:pointer;" oninput="this.dataset.key=\'payType\';' + cb + '" onclick="event.stopPropagation()">' +
       payTypeOpts +
@@ -17361,7 +17416,7 @@ function renderEntryFields(section, id, template, entry, idx) {
     var blurCb = 'templateMoneyBlur(this,\'' + section + '\',\'' + id + '\',\'' + template + '\')';
     return '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Date</label>' +
-      '<input type="date" data-key="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<input type="hidden" data-tdate="1" data-key="date" value="' + (entry.date || '') + '" oninput="this.dataset.key=\'date\';' + cb + '">' + tplDateBtn(entry.date, inputStyle) + '</div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Amount</label>' +
       '<input type="text" data-key="amt" value="' + (entry.amt ? '$' + parseFloat(String(entry.amt).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'amt\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Type</label>' +
@@ -17380,7 +17435,7 @@ function renderEntryFields(section, id, template, entry, idx) {
     var blurCb = 'templateMoneyBlur(this,\'' + section + '\',\'' + id + '\',\'' + template + '\')';
     return '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Date</label>' +
-      '<input type="date" data-key="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<input type="hidden" data-tdate="1" data-key="date" value="' + (entry.date || '') + '" oninput="this.dataset.key=\'date\';' + cb + '">' + tplDateBtn(entry.date, inputStyle) + '</div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">My contribution</label>' +
       '<input type="text" data-key="myc" value="' + (entry.myc ? '$' + parseFloat(String(entry.myc).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'myc\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + ';max-width:72px;"><label style="' + labelStyle + '">My %</label>' +
@@ -17402,7 +17457,7 @@ function renderEntryFields(section, id, template, entry, idx) {
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Price/share</label>' +
       '<input type="text" data-key="price" value="' + (entry.price ? '$' + parseFloat(String(entry.price).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'price\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Date</label>' +
-      '<input type="date" data-key="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<input type="hidden" data-tdate="1" data-key="date" value="' + (entry.date || '') + '" oninput="this.dataset.key=\'date\';' + cb + '">' + tplDateBtn(entry.date, inputStyle) + '</div>' +
       '</div>';
   }
   if (template === 'interest') {
@@ -17413,7 +17468,7 @@ function renderEntryFields(section, id, template, entry, idx) {
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">APY %</label>' +
       '<input type="text" data-key="apy" value="' + (entry.apy || '') + '" placeholder="4.5" style="' + inputStyle + '" oninput="this.dataset.key=\'apy\';' + cb + '" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Date</label>' +
-      '<input type="date" data-key="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<input type="hidden" data-tdate="1" data-key="date" value="' + (entry.date || '') + '" oninput="this.dataset.key=\'date\';' + cb + '">' + tplDateBtn(entry.date, inputStyle) + '</div>' +
       '</div>';
   }
   if (template === 'dividend') {
@@ -17424,7 +17479,7 @@ function renderEntryFields(section, id, template, entry, idx) {
       '<div style="' + fieldStyle + 'min-width:110px;"><label style="' + labelStyle + '">Ticker / fund <span style="color:var(--steel);font-weight:400;">(optional)</span></label>' +
       '<input type="text" data-key="divsrc" value="' + escHtml(entry.divsrc || '') + '" placeholder="e.g. VOO, SCHD" style="' + inputStyle + '" oninput="this.dataset.key=\'divsrc\';' + cb + '" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Date</label>' +
-      '<input type="date" data-key="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<input type="hidden" data-tdate="1" data-key="date" value="' + (entry.date || '') + '" oninput="this.dataset.key=\'date\';' + cb + '">' + tplDateBtn(entry.date, inputStyle) + '</div>' +
       '</div>';
   }
   if (template === 'performance') {
@@ -17441,7 +17496,7 @@ function renderEntryFields(section, id, template, entry, idx) {
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Cost basis</label>' +
       '<input type="text" data-key="perfbasis" value="' + (entry.perfbasis ? '$' + parseFloat(String(entry.perfbasis).replace(/[$,]/g,'')).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + blurCb + '" oninput="this.dataset.key=\'perfbasis\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Date</label>' +
-      '<input type="date" data-key="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<input type="hidden" data-tdate="1" data-key="date" value="' + (entry.date || '') + '" oninput="this.dataset.key=\'date\';' + cb + '">' + tplDateBtn(entry.date, inputStyle) + '</div>' +
       (gainDisplay ? '<div style="width:100%;padding:6px 2px 2px;font-size:12px;font-weight:700;color:' + gainColor + ';">Market gain/loss: ' + gainDisplay + '</div>' : '') +
       '</div>';
   }
@@ -17453,9 +17508,9 @@ function renderEntryFields(section, id, template, entry, idx) {
     var selectStyle = inputStyle + 'color:' + statusColors[statusVal] + ';font-weight:600;';
     return '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Renewal / charge date</label>' +
-      '<input type="date" data-key="subrenewal" value="' + (entry.subrenewal || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'subrenewal\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<input type="hidden" data-tdate="1" data-key="subrenewal" value="' + (entry.subrenewal || '') + '" oninput="this.dataset.key=\'subrenewal\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')">' + tplDateBtn(entry.subrenewal, inputStyle) + '</div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Cancel by</label>' +
-      '<input type="date" data-key="subcancelby" value="' + (entry.subcancelby || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'subcancelby\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()"></div>' +
+      '<input type="hidden" data-tdate="1" data-key="subcancelby" value="' + (entry.subcancelby || '') + '" oninput="this.dataset.key=\'subcancelby\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')">' + tplDateBtn(entry.subcancelby, inputStyle) + '</div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Status</label>' +
       '<select data-key="substatus" style="' + selectStyle + '" oninput="this.dataset.key=\'substatus\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\');this.style.color=({active:\'#27AE60\',cancel:\'#C0392B\',renew:\'#E67E22\'})[this.value]" onclick="event.stopPropagation()">' +
       statusOptions.map(function(s) {
@@ -17482,7 +17537,7 @@ function renderEntryFields(section, id, template, entry, idx) {
       '<input type="text" data-key="txdesc" value="' + escHtml(entry.txdesc || '') + '" placeholder="e.g. Venmo, Rent…" style="' + inputStyle + '" list="tx-desc-list-' + id + '" oninput="this.dataset.key=\'txdesc\';' + cb + '" onclick="event.stopPropagation()">' +
       '<datalist id="tx-desc-list-' + id + '">' + txDescriptions.map(function(d) { return '<option value="' + d + '">'; }).join('') + '</datalist></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Date</label>' +
-      '<input type="date" data-key="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<input type="hidden" data-tdate="1" data-key="date" value="' + (entry.date || '') + '" oninput="this.dataset.key=\'date\';' + cb + '">' + tplDateBtn(entry.date, inputStyle) + '</div>' +
       '</div>';
   }
   if (template === 'itemize') {
@@ -17513,7 +17568,7 @@ function renderEntryFields(section, id, template, entry, idx) {
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Gallons</label>' +
       '<input type="text" data-key="fuelgal" value="' + (entry.fuelgal || '') + '" placeholder="0.000" style="' + inputStyle + '" oninput="this.dataset.key=\'fuelgal\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onblur="saveEntry(\'' + section + '\',\'' + id + '\',' + idx + ')" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Date</label>' +
-      '<input type="date" data-key="date" value="' + (entry.date || '') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'date\';' + cb + '" onclick="event.stopPropagation()"></div>' +
+      '<input type="hidden" data-tdate="1" data-key="date" value="' + (entry.date || '') + '" oninput="this.dataset.key=\'date\';' + cb + '">' + tplDateBtn(entry.date, inputStyle) + '</div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">Miles driven <span style="color:var(--steel);font-weight:400;">(optional)</span></label>' +
       '<input type="text" data-key="fuelmiles" value="' + (entry.fuelmiles || '') + '" placeholder="0" style="' + inputStyle + '" oninput="this.dataset.key=\'fuelmiles\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onblur="saveEntry(\'' + section + '\',\'' + id + '\',' + idx + ')" onclick="event.stopPropagation()"></div>' +
       (fuelMpg ? '<div style="width:100%;padding:4px 2px 0;font-size:11px;color:var(--steel);">⛽ ' + fuelMpg + ' MPG</div>' : '') +
@@ -17758,7 +17813,7 @@ function entryDateKeys(template) {
     var d = document.createElement('div');
     d.innerHTML = renderEntryFields('savings', '_probe', template, {}, 0);
     d.querySelectorAll('[data-key]').forEach(function(el) {
-      if (el.getAttribute('type') === 'date') keys[el.getAttribute('data-key')] = true;
+      if (el.getAttribute('type') === 'date' || el.hasAttribute('data-tdate')) keys[el.getAttribute('data-key')] = true;
     });
   } catch (e) {
     // Unknown template: paste it verbatim rather than silently dropping fields.
