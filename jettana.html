@@ -3051,7 +3051,8 @@ body.sidebar-open #calc-panel { display: none !important; }
 /* Year ahead moved aside: the calculator comes in front of it (the modal
    layer is z-index 99999) so the two can be used together. */
 /* !important: #calc-panel carries an inline z-index:1500 in its markup */
-body.ya-aside #calc-fab, body.ya-aside #calc-panel { z-index: 100001 !important; }
+body.ya-aside #calc-fab, body.ya-aside #calc-panel,
+body.yir-aside #calc-fab, body.yir-aside #calc-panel { z-index: 100001 !important; }
 
 /* ── Scratch pad (the Pad tab of the calculator) ── */
 .calc-tabs { display:flex; align-items:center; gap:3px; margin:-2px 30px 6px 0; }
@@ -5484,6 +5485,9 @@ body.font-large.text-bold .erow-label-input {
 .gp-stat strong { display: block; font-size: 14.5px; color: var(--ink); margin-top: 2px; }
 @media (max-width: 560px) { .gp-field { flex: 1 1 45%; } .gp-stat { flex: 1 1 45%; } }
 /* ── Year in review ──────────────────────────────────────── */
+/* Only the body scrolls, so the header (drag) and the corner (resize) stay in view */
+#yir-modal { position:relative; overflow:hidden; }
+#yir-scroll { flex:1 1 auto; min-height:0; overflow:auto; }
 #yir-year { font-family:'Outfit',sans-serif; font-size:12.5px; font-weight:600; padding:4px 6px; border:1.5px solid var(--mist); border-radius:7px; color:var(--ink); background:transparent; cursor:pointer; }
 .yir-print-btn { font-family:'Outfit',sans-serif; font-size:11.5px; font-weight:600; padding:5px 10px; border:1px solid var(--mist); border-radius:999px; background:none; color:var(--steel); cursor:pointer; white-space:nowrap; }
 .yir-tiles { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:6px; }
@@ -5532,7 +5536,9 @@ body.font-large.text-bold .erow-label-input {
 @media print {
   body.yir-print > *:not(#yir-overlay) { display:none !important; }
   body.yir-print #yir-overlay { position:static !important; background:none !important; padding:0 !important; display:block !important; }
-  body.yir-print #yir-modal { max-height:none !important; max-width:none !important; box-shadow:none !important; overflow:visible !important; }
+  body.yir-print #yir-modal { position:static !important; width:auto !important; height:auto !important; max-height:none !important; max-width:none !important; box-shadow:none !important; overflow:visible !important; }
+  body.yir-print #yir-scroll { overflow:visible !important; }
+  body.yir-print .ya-resize { display:none !important; }
   body.yir-print .yir-x, body.yir-print .yir-print-btn, body.yir-print .trends-close { display:none !important; }
   body.yir-print #yir-year { border:none; appearance:none; -webkit-appearance:none; }
 }
@@ -7455,7 +7461,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
 
         <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">How do I see what I spent over a whole year?<span class="askme-q-arrow">▾</span></button>
-          <div class="askme-a">Open <strong>⋯ → Insights → 🎁 Year in review</strong>, or tap the banner at the bottom of any December. Pick a year at the top. It shows that year's <strong>income</strong>, what you <strong>spent</strong>, what you <strong>put into savings</strong> from your pay, and what was <strong>left over</strong>. Under <strong>Bills</strong>, every Housing row (rent, power, internet, utilities) and any other bill you paid in 4 or more months shows its <strong>monthly average</strong>, its total and its highest month (tap the month to open it). A bill with fewer than 4 months shows its total instead. If someone else really pays for a bill and you only pay it through your portal, tap <strong>Exclude</strong>: it moves to "Not counted" and is left out of that year's totals. It only affects that year, and <strong>Include</strong> brings it back. Months where a row is marked exempt are skipped by themselves. When there's a year before it, each figure shows whether it went up or down. Bills are matched by name, so a row renamed partway through the year shows as two lines. <strong>🖨 Print</strong> saves it as a PDF.</div>
+          <div class="askme-a">Open <strong>⋯ → Insights → 🎁 Year in review</strong>, or tap the banner at the bottom of any December. Pick a year at the top. It shows that year's <strong>income</strong>, what you <strong>spent</strong>, what you <strong>put into savings</strong> from your pay, and what was <strong>left over</strong>. Under <strong>Bills</strong>, every Housing row (rent, power, internet, utilities) and any other bill you paid in 4 or more months shows its <strong>monthly average</strong>, its total and its highest month (tap the month to open it). A bill with fewer than 4 months shows its total instead. If someone else really pays for a bill and you only pay it through your portal, tap <strong>Exclude</strong>: it moves to "Not counted" and is left out of that year's totals. It only affects that year, and <strong>Include</strong> brings it back. Months where a row is marked exempt are skipped by themselves. When there's a year before it, each figure shows whether it went up or down. Bills are matched by name, so a row renamed partway through the year shows as two lines. Drag it by its title to move it aside and use your months next to it (it stays open when you tap a month), or pull the corner to resize it. <strong>🖨 Print</strong> saves it as a PDF.</div>
         </div>
 
         <div class="askme-item">
@@ -7648,7 +7654,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
 
 <div class="trends-overlay" id="yir-overlay" style="display:none;" onclick="if(event.target===this)hideYearReview()">
   <div class="trends-modal" id="yir-modal" style="max-width:640px;">
-    <div class="trends-header" id="yir-header" style="cursor:default;">
+    <div class="trends-header" id="yir-header">
       <h3>🎁 Year in review</h3>
       <select id="yir-year" onchange="yirSetYear(this.value)" aria-label="Year"></select>
       <button class="yir-print-btn" onclick="yirPrint()" title="Print or save as PDF">🖨 Print</button>
@@ -7656,6 +7662,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
     </div>
     <div class="trends-subtitle" id="yir-sub"></div>
     <div id="yir-scroll" style="padding:12px 20px 20px;"><div id="yir-body"></div></div>
+    <div class="ya-resize" id="yir-resize" title="Drag to resize" aria-hidden="true"></div>
   </div>
 </div>
 
@@ -8116,7 +8123,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>🧾 <strong>Monthly Summary breakdowns</strong> — hover or tap the Income, Spent or Balance row at the bottom of your dashboard to see how it was worked out. Spent lists each section with Planned against Actual, Income lists each source, and Balance spells out the subtraction. A section whose budget you typed yourself is marked "your budget", and the Planned column uses your figure rather than the sum of the rows.</span></div>
       <div class="shortcut-row"><span>📈 <strong>Net Worth Trend</strong> — ⋯ → Insights → Net worth trend; a line chart of your net worth (checking + savings − debt) by month. Pick 6M, YTD, 1Y, All, or a custom start month. Tap any point on the line to jump straight to that month — drag the chart aside first and it stays open, so you can step through months one dot at a time. The summary shows your growth, how far apart the months are, and — optionally — your age across the range. Drag to reposition.</span></div>
       <div class="shortcut-row"><span>🎂 <strong>Age on your trend</strong> — enter your birth month + year in the Net Worth Trend (optional) to see "age 23 → 25" alongside your growth. Month and year only — Jettana never asks for your full birthdate. Clear the field anytime to remove it.</span></div>
-      <div class="shortcut-row"><span>🎁 <strong>Year in review</strong> — ⋯ → Insights → Year in review, or the banner at the bottom of any December; one year looked back on: income, spent, put into savings and left over, then every bill's monthly average (once it shows up in 4+ months), each section, and how it compares with the year before. <strong>Exclude</strong> a bill someone else pays for and it's left out of that year's totals; it moves to "Not counted" where <strong>Include</strong> brings it back. Exempt months are skipped by themselves. <strong>🖨 Print</strong> saves it as a PDF.</span></div>
+      <div class="shortcut-row"><span>🎁 <strong>Year in review</strong> — ⋯ → Insights → Year in review, or the banner at the bottom of any December; one year looked back on: income, spent, put into savings and left over, then every bill's monthly average (once it shows up in 4+ months), each section, and how it compares with the year before. <strong>Exclude</strong> a bill someone else pays for and it's left out of that year's totals; it moves to "Not counted" where <strong>Include</strong> brings it back. Exempt months are skipped by themselves. Drag it by its title to move it aside (it stays open while you jump to months); resize from the corner. <strong>🖨 Print</strong> saves it as a PDF.</span></div>
       <div class="shortcut-row"><span>🗓️ <strong>Year ahead</strong> — ⋯ → Insights → Year ahead; a read-only plan for next year built from the months you've logged: each section month by month, bigger months shaded, and what's left after each month. Pick which months it learns from (Last 3/6/12 or All) and the month the 12-month plan starts. Tap any number to see how it was worked out. Shows planned Income, Savings and Left over (free to spend). Switch to My budget to type your own amount for any section or month. Drag the header to move it or the bottom-right corner to resize it, and your budget stays usable behind it. Add yearly expenses (car registration, a trip) and type your own income if you like. Never changes your budgets.</span></div>
       <div class="shortcut-row"><span>🧮 <strong>Plan My Savings</strong> — ⋯ → Insights → Plan my savings; works out what's genuinely left over each month from your average take-home and expenses. The retirement half shows what a pre-tax contribution actually costs your take-home (less than the headline number, since it comes out before tax) and what you'd leave behind by contributing under your employer's match.</span></div>
       <div class="shortcut-row"><span>🌍 <strong>Life Elsewhere</strong> — ⋯ → Insights → Life elsewhere; re-prices your current lifestyle in another country with your income held fixed. Optionally type an exchange rate to see the figures in local currency too — rates are never fetched, so it's whatever you enter, and leaving it blank hides that line. A daydream tool, not relocation advice.</span></div>
@@ -30290,9 +30297,18 @@ function hideYearReview() {
   var ov = document.getElementById('yir-overlay');
   if (ov) ov.style.display = 'none';
   document.body.classList.remove('yir-open');
+  // Next open starts centred again, like Year ahead
+  var modal = document.getElementById('yir-modal');
+  if (modal) { modal.style.position = ''; modal.style.left = ''; modal.style.top = ''; modal.style.margin = '';
+    modal.style.width = ''; modal.style.height = ''; modal.style.maxWidth = '640px'; modal.style.maxHeight = ''; modal.style.pointerEvents = ''; }
+  if (ov) { ov.style.background = ''; ov.style.pointerEvents = ''; ov.style.alignItems = ''; ov.style.justifyContent = ''; }
+  document.body.classList.remove('yir-aside');
 }
+/* Dragged aside, it stays open while you jump to a month (same rule as the
+   Spending calendar), so you can check several months against it. */
+function yirIsAside() { var m = document.getElementById('yir-modal'); return !!(m && m.style.position === 'fixed'); }
 function yirSetYear(y) { _yirYear = String(y); renderYearReview(); }
-function yirJump(mk, sec) { hideYearReview(); jumpToMonthSection(mk, sec); }
+function yirJump(mk, sec) { if (!yirIsAside()) hideYearReview(); jumpToMonthSection(mk, sec); }
 
 function yirToggle(i, exclude) {
   var g = _yirLast && (exclude ? _yirLast.bills[i] : _yirLast.excl[i]);
@@ -30439,6 +30455,61 @@ function renderYearReview() {
     + 'Savings counts what came out of your take-home pay, the same way <b>Year ahead</b> does.</div>';
   body.innerHTML = h;
 }
+
+/* Drag Year in review by its header and resize it from the corner — the same
+   behaviour as Year ahead. Once moved, the dark backdrop goes away and the page
+   behind is usable, and the calculator comes in front (body.yir-aside). */
+(function() {
+  var dragging = false, offX = 0, offY = 0, sizing = false, sx = 0, sy = 0, sw = 0, sh = 0;
+  function detach() {
+    var modal = document.getElementById('yir-modal'), overlay = document.getElementById('yir-overlay');
+    if (!modal) return null;
+    var rect = modal.getBoundingClientRect();
+    if (modal.style.position !== 'fixed') {
+      modal.style.position = 'fixed'; modal.style.left = rect.left + 'px'; modal.style.top = rect.top + 'px'; modal.style.margin = '0';
+      modal.style.width = rect.width + 'px'; modal.style.height = rect.height + 'px';
+      modal.style.maxWidth = 'none'; modal.style.maxHeight = 'none';
+    }
+    if (overlay) {
+      overlay.style.background = 'transparent'; overlay.style.pointerEvents = 'none';
+      overlay.style.alignItems = 'flex-start'; overlay.style.justifyContent = 'flex-start';
+      modal.style.pointerEvents = 'auto';
+    }
+    document.body.classList.add('yir-aside');
+    return rect;
+  }
+  function startDrag(x, y) { var r = detach(); if (!r) return; offX = x - r.left; offY = y - r.top; dragging = true; }
+  function startSize(x, y) { var r = detach(); if (!r) return; sx = x; sy = y; sw = r.width; sh = r.height; sizing = true; }
+  function onMove(x, y) {
+    var modal = document.getElementById('yir-modal');
+    if (!modal) return;
+    if (dragging) {
+      modal.style.left = Math.max(0, Math.min(x - offX, window.innerWidth - modal.offsetWidth)) + 'px';
+      modal.style.top = Math.max(0, Math.min(y - offY, window.innerHeight - 60)) + 'px';
+    } else if (sizing) {
+      var r = modal.getBoundingClientRect();
+      modal.style.width = Math.max(300, Math.min(sw + x - sx, window.innerWidth - r.left)) + 'px';
+      modal.style.height = Math.max(220, Math.min(sh + y - sy, window.innerHeight - r.top)) + 'px';
+    }
+  }
+  function stop() { dragging = false; sizing = false; }
+  document.addEventListener('DOMContentLoaded', function() {
+    var hdr = document.getElementById('yir-header'), corner = document.getElementById('yir-resize');
+    if (!hdr) return;
+    var skip = function(e) { return e.target.closest('button, select, input'); };
+    hdr.addEventListener('mousedown', function(e) { if (skip(e)) return; startDrag(e.clientX, e.clientY); e.preventDefault(); });
+    hdr.addEventListener('touchstart', function(e) { if (skip(e)) return; var t = e.touches[0]; startDrag(t.clientX, t.clientY); }, { passive: true });
+    hdr.addEventListener('touchmove', function(e) { if (!dragging) return; var t = e.touches[0]; onMove(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
+    if (corner) {
+      corner.addEventListener('mousedown', function(e) { startSize(e.clientX, e.clientY); e.preventDefault(); e.stopPropagation(); });
+      corner.addEventListener('touchstart', function(e) { var t = e.touches[0]; startSize(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
+      corner.addEventListener('touchmove', function(e) { if (!sizing) return; var t = e.touches[0]; onMove(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
+    }
+    document.addEventListener('mousemove', function(e) { if (dragging || sizing) onMove(e.clientX, e.clientY); });
+    document.addEventListener('mouseup', stop);
+    document.addEventListener('touchend', stop);
+  });
+})();
 
 /* December gets a small banner under the tracker pointing at its year. */
 function updateYearReviewBanner() {
