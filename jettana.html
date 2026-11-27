@@ -5484,6 +5484,20 @@ body.font-large.text-bold .erow-label-input {
 .gp-stat span { display: block; font-size: 10px; color: var(--steel); letter-spacing: 0.3px; }
 .gp-stat strong { display: block; font-size: 14.5px; color: var(--ink); margin-top: 2px; }
 @media (max-width: 560px) { .gp-field { flex: 1 1 45%; } .gp-stat { flex: 1 1 45%; } }
+/* ── Split bills (Itemize) ───────────────────────────────── */
+.it-who-split { color:#4F7CA8 !important; font-weight:600; }
+.it-who-theirs { color:var(--steel) !important; text-decoration:line-through; }
+.it-split-sum { display:flex; flex-wrap:wrap; justify-content:space-between; gap:4px 14px; color:var(--steel); font-weight:400; }
+.it-split-sum b { color:var(--ink); }
+.it-split-sum .it-yours b { color:var(--sage-dark, #4d7a52); font-size:13px; }
+.it-split-ctl { display:flex; flex-wrap:wrap; align-items:center; gap:6px 16px; margin-top:6px; font-size:11.5px; font-weight:500; color:var(--ink); }
+.it-n { display:inline-flex; align-items:center; gap:5px; }
+.it-n button { width:22px; height:22px; border-radius:50%; border:1px solid var(--mist); background:none; color:var(--ink); font-size:13px; line-height:1; cursor:pointer; padding:0; font-family:inherit; }
+.it-n button:disabled { opacity:0.4; cursor:default; }
+.it-paid { display:inline-flex; align-items:center; gap:5px; cursor:pointer; }
+.it-paid input { accent-color:var(--sage); width:14px; height:14px; margin:0; }
+.it-split-note { font-size:10.5px; font-weight:400; color:var(--steel); margin-top:4px; line-height:1.45; }
+@media (pointer: coarse) { .it-n button { width:30px; height:30px; } .it-paid input { width:18px; height:18px; } }
 /* ── Year in review ──────────────────────────────────────── */
 /* Only the body scrolls, so the header (drag) and the corner (resize) stay in view */
 #yir-modal { position:relative; overflow:hidden; }
@@ -7465,6 +7479,11 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
         </div>
 
         <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">How do I split a bill with someone?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Open the row's note and add a <strong>🧾 Itemize</strong> entry for each item. Every item has a <strong>Whose</strong> choice: <strong>Mine</strong>, <strong>Split</strong> or <strong>Theirs</strong>. Split items are divided by the number of people — change it with <strong>−</strong> and <strong>+</strong> under the total. Tax, shipping and coupons are shared in the same proportion as your items. The row's <strong>Actual</strong> becomes your share, so your budget, totals, Trends and Year in review only count what's really yours, and the receipt still shows the <strong>bill total</strong>. If the whole bill went on your card or came out of your checking, tick <strong>I paid the whole bill</strong>: the linked card or account is charged the full amount (that's what really left it), and Jettana tells you what the others owe you. A receipt where everything is Mine works exactly as before.</div>
+        </div>
+
+        <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">How much can I actually afford to save each month?<span class="askme-q-arrow">▾</span></button>
           <div class="askme-a">Open <strong>⋯ → Insights → 🧮 Plan my savings</strong>. Enter your average take-home pay and average monthly expenses and it works out what's genuinely left over. There's a second half for retirement: put in your gross pay, your contribution %, and your employer's match, and it shows what a pre-tax contribution actually costs your take-home — usually less than you'd expect, since the contribution comes out before tax. If your employer matches, it also shows what you'd be leaving behind by contributing under the match.</div>
         </div>
@@ -8021,6 +8040,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
     <div class="shortcuts-group">
       <div class="shortcuts-group-title">Templates</div>
       <div class="shortcut-row"><span>🧾 <strong>Itemize (expenses)</strong> — open the note on any expense row → 🧾 Itemize; add an entry per item with its price (tax can be its own line). Perfect for orders that bundle several purchases into one charge — the row shows "Amazon $40", the note shows what the $40 was. The note totals your items so you can check it matches the Actual. Press <strong>Enter</strong> to go to the next item, or to start a new one from the last, so you can type a receipt top to bottom; drag <strong>⠿</strong> to put items in the same order as the receipt.</span></div>
+      <div class="shortcut-row"><span>🤝 <strong>Split bills (Itemize)</strong> — each item has <strong>Whose</strong>: <strong>Mine</strong>, <strong>Split</strong> (divided by the number of people — set it with − / + under the total) or <strong>Theirs</strong>. Tax, shipping and coupons follow your share. The row's Actual becomes <strong>your share</strong>, and the receipt shows the bill total beside it. Tick <strong>I paid the whole bill</strong> when it all went on your card or account: that card or account is charged the full total, while your budget still counts only your share — and it tells you what the others owe you.</span></div>
       <div class="shortcut-row"><span>💵 <strong>Paycheck (Income)</strong> — open the note on any income row → Paycheck; enter pay date, hours, hourly rate, gross pay, taxes and deductions; net pay auto-fills the Received column. Gross pay is black, taxes red, deductions green for easy reading.</span></div>
       <div class="shortcut-row"><span>💳 <strong>Payment (Debt)</strong> — open the note on any debt row → Payment; log date paid, amount, type, interest charged and due date; remaining balance auto-fills the Remaining column</span></div>
       <div class="shortcut-row"><span>📈 <strong>Performance (Savings)</strong> — open the note on any savings row → Performance; enter account value and cost basis; market gain/loss and cumulative return % are auto-calculated and fill the Actual and Growth columns</span></div>
@@ -14485,7 +14505,7 @@ function accountLinkedCharges(acctRow, monthData) {
         if (!numColor || numColor !== acctColor) return;
         var expenseDate = row.date || row.date2 || '';
         if (beginDate && expenseDate && expenseDate < beginDate) return;
-        var actual = parseAmt(row[cfg.k2]);
+        var actual = rowChargeAmount(row, cfg);   // a split bill you paid in full charges the whole bill
         var budget = parseAmt(row[cfg.k1]);
         var amount = actual > 0 ? actual : budget;
         if (amount <= 0) return;
@@ -14581,7 +14601,7 @@ function cardLinkedCharges(debtRow, monthData) {
       var numColor = (row.numColor || '').toLowerCase();
       if (!numColor || numColor !== linkedColor) return;
       if (row.exempt) return;
-      var actual = parseAmt(row[cfg.k2]);
+      var actual = rowChargeAmount(row, cfg);   // keep identical to autoCalcDebtFromCards
       if (actual <= 0) return;
       out.rows.push({
         // id rides along so the panel line can scroll to the row it names.
@@ -15113,8 +15133,9 @@ function autoCalcDebtFromCards() {
         var numColor = (row.numColor || '').toLowerCase();
         if (!numColor || numColor !== linkedColor) return;
         if (row.exempt) return;
-        // Actual column only — never use budget
-        var actual = parseAmt(row[cfg.k2]);
+        // Actual column only — never use budget. A split bill you paid in
+        // full charges the whole bill (cardLinkedCharges mirrors this).
+        var actual = rowChargeAmount(row, cfg);
         if (actual <= 0) return;
         // Pending: spent but not posted. Out of the balance until cleared.
         // (cardLinkedCharges mirrors this rule — keep them identical.)
@@ -15365,7 +15386,7 @@ function recalcCheckingBalances() {
         // Skip if expense dated before beginning balance date
         var expenseDate = row.date || row.date2 || '';
         if (beginDate && expenseDate && expenseDate < beginDate) return;
-        var actual = parseAmt(row[cfg.k2]);
+        var actual = rowChargeAmount(row, cfg);   // a split bill you paid in full charges the whole bill
         var budget = parseAmt(row[cfg.k1]);
         var amount = actual > 0 ? actual : budget;
         if (amount > 0) totalDeductions += amount;
@@ -17663,6 +17684,14 @@ function renderEntryFields(section, id, template, entry, idx) {
       '<input type="text" data-key="itname" value="' + String(entry.itname || '').replace(/"/g, '&quot;').replace(/</g, '&lt;') + '" placeholder="' + (itKind === 'coupon' ? 'e.g. promo code' : itKind === 'tax' ? 'e.g. sales tax' : itKind === 'shipping' ? 'e.g. standard shipping' : 'e.g. USB cable') + '" style="' + inputStyle + '" oninput="this.dataset.key=\'itname\';' + cb + '" onkeydown="itemizeKeyDown(event,this,\'' + section + '\',\'' + id + '\')" enterkeyhint="next" onclick="event.stopPropagation()"></div>' +
       '<div style="' + fieldStyle + '"><label style="' + labelStyle + '">' + (itKind === 'coupon' ? 'Amount off' : 'Price') + '</label>' +
       '<input type="text" inputmode="decimal" data-key="itprice" value="' + (entry.itprice ? (parseAmt(entry.itprice) < 0 ? '-' : '') + '$' + Math.abs(parseAmt(entry.itprice)).toFixed(2) : '') + '" placeholder="$0.00" style="' + inputStyle + '" onfocus="templateMoneyFocus(this)" onblur="' + itBlurCb + '" oninput="this.dataset.key=\'itprice\';' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onkeydown="itemizeKeyDown(event,this,\'' + section + '\',\'' + id + '\')" enterkeyhint="next" onclick="event.stopPropagation()"></div>' +
+      (function() {
+        // Whose item: only items have one — tax, shipping and coupons follow your share
+        var who = entry.itwho === 'split' || entry.itwho === 'theirs' ? entry.itwho : 'mine';
+        var o = function(v, l) { return '<option value="' + v + '"' + (who === v ? ' selected' : '') + '>' + l + '</option>'; };
+        return '<div class="it-who-wrap" style="flex:0 0 82px;' + (itKind === 'item' ? '' : 'display:none;') + '"><label style="' + labelStyle + '">Whose</label>' +
+          '<select data-key="itwho" class="it-who it-who-' + who + '" style="' + inputStyle + 'cursor:pointer;" onchange="this.dataset.key=\'itwho\';this.className=\'it-who it-who-\'+this.value;' + cb + ';updateEntryTotal(\'' + section + '\',\'' + id + '\',\'' + template + '\')" onclick="event.stopPropagation()">' +
+          o('mine', 'Mine') + o('split', 'Split') + o('theirs', 'Theirs') + '</select></div>';
+      })() +
       '</div>';
   }
 
@@ -18209,7 +18238,7 @@ function updateEntryTotal(section, id, template) {
 
   var grandTotal = 0;
   var hasPerfEntry = false;
-  var itSub = 0, itTax = 0, itShip = 0, itCoupon = 0, hasItemize = false;
+  var itSub = 0, itTax = 0, itShip = 0, itCoupon = 0, hasItemize = false, itEnts = [];
   var idx = 0;
   entryDivs.forEach(function(entryDiv) {
     var vals = {};
@@ -18267,6 +18296,9 @@ function updateEntryTotal(section, id, template) {
     } else if (entryType === 'itemize') {
       var itAmt = parseAmt(vals.itprice);
       hasItemize = true;
+      itEnts.push({ itkind: vals.itkind, itprice: vals.itprice, itwho: vals.itwho });
+      var whoWrap = entryDiv.querySelector('.it-who-wrap');
+      if (whoWrap) whoWrap.style.display = (vals.itkind || 'item') === 'item' ? '' : 'none';
       if (vals.itkind === 'coupon') { itCoupon += itAmt; entryTotal = -itAmt; }
       else if (vals.itkind === 'tax') { itTax += itAmt; entryTotal = itAmt; }
       else if (vals.itkind === 'shipping') { itShip += itAmt; entryTotal = itAmt; }
@@ -18337,9 +18369,34 @@ function updateEntryTotal(section, id, template) {
       if (itShip) parts.push('Shipping: ' + _f2(itShip));
       if (itCoupon) parts.push('Coupon: −' + _f2(itCoupon));
       totalEl.style.color = grandTotal >= 0 ? 'var(--sage)' : 'var(--blush)';
-      totalEl.innerHTML = '<span style="display:block;font-weight:400;font-size:11px;color:var(--steel);padding-bottom:2px;">' + parts.join(' · ') + '</span>' +
-        'Total: ' + (grandTotal < 0 ? '−' : '') + _f2(grandTotal);
-      applyToColumn(section, id, grandTotal, 'Auto-calculated from entries');
+      var itM = itemizeMath(itEnts, rowData._splitN);
+      if (!itM.anySplit) {
+        totalEl.innerHTML = '<span style="display:block;font-weight:400;font-size:11px;color:var(--steel);padding-bottom:2px;">' + parts.join(' · ') + '</span>' +
+          'Total: ' + (grandTotal < 0 ? '−' : '') + _f2(grandTotal);
+        applyToColumn(section, id, grandTotal, 'Auto-calculated from entries');
+      } else {
+        // Split bill: Actual is your share; the whole bill is shown alongside.
+        var other = grandTotal - itM.full;          // any non-itemize entries on the row
+        var yours = itM.mine + other;
+        var paidAll = !!rowData._paidAll;
+        var sArgs = '\'' + section + '\',\'' + id + '\'';
+        var lockedM = monthIsLocked(currentMonthKey);
+        totalEl.innerHTML = '<span style="display:block;font-weight:400;font-size:11px;color:var(--steel);padding-bottom:2px;">' + parts.join(' · ') + '</span>' +
+          '<div class="it-split-sum"><span>Bill total <b>' + _f2(itM.full) + '</b></span>' +
+          '<span class="it-yours">Your share <b>' + (yours < 0 ? '−' : '') + _f2(yours) + '</b></span></div>' +
+          '<div class="it-split-ctl" onclick="event.stopPropagation()">' +
+            (itM.anyShared ? '<span class="it-n">Split between ' +
+              '<button type="button" ' + (lockedM ? 'disabled ' : '') + 'onclick="itSetSplitN(' + sArgs + ',-1)" aria-label="Fewer people">−</button>' +
+              '<b>' + itM.n + '</b>' +
+              '<button type="button" ' + (lockedM ? 'disabled ' : '') + 'onclick="itSetSplitN(' + sArgs + ',1)" aria-label="More people">+</button> people</span>' : '') +
+            '<label class="it-paid"><input type="checkbox" ' + (paidAll ? 'checked ' : '') + (lockedM ? 'disabled ' : '') +
+              'onchange="itSetPaidAll(' + sArgs + ',this.checked)"> I paid the whole bill</label>' +
+          '</div>' +
+          '<div class="it-split-note">' + (paidAll
+            ? 'A linked card or account is charged the full ' + _f2(itM.full) + ' · others owe you ' + _f2(itM.full - itM.mine)
+            : 'Only your share counts — tick the box if the whole bill went on your card or account') + '</div>';
+        applyToColumn(section, id, yours, 'Your share of a split bill (bill total ' + _f2(itM.full) + ')');
+      }
     } else {
       var sign = grandTotal >= 0 ? '+' : '−';
       totalEl.style.color = grandTotal >= 0 ? 'var(--sage)' : 'var(--blush)';
@@ -18372,6 +18429,76 @@ function updateEntryTotal(section, id, template) {
       }
     }
   }
+}
+
+/* ── Split bills in the 🧾 Itemize template ─────────────────────────────
+   Each item is Mine, Split (÷ the number of people) or Theirs. Tax, shipping
+   and coupons follow your share of the items. A receipt where every item is
+   Mine is exactly what it always was.
+
+   Two numbers come out:
+     mine — your share. This is the row's Actual, so budgets, totals, Trends
+            and Year in review all count only what is really yours.
+     full — the whole bill.
+   When "I paid the whole bill" is on (row._paidAll), the card or checking
+   account the row is linked to is charged `full`, because that IS what left
+   the account. Everything else still reads Actual.
+
+   Worked out from row._entries every time — nothing derived is stored — so a
+   row copied into another month without its entries (copies never carry
+   entries) can never charge a stale full amount. */
+function itemizeMath(entries, n) {
+  n = Math.max(2, Math.min(20, parseInt(n, 10) || 2));
+  var sub = 0, mineSub = 0, adj = 0, anySplit = false, anyShared = false;
+  (entries || []).forEach(function(e) {
+    if (!e) return;
+    var p = parseAmt(e.itprice);
+    if (!p) return;
+    var kind = e.itkind || 'item';
+    if (kind === 'coupon') { adj -= p; return; }
+    if (kind === 'tax' || kind === 'shipping') { adj += p; return; }
+    var who = e.itwho === 'split' || e.itwho === 'theirs' ? e.itwho : 'mine';
+    if (who !== 'mine') anySplit = true;
+    if (who === 'split') anyShared = true;
+    sub += p;
+    mineSub += who === 'mine' ? p : who === 'split' ? p / n : 0;
+  });
+  var r2 = function(v) { return Math.round(v * 100) / 100; };
+  var full = r2(sub + adj);
+  var mine = anySplit ? r2(mineSub + adj * (sub ? mineSub / sub : 1)) : full;
+  return { full: full, mine: mine, anySplit: anySplit, anyShared: anyShared, n: n };
+}
+function rowItemizeEntries(row) {
+  return ((row && row._entries) || []).filter(function(e) { return e && (e._type || row._template) === 'itemize'; });
+}
+/* What a row charges to the card / checking account it is linked to.
+   Normally its Actual. A split bill you paid in full charges the whole bill. */
+function rowChargeAmount(row, cfg) {
+  var base = parseAmt(row && cfg ? row[cfg.k2] : 0);
+  if (!row || !row._paidAll) return base;
+  var ents = rowItemizeEntries(row);
+  if (!ents.length) return base;
+  var m = itemizeMath(ents, row._splitN);
+  return m.anySplit && m.full > 0 ? m.full : base;
+}
+function _itSplitRow(section, id) {
+  if (monthIsLocked(currentMonthKey)) return null;
+  var all = loadAll();
+  var row = ((all[currentMonthKey] && all[currentMonthKey][section]) || []).find(function(r) { return r.id === id; });
+  return row ? { all: all, row: row } : null;
+}
+function itSetSplitN(section, id, delta) {
+  var h = _itSplitRow(section, id); if (!h) return;
+  h.row._splitN = Math.max(2, Math.min(20, (parseInt(h.row._splitN, 10) || 2) + delta));
+  saveAll(h.all);
+  updateEntryTotal(section, id, h.row._template || 'itemize');
+}
+function itSetPaidAll(section, id, on) {
+  var h = _itSplitRow(section, id); if (!h) return;
+  if (on) h.row._paidAll = true; else delete h.row._paidAll;
+  saveAll(h.all);
+  updateEntryTotal(section, id, h.row._template || 'itemize');
+  recalc();   // the linked card / account balance changes
 }
 
 function applyToColumn(section, id, amount, label) {
