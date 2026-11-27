@@ -5483,6 +5483,59 @@ body.font-large.text-bold .erow-label-input {
 .gp-stat span { display: block; font-size: 10px; color: var(--steel); letter-spacing: 0.3px; }
 .gp-stat strong { display: block; font-size: 14.5px; color: var(--ink); margin-top: 2px; }
 @media (max-width: 560px) { .gp-field { flex: 1 1 45%; } .gp-stat { flex: 1 1 45%; } }
+/* ── Year in review ──────────────────────────────────────── */
+#yir-year { font-family:'Outfit',sans-serif; font-size:12.5px; font-weight:600; padding:4px 6px; border:1.5px solid var(--mist); border-radius:7px; color:var(--ink); background:transparent; cursor:pointer; }
+.yir-print-btn { font-family:'Outfit',sans-serif; font-size:11.5px; font-weight:600; padding:5px 10px; border:1px solid var(--mist); border-radius:999px; background:none; color:var(--steel); cursor:pointer; white-space:nowrap; }
+.yir-tiles { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:6px; }
+.yir-tile { background:var(--mist-light); border-radius:10px; padding:9px 10px; border-top:3px solid var(--steel); min-width:0; }
+.yir-tile.inc { border-top-color:#6B9E70; } .yir-tile.out { border-top-color:#C0736A; }
+.yir-tile.sav { border-top-color:#A8823E; } .yir-tile.left { border-top-color:#4F7CA8; } .yir-tile.neg { border-top-color:#C0392B; }
+.yir-tile > span { display:block; font-size:10px; font-weight:700; letter-spacing:0.4px; text-transform:uppercase; color:var(--steel); }
+.yir-tile strong { display:block; font-size:16px; color:var(--ink); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.yir-tile.neg strong { color:#C0392B; }
+.yir-tile em { display:block; font-style:normal; font-size:10px; color:var(--steel); margin-top:2px; line-height:1.45; }
+.yir-h { font-size:13px; font-weight:700; color:var(--ink); margin:18px 0 8px; padding-top:12px; border-top:1px solid var(--mist); }
+.yir-h span { font-size:10.5px; font-weight:400; color:var(--steel); margin-left:4px; }
+.yir-sub-h { font-size:10.5px; font-weight:700; letter-spacing:0.4px; text-transform:uppercase; color:var(--steel); margin:12px 0 4px; }
+.yir-row { display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--mist-light); }
+.yir-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.yir-name { flex:1; min-width:0; font-size:13px; color:var(--ink); overflow-wrap:anywhere; }
+.yir-name small { display:block; font-size:10px; color:var(--steel); }
+.yir-amt { text-align:right; font-size:13px; color:var(--ink); line-height:1.35; }
+.yir-amt small { font-size:10px; color:var(--steel); margin-left:3px; }
+.yir-det { font-size:10.5px; color:var(--steel); }
+.yir-d { white-space:nowrap; font-weight:600; }
+.yir-d.good { color:#3C8A55; } .yir-d.bad { color:#C0392B; }
+.yir-x { font-family:'Outfit',sans-serif; font-size:10.5px; padding:4px 9px; border:1px solid var(--mist); border-radius:999px; background:none; color:var(--steel); cursor:pointer; flex-shrink:0; }
+.yir-x:hover { border-color:var(--steel); color:var(--ink); }
+.yir-off .yir-name, .yir-off .yir-amt { opacity:0.55; }
+.yir-sec { margin-bottom:9px; }
+.yir-sec-top { display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--ink); margin-bottom:4px; }
+.yir-sec-top span:first-child { color:var(--steel); }
+.yir-empty { font-size:12px; color:var(--steel); padding:4px 0; }
+.yir-foot { font-size:10.5px; color:var(--steel); font-style:italic; line-height:1.5; margin-top:16px; padding-top:10px; border-top:1px solid var(--mist); }
+#yir-banner { display:flex; align-items:center; gap:10px; width:calc(100% - 32px); margin:4px 16px 14px; padding:12px 16px; border:1px solid #E6C77A; border-radius:12px; background:#FFF8E7; color:#6B4E12; font-family:'Outfit',sans-serif; font-size:13.5px; font-weight:600; cursor:pointer; text-align:left; box-sizing:border-box; }
+#yir-banner span:nth-child(2) { flex:1; }
+#yir-banner:hover { border-color:#C9A24A; }
+.yir-banner-go { font-size:16px; }
+.dark #yir-banner { background:#2E2716; border-color:#6B5A2C; color:#EED9A3; }
+.dark .yir-tile { background:#1F2A3A; }
+@media (max-width: 600px) {
+  .yir-tiles { grid-template-columns:repeat(2,1fr); }
+  #yir-header { flex-wrap:wrap; }
+  #yir-header h3 { flex-basis:100%; }
+  #yir-header .trends-close { position:absolute; right:16px; top:14px; }
+  #yir-modal { position:relative; }
+  #yir-header .yir-print-btn { margin-left:auto; }
+}
+@media (pointer: coarse) { .yir-x { padding:7px 11px; } }
+@media print {
+  body.yir-print > *:not(#yir-overlay) { display:none !important; }
+  body.yir-print #yir-overlay { position:static !important; background:none !important; padding:0 !important; display:block !important; }
+  body.yir-print #yir-modal { max-height:none !important; max-width:none !important; box-shadow:none !important; overflow:visible !important; }
+  body.yir-print .yir-x, body.yir-print .yir-print-btn, body.yir-print .trends-close { display:none !important; }
+  body.yir-print #yir-year { border:none; appearance:none; -webkit-appearance:none; }
+}
 /* ── Spending Trends ─────────────────────────────────────── */
 .trends-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.5);
@@ -6517,6 +6570,9 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
               <button class="more-menu-item" onclick="showCompare(); hideMoreMenu()">
                 <span>⇄</span> Compare months
               </button>
+              <button class="more-menu-item" onclick="showYearReview(); hideMoreMenu()">
+                <span>🎁</span> Year in review
+              </button>
               <div class="more-menu-title">Plan ahead</div>
               <button class="more-menu-item" onclick="showYearAhead(); hideMoreMenu()">
                 <span>🗓️</span> Year ahead
@@ -6984,6 +7040,11 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
         </div>
       </div>
 
+      <!-- December: link to the year in review (shown by updateYearReviewBanner) -->
+      <button type="button" id="yir-banner" style="display:none;" onclick="showYearReview(this.dataset.year)">
+        <span>🎁</span><span id="yir-banner-text"></span><span class="yir-banner-go">→</span>
+      </button>
+
       <!-- Bottom Summary -->
       <div class="bottom-card">
         <div class="bottom-grid">
@@ -7393,6 +7454,11 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
         </div>
 
         <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">How do I see what I spent over a whole year?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Open <strong>⋯ → Insights → 🎁 Year in review</strong>, or tap the banner at the bottom of any December. Pick a year at the top. It shows that year's <strong>income</strong>, what you <strong>spent</strong>, what you <strong>put into savings</strong> from your pay, and what was <strong>left over</strong>. Under <strong>Bills</strong>, every Housing row (rent, power, internet, utilities) and any other bill you paid in 4 or more months shows its <strong>monthly average</strong>, its total and its highest month (tap the month to open it). A bill with fewer than 4 months shows its total instead. If someone else really pays for a bill and you only pay it through your portal, tap <strong>Exclude</strong>: it moves to "Not counted" and is left out of that year's totals. It only affects that year, and <strong>Include</strong> brings it back. Months where a row is marked exempt are skipped by themselves. When there's a year before it, each figure shows whether it went up or down. Bills are matched by name, so a row renamed partway through the year shows as two lines. <strong>🖨 Print</strong> saves it as a PDF.</div>
+        </div>
+
+        <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">How much can I actually afford to save each month?<span class="askme-q-arrow">▾</span></button>
           <div class="askme-a">Open <strong>⋯ → Insights → 🧮 Plan my savings</strong>. Enter your average take-home pay and average monthly expenses and it works out what's genuinely left over. There's a second half for retirement: put in your gross pay, your contribution %, and your employer's match, and it shows what a pre-tax contribution actually costs your take-home — usually less than you'd expect, since the contribution comes out before tax. If your employer matches, it also shows what you'd be leaving behind by contributing under the match.</div>
         </div>
@@ -7577,6 +7643,19 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
     <div class="trends-subtitle" id="ya-sub"></div>
     <div style="padding:6px 20px 20px;" id="ya-body"></div>
     <div class="ya-resize" id="ya-resize" title="Drag to resize" aria-hidden="true"></div>
+  </div>
+</div>
+
+<div class="trends-overlay" id="yir-overlay" style="display:none;" onclick="if(event.target===this)hideYearReview()">
+  <div class="trends-modal" id="yir-modal" style="max-width:640px;">
+    <div class="trends-header" id="yir-header" style="cursor:default;">
+      <h3>🎁 Year in review</h3>
+      <select id="yir-year" onchange="yirSetYear(this.value)" aria-label="Year"></select>
+      <button class="yir-print-btn" onclick="yirPrint()" title="Print or save as PDF">🖨 Print</button>
+      <button class="trends-close" onclick="hideYearReview()" aria-label="Close">×</button>
+    </div>
+    <div class="trends-subtitle" id="yir-sub"></div>
+    <div id="yir-scroll" style="padding:12px 20px 20px;"><div id="yir-body"></div></div>
   </div>
 </div>
 
@@ -8037,6 +8116,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>🧾 <strong>Monthly Summary breakdowns</strong> — hover or tap the Income, Spent or Balance row at the bottom of your dashboard to see how it was worked out. Spent lists each section with Planned against Actual, Income lists each source, and Balance spells out the subtraction. A section whose budget you typed yourself is marked "your budget", and the Planned column uses your figure rather than the sum of the rows.</span></div>
       <div class="shortcut-row"><span>📈 <strong>Net Worth Trend</strong> — ⋯ → Insights → Net worth trend; a line chart of your net worth (checking + savings − debt) by month. Pick 6M, YTD, 1Y, All, or a custom start month. Tap any point on the line to jump straight to that month — drag the chart aside first and it stays open, so you can step through months one dot at a time. The summary shows your growth, how far apart the months are, and — optionally — your age across the range. Drag to reposition.</span></div>
       <div class="shortcut-row"><span>🎂 <strong>Age on your trend</strong> — enter your birth month + year in the Net Worth Trend (optional) to see "age 23 → 25" alongside your growth. Month and year only — Jettana never asks for your full birthdate. Clear the field anytime to remove it.</span></div>
+      <div class="shortcut-row"><span>🎁 <strong>Year in review</strong> — ⋯ → Insights → Year in review, or the banner at the bottom of any December; one year looked back on: income, spent, put into savings and left over, then every bill's monthly average (once it shows up in 4+ months), each section, and how it compares with the year before. <strong>Exclude</strong> a bill someone else pays for and it's left out of that year's totals; it moves to "Not counted" where <strong>Include</strong> brings it back. Exempt months are skipped by themselves. <strong>🖨 Print</strong> saves it as a PDF.</span></div>
       <div class="shortcut-row"><span>🗓️ <strong>Year ahead</strong> — ⋯ → Insights → Year ahead; a read-only plan for next year built from the months you've logged: each section month by month, bigger months shaded, and what's left after each month. Pick which months it learns from (Last 3/6/12 or All) and the month the 12-month plan starts. Tap any number to see how it was worked out. Shows planned Income, Savings and Left over (free to spend). Switch to My budget to type your own amount for any section or month. Drag the header to move it or the bottom-right corner to resize it, and your budget stays usable behind it. Add yearly expenses (car registration, a trip) and type your own income if you like. Never changes your budgets.</span></div>
       <div class="shortcut-row"><span>🧮 <strong>Plan My Savings</strong> — ⋯ → Insights → Plan my savings; works out what's genuinely left over each month from your average take-home and expenses. The retirement half shows what a pre-tax contribution actually costs your take-home (less than the headline number, since it comes out before tax) and what you'd leave behind by contributing under your employer's match.</span></div>
       <div class="shortcut-row"><span>🌍 <strong>Life Elsewhere</strong> — ⋯ → Insights → Life elsewhere; re-prices your current lifestyle in another country with your income held fixed. Optionally type an exchange rate to see the figures in local currency too — rates are never fetched, so it's whatever you enter, and leaving it blank hides that line. A daydream tool, not relocation advice.</span></div>
@@ -11093,6 +11173,7 @@ function switchMonth(key) {
   loadIntention();
   loadNotes();
   updateMonthNav();
+  updateYearReviewBanner();
 }
 
 /* Open/close a year group.
@@ -30108,6 +30189,269 @@ function renderTrendsBreakdown(d) {
 
 var _calYear = null;
 var _calMonth = null; // 0-indexed
+
+
+/* ── Year in review ───────────────────────────────────────────────────────
+   One calendar year looked back on: income, spending, savings, every bill's
+   monthly average, each section, and how it compares with the year before.
+
+   Worked out fresh from the months every time it opens. Nothing here is
+   stored EXCEPT the bills you exclude ("someone else pays this"), kept as a
+   top-level _yir key in the normal data object — { "2025": ["housing||wifi"] }
+   — the same way _pad and _birthMonth are: saveAll() sends it to the account
+   through the same guarded path as everything else, and the demo sandbox
+   keeps its own copy because loadAll()/saveAll() already switch over there.
+   An exclusion is for that year only: who pays for something can change.
+
+   The money rules are the ones Trends and Year ahead use (trendsRowAmount,
+   trendsIncomeTotal, yaSavByAccount), so the three can never disagree.
+   Exempt rows are already 0 under those rules, so an exempt month is skipped
+   by itself. Bills are matched across months by section + name, like
+   Trends → Items, so a renamed row starts a new line. */
+var YIR_AVG_MIN = 4;          // a bill needs 4+ months before it gets an average
+var _yirYear = null, _yirLast = null;
+
+function yirYears() {
+  var ys = {};
+  Object.keys(loadAll()).forEach(function(k) { if (/^\d{4}-\d{2}$/.test(k)) ys[k.slice(0, 4)] = 1; });
+  return Object.keys(ys).sort();
+}
+function yirExcluded(all, year) {
+  var o = all && all._yir, a = o && typeof o === 'object' ? o[year] : null;
+  return Array.isArray(a) ? a.filter(function(x) { return typeof x === 'string' && x.length < 200; }) : [];
+}
+function yirKey(sec, name) { return sec + '||' + String(name || '').trim().toLowerCase(); }
+
+function yirCompute(year) {
+  var all = loadAll();
+  var excl = yirExcluded(all, year);
+  var st = (typeof yaStore === 'function') ? yaStore() : null;
+  var res = { year: year, months: [], income: 0, spent: 0, saved: 0, secTotals: {}, groups: {}, excluded: {} };
+  TREND_EXPENSE_SECTIONS.forEach(function(s) { res.secTotals[s] = 0; });
+  for (var m = 1; m <= 12; m++) {
+    var mk = year + '-' + (m < 10 ? '0' : '') + m;
+    var d = all[mk];
+    if (!d || typeof d !== 'object') continue;
+    var inc = trendsIncomeTotal(d), spentHere = 0;
+    TREND_EXPENSE_SECTIONS.forEach(function(sec) {
+      var cfg = CONFIGS[sec];
+      if (!cfg) return;
+      (d[sec] || []).forEach(function(r) {
+        var amt = trendsRowAmount(r, cfg);           // exempt → 0
+        if (!(amt > 0.005)) return;
+        var nm = String((r && r.label) || '').trim();
+        var key = nm ? yirKey(sec, nm) : null;
+        var bucket;
+        if (key && excl.indexOf(key) >= 0) bucket = res.excluded;
+        else {
+          res.secTotals[sec] += amt; spentHere += amt;
+          bucket = key ? res.groups : null;
+        }
+        if (!bucket) return;
+        var g = bucket[key] || (bucket[key] = { key: key, sec: sec, name: nm, sum: 0, months: 0, lastMk: null, high: null });
+        g.sum += amt;
+        if (g.lastMk !== mk) { g.months++; g.lastMk = mk; }   // two rows, same name, one month
+        if (!g.high || amt > g.high.amt) g.high = { amt: amt, mk: mk };
+      });
+    });
+    // Savings: what came out of take-home pay, the Year ahead way.
+    var savedHere = 0;
+    if (st && typeof yaSavByAccount === 'function') {
+      var accts = yaSavByAccount(d, all[yaAddMonths(mk, -1)]);
+      Object.keys(accts).forEach(function(k) { if (yaSavCounts(k, accts[k].name, st)) savedHere += accts[k].v; });
+    }
+    if (inc > 0.005 || spentHere > 0.005) res.months.push(mk);   // a month with something in it
+    res.income += inc; res.spent += spentHere; res.saved += savedHere;
+  }
+  res.left = res.income - res.spent - res.saved;
+  res.n = res.months.length;
+  var list = function(o) { return Object.keys(o).map(function(k) { var g = o[k]; g.avg = g.months ? g.sum / g.months : 0; return g; }); };
+  res.groupList = list(res.groups);
+  res.excludedList = list(res.excluded).sort(function(a, b) { return b.sum - a.sum; });
+  return res;
+}
+
+function showYearReview(year) {
+  var ys = yirYears();
+  if (year && ys.indexOf(String(year)) < 0) year = null;
+  if (!year) {
+    var cur = /^\d{4}-\d{2}$/.test(currentMonthKey || '') ? currentMonthKey.slice(0, 4) : null;
+    year = (cur && ys.indexOf(cur) >= 0) ? cur : (ys[ys.length - 1] || String(new Date().getFullYear()));
+  }
+  _yirYear = String(year);
+  var ov = document.getElementById('yir-overlay');
+  if (!ov) return;
+  ov.style.display = 'flex';
+  document.body.classList.add('yir-open');
+  renderYearReview();
+  var body = document.getElementById('yir-scroll'); if (body) body.scrollTop = 0;
+}
+function hideYearReview() {
+  var ov = document.getElementById('yir-overlay');
+  if (ov) ov.style.display = 'none';
+  document.body.classList.remove('yir-open');
+}
+function yirSetYear(y) { _yirYear = String(y); renderYearReview(); }
+function yirJump(mk, sec) { hideYearReview(); jumpToMonthSection(mk, sec); }
+
+function yirToggle(i, exclude) {
+  var g = _yirLast && (exclude ? _yirLast.bills[i] : _yirLast.excl[i]);
+  if (!g) return;
+  var year = _yirLast.year;
+  var all = loadAll();
+  var cur = yirExcluded(all, year).filter(function(k) { return k !== g.key; });
+  if (exclude) cur.push(g.key);
+  var o = (all._yir && typeof all._yir === 'object' && !Array.isArray(all._yir)) ? all._yir : {};
+  if (cur.length) o[year] = cur; else delete o[year];
+  if (Object.keys(o).length) all._yir = o; else delete all._yir;
+  saveAll(all);
+  renderYearReview();
+  showToast(exclude ? g.name + ' is no longer counted in ' + year : g.name + ' is counted again in ' + year, true);
+}
+
+function yirPrint() {
+  document.body.classList.add('yir-print');
+  var done = function() { document.body.classList.remove('yir-print'); window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done);
+  window.print();
+  setTimeout(done, 1500);   // some browsers never fire afterprint
+}
+
+function _yirDelta(now, before, opts) {
+  if (!(before > 0.005) || !(now > 0.005)) return '';
+  var diff = now - before;
+  if (Math.abs(diff) < 0.5) return '<span class="yir-d">same as ' + opts.py + '</span>';
+  var up = diff > 0;
+  // More spending is the "bad" direction; more income or savings is good.
+  var good = opts.moreIsGood ? up : !up;
+  return '<span class="yir-d ' + (good ? 'good' : 'bad') + '">' + (up ? '▲ ' : '▼ ') + fmt(Math.abs(diff))
+    + (opts.perMo ? '/mo' : '') + ' vs ' + opts.py + '</span>';
+}
+
+function renderYearReview() {
+  var body = document.getElementById('yir-body');
+  if (!body) return;
+  var year = _yirYear, ys = yirYears();
+  var r = yirCompute(year);
+  var py = String(+year - 1);
+  var p = ys.indexOf(py) >= 0 ? yirCompute(py) : null;
+  if (p && !p.n) p = null;
+
+  var sel = document.getElementById('yir-year');
+  if (sel) {
+    sel.innerHTML = ys.slice().reverse().map(function(y) { return '<option value="' + y + '"' + (y === year ? ' selected' : '') + '>' + y + '</option>'; }).join('');
+  }
+  var now = new Date(), thisYear = String(now.getFullYear());
+  var partial = r.n < 12 && year >= thisYear;
+  var sub = document.getElementById('yir-sub');
+  if (sub) sub.textContent = r.n
+    ? (partial ? year + ' so far · ' : year + ' · ') + r.n + ' month' + (r.n === 1 ? '' : 's') + ' with entries'
+    : 'Nothing logged in ' + year + ' yet';
+
+  if (!r.n) {
+    _yirLast = { year: year, bills: [], excl: [] };
+    body.innerHTML = '<div class="trends-empty">No income or spending in ' + year + ' yet. Once you log some months, this page fills itself in.</div>';
+    return;
+  }
+
+  var h = '';
+  // ── Headline
+  var tile = function(lbl, v, cls, note) {
+    return '<div class="yir-tile ' + (cls || '') + '"><span>' + lbl + '</span><strong>' + fmt(v) + '</strong>'
+      + (note ? '<em>' + note + '</em>' : '') + '</div>';
+  };
+  var avgNote = function(v) { return fmt(v / r.n) + '/mo avg'; };
+  h += '<div class="yir-tiles">'
+    + tile('Income', r.income, 'inc', avgNote(r.income) + (p ? '<br>' + _yirDelta(r.income / r.n, p.income / p.n, { py: py, moreIsGood: true, perMo: true }) : ''))
+    + tile('Spent', r.spent, 'out', avgNote(r.spent) + (p ? '<br>' + _yirDelta(r.spent / r.n, p.spent / p.n, { py: py, perMo: true }) : ''))
+    + tile('Put into savings', r.saved, 'sav', avgNote(r.saved))
+    + tile('Left over', r.left, r.left < 0 ? 'neg' : 'left', 'income − spent − savings')
+    + '</div>';
+
+  // ── Bills: everything in Housing, plus any other bill paid 4+ months
+  var prevBy = {};
+  if (p) p.groupList.forEach(function(g) { prevBy[g.key] = g; });
+  var bills = r.groupList.filter(function(g) { return g.sec === 'housing' || g.months >= YIR_AVG_MIN; })
+    .sort(function(a, b) {
+      if ((a.sec === 'housing') !== (b.sec === 'housing')) return a.sec === 'housing' ? -1 : 1;
+      return b.sum - a.sum;
+    });
+  _yirLast = { year: year, bills: bills, excl: r.excludedList };
+  h += '<div class="yir-h">Bills <span>averaged once a bill shows up in ' + YIR_AVG_MIN + '+ months</span></div>';
+  if (!bills.length) h += '<div class="yir-empty">No bills yet — rows in Housing, and anything paid ' + YIR_AVG_MIN + '+ months, show up here.</div>';
+  var lastSec = null;
+  bills.forEach(function(g, i) {
+    var grp = g.sec === 'housing' ? 'housing' : 'other';
+    if (grp !== lastSec) {
+      if (lastSec) h += '<div class="yir-sub-h">Other regular spending</div>';
+      else if (grp === 'other') h += '<div class="yir-sub-h">Other regular spending</div>';
+      lastSec = grp;
+    }
+    var canAvg = g.months >= YIR_AVG_MIN;
+    var pg = prevBy[g.key];
+    var main = canAvg
+      ? '<b>' + fmt(g.avg) + '</b><small>/mo avg</small>'
+      : '<b>' + fmt(g.sum) + '</b><small>total</small>';
+    var detail = canAvg
+      ? fmt(g.sum) + ' total · ' + g.months + ' mo'
+      : g.months + ' mo — too few to average';
+    if (canAvg && g.months > 1 && g.high) detail += ' · high ' + fmt(g.high.amt) + ' '
+      + '<button class="trends-mlink" style="color:' + (TREND_SEC_COLORS[g.sec] || 'var(--ink)') + '" onclick="yirJump(\'' + g.high.mk + '\',\'' + g.sec + '\')" title="Open this month">' + _recurMonthLabel(g.high.mk) + '</button>';
+    var delta = (pg && canAvg && pg.months >= YIR_AVG_MIN) ? _yirDelta(g.avg, pg.avg, { py: py, perMo: true }) : '';
+    h += '<div class="yir-row">'
+      + '<span class="yir-dot" style="background:' + (TREND_SEC_COLORS[g.sec] || 'var(--steel)') + '"></span>'
+      + '<div class="yir-name">' + escHtml(g.name) + (grp === 'other' ? '<small>' + escHtml(getSectionName(g.sec)) + '</small>' : '') + '</div>'
+      + '<div class="yir-amt">' + main + '<div class="yir-det">' + detail + (delta ? ' · ' + delta : '') + '</div></div>'
+      + '<button class="yir-x" onclick="yirToggle(' + i + ',true)" title="Someone else pays this — leave it out of ' + year + '">Exclude</button>'
+      + '</div>';
+  });
+
+  // ── Sections
+  h += '<div class="yir-h">By section <span>total for the year · average per month</span></div>';
+  var maxSec = 0;
+  TREND_EXPENSE_SECTIONS.forEach(function(s) { maxSec = Math.max(maxSec, r.secTotals[s] || 0); });
+  TREND_EXPENSE_SECTIONS.slice().sort(function(a, b) { return (r.secTotals[b] || 0) - (r.secTotals[a] || 0); }).forEach(function(s) {
+    var t = r.secTotals[s] || 0;
+    if (!(t > 0.005)) return;
+    var pct = maxSec ? Math.max(2, t / maxSec * 100) : 0;
+    var delta = p ? _yirDelta(t / r.n, (p.secTotals[s] || 0) / p.n, { py: py, perMo: true }) : '';
+    h += '<div class="yir-sec">'
+      + '<div class="yir-sec-top"><span>' + escHtml(getSectionName(s)) + '</span><span><b>' + fmt(t) + '</b> · ' + fmt(t / r.n) + '/mo</span></div>'
+      + '<div class="trends-sec-bar-wrap"><div class="trends-sec-bar" style="width:' + pct + '%;background:' + TREND_SEC_COLORS[s] + '"></div></div>'
+      + (delta ? '<div class="yir-det" style="text-align:right;">' + delta + '</div>' : '')
+      + '</div>';
+  });
+
+  // ── Excluded
+  if (r.excludedList.length) {
+    h += '<div class="yir-h">Not counted in ' + year + ' <span>someone else pays these — left out of every total above</span></div>';
+    r.excludedList.forEach(function(g, i) {
+      h += '<div class="yir-row yir-off">'
+        + '<span class="yir-dot" style="background:' + (TREND_SEC_COLORS[g.sec] || 'var(--steel)') + '"></span>'
+        + '<div class="yir-name">' + escHtml(g.name) + '<small>' + escHtml(getSectionName(g.sec)) + '</small></div>'
+        + '<div class="yir-amt"><b>' + fmt(g.sum) + '</b><small>total</small><div class="yir-det">' + g.months + ' mo</div></div>'
+        + '<button class="yir-x" onclick="yirToggle(' + i + ',false)" title="Count this again in ' + year + '">Include</button>'
+        + '</div>';
+    });
+  }
+
+  h += '<div class="yir-foot">Spending uses each row\'s Actual; exempt rows are left out. Bills are matched by name, so a row renamed partway through the year shows as two lines. '
+    + 'Savings counts what came out of your take-home pay, the same way <b>Year ahead</b> does.</div>';
+  body.innerHTML = h;
+}
+
+/* December gets a small banner under the tracker pointing at its year. */
+function updateYearReviewBanner() {
+  var b = document.getElementById('yir-banner');
+  if (!b) return;
+  var mk = currentMonthKey || '';
+  if (!/^\d{4}-12$/.test(mk)) { b.style.display = 'none'; return; }
+  var y = mk.slice(0, 4);
+  var txt = document.getElementById('yir-banner-text');
+  if (txt) txt.textContent = (y === String(new Date().getFullYear()) ? y + ' is wrapping up — see' : 'See') + ' your ' + y + ' year in review';
+  b.dataset.year = y;
+  b.style.display = 'flex';
+}
 
 function showCalendar() {
   var now = new Date();
