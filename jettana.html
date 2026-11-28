@@ -5490,6 +5490,13 @@ body.font-large.text-bold .erow-label-input {
 .gp-stat span { display: block; font-size: 10px; color: var(--steel); letter-spacing: 0.3px; }
 .gp-stat strong { display: block; font-size: 14.5px; color: var(--ink); margin-top: 2px; }
 @media (max-width: 560px) { .gp-field { flex: 1 1 45%; } .gp-stat { flex: 1 1 45%; } }
+/* ── Link chips in row notes ─────────────────────────────── */
+.note-links { display:flex; flex-wrap:wrap; gap:6px; padding:6px 10px 0; }
+.note-link { display:inline-flex; align-items:center; gap:4px; max-width:100%; font-family:'Outfit',sans-serif; font-size:11.5px; font-weight:500; color:#3E6B94; background:rgba(79,124,168,0.08); border:1px solid rgba(79,124,168,0.25); border-radius:999px; padding:3px 10px; text-decoration:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.note-link:hover { background:rgba(79,124,168,0.16); border-color:rgba(79,124,168,0.5); }
+.note-link span { font-size:10px; opacity:0.7; }
+.dark .note-link { color:#9DC0E3; background:rgba(157,192,227,0.1); border-color:rgba(157,192,227,0.3); }
+@media (pointer: coarse) { .note-link { padding:7px 12px; font-size:12.5px; } }
 /* ── Screenshots in row notes ────────────────────────────── */
 .note-shots { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:6px 10px 8px; }
 .note-shot { position:relative; width:72px; height:72px; border-radius:8px; overflow:hidden; border:1px solid var(--mist); background:var(--mist-light); flex-shrink:0; }
@@ -7518,6 +7525,11 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
         </div>
 
         <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">Can I save a website in a note?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Just type or paste it into the note, like <strong>pge.com</strong> or <strong>https://www.smud.org/pay</strong>. It shows up as a <strong>🔗 link chip</strong> under the note, and tapping it opens the site in a new tab. The chip always shows the site's real address, so you can see exactly where it goes before you tap. Only secure (https) web addresses become links; email addresses, file names and amounts like 2.50 don't.</div>
+        </div>
+
+        <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">How much can I actually afford to save each month?<span class="askme-q-arrow">▾</span></button>
           <div class="askme-a">Open <strong>⋯ → Insights → 🧮 Plan my savings</strong>. Enter your average take-home pay and average monthly expenses and it works out what's genuinely left over. There's a second half for retirement: put in your gross pay, your contribution %, and your employer's match, and it shows what a pre-tax contribution actually costs your take-home — usually less than you'd expect, since the contribution comes out before tax. If your employer matches, it also shows what you'd be leaving behind by contributing under the match.</div>
         </div>
@@ -8534,6 +8546,8 @@ var SHOT_BUCKET = 'note-images', SHOT_MAX_PER_ROW = 10, SHOT_MAX_EDGE = 2000, SH
 var _shotUrls = {};      // path → { url, until }
 var _shotBusy = {};      // rowId → uploads in flight
 var _shotView = null;
+// Web endings a bare address in a note must have to become a link chip (see noteLinks)
+var NOTE_LINK_TLDS = /^(com|org|net|gov|edu|mil|io|co|us|app|dev|ai|me|info|biz|ly|so|to|tv|fm|gg|xyz|site|online|store|shop|bank|money|finance|health|care|uk|ca|au|nz|ie|th|jp|kr|cn|hk|sg|in|ph|vn|de|fr|es|it|nl|se|no|dk|fi|ch|at|be|pt|pl|br|mx|ar|cl|za)$/i;
 var _currentUser = null;
 var _authTab = 'login';
 
@@ -11892,7 +11906,7 @@ function renderRowEl(section, row, animate = false) {
     '<button class="note-bullet-btn ' + bulletActive + '" id="bullet-btn-' + row.id + '" onclick="toggleBulletMode(\'' + section + '\',\'' + row.id + '\')" title="' + bulletTitle + '">• List</button>' +
     '<button class="note-expand-btn" id="expand-btn-' + row.id + '" onclick="toggleNoteExpand(\'' + section + '\',\'' + row.id + '\')" title="Expand / collapse note">↕</button>' +
     '<button class="note-close" onclick="closeNote(\'' + row.id + '\')" title="Close">×</button>' +
-    '</div></div>' + noteShotsHtml(section, row) + '</div>';
+    '</div></div>' + noteLinksHtml(row) + noteShotsHtml(section, row) + '</div>';
   container.appendChild(noteDiv);
   wireNoteShots(noteDiv, section, row.id);
   /* Colour the row NOW, not only on the timers above. Chrome slows timers in
@@ -31127,6 +31141,8 @@ function wireNoteShots(noteDiv, section, id) {
     addShots(section, id, Array.prototype.slice.call(e.dataTransfer.files || []));
   });
   var ta = noteDiv.querySelector('.note-textarea');
+  // Web addresses → link chips, kept in step with the text as you type
+  if (ta) ta.addEventListener('input', function() { refreshNoteLinks(id, ta.value); });
   if (ta) ta.addEventListener('paste', function(e) {
     var items = (e.clipboardData && e.clipboardData.items) || [];
     var files = [];
@@ -31148,6 +31164,61 @@ async function deleteAllShotsForUser() {
     if (!files.length) return;
     await _sb.storage.from(SHOT_BUCKET).remove(files);
   }
+}
+
+
+/* ── Web addresses in notes → link chips ─────────────────────────────────
+   A note is a plain textarea, so nothing inside it can be clicked. Instead,
+   every web address found in the note is shown as a chip under it
+   ("🔗 pge.com"), updated as you type.
+
+   What counts: anything with https:// or http:// or www. in front, or a
+   bare name ending in a common web ending (.com, .org, .gov, .app …) — so
+   "notes.txt" or "e.g." never turns into a link. Every candidate then goes
+   through safeAccountUrl(), the same checker the row's account link uses:
+   only https (http is upgraded), never javascript:/data:/file:, and the
+   host must have a dot. The chip shows the REAL domain the link opens, never
+   other text, so a disguised link can't hide where it goes. It opens in a
+   new tab with no referrer. Whether a site is trustworthy isn't something
+   an app can know — showing the true domain is how the person can judge. */
+// NOTE_LINK_TLDS is declared up beside _sb: notes are drawn during start-up.
+function noteLinks(text) {
+  var out = [], seen = {};
+  var re = /(^|[\s(\[<"'])((?:https?:\/\/|www\.)[^\s<>"']+|[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.[a-z]{2,}(?:\/[^\s<>"']*)?)/gi;
+  var m, s = String(text || '');
+  while ((m = re.exec(s)) && out.length < 8) {
+    var raw = m[2].replace(/[.,;:!?)\]}'"]+$/, '');        // sentence punctuation isn't part of it
+    if (/@/.test(raw)) continue;                              // an email address, not a site
+    var explicit = /^(https?:\/\/|www\.)/i.test(raw);
+    var safe = safeAccountUrl(raw);
+    if (!safe) continue;
+    var host;
+    try { host = new URL(safe).hostname.replace(/^www\./i, ''); } catch (e) { continue; }
+    var tld = host.split('.').pop();
+    if (!explicit && !NOTE_LINK_TLDS.test(tld)) continue;
+    if (!/[a-z]/i.test(tld)) continue;                        // 192.168.0.1, 2.50
+    if (seen[safe]) continue;
+    seen[safe] = 1;
+    out.push({ href: safe, host: host });
+  }
+  return out;
+}
+function noteLinksInner(text) {
+  return noteLinks(text).map(function(l) {
+    return '<a class="note-link" href="' + escHtml(l.href) + '" target="_blank" rel="noopener noreferrer nofollow" ' +
+      'title="Opens ' + escHtml(l.href) + '" onclick="event.stopPropagation()">🔗 ' + escHtml(l.host) + ' <span aria-hidden="true">↗</span></a>';
+  }).join('');
+}
+function noteLinksHtml(row) {
+  var inner = noteLinksInner(row && row.note);
+  return '<div class="note-links" id="note-links-' + row.id + '"' + (inner ? '' : ' style="display:none;"') + '>' + inner + '</div>';
+}
+function refreshNoteLinks(id, text) {
+  var el = document.getElementById('note-links-' + id);
+  if (!el) return;
+  var inner = noteLinksInner(text);
+  if (el.innerHTML !== inner) el.innerHTML = inner;
+  el.style.display = inner ? '' : 'none';
 }
 
 function showCalendar() {
