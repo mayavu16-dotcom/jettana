@@ -5490,6 +5490,29 @@ body.font-large.text-bold .erow-label-input {
 .gp-stat span { display: block; font-size: 10px; color: var(--steel); letter-spacing: 0.3px; }
 .gp-stat strong { display: block; font-size: 14.5px; color: var(--ink); margin-top: 2px; }
 @media (max-width: 560px) { .gp-field { flex: 1 1 45%; } .gp-stat { flex: 1 1 45%; } }
+/* ── Screenshots in row notes ────────────────────────────── */
+.note-shots { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:6px 10px 8px; }
+.note-shot { position:relative; width:72px; height:72px; border-radius:8px; overflow:hidden; border:1px solid var(--mist); background:var(--mist-light); flex-shrink:0; }
+.note-shot img { width:100%; height:100%; object-fit:cover; display:block; cursor:zoom-in; }
+.note-shot img:not([src]) { visibility:hidden; }
+.note-shot.uploading { display:flex; align-items:center; justify-content:center; }
+.note-shot.uploading span { font-size:10px; color:var(--steel); animation:shotPulse 1.2s ease-in-out infinite; }
+@keyframes shotPulse { 50% { opacity:0.35; } }
+.note-shot.gone::after { content:'Not available'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; font-size:9.5px; color:var(--steel); padding:4px; }
+.note-shot-x { position:absolute; top:3px; right:3px; min-width:20px; height:20px; padding:0 5px; border-radius:10px; border:none; background:rgba(26,35,50,0.72); color:#fff; font-size:13px; line-height:20px; cursor:pointer; opacity:0; transition:opacity .15s; font-family:'Outfit',sans-serif; }
+.note-shot:hover .note-shot-x, .note-shot-x.ask { opacity:1; }
+.note-shot-x.ask { background:#C0392B; font-size:10px; font-weight:600; }
+.note-shot-add { font-family:'Outfit',sans-serif; font-size:11px; color:var(--steel); background:none; border:1px dashed var(--mist); border-radius:8px; padding:6px 10px; cursor:pointer; }
+.note-shot-add:hover { color:var(--ink); border-color:var(--steel); }
+.note-row.shot-drop .note-inner { outline:2px dashed var(--sage); outline-offset:-2px; border-radius:8px; }
+@media (pointer: coarse) { .note-shot-x { opacity:1; min-width:24px; height:24px; line-height:24px; } .note-shot-add { padding:9px 12px; } }
+#shot-viewer { position:fixed; inset:0; z-index:100002; background:rgba(10,14,20,0.88); display:none; align-items:center; justify-content:center; padding:48px 56px; box-sizing:border-box; }
+#shot-viewer img { max-width:100%; max-height:100%; object-fit:contain; border-radius:6px; box-shadow:0 10px 40px rgba(0,0,0,.4); background:#fff; }
+#shot-viewer .sv-x { position:absolute; top:12px; right:16px; width:40px; height:40px; border-radius:50%; border:none; background:rgba(255,255,255,0.14); color:#fff; font-size:24px; cursor:pointer; }
+#shot-viewer .sv-nav { position:absolute; top:50%; transform:translateY(-50%); width:44px; height:64px; border:none; border-radius:10px; background:rgba(255,255,255,0.12); color:#fff; font-size:32px; cursor:pointer; }
+#shot-viewer .sv-prev { left:8px; } #shot-viewer .sv-next { right:8px; }
+#shot-viewer .sv-count { position:absolute; bottom:14px; left:0; right:0; text-align:center; color:rgba(255,255,255,0.8); font-size:12px; font-family:'Outfit',sans-serif; }
+@media (max-width: 600px) { #shot-viewer { padding:56px 8px; } #shot-viewer .sv-nav { top:auto; bottom:8px; transform:none; height:44px; } }
 /* ── Split bills (Itemize) ───────────────────────────────── */
 .it-who-split { color:#4F7CA8 !important; font-weight:600; }
 .it-who-theirs { color:var(--steel) !important; text-decoration:line-through; }
@@ -7490,6 +7513,11 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
         </div>
 
         <div class="askme-item">
+          <button class="askme-q" onclick="toggleAskMe(this)">Can I add screenshots to a note?<span class="askme-q-arrow">▾</span></button>
+          <div class="askme-a">Yes. Open a row's note, then <strong>drag an image onto it</strong>, <strong>paste one</strong> (⌘V / Ctrl+V) into the note, or tap <strong>📎 Add screenshot</strong> to pick from your photos. Each note holds up to 10. Tap a picture to see it full size (← → to move between them); tap <strong>×</strong> and then <strong>Remove?</strong> to delete one. Screenshots are shrunk a little and saved <strong>privately to your account</strong>, so they show on every device you sign in on, and only you can open them. They stay with the month you added them to; a new month starts without them. You need to be signed in, and they aren't saved in the demo.</div>
+        </div>
+
+        <div class="askme-item">
           <button class="askme-q" onclick="toggleAskMe(this)">How much can I actually afford to save each month?<span class="askme-q-arrow">▾</span></button>
           <div class="askme-a">Open <strong>⋯ → Insights → 🧮 Plan my savings</strong>. Enter your average take-home pay and average monthly expenses and it works out what's genuinely left over. There's a second half for retirement: put in your gross pay, your contribution %, and your employer's match, and it shows what a pre-tax contribution actually costs your take-home — usually less than you'd expect, since the contribution comes out before tax. If your employer matches, it also shows what you'd be leaving behind by contributing under the match.</div>
         </div>
@@ -8756,6 +8784,9 @@ function confirmDeleteAccount() {
     status.textContent = 'Deleting your data...';
     try {
       if (_sb && _currentUser) {
+        // Screenshots first (needs the account to still exist). Best effort:
+        // a failure here never stops the account from being deleted.
+        try { await deleteAllShotsForUser(); } catch (eShots) {}
         // Delete user's budget data
         await _sb.from('user_data').delete().eq('user_id', _currentUser.id);
         // Delete auth user via RPC
@@ -9453,6 +9484,7 @@ var _pendingUnsynced = false; // set by the pull when it kept local over the clo
    flag: that records stranded work and is already stamped with its owner. */
 function resetSyncStateForAccountChange() {
   _dropCloudPending();
+  try { _shotUrls = {}; closeShotViewer(); } catch (e) {}   // picture links belong to one account
   _syncState = 'unknown';
   _syncErrMsg = '';
   _pendingUnsynced = false;
@@ -11854,8 +11886,9 @@ function renderRowEl(section, row, animate = false) {
     '<button class="note-bullet-btn ' + bulletActive + '" id="bullet-btn-' + row.id + '" onclick="toggleBulletMode(\'' + section + '\',\'' + row.id + '\')" title="' + bulletTitle + '">• List</button>' +
     '<button class="note-expand-btn" id="expand-btn-' + row.id + '" onclick="toggleNoteExpand(\'' + section + '\',\'' + row.id + '\')" title="Expand / collapse note">↕</button>' +
     '<button class="note-close" onclick="closeNote(\'' + row.id + '\')" title="Close">×</button>' +
-    '</div></div></div>';
+    '</div></div>' + noteShotsHtml(section, row) + '</div>';
   container.appendChild(noteDiv);
+  wireNoteShots(noteDiv, section, row.id);
   /* Colour the row NOW, not only on the timers above. Chrome slows timers in
      a window that is hidden or covered (switching browsers), so after the
      redraw that runs on coming back, names showed black for up to a second
@@ -17096,6 +17129,7 @@ function toggleNote(section, id) {
      _refreshEntryClipButtons()'s braces, and the reason a stale holder can no
      longer outlive a copy made somewhere else. */
   if (opening) { try { _refreshEntryClipButtons(); } catch (e) {} }
+  if (opening) { try { loadNoteShots(section, id); } catch (e) {} }
   /* Restore a note that was left expanded. On a timeout because the panel has
      only just been given `open` — measured immediately, the textarea is still
      the height it had while hidden. */
@@ -30824,6 +30858,293 @@ function updateYearReviewBanner() {
   if (txt) txt.textContent = (y === String(new Date().getFullYear()) ? y + ' is wrapping up — see' : 'See') + ' your ' + y + ' year in review';
   b.dataset.year = y;
   b.style.display = 'flex';
+}
+
+
+/* ── Screenshots in row notes ─────────────────────────────────────────────
+   Drag an image onto an open note, paste one (⌘V) into it, or tap 📎.
+
+   WHERE THEY LIVE. The pictures go to a private Supabase storage area
+   ("note-images"), in a folder named after the signed-in user — the storage
+   rules (supabase-note-screenshots.sql) let each person open only their own
+   folder. They are uploaded on their own, never inside the budget: the budget
+   is one ~450 KB bundle saved on every edit, and a few screenshots would
+   multiply that (the Nov 26 statement-timeout problem) and fill phones.
+
+   WHAT THE BUDGET HOLDS is only a short list on the row:
+     row._shots = [{ p: "<uid>/<file>.jpg", w, h, t }]
+   so it syncs like any other field. Every month-copy path builds new rows
+   field by field and none copies _shots, so a screenshot stays in the month
+   it was added to (Maya's call). duplicateRow doesn't copy it either.
+
+   NEVER IN THE DEMO, never signed out: nothing is uploaded unless there is a
+   real signed-in user and we're not in the demo sandbox.
+
+   REMOVING. × asks "Remove?" on the picture itself; the second tap takes it
+   off the row and deletes the file. Deleting a whole ROW does not delete its
+   files, because a row delete can be undone and the pictures must still be
+   there when it comes back. Delete account removes the whole folder. */
+var SHOT_BUCKET = 'note-images';
+var SHOT_MAX_PER_ROW = 10;
+var SHOT_MAX_EDGE = 2000;            // long side after shrinking, px
+var SHOT_QUALITY = 0.82;
+var _shotUrls = {};                  // path → { url, until }
+var _shotBusy = {};                  // rowId → uploads in flight
+
+function _shotRow(mk, section, id, all) {
+  all = all || loadAll();
+  var rows = (all[mk] && all[mk][section]) || [];
+  return { all: all, row: rows.find(function(r) { return r.id === id; }) || null };
+}
+function _shotList(row) {
+  return Array.isArray(row && row._shots) ? row._shots.filter(function(s) { return s && typeof s.p === 'string'; }) : [];
+}
+function shotsAvailable() {
+  if (typeof inDemoSandbox === 'function' && inDemoSandbox()) return 'Screenshots aren\'t saved in the demo — sign in to your own budget to add them.';
+  if (!_sb || !_currentUser) return 'Sign in to add screenshots — they\'re saved privately to your account.';
+  if (!_sb.storage) return 'Screenshots aren\'t available right now.';
+  return '';
+}
+
+/* The strip under the note text: thumbnails + the 📎 button. */
+function noteShotsHtml(section, row) {
+  return '<div class="note-shots" id="note-shots-' + row.id + '" data-section="' + section + '" onclick="event.stopPropagation()">' +
+    _noteShotsInner(section, row) + '</div>';
+}
+function _noteShotsInner(section, row) {
+  var list = _shotList(row), locked = monthIsLocked(currentMonthKey);
+  var a = '\'' + section + '\',\'' + row.id + '\'';
+  var h = list.map(function(s, i) {
+    var u = _shotUrls[s.p] && _shotUrls[s.p].until > Date.now() ? _shotUrls[s.p].url : '';
+    return '<div class="note-shot" data-p="' + escHtml(s.p) + '">' +
+      '<img alt="Screenshot ' + (i + 1) + '" ' + (u ? 'src="' + escHtml(u) + '"' : '') + ' onclick="openShotViewer(' + a + ',' + i + ')" onerror="this.closest(\'.note-shot\').classList.add(\'gone\')">' +
+      (locked ? '' : '<button type="button" class="note-shot-x" title="Remove this screenshot" onclick="removeShot(' + a + ',' + i + ',this)">×</button>') +
+      '</div>';
+  }).join('');
+  var busy = _shotBusy[row.id] || 0;
+  for (var b = 0; b < busy; b++) h += '<div class="note-shot uploading"><span>Uploading…</span></div>';
+  if (!locked && list.length + busy < SHOT_MAX_PER_ROW) {
+    h += '<button type="button" class="note-shot-add" onclick="pickShot(' + a + ')" title="Add a screenshot (or drag one here, or paste with ⌘V)">📎 ' +
+      (list.length ? 'Add' : 'Add screenshot') + '</button>';
+  }
+  return h;
+}
+function refreshNoteShots(section, id) {
+  var el = document.getElementById('note-shots-' + id);
+  if (!el) return;
+  var r = _shotRow(currentMonthKey, section, id).row;
+  if (!r) return;
+  el.innerHTML = _noteShotsInner(section, r);
+  loadNoteShots(section, id);
+}
+
+/* Signed links last an hour; ask for the missing ones in one call. */
+function loadNoteShots(section, id) {
+  if (!_sb || !_sb.storage || !_currentUser) return;
+  var el = document.getElementById('note-shots-' + id);
+  if (!el) return;
+  var need = [];
+  el.querySelectorAll('.note-shot[data-p]').forEach(function(d) {
+    var p = d.getAttribute('data-p'), c = _shotUrls[p];
+    if (c && c.until > Date.now()) { var im = d.querySelector('img'); if (im && !im.getAttribute('src')) im.src = c.url; }
+    else need.push(p);
+  });
+  if (!need.length) return;
+  var uid = _currentUser.id;
+  _sb.storage.from(SHOT_BUCKET).createSignedUrls(need, 3600).then(function(res) {
+    if (!_currentUser || _currentUser.id !== uid) return;
+    ((res && res.data) || []).forEach(function(x) {
+      if (x && x.signedUrl && x.path) _shotUrls[x.path] = { url: x.signedUrl, until: Date.now() + 50 * 60 * 1000 };
+    });
+    var el2 = document.getElementById('note-shots-' + id);
+    if (!el2) return;
+    el2.querySelectorAll('.note-shot[data-p]').forEach(function(d) {
+      var c = _shotUrls[d.getAttribute('data-p')], im = d.querySelector('img');
+      if (c && im && im.getAttribute('src') !== c.url) im.src = c.url;
+      else if (!c) d.classList.add('gone');      // not this account's, or deleted elsewhere
+    });
+  }).catch(function() {});
+}
+
+function pickShot(section, id) {
+  var why = shotsAvailable();
+  if (why) { showToast(why, true); return; }
+  var inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true;
+  inp.style.display = 'none';
+  inp.onchange = function() { addShots(section, id, Array.prototype.slice.call(inp.files || [])); inp.remove(); };
+  document.body.appendChild(inp);
+  inp.click();
+}
+
+/* Shrink to SHOT_MAX_EDGE on the long side, as JPEG. Screenshots stay
+   readable at that size and land around 150–400 KB. */
+function shrinkShot(file) {
+  return new Promise(function(resolve, reject) {
+    var url = URL.createObjectURL(file), img = new Image();
+    img.onload = function() {
+      try {
+        var w = img.naturalWidth, h = img.naturalHeight, k = Math.min(1, SHOT_MAX_EDGE / Math.max(w, h));
+        var cw = Math.max(1, Math.round(w * k)), ch = Math.max(1, Math.round(h * k));
+        var c = document.createElement('canvas'); c.width = cw; c.height = ch;
+        var x = c.getContext('2d');
+        x.fillStyle = '#fff'; x.fillRect(0, 0, cw, ch);       // transparent PNGs → white, not black
+        x.drawImage(img, 0, 0, cw, ch);
+        URL.revokeObjectURL(url);
+        c.toBlob(function(b) { b ? resolve({ blob: b, w: cw, h: ch }) : reject(new Error('encode')); }, 'image/jpeg', SHOT_QUALITY);
+      } catch (e) { URL.revokeObjectURL(url); reject(e); }
+    };
+    img.onerror = function() { URL.revokeObjectURL(url); reject(new Error('decode')); };
+    img.src = url;
+  });
+}
+
+function addShots(section, id, files) {
+  files = (files || []).filter(function(f) { return f && /^image\//.test(f.type || '') || /\.(png|jpe?g|webp|gif|heic|heif)$/i.test((f && f.name) || ''); });
+  if (!files.length) return;
+  var why = shotsAvailable();
+  if (why) { showToast(why, true); return; }
+  if (monthIsLocked(currentMonthKey)) { showToast('This month is locked — unlock it to add screenshots.', true); return; }
+  var mk = currentMonthKey, uid = _currentUser.id;
+  var have = _shotList(_shotRow(mk, section, id).row).length + (_shotBusy[id] || 0);
+  var room = SHOT_MAX_PER_ROW - have;
+  if (room <= 0) { showToast('A note can hold up to ' + SHOT_MAX_PER_ROW + ' screenshots.', true); return; }
+  if (files.length > room) { showToast('Only ' + room + ' more fit in this note — added the first ' + room + '.', true); files = files.slice(0, room); }
+  files.forEach(function(f) {
+    if (f.size > 25 * 1024 * 1024) { showToast('That image is too large (over 25 MB).', true); return; }
+    _shotBusy[id] = (_shotBusy[id] || 0) + 1;
+    refreshNoteShots(section, id);
+    var done = function() { _shotBusy[id] = Math.max(0, (_shotBusy[id] || 1) - 1); refreshNoteShots(section, id); };
+    shrinkShot(f).then(function(s) {
+      var path = uid + '/' + mk + '_' + String(id).replace(/[^A-Za-z0-9_-]/g, '') + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8) + '.jpg';
+      return _sb.storage.from(SHOT_BUCKET).upload(path, s.blob, { contentType: 'image/jpeg', upsert: false }).then(function(res) {
+        if (res && res.error) throw res.error;
+        // Signed out or switched account meanwhile: the picture is this
+        // user's, but the row now on screen may not be — don't attach it.
+        if (!_currentUser || _currentUser.id !== uid) return;
+        var h = _shotRow(mk, section, id);
+        if (!h.row) {   // row deleted while uploading: take the file back out
+          _sb.storage.from(SHOT_BUCKET).remove([path]).catch(function() {});
+          return;
+        }
+        var list = _shotList(h.row);
+        list.push({ p: path, w: s.w, h: s.h, t: new Date().toISOString() });
+        h.row._shots = list;
+        saveAll(h.all);
+      });
+    }).then(done, function(err) {
+      done();
+      var m = String((err && (err.message || err.error)) || err || '');
+      showToast(/decode/.test(m) ? 'Couldn\'t read that image — try a PNG or JPG.'
+        : /bucket|not found/i.test(m) ? 'Screenshots aren\'t set up on the server yet.'
+        : 'Screenshot not saved — check your connection and try again.', true);
+    });
+  });
+}
+
+function removeShot(section, id, i, btn) {
+  if (monthIsLocked(currentMonthKey)) return;
+  // First tap asks, second tap removes — no dialog over the note.
+  if (btn && !btn.classList.contains('ask')) {
+    btn.classList.add('ask'); btn.textContent = 'Remove?';
+    setTimeout(function() { if (btn.isConnected) { btn.classList.remove('ask'); btn.textContent = '×'; } }, 3000);
+    return;
+  }
+  var h = _shotRow(currentMonthKey, section, id);
+  if (!h.row) return;
+  var list = _shotList(h.row), s = list[i];
+  if (!s) return;
+  list.splice(i, 1);
+  if (list.length) h.row._shots = list; else delete h.row._shots;
+  saveAll(h.all);
+  refreshNoteShots(section, id);
+  if (_sb && _sb.storage && _currentUser && s.p.indexOf(_currentUser.id + '/') === 0) {
+    _sb.storage.from(SHOT_BUCKET).remove([s.p]).catch(function() {});
+  }
+  delete _shotUrls[s.p];
+}
+
+/* Full-size viewer: tap outside or × to close, ← → between pictures. */
+var _shotView = null;
+function openShotViewer(section, id, i) {
+  var r = _shotRow(currentMonthKey, section, id).row;
+  var list = _shotList(r);
+  if (!list[i]) return;
+  _shotView = { section: section, id: id, i: i, n: list.length, list: list };
+  var ov = document.getElementById('shot-viewer');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'shot-viewer';
+    ov.innerHTML = '<button type="button" class="sv-x" aria-label="Close" onclick="closeShotViewer()">×</button>' +
+      '<button type="button" class="sv-nav sv-prev" aria-label="Previous" onclick="event.stopPropagation();stepShotViewer(-1)">‹</button>' +
+      '<img id="shot-viewer-img" alt="Screenshot">' +
+      '<button type="button" class="sv-nav sv-next" aria-label="Next" onclick="event.stopPropagation();stepShotViewer(1)">›</button>' +
+      '<div class="sv-count" id="shot-viewer-count"></div>';
+    ov.addEventListener('click', function(e) { if (e.target === ov) closeShotViewer(); });
+    document.body.appendChild(ov);
+  }
+  ov.style.display = 'flex';
+  _paintShotViewer();
+}
+function _paintShotViewer() {
+  var v = _shotView; if (!v) return;
+  var s = v.list[v.i], img = document.getElementById('shot-viewer-img');
+  var c = _shotUrls[s.p];
+  img.removeAttribute('src');
+  if (c && c.until > Date.now()) img.src = c.url;
+  else if (_sb && _sb.storage) _sb.storage.from(SHOT_BUCKET).createSignedUrl(s.p, 3600).then(function(res) {
+    var u = res && res.data && res.data.signedUrl;
+    if (u) { _shotUrls[s.p] = { url: u, until: Date.now() + 50 * 60 * 1000 }; if (_shotView && _shotView.list[_shotView.i] === s) img.src = u; }
+  }).catch(function() {});
+  document.getElementById('shot-viewer-count').textContent = v.n > 1 ? (v.i + 1) + ' of ' + v.n : '';
+  document.querySelectorAll('#shot-viewer .sv-nav').forEach(function(b) { b.style.display = v.n > 1 ? '' : 'none'; });
+}
+function stepShotViewer(d) { if (!_shotView) return; _shotView.i = (_shotView.i + d + _shotView.n) % _shotView.n; _paintShotViewer(); }
+function closeShotViewer() { var ov = document.getElementById('shot-viewer'); if (ov) ov.style.display = 'none'; _shotView = null; }
+document.addEventListener('keydown', function(e) {
+  if (!_shotView) return;
+  if (e.key === 'Escape') { closeShotViewer(); e.stopPropagation(); }
+  else if (e.key === 'ArrowLeft') stepShotViewer(-1);
+  else if (e.key === 'ArrowRight') stepShotViewer(1);
+}, true);
+
+/* Drop and paste on an open note. */
+function wireNoteShots(noteDiv, section, id) {
+  var hasImg = function(dt) { return dt && Array.prototype.some.call(dt.types || [], function(t) { return t === 'Files'; }); };
+  noteDiv.addEventListener('dragover', function(e) {
+    if (!hasImg(e.dataTransfer)) return;
+    e.preventDefault(); e.stopPropagation();
+    noteDiv.classList.add('shot-drop');
+  });
+  noteDiv.addEventListener('dragleave', function(e) { if (!noteDiv.contains(e.relatedTarget)) noteDiv.classList.remove('shot-drop'); });
+  noteDiv.addEventListener('drop', function(e) {
+    if (!hasImg(e.dataTransfer)) return;
+    e.preventDefault(); e.stopPropagation();
+    noteDiv.classList.remove('shot-drop');
+    addShots(section, id, Array.prototype.slice.call(e.dataTransfer.files || []));
+  });
+  var ta = noteDiv.querySelector('.note-textarea');
+  if (ta) ta.addEventListener('paste', function(e) {
+    var items = (e.clipboardData && e.clipboardData.items) || [];
+    var files = [];
+    Array.prototype.forEach.call(items, function(it) { if (it.kind === 'file' && /^image\//.test(it.type)) { var f = it.getAsFile(); if (f) files.push(f); } });
+    if (!files.length) return;          // plain text pastes as usual
+    e.preventDefault();
+    addShots(section, id, files);
+  });
+}
+
+/* Delete account: remove this person's whole folder first. Best effort —
+   the account deletion goes ahead either way. */
+async function deleteAllShotsForUser() {
+  if (!_sb || !_sb.storage || !_currentUser) return;
+  var uid = _currentUser.id;
+  for (var round = 0; round < 50; round++) {
+    var res = await _sb.storage.from(SHOT_BUCKET).list(uid, { limit: 1000 });
+    var files = ((res && res.data) || []).map(function(f) { return uid + '/' + f.name; });
+    if (!files.length) return;
+    await _sb.storage.from(SHOT_BUCKET).remove(files);
+  }
 }
 
 function showCalendar() {
