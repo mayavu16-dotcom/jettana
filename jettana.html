@@ -8528,6 +8528,12 @@ function leaveLocalMode() {
 
 // ── Supabase ──────────────────────────────────────────────────
 var _sb = null;
+// Screenshots in notes — declared this early because rows are drawn at start-up
+// (see "Screenshots in row notes" further down for the feature itself).
+var SHOT_BUCKET = 'note-images', SHOT_MAX_PER_ROW = 10, SHOT_MAX_EDGE = 2000, SHOT_QUALITY = 0.82;
+var _shotUrls = {};      // path → { url, until }
+var _shotBusy = {};      // rowId → uploads in flight
+var _shotView = null;
 var _currentUser = null;
 var _authTab = 'login';
 
@@ -30884,12 +30890,10 @@ function updateYearReviewBanner() {
    off the row and deletes the file. Deleting a whole ROW does not delete its
    files, because a row delete can be undone and the pictures must still be
    there when it comes back. Delete account removes the whole folder. */
-var SHOT_BUCKET = 'note-images';
-var SHOT_MAX_PER_ROW = 10;
-var SHOT_MAX_EDGE = 2000;            // long side after shrinking, px
-var SHOT_QUALITY = 0.82;
-var _shotUrls = {};                  // path → { url, until }
-var _shotBusy = {};                  // rowId → uploads in flight
+/* SHOT_* settings and _shotUrls / _shotBusy are declared up beside _sb, NOT
+   here: rows are drawn during start-up, long before the script reaches this
+   point, and a `var` read before its line runs is undefined. Declared here,
+   the first saved row crashed start-up (Nov 27, "Loading…" screen). */
 
 function _shotRow(mk, section, id, all) {
   all = all || loadAll();
@@ -31065,7 +31069,6 @@ function removeShot(section, id, i, btn) {
 }
 
 /* Full-size viewer: tap outside or × to close, ← → between pictures. */
-var _shotView = null;
 function openShotViewer(section, id, i) {
   var r = _shotRow(currentMonthKey, section, id).row;
   var list = _shotList(r);
