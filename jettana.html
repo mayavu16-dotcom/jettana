@@ -3502,7 +3502,13 @@ body.yir-aside #calc-fab, body.yir-aside #calc-panel { z-index: 100001 !importan
 }
 .cmp-head span:not(:first-child), .cmp-row span:not(.cmp-label) { text-align: right; }
 .cmp-row { border-bottom: 0.5px solid var(--mist); font-size: 12.5px; }
-.cmp-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cmp-label { min-width: 0; }
+.cmp-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cmp-alias { font-size: 10px; color: var(--steel); margin-top: 1px; white-space: normal; line-height: 1.5; text-align: left; }
+.cmp-alias button { font-family: inherit; font-size: 10px; color: var(--steel); background: none; border: none; padding: 0; text-decoration: underline; cursor: pointer; }
+.cmp-alias button:hover { color: var(--ink); }
+.cmp-same { font-family: inherit; font-size: 10px; color: var(--steel); background: transparent; border: 1px solid var(--mist); border-radius: 999px; padding: 1px 6px; margin-left: 2px; max-width: 100%; cursor: pointer; }
+@media (pointer: coarse) { .cmp-alias button { padding: 4px 2px; } .cmp-same { padding: 4px 8px; font-size: 11px; } }
 .cmp-amt { font-variant-numeric: tabular-nums; }
 .cmp-amt.cmp-exv { opacity: 0.45; }
 .cmp-ex { display:inline-block; font-size:8px; font-weight:700; color:var(--steel); background:var(--mist); border-radius:3px; padding:1px 4px; letter-spacing:0.3px; line-height:1.6; margin-left:6px; vertical-align:middle; }
@@ -8149,7 +8155,7 @@ body.month-locked .sec-card { -webkit-user-drag: none; }
       <div class="shortcut-row"><span>🌍 <strong>Life Elsewhere</strong> — ⋯ → Insights → Life elsewhere; re-prices your current lifestyle in another country with your income held fixed. Optionally type an exchange rate to see the figures in local currency too — rates are never fetched, so it's whatever you enter, and leaving it blank hides that line. A daydream tool, not relocation advice.</span></div>
       <div class="shortcut-row"><span>↩ <strong>Jump back to your rows</strong> — eight places link straight back into the tracker. To a <strong>month</strong>: a point on the Net Worth Trend, or an underlined month in Spending Trends → ⭐ Peaks or → 🔁 Items. To a <strong>section</strong>: a category tile on the Month-over-Month card, or a category line in the Total Expenses breakdown (pin it first). To a <strong>row</strong>: a transaction in the Spending Calendar, a charge in a card or account badge panel, or a bill in the Bills Due panel. Collapsed sections open themselves and whatever you land on flashes gold. Drag a panel aside first and it stays open while you jump — handy for reconciling.</span></div>
       <div class="shortcut-row"><span>🌱 <strong>Growth Projection</strong> — ⋯ → Insights → Growth projection; a hypothetical compound-growth view seeded from your current savings and average monthly contribution. Adjust the amount, contribution, or return rate; pick 5Y / 10Y / 20Y / 30Y, or type any number of years (1–60) in the custom chip. Drag to reposition.</span></div>
-      <div class="shortcut-row"><span>⇄ <strong>Compare months</strong> — ⋯ → Insights → Compare months; any section line-by-line against a baseline month, with color-coded changes and how far apart the two months are (e.g. "2 years, 6 months apart"). Exempt lines are shown but not counted in the Total. The left column follows the month you're viewing. Drag to reposition.</span></div>
+      <div class="shortcut-row"><span>⇄ <strong>Compare months</strong> — ⋯ → Insights → Compare months; any section line-by-line against a baseline month, with color-coded changes and how far apart the two months are (e.g. "2 years, 6 months apart"). Exempt lines are shown but not counted in the Total. The left column follows the month you're viewing. Drag to reposition. A line renamed between months ("Vanguard Brokerage" → "Vanguard Brokerage Account") is <strong>matched automatically</strong> when it's the only likely match — tap <strong>Unlink</strong> if it's wrong, or use <strong>Same as…</strong> on a line found in one month only to pair it yourself. Your links are remembered for every month, and Savings <strong>Growth</strong> uses the same matching — so a renamed account keeps its growth from last month.</span></div>
       <div class="shortcut-row"><span>📈 <strong>Month-over-Month card</strong> — on your dashboard below the sections; compares this month's totals per category against any previous month (pick one from the dropdown). Green means moving the right way for that category — income up is good, spending up isn't. A category you cut to zero shows as a 100% win, and renamed sections show your names. Tap any tile to jump to that section — it expands if collapsed and flashes gold so you can see where you landed.</span></div>
     </div>
 
@@ -11690,9 +11696,7 @@ function renderRowEl(section, row, animate = false) {
         if (prevKeys.length) {
           var prevKey = prevKeys[0]; // allMonthKeys() returns newest first, so [0] is most recent previous
           var prevRows = (all[prevKey] && all[prevKey].savings) || [];
-          var prevRow = prevRows.find(function(r) {
-            return r.label && row.label && r.label.trim().toLowerCase() === row.label.trim().toLowerCase();
-          });
+          var prevRow = prevSavingsRow(row, prevRows, (all[currentMonthKey] && all[currentMonthKey].savings) || []);
           if (prevRow && prevRow.actual && row.actual) {
             var prevActual = parseFloat(prevRow.actual) || 0;
             var curActual = parseFloat(row.actual) || 0;
@@ -14011,9 +14015,7 @@ function recalc() {
       if (row.gains !== '' && row.gains !== null && row.gains !== undefined && !isNaN(stored) && stored !== 0) {
         total += stored;
       } else {
-        var prevRow = prevSavRows.find(function(r) {
-          return r.label && row.label && r.label.trim().toLowerCase() === row.label.trim().toLowerCase();
-        });
+        var prevRow = prevSavingsRow(row, prevSavRows, d.savings || []);
         if (prevRow && prevRow.actual && row.actual) {
           var prevActual = parseFloat(prevRow.actual) || 0;
           var curActual  = parseFloat(row.actual)  || 0;
@@ -18170,9 +18172,7 @@ function reapplyAutoGrowth(id) {
     if (prevKeys.length) {
       var prevKey = prevKeys[0];
       var prevRows = (all[prevKey] && all[prevKey].savings) || [];
-      var prevRow = prevRows.find(function(r) {
-        return r.label && row.label && r.label.trim().toLowerCase() === row.label.trim().toLowerCase();
-      });
+      var prevRow = prevSavingsRow(row, prevRows, (all[currentMonthKey] && all[currentMonthKey].savings) || []);
       if (prevRow && prevRow.actual && row.actual) {
         var prevActual = parseFloat(prevRow.actual) || 0;
         var curActual = parseFloat(row.actual) || 0;
@@ -27541,6 +27541,130 @@ function compareRowsFor(monthKeyStr, section) {
   return out;
 }
 
+/* ── Renamed lines ─────────────────────────────────────────────
+   compareKey() only joins lines whose letters and digits are identical, so a
+   line renamed between months ("Vanguard Brokerage" → "Vanguard Brokerage
+   Account") showed as two. After the exact join, a line found in ONE month
+   only is paired with a line found in the OTHER month only when:
+     • you linked them yourself ("Same as…"), or
+     • their names agree once (…) notes and the word "account" are dropped,
+       or one name's words sit inside the other's in order ("Roth IRA" in
+       "Vanguard Roth IRA") — and it is the ONLY such candidate on both sides,
+       so an ambiguous guess is never made.
+   You can Unlink any pair. Links and unlinks are kept per section, by name,
+   in all._cmpLinks — saved with the budget like _yir, so they follow you to
+   every device and every pair of months, and the demo keeps its own copy.
+   Pairing only changes which lines sit side by side: the Total is the same
+   sum of both months either way. */
+/* ── Last month's row for a savings account ─────────────────────────────
+   Growth (this month's balance − last month's) needs last month's row for the
+   same account. It used to require the exact same name, so renaming
+   "Vanguard Brokerage" to "Vanguard Brokerage Account" started Growth at
+   $0.00. Now: the exact name first, exactly as before; failing that, the same
+   rule Compare months uses — your own "Same as…" link, else a name that looks
+   the same and is the ONLY candidate on both sides, never one Unlinked in
+   Compare. Only rows WITHOUT an exact-name partner are considered, so an
+   account that kept its name can never be taken by a renamed one. */
+function prevSavingsRow(row, prevRows, curRows) {
+  var low = function(r) { return String((r && r.label) || '').trim().toLowerCase(); };
+  var nm = low(row);
+  if (!nm) return null;
+  prevRows = prevRows || []; curRows = curRows || [];
+  var exact = prevRows.find(function(r) { return low(r) === nm; });
+  if (exact) return exact;
+  var curNames = {}, prevNames = {};
+  curRows.forEach(function(r) { if (low(r)) curNames[low(r)] = 1; });
+  prevRows.forEach(function(r) { if (low(r)) prevNames[low(r)] = 1; });
+  var prevLone = prevRows.filter(function(r) { return low(r) && !curNames[low(r)]; });
+  var curLone = curRows.filter(function(r) { return low(r) && !prevNames[low(r)]; });
+  var lk = cmpLinksFor('savings');
+  var pid = function(a, b) { return _cmpPairId(compareKey(a.label), compareKey(b.label)); };
+  var linked = prevLone.filter(function(p) { return lk.links.indexOf(pid(row, p)) >= 0; });
+  if (linked.length === 1) return linked[0];
+  var looks = function(a, b) { return lk.unlinks.indexOf(pid(a, b)) < 0 && _cmpLooksSame(a.label, b.label); };
+  var c = prevLone.filter(function(p) { return looks(row, p); });
+  if (c.length !== 1) return null;
+  var back = curLone.filter(function(r) { return looks(r, c[0]); });
+  return back.length === 1 ? c[0] : null;
+}
+
+function compareWords(label) {
+  return String(label || '').toLowerCase()
+    .replace(/\([^)]*\)|\[[^\]]*\]/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ').trim().split(' ')
+    .filter(function(w) { return w && w !== 'account' && w !== 'acct' && w !== 'acc'; });
+}
+function _cmpWordsInside(shortW, longW) {
+  if (!shortW.length || shortW.length > longW.length) return false;
+  if (shortW.join('').length < 4) return false;          // "HSA" alone is too thin to guess on
+  for (var i = 0; i + shortW.length <= longW.length; i++) {
+    var ok = true;
+    for (var j = 0; j < shortW.length; j++) if (longW[i + j] !== shortW[j]) { ok = false; break; }
+    if (ok) return true;
+  }
+  return false;
+}
+function _cmpLooksSame(la, lb) {
+  if (compareKey(la) && compareKey(la) === compareKey(lb)) return true;
+  var a = compareWords(la), b = compareWords(lb);
+  if (!a.length || !b.length) return false;
+  if (a.join(' ') === b.join(' ')) return true;
+  return a.length < b.length ? _cmpWordsInside(a, b) : _cmpWordsInside(b, a);
+}
+function _cmpPairId(k1, k2) { return k1 < k2 ? k1 + '|' + k2 : k2 + '|' + k1; }
+function cmpLinksFor(section) {
+  var all = loadAll(), o = all._cmpLinks;
+  var s = (o && typeof o === 'object' && o[section] && typeof o[section] === 'object') ? o[section] : {};
+  var arr = function(x) { return Array.isArray(x) ? x.filter(function(v) { return typeof v === 'string' && v.length < 400; }) : []; };
+  return { links: arr(s.links), unlinks: arr(s.unlinks) };
+}
+function _cmpSaveLinks(section, fn) {
+  var all = loadAll();
+  var o = (all._cmpLinks && typeof all._cmpLinks === 'object' && !Array.isArray(all._cmpLinks)) ? all._cmpLinks : {};
+  var cur = cmpLinksFor(section);
+  fn(cur);
+  if (cur.links.length || cur.unlinks.length) o[section] = cur; else delete o[section];
+  if (Object.keys(o).length) all._cmpLinks = o; else delete all._cmpLinks;
+  saveAll(all);
+}
+var _cmpView = null;   // the rows on screen, so buttons pass an index (names can hold quotes)
+function cmpLink(i, j) {
+  var v = _cmpView; if (!v) return;
+  var r = v.rows[i], other = v.rows[+j];
+  if (!r || !other) return;
+  var kA = r.kA || other.kA, kB = r.kB || other.kB;
+  if (!kA || !kB) return;
+  var id = _cmpPairId(kA, kB);
+  _cmpSaveLinks(v.section, function(c) {
+    c.unlinks = c.unlinks.filter(function(x) { return x !== id; });
+    if (c.links.indexOf(id) < 0) c.links.push(id);
+  });
+  renderCompare();
+  if (v.section === 'savings') _cmpRefreshGrowth();
+}
+function cmpUnlink(i) {
+  var v = _cmpView; if (!v) return;
+  var r = v.rows[i];
+  if (!r || !r.kA || !r.kB || r.pair === 'exact') return;
+  var id = _cmpPairId(r.kA, r.kB);
+  _cmpSaveLinks(v.section, function(c) {
+    c.links = c.links.filter(function(x) { return x !== id; });
+    if (c.unlinks.indexOf(id) < 0) c.unlinks.push(id);   // so the automatic match doesn't come back
+  });
+  renderCompare();
+  if (v.section === 'savings') _cmpRefreshGrowth();
+}
+// Savings links decide which row Growth compares with (prevSavingsRow), so
+// the month on screen is redrawn to show the new Growth straight away.
+function _cmpRefreshGrowth() {
+  try {
+    var container = document.getElementById('rows-savings');
+    var rows = (loadAll()[currentMonthKey] || {}).savings || [];
+    if (container) { container.innerHTML = ''; rows.forEach(function(row) { renderRowEl('savings', row, false); }); }
+    recalc();
+  } catch (e) {}
+}
+
 function showCompare() {
   var el = document.getElementById('compare-overlay');
   if (el) el.style.display = 'flex';
@@ -27651,16 +27775,45 @@ function renderCompare() {
   var A = compareRowsFor(currentMonthKey, section);
   var B = compareRowsFor(keyB, section);
 
-  var keys = {};
-  Object.keys(A).forEach(function(k) { keys[k] = A[k].label; });
-  Object.keys(B).forEach(function(k) { if (!keys[k]) keys[k] = B[k].label; });
+  // 1. Same name (letters and digits) → same line, as before.
+  var pairs = [];
+  Object.keys(A).forEach(function(k) { if (B[k]) pairs.push({ kA: k, kB: k, pair: 'exact' }); });
+  var onlyA = Object.keys(A).filter(function(k) { return !B[k]; });
+  var onlyB = Object.keys(B).filter(function(k) { return !A[k]; });
+  var lk = cmpLinksFor(section);
+  var take = function(kA, kB, how) {
+    pairs.push({ kA: kA, kB: kB, pair: how });
+    onlyA.splice(onlyA.indexOf(kA), 1); onlyB.splice(onlyB.indexOf(kB), 1);
+  };
+  // 2. Pairs you linked yourself.
+  onlyA.slice().forEach(function(kA) {
+    var hit = onlyB.filter(function(kB) { return lk.links.indexOf(_cmpPairId(kA, kB)) >= 0; });
+    if (hit.length === 1) take(kA, hit[0], 'manual');
+  });
+  // 3. Renamed lines, only when there is exactly one candidate on each side.
+  var cands = function(k, side, pool) {
+    return pool.filter(function(o) {
+      var kA = side === 'A' ? k : o, kB = side === 'A' ? o : k;
+      return lk.unlinks.indexOf(_cmpPairId(kA, kB)) < 0 && _cmpLooksSame(A[kA].label, B[kB].label);
+    });
+  };
+  var guesses = [];
+  onlyA.forEach(function(kA) {
+    var cb = cands(kA, 'A', onlyB);
+    if (cb.length === 1 && cands(cb[0], 'B', onlyA).length === 1) guesses.push([kA, cb[0]]);
+  });
+  guesses.forEach(function(g) { take(g[0], g[1], 'auto'); });
+  onlyA.forEach(function(k) { pairs.push({ kA: k, kB: null, pair: null }); });
+  onlyB.forEach(function(k) { pairs.push({ kA: null, kB: k, pair: null }); });
 
-  var rows = Object.keys(keys).map(function(k) {
-    var a = A[k] ? A[k].amt : null;
-    var b = B[k] ? B[k].amt : null;
-    return { label: keys[k], a: a, b: b, delta: (a || 0) - (b || 0),
-             ca: A[k] ? A[k].counted : 0, cb: B[k] ? B[k].counted : 0,
-             exA: !!(A[k] && A[k].exempt), exB: !!(B[k] && B[k].exempt) };
+  var rows = pairs.map(function(pr) {
+    var ra = pr.kA ? A[pr.kA] : null, rb = pr.kB ? B[pr.kB] : null;
+    var a = ra ? ra.amt : null;
+    var b = rb ? rb.amt : null;
+    return { label: ra ? ra.label : rb.label, labelB: rb ? rb.label : '', kA: pr.kA, kB: pr.kB, pair: pr.pair,
+             a: a, b: b, delta: (a || 0) - (b || 0),
+             ca: ra ? ra.counted : 0, cb: rb ? rb.counted : 0,
+             exA: !!(ra && ra.exempt), exB: !!(rb && rb.exempt) };
   });
 
   if (!rows.length) {
@@ -27671,6 +27824,28 @@ function renderCompare() {
 
   // biggest movements first — that's what you're looking for
   rows.sort(function(x, y) { return Math.abs(y.delta) - Math.abs(x.delta); });
+  _cmpView = { section: section, rows: rows };
+  var mA = compareShortMonth(currentMonthKey), mB = compareShortMonth(keyB);
+  // Lines found in one month only, offered under "Same as…" on the other side
+  var loneA = [], loneB = [];
+  rows.forEach(function(r, i) { if (r.kA && !r.kB) loneA.push(i); else if (r.kB && !r.kA) loneB.push(i); });
+  function sameAs(i, r) {
+    var pool = r.kA ? loneB : loneA;
+    if (!pool.length) return '';
+    return '<select class="cmp-same" onchange="if(this.value!==\'\')cmpLink(' + i + ',this.value)" title="This is the same item as a line in ' + (r.kA ? mB : mA) + '">' +
+      '<option value="">Same as… (' + (r.kA ? mB : mA) + ')</option>' +
+      pool.map(function(j) { return '<option value="' + j + '">' + escHtml(rows[j].label) + '</option>'; }).join('') + '</select>';
+  }
+  function subLine(i, r) {
+    if (r.pair === 'auto' || r.pair === 'manual') {
+      var renamed = compareKey(r.label) !== compareKey(r.labelB);
+      return '<div class="cmp-alias">' + (renamed ? mB + ': ' + escHtml(r.labelB) + ' · ' : '') +
+        (r.pair === 'auto' ? 'matched automatically' : 'linked by you') +
+        ' · <button type="button" onclick="cmpUnlink(' + i + ')" title="These are different items">Unlink</button></div>';
+    }
+    if (!r.pair) return '<div class="cmp-alias">only in ' + (r.kA ? mA : mB) + ' ' + sameAs(i, r) + '</div>';
+    return '';
+  }
 
   var upGood = !!COMPARE_UP_IS_GOOD[section];
   function deltaCell(v) {
@@ -27687,10 +27862,10 @@ function renderCompare() {
     '<span>Item</span><span>' + compareShortMonth(currentMonthKey) + '</span>' +
     '<span>' + compareShortMonth(keyB) + '</span><span>Change</span></div>';
 
-  rows.forEach(function(r) {
+  rows.forEach(function(r, i) {
     html += '<div class="cmp-row' + ((r.exA && r.exB) || (r.exA && r.b === null) || (r.exB && r.a === null) ? ' cmp-exrow' : '') + '">' +
-      '<span class="cmp-label" title="' + escHtml(r.label) + '">' + escHtml(r.label) +
-        ((r.exA || r.exB) ? '<span class="cmp-ex" title="Exempt: not counted in the Total">exempt</span>' : '') + '</span>' +
+      '<span class="cmp-label"><div class="cmp-name" title="' + escHtml(r.label) + '">' + escHtml(r.label) +
+        ((r.exA || r.exB) ? '<span class="cmp-ex" title="Exempt: not counted in the Total">exempt</span>' : '') + '</div>' + subLine(i, r) + '</span>' +
       '<span class="cmp-amt' + (r.exA ? ' cmp-exv' : '') + '">' + (r.a === null ? '<em class="cmp-none">—</em>' : fmt(r.a)) + '</span>' +
       '<span class="cmp-amt' + (r.exB ? ' cmp-exv' : '') + '">' + (r.b === null ? '<em class="cmp-none">—</em>' : fmt(r.b)) + '</span>' +
       deltaCell(r.delta) +
